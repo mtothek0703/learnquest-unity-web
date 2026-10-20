@@ -1,0 +1,43 @@
+name: Publish Unity WebGL Test
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'LearnQuest3D_WebGL_Testfix.zip'
+      - '.github/workflows/publish-unity-webgl.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Extract Unity website
+        run: |
+          mkdir -p _site
+          unzip -q LearnQuest3D_WebGL_Testfix.zip -d _site
+          test -f _site/index.html
+          test -f '_site/Build/Default WebGL.wasm'
+          touch _site/.nojekyll
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload website
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
