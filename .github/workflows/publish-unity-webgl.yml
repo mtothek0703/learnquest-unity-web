@@ -1,9 +1,10 @@
-name: Publish Unity WebGL Test
+name: Publish LearnQuest Web Games
 on:
   push:
     branches: [main]
     paths:
       - 'LearnQuest3D_WebGL_Testfix.zip'
+      - 'godot/**'
       - '.github/scripts/prepare_webgl.py'
       - '.github/workflows/publish-unity-webgl.yml'
   workflow_dispatch:
@@ -20,16 +21,33 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install WebGL preparation dependency
-        run: python -m pip install --disable-pip-version-check brotli
-      - name: Prepare Unity website and repair missing IDBFS
-        run: python .github/scripts/prepare_webgl.py LearnQuest3D_WebGL_Testfix.zip _site
+      - name: Prepare Unity website
+        run: |
+          python -m pip install --disable-pip-version-check brotli
+          python .github/scripts/prepare_webgl.py LearnQuest3D_WebGL_Testfix.zip _site
+      - name: Install free Godot editor and web export templates
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip -O /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+          wget -q https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_export_templates.tpz -O /tmp/templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.4.1.stable"
+          unzip -q /tmp/templates.tpz -d /tmp/godot-templates
+          cp /tmp/godot-templates/templates/* "$HOME/.local/share/godot/export_templates/4.4.1.stable/"
+      - name: Export Godot browser game
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/_site/godot"
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path godot --quit
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --export-release "Web" "$GITHUB_WORKSPACE/_site/godot/index.html"
+          test -f _site/godot/index.html
+          test -f _site/godot/index.wasm
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload website
