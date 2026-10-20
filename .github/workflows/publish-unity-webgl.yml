@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'LearnQuest3D_WebGL_Testfix.zip'
+      - '.github/scripts/prepare_webgl.py'
       - '.github/workflows/publish-unity-webgl.yml'
   workflow_dispatch:
 
@@ -25,13 +26,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Extract Unity website
-        run: |
-          mkdir -p _site
-          unzip -q LearnQuest3D_WebGL_Testfix.zip -d _site
-          test -f _site/index.html
-          test -f '_site/Build/Default WebGL.wasm'
-          touch _site/.nojekyll
+      - name: Install WebGL preparation dependency
+        run: python -m pip install --disable-pip-version-check brotli
+      - name: Prepare Unity website and repair missing IDBFS
+        run: python .github/scripts/prepare_webgl.py LearnQuest3D_WebGL_Testfix.zip _site
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload website
