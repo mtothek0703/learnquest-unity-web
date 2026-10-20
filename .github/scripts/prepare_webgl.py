@@ -32,9 +32,10 @@ def prepare(source, destination):
                 raise RuntimeError("Unsafe ZIP member: " + name)
             data = archive.read(item)
             if rel.endswith(".br"):
-                if not data.startswith(HEADER):
+                if HEADER not in data[:80]:
                     raise RuntimeError("Unexpected Unity Brotli header: " + rel)
-                data = brotli.decompress(data[len(HEADER):])
+                # The Unity marker is a Brotli metadata block, not an external header.
+                data = brotli.decompress(data)
                 rel = rel[:-3]
             if rel.endswith(".framework.js"):
                 js = data.decode("utf-8")
