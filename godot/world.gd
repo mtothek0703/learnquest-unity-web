@@ -87,10 +87,10 @@ func _create_world() -> void:
     add_child(sun)
 
     var camera := Camera3D.new()
-    camera.position = Vector3(0, 4.5, 8.5)
+    camera.position = Vector3(0, 5.1, 10.0)
     camera.rotation_degrees = Vector3(-12, 180, 0)
-    camera.look_at(Vector3(0, 1.1, -8))
-    camera.fov = 63
+    camera.look_at(Vector3(0, 1.15, -1.8))
+    camera.fov = 64
     add_child(camera)
     camera.current = true
 
@@ -121,7 +121,7 @@ func _create_world() -> void:
     add_child(moving)
     for i in range(22):
         var side: int = -1 if i % 2 == 0 else 1
-        var z := 10.0 - i * 6.5
+        var z := -12.0 - i * 6.5
         var height := float(7 + (i % 5) * 3)
         var root := Node3D.new()
         root.position = Vector3(side * (8 + (i % 3) * 2), 0, z)
@@ -133,7 +133,7 @@ func _create_world() -> void:
         cube(root, Vector3(0, height, 0), Vector3(3.2, 0.25, 3.2), Color("#f9b135"), true)
     for i in range(12):
         var crystal := Node3D.new()
-        crystal.position = Vector3(7.5 if i % 2 == 0 else -7.5, 1.5, 7.0 - i * 11.0)
+        crystal.position = Vector3(7.5 if i % 2 == 0 else -7.5, 1.5, -13.0 - i * 11.0)
         moving.add_child(crystal)
         cube(crystal, Vector3.ZERO, Vector3(1.4, 2.2, 1.4), Color("#39e5ff") if i % 2 == 0 else Color("#fd47c1"), true).rotation_degrees = Vector3(27, 45, 15)
 
@@ -310,8 +310,8 @@ func _process(delta: float) -> void:
     rider.rotation.z = lerpf(rider.rotation.z, (float(lane) * 3.1 - rider.position.x) * -0.14, delta * 5)
     for object in moving.get_children():
         object.position.z += delta * speed
-        if object.position.z > 20:
-            object.position.z -= 145
+        if object.position.z > 12:
+            object.position.z -= 155
     quiz_time -= delta
     if quiz_time <= 0:
         _ask()
