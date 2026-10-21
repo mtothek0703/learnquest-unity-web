@@ -22,6 +22,7 @@ var combo := 0
 var turbo_left := 0.0
 var rider: Node3D
 var moving: Node3D
+var skyway_zone: Node3D
 var road_marks: Node3D
 var run_items: Node3D
 var lives := 3
@@ -135,46 +136,21 @@ func _create_world() -> void:
     marker.position = Vector3(0, 2, 0)
 
     var zone_script = preload("res://neon_environment.gd")
-    var zone = zone_script.new()
-    zone.name = "LearnQuest Skyway world"
-    add_child(zone)
+    skyway_zone = zone_script.new()
+    skyway_zone.name = "LearnQuest Skyway world"
+    add_child(skyway_zone)
 
-    # Build cinematic roadside structures with physically modeled depth.
-    for i in range(9):
-        var z_arch: float = -17.0 - float(i) * 15.0
-        var arch_tint: Color = Color("#11eaff") if i % 2 == 0 else Color("#ff49db")
-        cube(self, Vector3(-5.45, 2.75, z_arch), Vector3(0.36, 5.5, 0.5), arch_tint, true)
-        cube(self, Vector3(5.45, 2.75, z_arch), Vector3(0.36, 5.5, 0.5), arch_tint, true)
-        cube(self, Vector3(0, 5.5, z_arch), Vector3(11.1, 0.36, 0.5), arch_tint, true)
-        cube(self, Vector3(0, 5.12, z_arch), Vector3(3.2, 0.12, 0.18), Color("#fff0a0"), true)
-    # Layered roadside scenery: platforms, glowing roadside pylons and low-poly trees.
+    # Moving roadside silhouettes supplement the richer scrolling Skyway world.
     moving = Node3D.new()
     moving.name = "Moving city"
     add_child(moving)
-    for i in range(25):
-        var prop_z := -9.0 - float(i) * 5.8
-        var side_sign := -1.0 if i % 2 == 0 else 1.0
-        var pole := Node3D.new()
-        pole.name = "Light post %d" % i
-        pole.position = Vector3(side_sign * 6.4, 0, prop_z)
-        moving.add_child(pole)
-        cube(pole, Vector3.ZERO + Vector3(0, 1.6, 0), Vector3(0.24, 3.2, 0.24), Color("#383f6c"))
-        sphere(pole, Vector3(0, 3.25, 0), Vector3(0.32, 0.32, 0.32), Color("#19efff") if i % 2 == 0 else Color("#ff52bf"), true)
-        if i % 3 == 0:
-            var tree := Node3D.new()
-            tree.name = "Neon tree %d" % i
-            tree.position = Vector3(side_sign * 10.5, 0, prop_z - 2.5)
-            moving.add_child(tree)
-            cube(tree, Vector3(0, 1.1, 0), Vector3(0.35, 2.2, 0.35), Color("#60416c"))
-            sphere(tree, Vector3(0, 2.9, 0), Vector3(1.5, 1.7, 1.5), Color("#2e78a9"))
-            sphere(tree, Vector3(0, 3.6, 0), Vector3(0.8, 0.9, 0.8), Color("#4ceab3"))
     # Existing buildings and crystals share this scrolling scenery.
-    for i in range(22):
+    for i in range(12):
         var side: int = -1 if i % 2 == 0 else 1
-        var z := -12.0 - i * 6.5
-        var height := float(7 + (i % 5) * 3)
+        var z := -14.0 - i * 11.5
+        var height := float(5 + (i % 4) * 2)
         var root := Node3D.new()
-        root.position = Vector3(side * (8 + (i % 3) * 2), 0, z)
+        root.position = Vector3(side * (14 + (i % 3) * 2), 0, z)
         moving.add_child(root)
         cube(root, Vector3(0, height / 2.0, 0), Vector3(3.0, height, 3.0), Color("#202443"))
         for floor_index in range(1, int(height), 2):
@@ -183,7 +159,7 @@ func _create_world() -> void:
         cube(root, Vector3(0, height, 0), Vector3(3.2, 0.25, 3.2), Color("#f9b135"), true)
     for i in range(12):
         var crystal := Node3D.new()
-        crystal.position = Vector3(7.5 if i % 2 == 0 else -7.5, 1.5, -13.0 - i * 11.0)
+        crystal.position = Vector3(10.8 if i % 2 == 0 else -10.8, 1.5, -13.0 - i * 11.0)
         moving.add_child(crystal)
         cube(crystal, Vector3.ZERO, Vector3(1.4, 2.2, 1.4), Color("#39e5ff") if i % 2 == 0 else Color("#fd47c1"), true).rotation_degrees = Vector3(27, 45, 15)
     _create_run_items()
@@ -464,6 +440,8 @@ func _process(delta: float) -> void:
         feedback_time -= delta
         if feedback_time <= 0:
             info_label.text = ""
+    skyway_zone.set("running", started and not quiz_active)
+    skyway_zone.set("travel_speed", speed)
     if not started or quiz_active:
         return
     if Input.is_key_pressed(KEY_SPACE) and jump_left <= 0.0:
