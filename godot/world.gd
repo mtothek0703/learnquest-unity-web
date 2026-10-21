@@ -22,6 +22,7 @@ var combo := 0
 var turbo_left := 0.0
 var rider: Node3D
 var moving: Node3D
+var road_marks: Node3D
 var hud: Label
 var splash: PanelContainer
 var quiz_box: PanelContainer
@@ -87,9 +88,9 @@ func _create_world() -> void:
     add_child(sun)
 
     var camera := Camera3D.new()
-    camera.position = Vector3(0, 5.1, 10.0)
+    camera.position = Vector3(0, 4.1, 8.0)
     camera.rotation_degrees = Vector3(-12, 180, 0)
-    camera.look_at(Vector3(0, 1.15, -1.8))
+    camera.look_at(Vector3(0, 1.35, -7.0))
     camera.fov = 64
     add_child(camera)
     camera.current = true
@@ -97,13 +98,17 @@ func _create_world() -> void:
     cube(self, Vector3(0, -0.35, -55), Vector3(11, 0.6, 160), Color("#141633"))
     for side in [-1, 1]:
         cube(self, Vector3(side * 5.5, 0, -55), Vector3(0.2, 0.3, 160), Color("#27f5ff"), true)
+    road_marks = Node3D.new()
+    road_marks.name = "Animated lane markers"
+    add_child(road_marks)
     for z in range(-125, 20, 8):
         for side in [-1, 1]:
-            cube(self, Vector3(side * 1.8, -0.025, z), Vector3(0.1, 0.04, 2.8), Color("#ad62ff"), true)
+            cube(road_marks, Vector3(side * 1.8, -0.025, z), Vector3(0.15, 0.05, 3.4), Color("#ad62ff"), true)
 
     rider = Node3D.new()
     rider.name = "Hover Racer"
     add_child(rider)
+    rider.position.z = -4.5
     cube(rider, Vector3(0, 0.32, 0), Vector3(1.55, 0.16, 2.35), Color("#121735"))
     cube(rider, Vector3(0, 0.42, 0), Vector3(0.8, 0.08, 1.8), Color("#843aff"))
     for side in [-1, 1]:
@@ -312,6 +317,10 @@ func _process(delta: float) -> void:
         object.position.z += delta * speed
         if object.position.z > 12:
             object.position.z -= 155
+    for marker in road_marks.get_children():
+        marker.position.z += delta * speed
+        if marker.position.z > 16:
+            marker.position.z -= 144
     quiz_time -= delta
     if quiz_time <= 0:
         _ask()
