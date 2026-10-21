@@ -129,16 +129,15 @@ func _create_world() -> void:
         cube(self, Vector3(0, 5.5, z_arch), Vector3(11.1, 0.36, 0.5), arch_tint, true)
         cube(self, Vector3(0, 5.12, z_arch), Vector3(3.2, 0.12, 0.18), Color("#fff0a0"), true)
     # Layered roadside scenery: platforms, glowing roadside pylons and low-poly trees.
+    moving = Node3D.new()
+    moving.name = "Moving city"
+    add_child(moving)
     for i in range(25):
         var prop_z := -9.0 - float(i) * 5.8
         var side_sign := -1.0 if i % 2 == 0 else 1.0
         var pole := Node3D.new()
         pole.name = "Light post %d" % i
         pole.position = Vector3(side_sign * 6.4, 0, prop_z)
-        moving = moving if moving != null else Node3D.new()
-        if moving.get_parent() == null:
-            moving.name = "Moving city"
-            add_child(moving)
         moving.add_child(pole)
         cube(pole, Vector3.ZERO + Vector3(0, 1.6, 0), Vector3(0.24, 3.2, 0.24), Color("#383f6c"))
         sphere(pole, Vector3(0, 3.25, 0), Vector3(0.32, 0.32, 0.32), Color("#19efff") if i % 2 == 0 else Color("#ff52bf"), true)
@@ -151,10 +150,6 @@ func _create_world() -> void:
             sphere(tree, Vector3(0, 2.9, 0), Vector3(1.5, 1.7, 1.5), Color("#2e78a9"))
             sphere(tree, Vector3(0, 3.6, 0), Vector3(0.8, 0.9, 0.8), Color("#4ceab3"))
     # Existing buildings and crystals share this scrolling scenery.
-    if moving == null:
-        moving = Node3D.new()
-        moving.name = "Moving city"
-        add_child(moving)
     add_child(moving)
     for i in range(22):
         var side: int = -1 if i % 2 == 0 else 1
