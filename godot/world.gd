@@ -88,9 +88,9 @@ func _create_world() -> void:
     add_child(sun)
 
     var camera := Camera3D.new()
-    camera.position = Vector3(0, 4.1, 8.0)
+    camera.position = Vector3(0, 4.0, 9.3)
     camera.rotation_degrees = Vector3(-12, 180, 0)
-    camera.look_at(Vector3(0, 1.35, -7.0))
+    camera.look_at(Vector3(0, 1.35, -1.0))
     camera.fov = 64
     add_child(camera)
     camera.current = true
@@ -105,21 +105,13 @@ func _create_world() -> void:
         for side in [-1, 1]:
             cube(road_marks, Vector3(side * 1.8, -0.025, z), Vector3(0.15, 0.05, 3.4), Color("#ad62ff"), true)
 
-    rider = Node3D.new()
-    rider.name = "Hover Racer"
+    # A dedicated, articulated hero with its own hoverboard and procedural animation.
+    var hero_script = preload("res://hover_hero.gd")
+    rider = hero_script.new()
+    rider.name = "Animated Hover Hero"
+    rider.position = Vector3(0, 0, 1.9)
+    rider.scale = Vector3(1.15, 1.15, 1.15)
     add_child(rider)
-    rider.position.z = -4.5
-    cube(rider, Vector3(0, 0.32, 0), Vector3(1.55, 0.16, 2.35), Color("#121735"))
-    cube(rider, Vector3(0, 0.42, 0), Vector3(0.8, 0.08, 1.8), Color("#843aff"))
-    for side in [-1, 1]:
-        cube(rider, Vector3(side * 0.68, 0.43, 0), Vector3(0.12, 0.1, 2.15), Color("#16ecff"), true)
-        cube(rider, Vector3(side * 0.53, 0.25, 0.98), Vector3(0.22, 0.22, 0.25), Color("#ff4fb9"), true)
-        cube(rider, Vector3(side * 0.25, 0.82, 0), Vector3(0.26, 0.7, 0.4), Color("#18254e"))
-        cube(rider, Vector3(side * 0.43, 1.57, 0), Vector3(0.25, 0.65, 0.27), Color("#6245d4"))
-    sphere(rider, Vector3(0, 1.69, 0), Vector3(0.42, 0.52, 0.32), Color("#614ad9"))
-    sphere(rider, Vector3(0, 2.48, 0), Vector3(0.48, 0.52, 0.46), Color("#161b3c"))
-    sphere(rider, Vector3(0, 2.49, -0.38), Vector3(0.38, 0.21, 0.13), Color("#05eaff"), true)
-    cube(rider, Vector3(0, 1.56, 0.38), Vector3(0.55, 0.55, 0.25), Color("#fcad35"), true)
 
     moving = Node3D.new()
     moving.name = "Moving city"
@@ -311,7 +303,8 @@ func _process(delta: float) -> void:
     speed = 25.0 if turbo_left > 0 else 14.0
     distance += delta * speed
     rider.position.x = move_toward(rider.position.x, float(lane) * 3.1, delta * 12)
-    rider.position.y = sin(Time.get_ticks_msec() * 0.004) * 0.08
+    rider.lean = lerpf(rider.lean, float(lane), minf(1.0, delta * 5.0))
+    rider.boosting = turbo_left > 0
     rider.rotation.z = lerpf(rider.rotation.z, (float(lane) * 3.1 - rider.position.x) * -0.14, delta * 5)
     for object in moving.get_children():
         object.position.z += delta * speed
