@@ -79,17 +79,26 @@ func sphere(parent: Node3D, pos: Vector3, scale_value: Vector3, color: Color, gl
 func _create_world() -> void:
     var env := WorldEnvironment.new()
     var resource := Environment.new()
-    resource.background_mode = Environment.BG_COLOR
-    resource.background_color = Color("#0b1030")
+    resource.background_mode = Environment.BG_SKY
+    var sky := Sky.new()
+    var sky_gradient := ProceduralSkyMaterial.new()
+    sky_gradient.sky_top_color = Color("#132c67")
+    sky_gradient.sky_horizon_color = Color("#ca7fc0")
+    sky_gradient.ground_horizon_color = Color("#ec9ca8")
+    sky_gradient.ground_bottom_color = Color("#394568")
+    sky_gradient.use_debanding = true
+    sky.sky_material = sky_gradient
+    resource.sky = sky
+    resource.background_color = Color("#24345c")
     resource.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    resource.ambient_light_color = Color("#727bc8")
-    resource.ambient_light_energy = 0.7
+    resource.ambient_light_color = Color("#b5caff")
+    resource.ambient_light_energy = 0.95
     env.environment = resource
     add_child(env)
 
     var sun := DirectionalLight3D.new()
     sun.rotation_degrees = Vector3(-42, -28, 0)
-    sun.light_energy = 1.1
+    sun.light_energy = 1.35
     add_child(sun)
 
     var camera := Camera3D.new()
@@ -124,6 +133,11 @@ func _create_world() -> void:
     marker.omni_range = 5.0
     rider.add_child(marker)
     marker.position = Vector3(0, 2, 0)
+
+    var zone_script = preload("res://neon_environment.gd")
+    var zone = zone_script.new()
+    zone.name = "LearnQuest Skyway world"
+    add_child(zone)
 
     # Build cinematic roadside structures with physically modeled depth.
     for i in range(9):
@@ -299,7 +313,7 @@ func _create_ui() -> void:
     top.custom_minimum_size = Vector2(360, 56)
     canvas.add_child(top)
     hud = Label.new()
-    hud.add_theme_font_size_override("font_size", 22)
+    hud.add_theme_font_size_override("font_size", 18)
     top.add_child(hud)
 
     var controls := HBoxContainer.new()
@@ -332,7 +346,7 @@ func _create_ui() -> void:
     heading.add_theme_font_size_override("font_size", 34)
     start_column.add_child(heading)
     var sub := Label.new()
-    sub.text = "NEON SPEED WORLD · ENGLISH"
+    sub.text = "SKYWAY CITY - VOCAB RACE"
     sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     start_column.add_child(sub)
     grade_label = Label.new()
@@ -443,7 +457,7 @@ func _use_turbo() -> void:
 
 func _refresh_hud() -> void:
     if hud != null:
-        hud.text = "NEON CITY V5   LEBEN %d   LVL %d   XP %d   ENERGIE %d   %dm" % [lives, 1 + xp / 200, xp, power, int(distance)]
+        hud.text = "SKYWAY V6   LEBEN %d   XP %d   TURBO %d%%   %dm" % [lives, xp, power, int(distance)]
 
 func _process(delta: float) -> void:
     if feedback_time > 0:
