@@ -87,9 +87,9 @@ func _create_world() -> void:
     add_child(sun)
 
     var camera := Camera3D.new()
-    camera.position = Vector3(0, 5.1, 11)
+    camera.position = Vector3(0, 4.5, 8.5)
     camera.rotation_degrees = Vector3(-12, 180, 0)
-    camera.look_at(Vector3(0, 1, -18))
+    camera.look_at(Vector3(0, 1.1, -8))
     camera.fov = 63
     add_child(camera)
     camera.current = true
@@ -124,7 +124,7 @@ func _create_world() -> void:
         var z := 10.0 - i * 6.5
         var height := float(7 + (i % 5) * 3)
         var root := Node3D.new()
-        root.position = Vector3(side * (11 + (i % 3) * 4), 0, z)
+        root.position = Vector3(side * (8 + (i % 3) * 2), 0, z)
         moving.add_child(root)
         cube(root, Vector3(0, height / 2.0, 0), Vector3(3.0, height, 3.0), Color("#202443"))
         for floor_index in range(1, int(height), 2):
@@ -169,12 +169,12 @@ func _create_ui() -> void:
     controls.offset_right = -15
     controls.add_theme_constant_override("separation", 12)
     canvas.add_child(controls)
-    _make_button("◀ LINKS", func(): _shift(-1), controls)
-    _make_button("RECHTS ▶", func(): _shift(1), controls)
+    _make_button("< LINKS", func(): _shift(-1), controls)
+    _make_button("RECHTS >", func(): _shift(1), controls)
     var spacer := Control.new()
     spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     controls.add_child(spacer)
-    _make_button("⚡ TURBO", _use_turbo, controls)
+    _make_button("TURBO", _use_turbo, controls)
 
     splash = PanelContainer.new()
     splash.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -287,7 +287,7 @@ func _use_turbo() -> void:
 
 func _refresh_hud() -> void:
     if hud != null:
-        hud.text = "LVL %d   XP %d   ⚡ %d/100   %dm" % [1 + xp / 200, xp, power, int(distance)]
+        hud.text = "LVL %d   XP %d   POWER %d/100   %dm" % [1 + xp / 200, xp, power, int(distance)]
 
 func _process(delta: float) -> void:
     if feedback_time > 0:
