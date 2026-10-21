@@ -268,11 +268,43 @@ func _finish_run() -> void:
     feedback_time = 4.0
     _refresh_hud()
 
+func _style_panel(panel: PanelContainer) -> void:
+    var bg := StyleBoxFlat.new()
+    bg.bg_color = Color("#111b3be8")
+    bg.border_color = Color("#65d8e9")
+    bg.set_border_width_all(2)
+    bg.set_corner_radius_all(18)
+    bg.set_content_margin_all(15)
+    bg.shadow_color = Color("#050b2380")
+    bg.shadow_size = 10
+    panel.add_theme_stylebox_override("panel", bg)
+
+func _style_button(button: Button) -> void:
+    var normal := StyleBoxFlat.new()
+    normal.bg_color = Color("#344e84")
+    normal.border_color = Color("#7eecfa")
+    normal.set_border_width_all(2)
+    normal.set_corner_radius_all(12)
+    normal.set_content_margin_all(9)
+    var pressed := normal.duplicate() as StyleBoxFlat
+    pressed.bg_color = Color("#ab53e5")
+    pressed.border_color = Color("#ffe18f")
+    var hovered := normal.duplicate() as StyleBoxFlat
+    hovered.bg_color = Color("#506ca2")
+    button.add_theme_stylebox_override("normal", normal)
+    button.add_theme_stylebox_override("pressed", pressed)
+    button.add_theme_stylebox_override("hover", hovered)
+    button.add_theme_stylebox_override("focus", hovered)
+    button.add_theme_color_override("font_color", Color("#ffffff"))
+    button.add_theme_color_override("font_hover_color", Color("#ffffff"))
+    button.add_theme_color_override("font_pressed_color", Color("#fff3bf"))
+
 func _make_button(label_text: String, callback: Callable, parent: Node) -> Button:
     var b := Button.new()
     b.text = label_text
     b.custom_minimum_size = Vector2(155, 55)
     b.add_theme_font_size_override("font_size", 20)
+    _style_button(b)
     b.pressed.connect(callback)
     parent.add_child(b)
     return b
@@ -285,6 +317,7 @@ func _create_ui() -> void:
     layer.add_child(canvas)
 
     var top := PanelContainer.new()
+    _style_panel(top)
     top.position = Vector2(15, 12)
     top.custom_minimum_size = Vector2(360, 56)
     canvas.add_child(top)
@@ -309,6 +342,7 @@ func _create_ui() -> void:
     _make_button("TURBO", _use_turbo, controls)
 
     splash = PanelContainer.new()
+    _style_panel(splash)
     splash.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
     splash.position = Vector2(-220, -160)
     splash.custom_minimum_size = Vector2(440, 320)
@@ -337,6 +371,7 @@ func _create_ui() -> void:
     _change_grade(0)
 
     quiz_box = PanelContainer.new()
+    _style_panel(quiz_box)
     quiz_box.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
     quiz_box.position = Vector2(-230, -185)
     quiz_box.custom_minimum_size = Vector2(460, 380)
@@ -366,6 +401,7 @@ func _create_ui() -> void:
     canvas.add_child(info_label)
 
     end_panel = PanelContainer.new()
+    _style_panel(end_panel)
     end_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
     end_panel.position = Vector2(-205, -115)
     end_panel.custom_minimum_size = Vector2(410, 230)
