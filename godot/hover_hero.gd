@@ -10,6 +10,7 @@ var board: Node3D
 var character_body: Node3D
 var shoulder_lights: Array[MeshInstance3D] = []
 var flames: Array[MeshInstance3D] = []
+var energy_trails: Array[MeshInstance3D] = []
 var lean := 0.0
 var boosting := false
 
@@ -88,6 +89,13 @@ func _assemble() -> void:
         box(board, Vector3(side * 0.51, 0.18, 1.0), Vector3(0.30, 0.2, 0.28), bright, true)
         var flame := ball(board, Vector3(side * 0.51, 0.18, 1.28), Vector3(0.17, 0.17, 0.5), cyan, true)
         flames.append(flame)
+    # Twin neon contrails stretch behind the board during turbo without particles.
+    # Just two inexpensive meshes: suitable for iPhone WebGL rendering.
+    for side in [-1.0, 1.0]:
+        var trail_color := cyan if side < 0.0 else bright
+        var trail := box(board, Vector3(side * 0.48, 0.16, 2.0), Vector3(0.07, 0.06, 0.48), trail_color, true)
+        trail.name = "Animated boost contrail"
+        energy_trails.append(trail)
     box(board, Vector3(0, 0.38, -1.24), Vector3(0.82, 0.05, 0.13), yellow, true)
     # Streamlined pointed nose, asymmetric colored panels, two solid rear jet nacelles.
     var nose := PrismMesh.new()
@@ -170,3 +178,9 @@ func _process(delta: float) -> void:
         light.scale.y = 0.18 + sin(time * 2.7 + float(i)) * 0.02
     for flame in flames:
         flame.scale.z = (1.5 if boosting else 0.65) + (0.15 * sin(time * 18.0))
+    for i in range(energy_trails.size()):
+        var trail := energy_trails[i]
+        var trail_length := (2.6 if boosting else 0.48) + sin(time * (22.0 if boosting else 9.0) + float(i) * 1.7) * (0.25 if boosting else 0.08)
+        trail.scale.z = trail_length
+        trail.scale.x = 0.11 if boosting else 0.055
+        trail.position.z = 1.72 + trail_length * 0.5
