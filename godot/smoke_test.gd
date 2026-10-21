@@ -48,6 +48,14 @@ func _run_checks() -> void:
         _fail("Jump did not trigger")
         return
     game.call("_update_run_items", 0.016)
+    var camera := game.get("chase_camera") as Camera3D
+    if camera == null:
+        _fail("Chase camera missing")
+        return
+    game.call("_update_camera", 0.2)
+    if camera.fov < 63.0:
+        _fail("Camera field of view is invalid")
+        return
     game.call("_ask")
     if not bool(game.get("quiz_active")):
         _fail("Vocabulary challenge did not open")
