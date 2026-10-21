@@ -176,7 +176,7 @@ func _build_floating_traffic() -> void:
 func _build_speed_streaks() -> void:
     # Animated luminous dashes stream underneath the player, making speed tangible.
     for i in range(36):
-        var z := 8.0 - float(i / 3) * 11.0
+        var z := 8.0 - float(int(i / 3)) * 11.0
         var x := float(i % 3 - 1) * 3.1
         var streak := block(self, Vector3(x, 0.065, z), Vector3(0.12, 0.045, 2.3), Color("#86fff3"), true)
         speed_streaks.append(streak)
