@@ -66,6 +66,9 @@ jobs:
             exit 1
           fi
           echo "Godot startup smoke test passed"
+          echo "Run gameplay integration tests"
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://smoke_test.gd
+          echo "Gameplay integration tests passed"
           # Fresh asset path bypasses cached Godot .wasm/.pck from earlier deployments.
           mkdir -p _site/neon-city-v3
           cp -a _site/godot/. _site/neon-city-v3/
@@ -73,6 +76,9 @@ jobs:
           cp -a _site/godot/. _site/neon-city-v4/
           mkdir -p _site/neon-city-v5
           cp -a _site/godot/. _site/neon-city-v5/
+          mkdir -p _site/skyway-v6
+          cp -a _site/godot/. _site/skyway-v6/
+          echo "$GITHUB_SHA" > _site/skyway-v6/build.txt
           echo "$GITHUB_SHA" > _site/neon-city-v5/build.txt
           echo "$GITHUB_SHA" > _site/neon-city-v4/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
@@ -92,7 +98,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request
-          root = "https://mtothek0703.github.io/learnquest-unity-web/neon-city-v5/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v6/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
