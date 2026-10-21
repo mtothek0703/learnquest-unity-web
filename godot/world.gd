@@ -88,9 +88,9 @@ func _create_world() -> void:
     add_child(sun)
 
     var camera := Camera3D.new()
-    camera.position = Vector3(0, 3.6, 7.4)
+    camera.position = Vector3(0, 4.3, 9.0)
     camera.rotation_degrees = Vector3(-12, 180, 0)
-    camera.look_at(Vector3(0, 1.45, 1.0))
+    camera.look_at(Vector3(0, 1.5, 0.5))
     camera.fov = 64
     add_child(camera)
     camera.current = true
@@ -109,7 +109,7 @@ func _create_world() -> void:
     var hero_script = preload("res://hover_hero.gd")
     rider = hero_script.new()
     rider.name = "Animated Hover Hero"
-    rider.position = Vector3(0, 0, 1.9)
+    rider.position = Vector3(0, 0, 0.2)
     rider.scale = Vector3(1.55, 1.55, 1.55)
     add_child(rider)
     # Highly visible, temporary visual check anchored to the rider.
@@ -121,6 +121,14 @@ func _create_world() -> void:
     rider.add_child(marker)
     marker.position = Vector3(0, 2, 0)
 
+    # Build cinematic roadside structures with physically modeled depth.
+    for i in range(9):
+        var z_arch: float = -17.0 - float(i) * 15.0
+        var arch_tint: Color = Color("#11eaff") if i % 2 == 0 else Color("#ff49db")
+        cube(self, Vector3(-5.45, 2.75, z_arch), Vector3(0.36, 5.5, 0.5), arch_tint, true)
+        cube(self, Vector3(5.45, 2.75, z_arch), Vector3(0.36, 5.5, 0.5), arch_tint, true)
+        cube(self, Vector3(0, 5.5, z_arch), Vector3(11.1, 0.36, 0.5), arch_tint, true)
+        cube(self, Vector3(0, 5.12, z_arch), Vector3(3.2, 0.12, 0.18), Color("#fff0a0"), true)
     moving = Node3D.new()
     moving.name = "Moving city"
     add_child(moving)
@@ -292,7 +300,7 @@ func _use_turbo() -> void:
 
 func _refresh_hud() -> void:
     if hud != null:
-        hud.text = "GODOT V2.1   LVL %d   XP %d   POWER %d/100   %dm" % [1 + xp / 200, xp, power, int(distance)]
+        hud.text = "LEARNQUEST 3D - NEON CITY V3   LVL %d   XP %d   POWER %d/100   %dm" % [1 + xp / 200, xp, power, int(distance)]
 
 func _process(delta: float) -> void:
     if feedback_time > 0:
