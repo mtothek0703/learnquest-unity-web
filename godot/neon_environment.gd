@@ -6,6 +6,7 @@ var floaters: Array[Node3D] = []
 var lights: Array[Node3D] = []
 var scenery: Array[Node3D] = []
 var running := false
+var speed_streaks: Array[MeshInstance3D] = []
 var travel_speed := 14.0
 var rand := RandomNumberGenerator.new()
 
@@ -16,6 +17,8 @@ func _ready() -> void:
     _build_skyline()
     _build_portals()
     _build_floating_traffic()
+    _build_speed_streaks()
+    _build_landmarks()
 
 func material(tint: Color, glow: bool = false) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -169,9 +172,62 @@ func _build_floating_traffic() -> void:
             globe(flyer, Vector3(wing * 1.7, 0, 0.0), Vector3(0.20, 0.17, 0.2), Color("#fff4b2"), true)
         lights.append(flyer)
 
+
+func _build_speed_streaks() -> void:
+    # Animated luminous dashes stream underneath the player, making speed tangible.
+    for i in range(36):
+        var z := 8.0 - float(i / 3) * 11.0
+        var x := float(i % 3 - 1) * 3.1
+        var streak := block(self, Vector3(x, 0.065, z), Vector3(0.12, 0.045, 2.3), Color("#86fff3"), true)
+        speed_streaks.append(streak)
+
+func _build_landmarks() -> void:
+    # A pastel ringed moon and floating sculptural islands add a recognizable skyline.
+    var moon := Node3D.new()
+    moon.name = "Distant ringed moon"
+    moon.position = Vector3(-35, 30, -114)
+    add_child(moon)
+    globe(moon, Vector3.ZERO, Vector3(8.5, 8.5, 8.5), Color("#ffcbbd"))
+    var orbit := TorusMesh.new()
+    orbit.inner_radius = 11.0
+    orbit.outer_radius = 11.55
+    orbit.rings = 48
+    orbit.ring_segments = 7
+    var moon_ring := shape(moon, orbit, Vector3.ZERO, Color("#70f2ff"), true)
+    moon_ring.rotation_degrees = Vector3(24, 0, 67)
+
+    for i in range(8):
+        var side := -1.0 if i % 2 == 0 else 1.0
+        var island := Node3D.new()
+        island.name = "Floating island %d" % i
+        island.position = Vector3(side * (23.0 + float(i % 3) * 7.0), 7.5 + float(i % 3) * 2.5, -25.0 - float(i) * 17.0)
+        add_child(island)
+        scenery.append(island)
+        var base := CylinderMesh.new()
+        base.top_radius = 5.0
+        base.bottom_radius = 1.0
+        base.height = 3.6
+        base.radial_segments = 7
+        shape(island, base, Vector3(0, -1.7, 0), Color("#56649b"))
+        var turf := CylinderMesh.new()
+        turf.top_radius = 5.25
+        turf.bottom_radius = 5.0
+        turf.height = 0.7
+        turf.radial_segments = 7
+        shape(island, turf, Vector3(0, 0.2, 0), Color("#46c5b0"))
+        for j in range(3):
+            var x := float(j - 1) * 2.1
+            tower(island, Vector3(x, 1.8, -0.3), 2.5, 0.28, Color("#9075ac"))
+            globe(island, Vector3(x, 3.4, -0.3), Vector3(1.15, 1.0, 1.1), Color("#78e5d0"))
+        globe(island, Vector3(0, -3.8, 0), Vector3(0.55, 0.75, 0.55), Color("#a7faff"), true)
+
 func _process(delta: float) -> void:
     elapsed += delta
     if running:
+        for streak in speed_streaks:
+            streak.position.z += travel_speed * delta * 1.15
+            if streak.position.z > 15.0:
+                streak.position.z -= 132.0
         for prop in scenery:
             prop.position.z += travel_speed * delta
             if prop.position.z > 14.0:
