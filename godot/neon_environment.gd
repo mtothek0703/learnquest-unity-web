@@ -4,6 +4,9 @@ extends Node3D
 var elapsed := 0.0
 var floaters: Array[Node3D] = []
 var lights: Array[Node3D] = []
+var scenery: Array[Node3D] = []
+var running := false
+var travel_speed := 14.0
 var rand := RandomNumberGenerator.new()
 
 func _ready() -> void:
@@ -81,6 +84,7 @@ func _build_roadside() -> void:
         var station := Node3D.new()
         station.position = Vector3(side * 8.4, 0, z)
         add_child(station)
+        scenery.append(station)
         # Glowing canopy on sculpted sci-fi column, with a contrasting central core.
         tower(station, Vector3(0, 1.6, 0), 3.2, 0.38, Color("#526783"))
         globe(station, Vector3(0, 3.5, 0), Vector3(0.67, 0.25, 0.67), Color("#ffdc8d"), true)
@@ -90,6 +94,7 @@ func _build_roadside() -> void:
             var tree := Node3D.new()
             tree.position = Vector3(-side * 10.7, 0, z - 3.5)
             add_child(tree)
+            scenery.append(tree)
             tower(tree, Vector3(0, 1.1, 0), 2.1, 0.20, Color("#785b73"))
             globe(tree, Vector3(0, 3.0, 0), Vector3(1.6, 1.6, 1.45), Color("#1b9d9c"))
             globe(tree, Vector3(-0.5, 3.6, 0.3), Vector3(0.98, 1.1, 0.98), Color("#58e3bb"))
@@ -100,6 +105,7 @@ func _build_roadside() -> void:
             var crystal := Node3D.new()
             crystal.position = Vector3(side * (12.8 + float(i % 3)), 0, z)
             add_child(crystal)
+            scenery.append(crystal)
             var height := 2.4 + float(i % 3)
             tower(crystal, Vector3(0, height * 0.5, 0), height, 0.65, Color("#bd61f0"))
             globe(crystal, Vector3(0, height + 0.1, 0), Vector3(0.44, 0.46, 0.44), Color("#63f9f4"), true)
@@ -115,6 +121,7 @@ func _build_skyline() -> void:
         building.position = Vector3(x, 0, z)
         building.rotation.y = float(i % 4) * 0.16
         add_child(building)
+        scenery.append(building)
         var main_tint := Color("#384e72") if i % 3 == 0 else Color("#443e75")
         block(building, Vector3.ZERO + Vector3(0, height * 0.5, 0), Vector3(4.0, height, 4.2), main_tint)
         block(building, Vector3(0, height + 0.35, 0), Vector3(4.7, 0.7, 4.7), Color("#e06fbb"))
@@ -136,6 +143,7 @@ func _build_portals() -> void:
         var portal := Node3D.new()
         portal.position = Vector3(0, 3.9, z)
         add_child(portal)
+        scenery.append(portal)
         var ring_mesh := TorusMesh.new()
         ring_mesh.inner_radius = 4.8
         ring_mesh.outer_radius = 5.07
@@ -153,6 +161,7 @@ func _build_floating_traffic() -> void:
         var flyer := Node3D.new()
         flyer.position = Vector3(side * (12.5 + float(i % 4) * 3), 5.0 + float(i % 3) * 2.2, -11.0 - float(i) * 13)
         add_child(flyer)
+        scenery.append(flyer)
         globe(flyer, Vector3.ZERO, Vector3(1.7, 0.32, 0.8), Color("#8f94d4"))
         globe(flyer, Vector3(0, 0.25, -0.25), Vector3(0.85, 0.47, 0.42), Color("#38f0ed"))
         for wing in [-1.0, 1.0]:
@@ -162,6 +171,11 @@ func _build_floating_traffic() -> void:
 
 func _process(delta: float) -> void:
     elapsed += delta
+    if running:
+        for prop in scenery:
+            prop.position.z += travel_speed * delta
+            if prop.position.z > 14.0:
+                prop.position.z -= 155.0
     for i in range(floaters.size()):
         var portal := floaters[i]
         portal.rotation.z = sin(elapsed * 0.38 + float(i)) * 0.025
