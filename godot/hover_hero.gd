@@ -117,6 +117,7 @@ func _assemble() -> void:
     landing_ring.name = "Landing shockwave"
     landing_ring.visible = false
     box(board, Vector3(0, 0.38, -1.24), Vector3(0.82, 0.05, 0.13), yellow, true)
+    box(board, Vector3(0, 0.39, -0.8), Vector3(0.6, 0.06, 0.22), cyan, true)
     # Streamlined pointed nose, asymmetric colored panels, two solid rear jet nacelles.
     var nose := PrismMesh.new()
     nose.size = Vector3(1.32, 0.17, 0.73)
