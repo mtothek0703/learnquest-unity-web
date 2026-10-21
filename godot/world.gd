@@ -88,9 +88,9 @@ func _create_world() -> void:
     add_child(sun)
 
     var camera := Camera3D.new()
-    camera.position = Vector3(0, 4.0, 9.3)
+    camera.position = Vector3(0, 3.6, 7.4)
     camera.rotation_degrees = Vector3(-12, 180, 0)
-    camera.look_at(Vector3(0, 1.35, -1.0))
+    camera.look_at(Vector3(0, 1.45, 1.0))
     camera.fov = 64
     add_child(camera)
     camera.current = true
@@ -110,8 +110,16 @@ func _create_world() -> void:
     rider = hero_script.new()
     rider.name = "Animated Hover Hero"
     rider.position = Vector3(0, 0, 1.9)
-    rider.scale = Vector3(1.15, 1.15, 1.15)
+    rider.scale = Vector3(1.55, 1.55, 1.55)
     add_child(rider)
+    # Highly visible, temporary visual check anchored to the rider.
+    var marker := OmniLight3D.new()
+    marker.name = "Hero visibility marker"
+    marker.light_color = Color("#26efff")
+    marker.light_energy = 3.0
+    marker.omni_range = 5.0
+    rider.add_child(marker)
+    marker.position = Vector3(0, 2, 0)
 
     moving = Node3D.new()
     moving.name = "Moving city"
@@ -284,7 +292,7 @@ func _use_turbo() -> void:
 
 func _refresh_hud() -> void:
     if hud != null:
-        hud.text = "LVL %d   XP %d   POWER %d/100   %dm" % [1 + xp / 200, xp, power, int(distance)]
+        hud.text = "GODOT V2.1   LVL %d   XP %d   POWER %d/100   %dm" % [1 + xp / 200, xp, power, int(distance)]
 
 func _process(delta: float) -> void:
     if feedback_time > 0:
