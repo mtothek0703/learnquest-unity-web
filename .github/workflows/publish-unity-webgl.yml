@@ -71,6 +71,9 @@ jobs:
           cp -a _site/godot/. _site/neon-city-v3/
           mkdir -p _site/neon-city-v4
           cp -a _site/godot/. _site/neon-city-v4/
+          mkdir -p _site/neon-city-v5
+          cp -a _site/godot/. _site/neon-city-v5/
+          echo "$GITHUB_SHA" > _site/neon-city-v5/build.txt
           echo "$GITHUB_SHA" > _site/neon-city-v4/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
       - name: Configure Pages
@@ -89,7 +92,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request
-          root = "https://mtothek0703.github.io/learnquest-unity-web/neon-city-v4/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/neon-city-v5/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
