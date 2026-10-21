@@ -145,8 +145,8 @@ func _build_portals() -> void:
         add_child(portal)
         scenery.append(portal)
         var ring_mesh := TorusMesh.new()
-        ring_mesh.inner_radius = 4.8
         ring_mesh.outer_radius = 5.07
+        ring_mesh.inner_radius = 4.8
         ring_mesh.rings = 32
         ring_mesh.ring_segments = 8
         var ring := shape(portal, ring_mesh, Vector3.ZERO, Color("#ffd379") if i % 2 == 0 else Color("#57f3e1"), true)
