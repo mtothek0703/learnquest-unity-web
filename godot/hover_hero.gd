@@ -8,6 +8,7 @@ var left_leg: Node3D
 var right_leg: Node3D
 var board: Node3D
 var character_body: Node3D
+var shoulder_lights: Array[MeshInstance3D] = []
 var flames: Array[MeshInstance3D] = []
 var lean := 0.0
 var boosting := false
@@ -47,6 +48,26 @@ func capsule(parent: Node3D, pos: Vector3, size: Vector3, tint: Color) -> MeshIn
     mesh.rings = 5
     return piece(parent, mesh, pos, size, tint)
 
+func thruster(parent: Node3D, pos: Vector3, radius: float, tint: Color) -> Node3D:
+    var group := Node3D.new()
+    group.position = pos
+    parent.add_child(group)
+    var cylinder := CylinderMesh.new()
+    cylinder.height = 0.72
+    cylinder.bottom_radius = radius
+    cylinder.top_radius = radius * 0.7
+    cylinder.radial_segments = 12
+    var tube := piece(group, cylinder, Vector3.ZERO, Vector3.ONE, tint)
+    tube.rotation_degrees.x = 90
+    var ring := TorusMesh.new()
+    ring.inner_radius = radius * 0.78
+    ring.outer_radius = radius
+    ring.rings = 20
+    ring.ring_segments = 8
+    var halo := piece(group, ring, Vector3(0, 0, 0.39), Vector3.ONE, Color("#80fff4"), true)
+    halo.rotation_degrees.x = 90
+    return group
+
 func _ready() -> void:
     _assemble()
 
@@ -68,6 +89,15 @@ func _assemble() -> void:
         var flame := ball(board, Vector3(side * 0.51, 0.18, 1.28), Vector3(0.17, 0.17, 0.5), cyan, true)
         flames.append(flame)
     box(board, Vector3(0, 0.38, -1.24), Vector3(0.82, 0.05, 0.13), yellow, true)
+    # Streamlined pointed nose, asymmetric colored panels, two solid rear jet nacelles.
+    var nose := PrismMesh.new()
+    nose.size = Vector3(1.32, 0.17, 0.73)
+    var prow := piece(board, nose, Vector3(0, 0.30, -1.37), Vector3.ONE, suit)
+    prow.rotation_degrees.y = 180
+    for side in [-1.0, 1.0]:
+        thruster(board, Vector3(side * 0.48, 0.17, 1.18), 0.27, navy)
+        ball(board, Vector3(side * 0.48, 0.17, 1.62), Vector3(0.20, 0.22, 0.34), cyan, true)
+        box(board, Vector3(side * 0.37, 0.43, -0.28), Vector3(0.21, 0.06, 1.32), yellow, true)
 
     var body := Node3D.new()
     body.name = "Animated racer rig"
@@ -76,6 +106,16 @@ func _assemble() -> void:
     capsule(body, Vector3(0, 1.55, 0), Vector3(0.49, 0.64, 0.35), suit)
     box(body, Vector3(0, 1.50, 0.38), Vector3(0.53, 0.7, 0.27), yellow)
     box(body, Vector3(0, 1.93, -0.18), Vector3(0.39, 0.12, 0.12), cyan, true)
+    # Shoulder armour and curved energy seams read clearly from the chase camera.
+    for side in [-1.0, 1.0]:
+        var pad := ball(body, Vector3(side * 0.58, 1.93, -0.06), Vector3(0.28, 0.18, 0.31), bright)
+        shoulder_lights.append(pad)
+        box(body, Vector3(side * 0.47, 1.53, 0.23), Vector3(0.12, 0.46, 0.06), cyan, true)
+    # Twin backpack modules and glowing power cell face the player.
+    box(body, Vector3(0, 1.62, 0.48), Vector3(0.62, 0.80, 0.25), navy)
+    globe_power(body, Vector3(0, 1.66, 0.65), cyan)
+    for side in [-1.0, 1.0]:
+        box(body, Vector3(side * 0.22, 1.70, 0.65), Vector3(0.11, 0.61, 0.1), bright, true)
     ball(body, Vector3(0, 2.45, 0), Vector3(0.51, 0.54, 0.45), skin)
     # Hair silhouette and fringe are visible from the rear/side.
     ball(body, Vector3(0, 2.82, 0.04), Vector3(0.54, 0.21, 0.46), navy)
@@ -83,6 +123,14 @@ func _assemble() -> void:
         ball(body, Vector3(side * 0.44, 2.6, 0.09), Vector3(0.12, 0.22, 0.20), navy)
     box(body, Vector3(0, 2.45, -0.40), Vector3(0.67, 0.21, 0.12), cyan, true)
     box(body, Vector3(0, 2.84, -0.17), Vector3(0.21, 0.08, 0.29), bright, true)
+    # Hero's hair, visor frame, earpieces and helmet sticker.
+    for side in [-1.0, 1.0]:
+        ball(body, Vector3(side * 0.47, 2.49, 0.04), Vector3(0.14, 0.30, 0.26), bright)
+        box(body, Vector3(side * 0.24, 2.47, -0.43), Vector3(0.08, 0.22, 0.07), yellow, true)
+    ball(body, Vector3(0, 2.95, 0.13), Vector3(0.19, 0.26, 0.27), navy)
+    ball(body, Vector3(-0.25, 2.94, 0.02), Vector3(0.18, 0.22, 0.24), navy)
+    ball(body, Vector3(0.25, 2.94, 0.04), Vector3(0.18, 0.23, 0.25), navy)
+    box(body, Vector3(0, 2.87, 0.38), Vector3(0.20, 0.09, 0.08), yellow, true)
 
     left_arm = Node3D.new()
     right_arm = Node3D.new()
@@ -101,6 +149,10 @@ func _assemble() -> void:
         capsule(leg, Vector3(0, -0.23, 0), Vector3(0.22, 0.44, 0.24), navy)
         box(leg, Vector3(0, -0.60, -0.16), Vector3(0.29, 0.19, 0.48), yellow)
 
+func globe_power(parent: Node3D, pos: Vector3, tint: Color) -> void:
+    ball(parent, pos, Vector3(0.19, 0.23, 0.08), tint, true)
+    ball(parent, pos + Vector3(0, 0, 0.06), Vector3(0.09, 0.13, 0.04), Color("#fff5c4"), true)
+
 func _process(delta: float) -> void:
     time += delta
     var bob := sin(time * (8.5 if boosting else 3.4)) * 0.06
@@ -113,5 +165,8 @@ func _process(delta: float) -> void:
     right_arm.rotation.x = -0.22 - sin(time * 4.0) * 0.09
     left_leg.rotation.x = 0.22 + sin(time * 4.0) * 0.07
     right_leg.rotation.x = 0.22 - sin(time * 4.0) * 0.07
+    for i in range(shoulder_lights.size()):
+        var light := shoulder_lights[i]
+        light.scale.y = 0.18 + sin(time * 2.7 + float(i)) * 0.02
     for flame in flames:
         flame.scale.z = (1.5 if boosting else 0.65) + (0.15 * sin(time * 18.0))
