@@ -48,11 +48,25 @@ jobs:
           /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --export-release "Web" "$GITHUB_WORKSPACE/_site/godot/index.html"
           test -f _site/godot/index.html
           test -f _site/godot/index.wasm
+          test -f _site/godot/index.pck
+          echo "Run Godot scene smoke test"
+          set +e
+          timeout 35s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --quit-after 15 > /tmp/godot-smoke.log 2>&1
+          smoke_status=$?
+          set -e
+          cat /tmp/godot-smoke.log
+          test "$smoke_status" -eq 0
+          if grep -E '(^|[[:space:]])(SCRIPT ERROR|Parse Error|ERROR:)' /tmp/godot-smoke.log; then
+            echo "::error::Godot scene failed smoke test"
+            exit 1
+          fi
           # Fresh asset path bypasses cached Godot .wasm/.pck from earlier deployments.
           mkdir -p _site/neon-city-v3
           cp -a _site/godot/. _site/neon-city-v3/
           mkdir -p _site/neon-city-v4
           cp -a _site/godot/. _site/neon-city-v4/
+          echo "$GITHUB_SHA" > _site/neon-city-v4/build.txt
+          echo "$GITHUB_SHA" > _site/godot/build.txt
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload website
@@ -62,3 +76,29 @@ jobs:
       - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Verify published game and revision
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import os, time, urllib.request
+          root = "https://mtothek0703.github.io/learnquest-unity-web/neon-city-v4/"
+          checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.wasm": None, "index.pck": None}
+          for name, expected in checks.items():
+              for attempt in range(12):
+                  try:
+                      req = urllib.request.Request(root + name + "?deploy=" + os.environ["EXPECTED_SHA"], headers={"Cache-Control": "no-cache"})
+                      with urllib.request.urlopen(req, timeout=20) as response:
+                          body = response.read() if expected else response.read(256)
+                          if expected and body.decode().strip() != expected:
+                              raise ValueError("Old revision still published")
+                          if not body:
+                              raise ValueError("Empty game file")
+                          print(f"Verified {name}: HTTP {response.status}")
+                          break
+                  except Exception as exc:
+                      if attempt == 11:
+                          raise RuntimeError(f"Published game check failed for {name}: {exc}") from exc
+                      time.sleep(10)
+          PY
