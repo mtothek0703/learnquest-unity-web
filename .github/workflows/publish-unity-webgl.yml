@@ -80,6 +80,9 @@ jobs:
           cp -a _site/godot/. _site/skyway-v6/
           mkdir -p _site/skyway-v7
           cp -a _site/godot/. _site/skyway-v7/
+          mkdir -p _site/skyway-v8
+          cp -a _site/godot/. _site/skyway-v8/
+          echo "$GITHUB_SHA" > _site/skyway-v8/build.txt
           echo "$GITHUB_SHA" > _site/skyway-v7/build.txt
           echo "$GITHUB_SHA" > _site/skyway-v6/build.txt
           echo "$GITHUB_SHA" > _site/neon-city-v5/build.txt
@@ -101,7 +104,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request
-          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v7/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v8/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
