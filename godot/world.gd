@@ -303,8 +303,8 @@ func _process(delta: float) -> void:
     speed = 25.0 if turbo_left > 0 else 14.0
     distance += delta * speed
     rider.position.x = move_toward(rider.position.x, float(lane) * 3.1, delta * 12)
-    rider.lean = lerpf(rider.lean, float(lane), minf(1.0, delta * 5.0))
-    rider.boosting = turbo_left > 0
+    rider.set("lean", lerpf(float(rider.get("lean")), float(lane), minf(1.0, delta * 5.0)))
+    rider.set("boosting", turbo_left > 0)
     rider.rotation.z = lerpf(rider.rotation.z, (float(lane) * 3.1 - rider.position.x) * -0.14, delta * 5)
     for object in moving.get_children():
         object.position.z += delta * speed
