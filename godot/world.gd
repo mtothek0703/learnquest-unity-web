@@ -23,6 +23,11 @@ var turbo_left := 0.0
 var rider: Node3D
 var moving: Node3D
 var road_marks: Node3D
+var run_items: Node3D
+var lives := 3
+var jump_left := 0.0
+var hit_cooldown := 0.0
+var end_panel: PanelContainer
 var hud: Label
 var splash: PanelContainer
 var quiz_box: PanelContainer
@@ -150,7 +155,6 @@ func _create_world() -> void:
             sphere(tree, Vector3(0, 2.9, 0), Vector3(1.5, 1.7, 1.5), Color("#2e78a9"))
             sphere(tree, Vector3(0, 3.6, 0), Vector3(0.8, 0.9, 0.8), Color("#4ceab3"))
     # Existing buildings and crystals share this scrolling scenery.
-    add_child(moving)
     for i in range(22):
         var side: int = -1 if i % 2 == 0 else 1
         var z := -12.0 - i * 6.5
@@ -168,6 +172,111 @@ func _create_world() -> void:
         crystal.position = Vector3(7.5 if i % 2 == 0 else -7.5, 1.5, -13.0 - i * 11.0)
         moving.add_child(crystal)
         cube(crystal, Vector3.ZERO, Vector3(1.4, 2.2, 1.4), Color("#39e5ff") if i % 2 == 0 else Color("#fd47c1"), true).rotation_degrees = Vector3(27, 45, 15)
+    _create_run_items()
+
+
+func _create_run_items() -> void:
+    run_items = Node3D.new()
+    run_items.name = "3D obstacles and energy pickups"
+    add_child(run_items)
+    for i in range(20):
+        var item := Node3D.new()
+        var good: bool = i % 3 == 0
+        item.name = "Energy crystal" if good else "Floating barrier"
+        item.position = Vector3(float(randi_range(-1, 1)) * 3.1, 0, -28.0 - float(i) * 11.0)
+        item.set_meta("energy", good)
+        item.set_meta("collected", false)
+        run_items.add_child(item)
+        if good:
+            sphere(item, Vector3(0, 1.4, 0), Vector3(0.54, 0.54, 0.54), Color("#ffd35a"), true)
+            sphere(item, Vector3(0, 1.4, 0), Vector3(0.28, 0.28, 0.28), Color("#fff6bf"), true)
+        else:
+            cube(item, Vector3(0, 0.68, 0), Vector3(1.85, 1.36, 0.7), Color("#fe537f"), true)
+            cube(item, Vector3(0, 0.72, 0.39), Vector3(1.27, 0.22, 0.06), Color("#ffdf81"), true)
+            cube(item, Vector3(0, 1.4, 0), Vector3(2.1, 0.13, 0.84), Color("#b927f7"), true)
+
+func _reset_run() -> void:
+    lane = 0
+    xp = 0
+    power = 0
+    distance = 0.0
+    lives = 3
+    combo = 0
+    speed = 14.0
+    jump_left = 0.0
+    hit_cooldown = 0.0
+    turbo_left = 0.0
+    quiz_time = 7.0
+    quiz_active = false
+    rider.position = Vector3(0, 0, 0.2)
+    for i in range(run_items.get_child_count()):
+        var item: Node3D = run_items.get_child(i)
+        item.position.z = -28.0 - float(i) * 11.0
+        item.position.x = float(randi_range(-1, 1)) * 3.1
+        item.position.y = 0.0
+        item.set_meta("collected", false)
+        item.visible = true
+    started = true
+    splash.hide()
+    quiz_box.hide()
+    end_panel.hide()
+    info_label.text = ""
+    _refresh_hud()
+
+func _jump() -> void:
+    if started and not quiz_active and jump_left <= 0.0:
+        jump_left = 0.85
+
+func _update_run_items(delta: float) -> void:
+    hit_cooldown = maxf(0.0, hit_cooldown - delta)
+    jump_left = maxf(0.0, jump_left - delta)
+    rider.position.y = sin((1.0 - jump_left / 0.85) * PI) * 1.8 if jump_left > 0.0 else 0.0
+    for item in run_items.get_children():
+        var previous_z: float = item.position.z
+        item.position.z += speed * delta
+        var is_energy: bool = bool(item.get_meta("energy"))
+        if is_energy:
+            item.rotation.y += delta * 2.8
+        if previous_z < rider.position.z and item.position.z >= rider.position.z and not bool(item.get_meta("collected")):
+            item.set_meta("collected", true)
+            if absf(item.position.x - rider.position.x) < 1.45:
+                if is_energy:
+                    power = mini(100, power + 18)
+                    xp += 15
+                    item.visible = false
+                    info_label.text = "ENERGIE +15 XP!"
+                    feedback_time = 1.2
+                elif rider.position.y > 0.85:
+                    xp += 10
+                    info_label.text = "SPRUNG! +10 XP"
+                    feedback_time = 1.2
+                elif turbo_left > 0.0:
+                    xp += 10
+                    info_label.text = "TURBO! +10 XP"
+                    feedback_time = 1.2
+                elif hit_cooldown <= 0.0:
+                    lives -= 1
+                    combo = 0
+                    hit_cooldown = 1.4
+                    info_label.text = "TREFFER! NOCH %d LEBEN" % lives
+                    feedback_time = 1.5
+                    if lives <= 0:
+                        _finish_run()
+                        return
+        if item.position.z > 10.0:
+            item.position.z = -190.0 - float(randi_range(0, 65))
+            item.position.x = float(randi_range(-1, 1)) * 3.1
+            item.set_meta("collected", false)
+            item.visible = true
+
+func _finish_run() -> void:
+    started = false
+    quiz_active = false
+    quiz_box.hide()
+    end_panel.show()
+    info_label.text = "RUNDE BEENDET - %d METER" % int(distance)
+    feedback_time = 4.0
+    _refresh_hud()
 
 func _make_button(label_text: String, callback: Callable, parent: Node) -> Button:
     var b := Button.new()
@@ -203,6 +312,7 @@ func _create_ui() -> void:
     canvas.add_child(controls)
     _make_button("< LINKS", func(): _shift(-1), controls)
     _make_button("RECHTS >", func(): _shift(1), controls)
+    _make_button("SPRINGEN", _jump, controls)
     var spacer := Control.new()
     spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     controls.add_child(spacer)
@@ -265,14 +375,28 @@ func _create_ui() -> void:
     info_label.modulate = Color("#ffdc7a")
     canvas.add_child(info_label)
 
+    end_panel = PanelContainer.new()
+    end_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+    end_panel.position = Vector2(-205, -115)
+    end_panel.custom_minimum_size = Vector2(410, 230)
+    canvas.add_child(end_panel)
+    var end_column := VBoxContainer.new()
+    end_column.add_theme_constant_override("separation", 18)
+    end_panel.add_child(end_column)
+    var end_title := Label.new()
+    end_title.text = "RENNEN BEENDET!"
+    end_title.add_theme_font_size_override("font_size", 30)
+    end_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    end_column.add_child(end_title)
+    _make_button("NOCHMAL FAHREN", _reset_run, end_column)
+    end_panel.hide()
+
 func _change_grade(delta: int) -> void:
     grade = clampi(grade + delta, 1, 10)
     grade_label.text = "SCHULKLASSE: %d" % grade
 
 func _start_game() -> void:
-    started = true
-    splash.hide()
-    _refresh_hud()
+    _reset_run()
 
 func _group() -> int:
     return 0 if grade <= 3 else (1 if grade <= 6 else 2)
@@ -319,7 +443,7 @@ func _use_turbo() -> void:
 
 func _refresh_hud() -> void:
     if hud != null:
-        hud.text = "LEARNQUEST 3D - NEON CITY V4   LVL %d   XP %d   POWER %d/100   %dm" % [1 + xp / 200, xp, power, int(distance)]
+        hud.text = "NEON CITY V5   LEBEN %d   LVL %d   XP %d   ENERGIE %d   %dm" % [lives, 1 + xp / 200, xp, power, int(distance)]
 
 func _process(delta: float) -> void:
     if feedback_time > 0:
@@ -328,6 +452,8 @@ func _process(delta: float) -> void:
             info_label.text = ""
     if not started or quiz_active:
         return
+    if Input.is_key_pressed(KEY_SPACE) and jump_left <= 0.0:
+        _jump()
     if Input.is_key_pressed(KEY_LEFT) or Input.is_key_pressed(KEY_A):
         lane = -1
     elif Input.is_key_pressed(KEY_RIGHT) or Input.is_key_pressed(KEY_D):
@@ -342,6 +468,9 @@ func _process(delta: float) -> void:
     rider.set("boosting", turbo_left > 0)
     rider.rotation.z = lerpf(rider.rotation.z, (float(lane) * 3.1 - rider.position.x) * -0.14, delta * 5)
     rider.rotation.y = sin(distance * 0.03) * 0.035
+    _update_run_items(delta)
+    if not started:
+        return
     for object in moving.get_children():
         object.position.z += delta * speed
         if object.position.z > 12:
