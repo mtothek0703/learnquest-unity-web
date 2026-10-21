@@ -125,6 +125,7 @@ func _assemble() -> void:
     prow.rotation_degrees.y = 180
     for side in [-1.0, 1.0]:
         thruster(board, Vector3(side * 0.48, 0.17, 1.18), 0.27, navy)
+        box(board, Vector3(side * 0.92, 0.37, -0.35), Vector3(0.35, 0.08, 1.30), bright, true)
         ball(board, Vector3(side * 0.48, 0.17, 1.62), Vector3(0.20, 0.22, 0.34), cyan, true)
         box(board, Vector3(side * 0.37, 0.43, -0.28), Vector3(0.21, 0.06, 1.32), yellow, true)
 
