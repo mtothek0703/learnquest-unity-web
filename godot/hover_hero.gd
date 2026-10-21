@@ -8,6 +8,9 @@ var left_leg: Node3D
 var right_leg: Node3D
 var board: Node3D
 var character_body: Node3D
+var visor: MeshInstance3D
+var helmet_glow: MeshInstance3D
+var knee_guards: Array[MeshInstance3D] = []
 var shoulder_lights: Array[MeshInstance3D] = []
 var flames: Array[MeshInstance3D] = []
 var energy_trails: Array[MeshInstance3D] = []
@@ -139,6 +142,17 @@ func _assemble() -> void:
     ball(body, Vector3(-0.25, 2.94, 0.02), Vector3(0.18, 0.22, 0.24), navy)
     ball(body, Vector3(0.25, 2.94, 0.04), Vector3(0.18, 0.23, 0.25), navy)
     box(body, Vector3(0, 2.87, 0.38), Vector3(0.20, 0.09, 0.08), yellow, true)
+    # Distinctive stylized full-face racing visor, clearly visible from side angles.
+    visor = ball(body, Vector3(0, 2.48, -0.40), Vector3(0.39, 0.23, 0.12), Color("#38e5f8"), true)
+    helmet_glow = box(body, Vector3(0, 2.75, 0.39), Vector3(0.56, 0.08, 0.07), yellow, true)
+    # Helmet side fins and contrasting tech panels create a readable character silhouette.
+    for side in [-1.0, 1.0]:
+        var fin := PrismMesh.new()
+        fin.size = Vector3(0.24, 0.43, 0.57)
+        var fin_shape := piece(body, fin, Vector3(side * 0.50, 2.69, 0.10), Vector3.ONE, suit)
+        fin_shape.rotation_degrees.z = side * 20.0
+        box(body, Vector3(side * 0.56, 2.52, 0.16), Vector3(0.08, 0.14, 0.31), cyan, true)
+
 
     left_arm = Node3D.new()
     right_arm = Node3D.new()
@@ -156,6 +170,10 @@ func _assemble() -> void:
     for leg in [left_leg, right_leg]:
         capsule(leg, Vector3(0, -0.23, 0), Vector3(0.22, 0.44, 0.24), navy)
         box(leg, Vector3(0, -0.60, -0.16), Vector3(0.29, 0.19, 0.48), yellow)
+        var guard := ball(leg, Vector3(0, -0.37, -0.18), Vector3(0.25, 0.17, 0.08), bright)
+        knee_guards.append(guard)
+        box(leg, Vector3(0, -0.58, -0.38), Vector3(0.28, 0.09, 0.08), cyan, true)
+
 
 func globe_power(parent: Node3D, pos: Vector3, tint: Color) -> void:
     ball(parent, pos, Vector3(0.19, 0.23, 0.08), tint, true)
@@ -176,6 +194,10 @@ func _process(delta: float) -> void:
     for i in range(shoulder_lights.size()):
         var light := shoulder_lights[i]
         light.scale.y = 0.18 + sin(time * 2.7 + float(i)) * 0.02
+    visor.scale.y = 0.23 + 0.014 * sin(time * 3.0)
+    helmet_glow.scale.x = 0.56 + 0.06 * sin(time * 2.0)
+    for guard in knee_guards:
+        guard.rotation.y = sin(time * 3.5) * 0.06
     for flame in flames:
         flame.scale.z = (1.5 if boosting else 0.65) + (0.15 * sin(time * 18.0))
     for i in range(energy_trails.size()):
