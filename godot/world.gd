@@ -89,10 +89,9 @@ func _create_world() -> void:
 
     var camera := Camera3D.new()
     camera.position = Vector3(0, 4.3, 9.0)
-    camera.rotation_degrees = Vector3(-12, 180, 0)
-    camera.look_at(Vector3(0, 1.5, 0.5))
     camera.fov = 64
     add_child(camera)
+    camera.look_at(Vector3(0, 1.5, 0.5), Vector3.UP)
     camera.current = true
 
     cube(self, Vector3(0, -0.35, -55), Vector3(11, 0.6, 160), Color("#141633"))
