@@ -128,8 +128,33 @@ func _create_world() -> void:
         cube(self, Vector3(5.45, 2.75, z_arch), Vector3(0.36, 5.5, 0.5), arch_tint, true)
         cube(self, Vector3(0, 5.5, z_arch), Vector3(11.1, 0.36, 0.5), arch_tint, true)
         cube(self, Vector3(0, 5.12, z_arch), Vector3(3.2, 0.12, 0.18), Color("#fff0a0"), true)
-    moving = Node3D.new()
-    moving.name = "Moving city"
+    # Layered roadside scenery: platforms, glowing roadside pylons and low-poly trees.
+    for i in range(25):
+        var prop_z := -9.0 - float(i) * 5.8
+        var side_sign := -1.0 if i % 2 == 0 else 1.0
+        var pole := Node3D.new()
+        pole.name = "Light post %d" % i
+        pole.position = Vector3(side_sign * 6.4, 0, prop_z)
+        moving = moving if moving != null else Node3D.new()
+        if moving.get_parent() == null:
+            moving.name = "Moving city"
+            add_child(moving)
+        moving.add_child(pole)
+        cube(pole, Vector3.ZERO + Vector3(0, 1.6, 0), Vector3(0.24, 3.2, 0.24), Color("#383f6c"))
+        sphere(pole, Vector3(0, 3.25, 0), Vector3(0.32, 0.32, 0.32), Color("#19efff") if i % 2 == 0 else Color("#ff52bf"), true)
+        if i % 3 == 0:
+            var tree := Node3D.new()
+            tree.name = "Neon tree %d" % i
+            tree.position = Vector3(side_sign * 10.5, 0, prop_z - 2.5)
+            moving.add_child(tree)
+            cube(tree, Vector3(0, 1.1, 0), Vector3(0.35, 2.2, 0.35), Color("#60416c"))
+            sphere(tree, Vector3(0, 2.9, 0), Vector3(1.5, 1.7, 1.5), Color("#2e78a9"))
+            sphere(tree, Vector3(0, 3.6, 0), Vector3(0.8, 0.9, 0.8), Color("#4ceab3"))
+    # Existing buildings and crystals share this scrolling scenery.
+    if moving == null:
+        moving = Node3D.new()
+        moving.name = "Moving city"
+        add_child(moving)
     add_child(moving)
     for i in range(22):
         var side: int = -1 if i % 2 == 0 else 1
@@ -299,7 +324,7 @@ func _use_turbo() -> void:
 
 func _refresh_hud() -> void:
     if hud != null:
-        hud.text = "LEARNQUEST 3D - NEON CITY V3   LVL %d   XP %d   POWER %d/100   %dm" % [1 + xp / 200, xp, power, int(distance)]
+        hud.text = "LEARNQUEST 3D - NEON CITY V4   LVL %d   XP %d   POWER %d/100   %dm" % [1 + xp / 200, xp, power, int(distance)]
 
 func _process(delta: float) -> void:
     if feedback_time > 0:
@@ -321,6 +346,7 @@ func _process(delta: float) -> void:
     rider.set("lean", lerpf(float(rider.get("lean")), float(lane), minf(1.0, delta * 5.0)))
     rider.set("boosting", turbo_left > 0)
     rider.rotation.z = lerpf(rider.rotation.z, (float(lane) * 3.1 - rider.position.x) * -0.14, delta * 5)
+    rider.rotation.y = sin(distance * 0.03) * 0.035
     for object in moving.get_children():
         object.position.z += delta * speed
         if object.position.z > 12:
