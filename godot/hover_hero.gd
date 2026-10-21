@@ -10,6 +10,10 @@ var board: Node3D
 var character_body: Node3D
 var visor: MeshInstance3D
 var helmet_glow: MeshInstance3D
+var landing_ring: MeshInstance3D
+var jump_pose := 0.0
+var last_jump_height := 0.0
+var landing_pulse := 0.0
 var knee_guards: Array[MeshInstance3D] = []
 var shoulder_lights: Array[MeshInstance3D] = []
 var flames: Array[MeshInstance3D] = []
@@ -102,6 +106,16 @@ func _assemble() -> void:
         var trail := box(board, Vector3(side * 0.48, 0.16, 2.0), Vector3(0.07, 0.06, 0.48), trail_color, true)
         trail.name = "Animated boost contrail"
         energy_trails.append(trail)
+    # A single expanding neon ring celebrates a successful landing.
+    # Kept hidden outside the brief landing animation to save mobile GPU work.
+    var shock_mesh := TorusMesh.new()
+    shock_mesh.inner_radius = 0.66
+    shock_mesh.outer_radius = 0.77
+    shock_mesh.rings = 28
+    shock_mesh.ring_segments = 6
+    landing_ring = piece(self, shock_mesh, Vector3(0, 0.10, 0), Vector3.ONE, cyan, true)
+    landing_ring.name = "Landing shockwave"
+    landing_ring.visible = false
     box(board, Vector3(0, 0.38, -1.24), Vector3(0.82, 0.05, 0.13), yellow, true)
     # Streamlined pointed nose, asymmetric colored panels, two solid rear jet nacelles.
     var nose := PrismMesh.new()
@@ -190,19 +204,33 @@ func _process(delta: float) -> void:
     # Turbo blends into a forward crouch rather than snapping to a fixed pose.
     steering_pose = lerpf(steering_pose, clampf(lean, -1.0, 1.0), minf(1.0, delta * 5.5))
     turbo_pose = lerpf(turbo_pose, 1.0 if boosting else 0.0, minf(1.0, delta * 3.8))
+    # Height is controlled by the existing gameplay script; animate the pose
+    # from the real jump arc without changing jump timing or collision rules.
+    var jump_height := maxf(0.0, position.y)
+    jump_pose = lerpf(jump_pose, clampf(jump_height / 1.8, 0.0, 1.0), minf(1.0, delta * 11.0))
+    if last_jump_height > 0.14 and jump_height < 0.05:
+        landing_pulse = 1.0
+    last_jump_height = jump_height
+    if landing_pulse > 0.0:
+        landing_pulse = maxf(0.0, landing_pulse - delta * 3.2)
+        landing_ring.visible = true
+        var expansion := 1.0 + (1.0 - landing_pulse) * 2.6
+        landing_ring.scale = Vector3(expansion, 1.0, expansion)
+    else:
+        landing_ring.visible = false
     var cadence := sin(time * (8.0 if boosting else 4.0))
-    character_body.position.y = bob * 0.7 - turbo_pose * 0.07
+    character_body.position.y = bob * 0.7 - turbo_pose * 0.07 - jump_pose * 0.10
     character_body.position.x = -steering_pose * 0.08
     character_body.rotation.z = lerpf(character_body.rotation.z, steering_pose * 0.18, minf(1.0, delta * 4.0))
-    character_body.rotation.x = lerpf(character_body.rotation.x, -0.015 - turbo_pose * 0.18, minf(1.0, delta * 5.0))
+    character_body.rotation.x = lerpf(character_body.rotation.x, -0.015 - turbo_pose * 0.18 + jump_pose * 0.13, minf(1.0, delta * 5.0))
     board.rotation.z = lerpf(board.rotation.z, -steering_pose * 0.12, minf(1.0, delta * 5.0))
-    board.rotation.x = lerpf(board.rotation.x, -turbo_pose * 0.065 + cadence * 0.014, minf(1.0, delta * 5.0))
-    left_arm.rotation.x = -0.22 + cadence * 0.07 - turbo_pose * 0.20
-    right_arm.rotation.x = -0.22 - cadence * 0.07 - turbo_pose * 0.20
-    left_arm.rotation.z = lerpf(left_arm.rotation.z, -0.16 - steering_pose * 0.20, minf(1.0, delta * 6.0))
-    right_arm.rotation.z = lerpf(right_arm.rotation.z, 0.16 - steering_pose * 0.20, minf(1.0, delta * 6.0))
-    left_leg.rotation.x = 0.22 + cadence * 0.06 + turbo_pose * 0.12
-    right_leg.rotation.x = 0.22 - cadence * 0.06 + turbo_pose * 0.12
+    board.rotation.x = lerpf(board.rotation.x, -turbo_pose * 0.065 + cadence * 0.014 + jump_pose * 0.16, minf(1.0, delta * 5.0))
+    left_arm.rotation.x = -0.22 + cadence * 0.07 - turbo_pose * 0.20 + jump_pose * 0.52
+    right_arm.rotation.x = -0.22 - cadence * 0.07 - turbo_pose * 0.20 + jump_pose * 0.52
+    left_arm.rotation.z = lerpf(left_arm.rotation.z, -0.16 - steering_pose * 0.20 - jump_pose * 0.28, minf(1.0, delta * 6.0))
+    right_arm.rotation.z = lerpf(right_arm.rotation.z, 0.16 - steering_pose * 0.20 + jump_pose * 0.28, minf(1.0, delta * 6.0))
+    left_leg.rotation.x = 0.22 + cadence * 0.06 + turbo_pose * 0.12 + jump_pose * 0.38
+    right_leg.rotation.x = 0.22 - cadence * 0.06 + turbo_pose * 0.12 + jump_pose * 0.38
     left_leg.rotation.z = lerpf(left_leg.rotation.z, -steering_pose * 0.10, minf(1.0, delta * 6.0))
     right_leg.rotation.z = lerpf(right_leg.rotation.z, -steering_pose * 0.10, minf(1.0, delta * 6.0))
     for i in range(shoulder_lights.size()):
