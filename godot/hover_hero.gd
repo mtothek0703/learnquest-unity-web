@@ -16,6 +16,9 @@ var flames: Array[MeshInstance3D] = []
 var energy_trails: Array[MeshInstance3D] = []
 var lean := 0.0
 var boosting := false
+# Smoothed animation weights keep lane changes and turbo poses fluid.
+var steering_pose := 0.0
+var turbo_pose := 0.0
 
 func material(color: Color, emissive := false) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -183,14 +186,25 @@ func _process(delta: float) -> void:
     time += delta
     var bob := sin(time * (8.5 if boosting else 3.4)) * 0.06
     board.position.y = bob
-    character_body.position.y = bob * 0.7
-    character_body.rotation.z = lerpf(character_body.rotation.z, lean * 0.12, minf(1.0, delta * 4.0))
-    character_body.rotation.x = -0.09 if boosting else -0.015
-    board.rotation.z = lerpf(board.rotation.z, lean * -0.09, minf(1, delta * 5))
-    left_arm.rotation.x = -0.22 + sin(time * 4.0) * 0.09
-    right_arm.rotation.x = -0.22 - sin(time * 4.0) * 0.09
-    left_leg.rotation.x = 0.22 + sin(time * 4.0) * 0.07
-    right_leg.rotation.x = 0.22 - sin(time * 4.0) * 0.07
+    # Natural counterbalance: knees, arms and upper body react together when steering.
+    # Turbo blends into a forward crouch rather than snapping to a fixed pose.
+    steering_pose = lerpf(steering_pose, clampf(lean, -1.0, 1.0), minf(1.0, delta * 5.5))
+    turbo_pose = lerpf(turbo_pose, 1.0 if boosting else 0.0, minf(1.0, delta * 3.8))
+    var cadence := sin(time * (8.0 if boosting else 4.0))
+    character_body.position.y = bob * 0.7 - turbo_pose * 0.07
+    character_body.position.x = -steering_pose * 0.08
+    character_body.rotation.z = lerpf(character_body.rotation.z, steering_pose * 0.18, minf(1.0, delta * 4.0))
+    character_body.rotation.x = lerpf(character_body.rotation.x, -0.015 - turbo_pose * 0.18, minf(1.0, delta * 5.0))
+    board.rotation.z = lerpf(board.rotation.z, -steering_pose * 0.12, minf(1.0, delta * 5.0))
+    board.rotation.x = lerpf(board.rotation.x, -turbo_pose * 0.065 + cadence * 0.014, minf(1.0, delta * 5.0))
+    left_arm.rotation.x = -0.22 + cadence * 0.07 - turbo_pose * 0.20
+    right_arm.rotation.x = -0.22 - cadence * 0.07 - turbo_pose * 0.20
+    left_arm.rotation.z = lerpf(left_arm.rotation.z, -0.16 - steering_pose * 0.20, minf(1.0, delta * 6.0))
+    right_arm.rotation.z = lerpf(right_arm.rotation.z, 0.16 - steering_pose * 0.20, minf(1.0, delta * 6.0))
+    left_leg.rotation.x = 0.22 + cadence * 0.06 + turbo_pose * 0.12
+    right_leg.rotation.x = 0.22 - cadence * 0.06 + turbo_pose * 0.12
+    left_leg.rotation.z = lerpf(left_leg.rotation.z, -steering_pose * 0.10, minf(1.0, delta * 6.0))
+    right_leg.rotation.z = lerpf(right_leg.rotation.z, -steering_pose * 0.10, minf(1.0, delta * 6.0))
     for i in range(shoulder_lights.size()):
         var light := shoulder_lights[i]
         light.scale.y = 0.18 + sin(time * 2.7 + float(i)) * 0.02
