@@ -21,6 +21,7 @@ var answer_buttons: Array[Button] = []
 var combo := 0
 var turbo_left := 0.0
 var rider: Node3D
+var chase_camera: Camera3D
 var moving: Node3D
 var skyway_zone: Node3D
 var road_marks: Node3D
@@ -102,12 +103,13 @@ func _create_world() -> void:
     sun.light_energy = 1.35
     add_child(sun)
 
-    var camera := Camera3D.new()
-    camera.position = Vector3(0, 4.3, 9.0)
-    camera.fov = 64
-    add_child(camera)
-    camera.look_at(Vector3(0, 1.5, 0.5), Vector3.UP)
-    camera.current = true
+    chase_camera = Camera3D.new()
+    chase_camera.name = "Dynamic chase camera"
+    chase_camera.position = Vector3(0, 4.3, 9.0)
+    chase_camera.fov = 64.0
+    add_child(chase_camera)
+    chase_camera.look_at(Vector3(0, 1.5, 0.5), Vector3.UP)
+    chase_camera.current = true
 
     cube(self, Vector3(0, -0.35, -55), Vector3(11, 0.6, 160), Color("#141633"))
     for side in [-1, 1]:
@@ -471,6 +473,18 @@ func _refresh_hud() -> void:
     if hud != null:
         hud.text = "SKYWAY V6   LEBEN %d   XP %d   TURBO %d%%   %dm" % [lives, xp, power, int(distance)]
 
+# Follow the racer on lane changes and jumps; widen the view during turbo.
+func _update_camera(delta: float) -> void:
+    if chase_camera == null or rider == null:
+        return
+    var racing := started and not quiz_active
+    var boost := racing and turbo_left > 0.0
+    var x := rider.position.x * 0.36 if racing else 0.0
+    var y := rider.position.y * 0.25 if racing else 0.0
+    chase_camera.position = chase_camera.position.lerp(Vector3(x, 4.3 + y, 10.1 if boost else 9.0), clampf(delta * 4.5, 0.0, 1.0))
+    chase_camera.look_at(Vector3(rider.position.x * 0.42 if racing else 0.0, 1.5 + rider.position.y * 0.45 if racing else 1.5, 0.5), Vector3.UP)
+    chase_camera.fov = lerpf(chase_camera.fov, 74.0 if boost else 64.0, clampf(delta * 3.0, 0.0, 1.0))
+
 func _process(delta: float) -> void:
     if feedback_time > 0:
         feedback_time -= delta
@@ -479,6 +493,7 @@ func _process(delta: float) -> void:
     skyway_zone.set("running", started and not quiz_active)
     skyway_zone.set("travel_speed", speed)
     if not started or quiz_active:
+        _update_camera(delta)
         return
     if Input.is_key_pressed(KEY_SPACE) and jump_left <= 0.0:
         _jump()
@@ -497,6 +512,7 @@ func _process(delta: float) -> void:
     rider.rotation.z = lerpf(rider.rotation.z, (float(lane) * 3.1 - rider.position.x) * -0.14, delta * 5)
     rider.rotation.y = sin(distance * 0.03) * 0.035
     _update_run_items(delta)
+    _update_camera(delta)
     if not started:
         return
     for object in moving.get_children():
