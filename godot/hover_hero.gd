@@ -7,6 +7,7 @@ var right_arm: Node3D
 var left_leg: Node3D
 var right_leg: Node3D
 var board: Node3D
+var character_body: Node3D
 var flames: Array[MeshInstance3D] = []
 var lean := 0.0
 var boosting := false
@@ -70,6 +71,7 @@ func _assemble() -> void:
 
     var body := Node3D.new()
     body.name = "Animated racer rig"
+    character_body = body
     add_child(body)
     capsule(body, Vector3(0, 1.55, 0), Vector3(0.49, 0.64, 0.35), suit)
     box(body, Vector3(0, 1.50, 0.38), Vector3(0.53, 0.7, 0.27), yellow)
@@ -103,10 +105,13 @@ func _process(delta: float) -> void:
     time += delta
     var bob := sin(time * (8.5 if boosting else 3.4)) * 0.06
     board.position.y = bob
+    character_body.position.y = bob * 0.7
+    character_body.rotation.z = lerpf(character_body.rotation.z, lean * 0.12, minf(1.0, delta * 4.0))
+    character_body.rotation.x = -0.09 if boosting else -0.015
     board.rotation.z = lerpf(board.rotation.z, lean * -0.09, minf(1, delta * 5))
     left_arm.rotation.x = -0.22 + sin(time * 4.0) * 0.09
     right_arm.rotation.x = -0.22 - sin(time * 4.0) * 0.09
     left_leg.rotation.x = 0.22 + sin(time * 4.0) * 0.07
     right_leg.rotation.x = 0.22 - sin(time * 4.0) * 0.07
     for flame in flames:
-        flame.scale.z = (0.9 if boosting else 0.4) + (0.15 * sin(time * 18.0))
+        flame.scale.z = (1.5 if boosting else 0.65) + (0.15 * sin(time * 18.0))
