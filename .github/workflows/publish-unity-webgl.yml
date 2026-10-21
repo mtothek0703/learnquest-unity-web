@@ -51,6 +51,8 @@ jobs:
           # Fresh asset path bypasses cached Godot .wasm/.pck from earlier deployments.
           mkdir -p _site/neon-city-v3
           cp -a _site/godot/. _site/neon-city-v3/
+          mkdir -p _site/neon-city-v4
+          cp -a _site/godot/. _site/neon-city-v4/
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload website
