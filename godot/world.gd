@@ -180,8 +180,33 @@ func _create_run_items() -> void:
         item.set_meta("collected", false)
         run_items.add_child(item)
         if good:
-            sphere(item, Vector3(0, 1.4, 0), Vector3(0.54, 0.54, 0.54), Color("#ffd35a"), true)
-            sphere(item, Vector3(0, 1.4, 0), Vector3(0.28, 0.28, 0.28), Color("#fff6bf"), true)
+            # Large collectible energy gate with moving inner crystal.
+            # The silhouette is unmistakable from the chase camera.
+            var gate := TorusMesh.new()
+            gate.inner_radius = 0.72
+            gate.outer_radius = 0.87
+            gate.rings = 32
+            gate.ring_segments = 10
+            var outer := MeshInstance3D.new()
+            outer.name = "Energy gate"
+            outer.mesh = gate
+            outer.material_override = mat(Color("#ffd35a"), true)
+            outer.position = Vector3(0, 1.45, 0)
+            item.add_child(outer)
+            var core := Node3D.new()
+            core.name = "Animated core"
+            core.position = Vector3(0, 1.45, 0)
+            item.add_child(core)
+            var diamond := SphereMesh.new()
+            diamond.radial_segments = 8
+            diamond.rings = 4
+            var crystal := MeshInstance3D.new()
+            crystal.mesh = diamond
+            crystal.material_override = mat(Color("#fff4a3"), true)
+            crystal.scale = Vector3(0.37, 0.64, 0.37)
+            core.add_child(crystal)
+            for side in [-1.0, 1.0]:
+                sphere(item, Vector3(side * 0.78, 1.45, 0), Vector3(0.12, 0.12, 0.12), Color("#fff4a3"), true)
         else:
             cube(item, Vector3(0, 0.68, 0), Vector3(1.85, 1.36, 0.7), Color("#fe537f"), true)
             cube(item, Vector3(0, 0.72, 0.39), Vector3(1.27, 0.22, 0.06), Color("#ffdf81"), true)
@@ -228,7 +253,12 @@ func _update_run_items(delta: float) -> void:
         item.position.z += speed * delta
         var is_energy: bool = bool(item.get_meta("energy"))
         if is_energy:
-            item.rotation.y += delta * 2.8
+            # Animate the collectible independently from the world motion.
+            var core: Node3D = item.get_node_or_null("Animated core")
+            if core != null:
+                core.rotation.y += delta * 2.8
+                core.rotation.z += delta * 0.6
+                core.position.y = 1.45 + sin(distance * 0.12 + float(item.get_index())) * 0.15
         if previous_z < rider.position.z and item.position.z >= rider.position.z and not bool(item.get_meta("collected")):
             item.set_meta("collected", true)
             if absf(item.position.x - rider.position.x) < 1.45:
