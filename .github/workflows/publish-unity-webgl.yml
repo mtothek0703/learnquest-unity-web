@@ -47,11 +47,14 @@ jobs:
       - name: Export Godot browser game
         run: |
           mkdir -p "$GITHUB_WORKSPACE/_site/godot"
-          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path godot --quit
-          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --export-release "Web" "$GITHUB_WORKSPACE/_site/godot/index.html"
-          test -f _site/godot/index.html
-          test -f _site/godot/index.wasm
-          test -f _site/godot/index.pck
+          echo "Import Godot project and capture errors"
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path godot --quit 2>&1 | tee /tmp/godot-import.log
+          echo "Export self-contained Godot browser build"
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --export-release "Web" "$GITHUB_WORKSPACE/_site/godot/index.html" 2>&1 | tee /tmp/godot-export.log
+          test -s _site/godot/index.html
+          test -s _site/godot/index.wasm
+          test -s _site/godot/index.pck
+          echo "Godot import/export finished with nonempty web files"
           echo "Run Godot scene smoke test"
           set +e
           timeout 35s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --quit-after 15 > /tmp/godot-smoke.log 2>&1
@@ -70,7 +73,7 @@ jobs:
           fi
           echo "Godot startup smoke test passed"
           echo "Run gameplay integration tests"
-          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://smoke_test.gd
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://smoke_test.gd 2>&1 | tee /tmp/godot-gameplay-test.log
           echo "Gameplay integration tests passed"
           # Fresh asset path bypasses cached Godot .wasm/.pck from earlier deployments.
           mkdir -p _site/neon-city-v3
@@ -98,13 +101,16 @@ jobs:
           echo "$GITHUB_SHA" > _site/neon-city-v5/build.txt
           echo "$GITHUB_SHA" > _site/neon-city-v4/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
-      - name: Upload Godot diagnostics on failure
-        if: failure()
+      - name: Upload Godot build and test diagnostics
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: godot-build-diagnostics
           path: |
             /tmp/godot-smoke.log
+            /tmp/godot-import.log
+            /tmp/godot-export.log
+            /tmp/godot-gameplay-test.log
           if-no-files-found: ignore
 
       - name: Configure Pages
