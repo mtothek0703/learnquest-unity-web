@@ -19,6 +19,7 @@ func _ready() -> void:
     _build_floating_traffic()
     _build_speed_streaks()
     _build_landmarks()
+    _build_sunset_landmark()
 
 func material(tint: Color, glow: bool = false) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -220,6 +221,45 @@ func _build_landmarks() -> void:
             tower(island, Vector3(x, 1.8, -0.3), 2.5, 0.28, Color("#9075ac"))
             globe(island, Vector3(x, 3.4, -0.3), Vector3(1.15, 1.0, 1.1), Color("#78e5d0"))
         globe(island, Vector3(0, -3.8, 0), Vector3(0.55, 0.75, 0.55), Color("#a7faff"), true)
+
+func _build_sunset_landmark() -> void:
+    # Giant warm sun, layered skyline silhouettes, and large coloured arches
+    # give the first frame a different composition without relying on textures.
+    var sun := Node3D.new()
+    sun.name = "V14 giant sunset"
+    sun.position = Vector3(13.0, 24.0, -138.0)
+    add_child(sun)
+    var sun_mesh := SphereMesh.new()
+    sun_mesh.radial_segments = 32
+    sun_mesh.rings = 16
+    var disc := shape(sun, sun_mesh, Vector3.ZERO, Color("#ffcb86"), true)
+    disc.scale = Vector3(16.0, 16.0, 1.1)
+    var halo_mesh := TorusMesh.new()
+    halo_mesh.inner_radius = 17.8
+    halo_mesh.outer_radius = 18.4
+    halo_mesh.rings = 48
+    halo_mesh.ring_segments = 8
+    shape(sun, halo_mesh, Vector3.ZERO, Color("#ff7db7"), true)
+    for i in range(4):
+        var band_y := -7.0 + float(i) * 3.0
+        block(sun, Vector3(0, band_y, 1.5), Vector3(31.0 - float(i) * 2.6, 0.7, 0.15), Color("#6b407f"))
+    for side in [-1.0, 1.0]:
+        # Decorative elevated ribbon bridges keep the world unmistakably 3D.
+        for i in range(6):
+            var z := -9.0 - float(i) * 23.0
+            var arch := Node3D.new()
+            arch.name = "V14 luminous sky ribbon"
+            arch.position = Vector3(side * 9.7, 4.6 + float(i % 2) * 1.5, z)
+            add_child(arch)
+            scenery.append(arch)
+            var mesh := TorusMesh.new()
+            mesh.inner_radius = 2.5
+            mesh.outer_radius = 2.7
+            mesh.rings = 24
+            mesh.ring_segments = 6
+            var ribbon := shape(arch, mesh, Vector3.ZERO, Color("#ff99d9") if side < 0 else Color("#81fff0"), true)
+            ribbon.rotation_degrees.y = 90
+            arch.scale = Vector3(1.0, 1.5, 1.0)
 
 func _process(delta: float) -> void:
     elapsed += delta
