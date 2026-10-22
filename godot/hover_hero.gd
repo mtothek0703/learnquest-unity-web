@@ -106,6 +106,21 @@ func _assemble() -> void:
         var trail := box(board, Vector3(side * 0.48, 0.16, 2.0), Vector3(0.07, 0.06, 0.48), trail_color, true)
         trail.name = "Animated boost contrail"
         energy_trails.append(trail)
+    # V12: prominent swept side wings, rear stabilisers and an illuminated
+    # centre spine. These change the board outline even from the chase camera.
+    for side in [-1.0, 1.0]:
+        var wing := PrismMesh.new()
+        wing.size = Vector3(0.76, 0.14, 1.45)
+        var wing_mesh := piece(board, wing, Vector3(side * 0.98, 0.27, 0.19), Vector3.ONE, suit)
+        wing_mesh.rotation_degrees.y = side * 14.0
+        var fin := PrismMesh.new()
+        fin.size = Vector3(0.18, 0.63, 0.81)
+        var stabilizer := piece(board, fin, Vector3(side * 0.87, 0.56, 1.03), Vector3.ONE, navy)
+        stabilizer.rotation_degrees.z = side * 15.0
+        box(board, Vector3(side * 1.01, 0.43, 0.28), Vector3(0.11, 0.06, 1.02), cyan, true)
+        ball(board, Vector3(side * 1.05, 0.38, -0.40), Vector3(0.15, 0.12, 0.22), bright, true)
+    box(board, Vector3(0, 0.46, -0.30), Vector3(0.12, 0.07, 1.6), yellow, true)
+
     # A single expanding neon ring celebrates a successful landing.
     # Kept hidden outside the brief landing animation to save mobile GPU work.
     var shock_mesh := TorusMesh.new()
