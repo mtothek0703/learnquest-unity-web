@@ -94,12 +94,13 @@ jobs:
           cp -a _site/godot/. _site/skyway-v8/
           mkdir -p _site/skyway-v9
           cp -a _site/godot/. _site/skyway-v9/
-          test -s _site/skyway-v10/index.html
-          test -s _site/skyway-v10/index.wasm
-          test -s _site/skyway-v10/index.pck
-          echo "Skyway V9 files prepared before Pages deployment"
           mkdir -p _site/skyway-v10
           cp -a _site/godot/. _site/skyway-v10/
+          test -s _site/skyway-v10/index.html
+          test -s _site/skyway-v10/index.js
+          test -s _site/skyway-v10/index.wasm
+          test -s _site/skyway-v10/index.pck
+          echo "Skyway V10 files prepared before Pages deployment"
           echo "$GITHUB_SHA" > _site/skyway-v10/build.txt
           echo "$GITHUB_SHA" > _site/skyway-v9/build.txt
           echo "$GITHUB_SHA" > _site/skyway-v8/build.txt
@@ -114,7 +115,7 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          root = Path("_site/skyway-v9")
+          root = Path("_site/skyway-v10")
           for name in ("index.html", "index.js", "index.wasm", "index.pck"):
               file = root / name
               if not file.is_file() or file.stat().st_size == 0:
