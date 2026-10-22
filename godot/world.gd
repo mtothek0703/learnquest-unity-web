@@ -84,23 +84,25 @@ func _create_world() -> void:
     resource.background_mode = Environment.BG_SKY
     var sky := Sky.new()
     var sky_gradient := ProceduralSkyMaterial.new()
-    sky_gradient.sky_top_color = Color("#132c67")
-    sky_gradient.sky_horizon_color = Color("#ca7fc0")
-    sky_gradient.ground_horizon_color = Color("#ec9ca8")
-    sky_gradient.ground_bottom_color = Color("#394568")
+    # V14 visual overhaul: electric sunset instead of the old dark-blue sky.
+    sky_gradient.sky_top_color = Color("#080d35")
+    sky_gradient.sky_horizon_color = Color("#ff789b")
+    sky_gradient.ground_horizon_color = Color("#ffbd8b")
+    sky_gradient.ground_bottom_color = Color("#39265e")
     sky_gradient.use_debanding = true
     sky.sky_material = sky_gradient
     resource.sky = sky
-    resource.background_color = Color("#24345c")
+    resource.background_color = Color("#211b51")
     resource.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    resource.ambient_light_color = Color("#b5caff")
-    resource.ambient_light_energy = 0.95
+    resource.ambient_light_color = Color("#ffe0f1")
+    resource.ambient_light_energy = 1.18
     env.environment = resource
     add_child(env)
 
     var sun := DirectionalLight3D.new()
     sun.rotation_degrees = Vector3(-42, -28, 0)
-    sun.light_energy = 1.35
+    sun.light_color = Color("#ffe0bd")
+    sun.light_energy = 1.6
     add_child(sun)
 
     chase_camera = Camera3D.new()
