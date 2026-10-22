@@ -183,6 +183,24 @@ func _assemble() -> void:
         ball(body, Vector3(side * 0.29, 1.18, 0.08), Vector3(0.23, 0.20, 0.24), suit)
     box(body, Vector3(0, 1.23, 0.37), Vector3(0.57, 0.11, 0.13), cyan, true)
 
+    # V15: broad hood, high-contrast shoulder cape and bright rear insignia.
+    # Designed for the rear chase camera where small facial details are invisible.
+    var hood := SphereMesh.new()
+    hood.radial_segments = 28
+    hood.rings = 14
+    piece(body, hood, Vector3(0, 2.48, 0.18), Vector3(0.62, 0.66, 0.51), navy)
+    piece(body, hood, Vector3(0, 2.53, 0.49), Vector3(0.54, 0.54, 0.15), suit)
+    for side in [-1.0, 1.0]:
+        var shoulder_cape := PrismMesh.new()
+        shoulder_cape.size = Vector3(0.52, 0.92, 0.35)
+        var cape_part := piece(body, shoulder_cape, Vector3(side * 0.51, 1.66, 0.40), Vector3.ONE, bright)
+        cape_part.rotation_degrees.z = -side * 13.0
+        box(body, Vector3(side * 0.34, 1.83, 0.59), Vector3(0.10, 0.41, 0.06), cyan, true)
+    var insignia := PrismMesh.new()
+    insignia.size = Vector3(0.47, 0.52, 0.11)
+    var badge := piece(body, insignia, Vector3(0, 1.58, 0.78), Vector3.ONE, yellow, true)
+    badge.rotation_degrees.z = 180.0
+
     # Twin backpack modules and glowing power cell face the player.
     box(body, Vector3(0, 1.62, 0.48), Vector3(0.62, 0.80, 0.25), navy)
     globe_power(body, Vector3(0, 1.66, 0.65), cyan)
