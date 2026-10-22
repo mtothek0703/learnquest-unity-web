@@ -38,7 +38,8 @@ func _process(delta: float) -> void:
         var airborne := position.y > 0.12
         var desired_roll := -lean * 0.16
         var desired_pitch := 0.10 if airborne else (-0.16 if boosting else 0.0)
-        var desired_y := model_vertical_offset + (0.10 if airborne else 0.0)
+        var hover_bob := 0.035 * sin(animation_clock * (12.0 if boosting else 5.0))
+        var desired_y := model_vertical_offset + (0.10 if airborne else hover_bob)
         active_model.rotation.z = lerpf(active_model.rotation.z, desired_roll, minf(1.0, delta * 6.0))
         active_model.rotation.x = lerpf(active_model.rotation.x, desired_pitch, minf(1.0, delta * 5.0))
         active_model.position.y = lerpf(active_model.position.y, desired_y, minf(1.0, delta * 7.0))
