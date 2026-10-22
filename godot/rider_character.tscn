@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://rider_character.gd" id="1_controller"]
+[ext_resource type="Script" path="res://hover_hero.gd" id="2_fallback"]
+
+[node name="RiderCharacter" type="Node3D"]
+script = ExtResource("1_controller")
+
+[node name="LegacyRider" type="Node3D" parent="."]
+script = ExtResource("2_fallback")
