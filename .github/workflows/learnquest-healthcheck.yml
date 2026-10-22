@@ -1,0 +1,63 @@
+name: LearnQuest automated health check
+
+on:
+  schedule:
+    # Four independent checks per day; GitHub scheduled jobs may be delayed.
+    - cron: '17 1,7,13,19 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'godot/**'
+      - '.github/workflows/learnquest-healthcheck.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: learnquest-healthcheck
+  cancel-in-progress: true
+
+jobs:
+  godot-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.4.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+      - name: Verify Godot can import the project
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path godot --quit 2>&1 | tee /tmp/learnquest-import.log
+      - name: Run startup smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 35s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --quit-after 15 2>&1 | tee /tmp/learnquest-startup.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:' /tmp/learnquest-startup.log; then
+            echo "::error::Game failed on startup"
+            exit 1
+          fi
+      - name: Run gameplay integration tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://smoke_test.gd 2>&1 | tee /tmp/learnquest-gameplay.log
+          grep -Fq "LEARNQUEST SMOKE TEST PASSED" /tmp/learnquest-gameplay.log
+      - name: Save test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-healthcheck-logs
+          path: |
+            /tmp/learnquest-import.log
+            /tmp/learnquest-startup.log
+            /tmp/learnquest-gameplay.log
+          if-no-files-found: ignore
