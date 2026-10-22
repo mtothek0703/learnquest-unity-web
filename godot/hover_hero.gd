@@ -156,6 +156,18 @@ func _assemble() -> void:
     capsule(body, Vector3(0, 2.11, 0), Vector3(0.24, 0.19, 0.24), navy)
     ball(body, Vector3(0, 2.14, -0.18), Vector3(0.24, 0.10, 0.13), yellow)
 
+    # Curved back armour and a layered, tapered waist remain visible from the
+    # chase camera. Lightweight primitives use no imported binary dependencies.
+    var back_shell := SphereMesh.new()
+    back_shell.radial_segments = 20
+    back_shell.rings = 10
+    piece(body, back_shell, Vector3(0, 1.61, 0.31), Vector3(0.47, 0.52, 0.19), suit)
+    for side in [-1.0, 1.0]:
+        var flank := capsule(body, Vector3(side * 0.35, 1.40, 0.18), Vector3(0.18, 0.44, 0.21), navy)
+        flank.rotation_degrees.z = side * 12.0
+        ball(body, Vector3(side * 0.29, 1.18, 0.08), Vector3(0.23, 0.20, 0.24), suit)
+    box(body, Vector3(0, 1.23, 0.37), Vector3(0.57, 0.11, 0.13), cyan, true)
+
     # Twin backpack modules and glowing power cell face the player.
     box(body, Vector3(0, 1.62, 0.48), Vector3(0.62, 0.80, 0.25), navy)
     globe_power(body, Vector3(0, 1.66, 0.65), cyan)
@@ -205,12 +217,20 @@ func _assemble() -> void:
         ball(arm, Vector3(0, -0.38, -0.18), Vector3(0.21, 0.16, 0.21), bright)
         ball(arm, Vector3(0, -0.59, -0.25), Vector3(0.20, 0.13, 0.23), skin)
         box(arm, Vector3(0, -0.49, -0.20), Vector3(0.24, 0.09, 0.20), cyan, true)
+        # Slim tapered forearm and shoulder seam read as a single articulated suit.
+        var sleeve := capsule(arm, Vector3(0, -0.24, 0.06), Vector3(0.21, 0.35, 0.21), navy)
+        sleeve.rotation_degrees.z = 8.0
+        ball(arm, Vector3(0, -0.06, 0.06), Vector3(0.23, 0.17, 0.25), suit)
     for leg in [left_leg, right_leg]:
         capsule(leg, Vector3(0, -0.23, 0), Vector3(0.22, 0.44, 0.24), navy)
         box(leg, Vector3(0, -0.60, -0.16), Vector3(0.29, 0.19, 0.48), yellow)
         var guard := ball(leg, Vector3(0, -0.37, -0.18), Vector3(0.25, 0.17, 0.08), bright)
         knee_guards.append(guard)
         box(leg, Vector3(0, -0.58, -0.38), Vector3(0.28, 0.09, 0.08), cyan, true)
+        # Smooth shin guards and thick cuff visually attach the boot to the leg.
+        var shin := capsule(leg, Vector3(0, -0.35, 0.08), Vector3(0.19, 0.36, 0.22), suit)
+        shin.rotation_degrees.x = -12.0
+        ball(leg, Vector3(0, -0.53, -0.02), Vector3(0.22, 0.13, 0.24), bright)
 
 
 func globe_power(parent: Node3D, pos: Vector3, tint: Color) -> void:
