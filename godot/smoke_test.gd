@@ -32,8 +32,15 @@ func _run_checks() -> void:
         _fail("Rider scene must preserve the animated hoverboard")
         return
     var fallback := rider.get_node_or_null("LegacyRider/Animated racer rig") as Node3D
-    if fallback == null or not fallback.visible:
-        _fail("Legacy rider must remain visible without an imported 3D asset")
+    if fallback == null:
+        _fail("Legacy rider fallback must exist")
+        return
+    var installed_model := rider.get_node_or_null("ImportedRider")
+    if installed_model == null:
+        _fail("Bundled 3D rider model was not imported")
+        return
+    if fallback.visible:
+        _fail("Fallback body must be hidden while imported 3D rider is active")
         return
     # Exercise the new replacement contract without requiring any paid model.
     var placeholder := Node3D.new()
