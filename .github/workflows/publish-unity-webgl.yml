@@ -45,7 +45,10 @@ jobs:
           unzip -q /tmp/templates.tpz -d /tmp/godot-templates
           cp /tmp/godot-templates/templates/* "$HOME/.local/share/godot/export_templates/4.4.1.stable/"
       - name: Export Godot browser game
+        shell: bash
         run: |
+          # Do not let tee conceal a failed Godot import, export or gameplay test.
+          set -euo pipefail
           mkdir -p "$GITHUB_WORKSPACE/_site/godot"
           echo "Import Godot project and capture errors"
           /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path godot --quit 2>&1 | tee /tmp/godot-import.log
@@ -74,6 +77,7 @@ jobs:
           echo "Godot startup smoke test passed"
           echo "Run gameplay integration tests"
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://smoke_test.gd 2>&1 | tee /tmp/godot-gameplay-test.log
+          grep -Fq "LEARNQUEST SMOKE TEST PASSED" /tmp/godot-gameplay-test.log || { echo "::error::Gameplay checks did not complete"; exit 1; }
           echo "Gameplay integration tests passed"
           # Fresh asset path bypasses cached Godot .wasm/.pck from earlier deployments.
           mkdir -p _site/neon-city-v3
