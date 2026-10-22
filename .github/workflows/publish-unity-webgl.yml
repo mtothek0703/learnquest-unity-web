@@ -111,6 +111,9 @@ jobs:
           cp -a _site/godot/. _site/skyway-v14/
           mkdir -p _site/skyway-v15
           cp -a _site/godot/. _site/skyway-v15/
+          mkdir -p _site/skyway-v16
+          cp -a _site/godot/. _site/skyway-v16/
+          echo "$GITHUB_SHA" > _site/skyway-v16/build.txt
           echo "$GITHUB_SHA" > _site/skyway-v15/build.txt
           echo "$GITHUB_SHA" > _site/skyway-v14/build.txt
           echo "$GITHUB_SHA" > _site/skyway-v13/build.txt
@@ -130,7 +133,7 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          root = Path("_site/skyway-v15")
+          root = Path("_site/skyway-v16")
           for name in ("index.html", "index.js", "index.wasm", "index.pck"):
               file = root / name
               if not file.is_file() or file.stat().st_size == 0:
@@ -197,7 +200,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request, urllib.error
-          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v15/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v16/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.js": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
