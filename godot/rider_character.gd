@@ -1,34 +1,77 @@
 extends Node3D
-## Independent rider assembly. The legacy hero is a fallback while we replace
-## geometry with imported, rigged character assets in a later graphics pass.
-@onready var legacy_rider: Node3D = $LegacyRider
+## Visual model adapter for LearnQuest riders. The working hoverboard, jets,
+## trails and gameplay remain in LegacyRider when a new character is installed.
+## A CC0 glTF/GLB can be placed at the exported path without rewriting world.gd.
+@export_file("*.glb", "*.gltf", "*.tscn") var character_asset_path: String = "res://models/rider.glb"
+@export var model_scale: float = 1.0
+@export var model_vertical_offset: float = 0.0
 
+@onready var legacy_rider: Node3D = $LegacyRider
 var lean: float = 0.0
 var boosting: bool = false
 var animation_clock: float = 0.0
+var active_model: Node3D
+var active_animator: AnimationPlayer
+
+func _ready() -> void:
+    _try_load_character_asset()
+
+func _try_load_character_asset() -> void:
+    if not ResourceLoader.exists(character_asset_path):
+        return
+    var scene := load(character_asset_path) as PackedScene
+    if scene == null:
+        push_warning("LearnQuest character asset could not be loaded: " + character_asset_path)
+        return
+    var model := scene.instantiate() as Node3D
+    if model != null:
+        set_character_model(model)
 
 func _process(delta: float) -> void:
     animation_clock += delta
     if is_instance_valid(legacy_rider):
         legacy_rider.set("lean", lean)
         legacy_rider.set("boosting", boosting)
+    if is_instance_valid(active_model):
+        var desired_roll := -lean * 0.16
+        var desired_pitch := -0.16 if boosting else 0.0
+        active_model.rotation.z = lerpf(active_model.rotation.z, desired_roll, minf(1.0, delta * 6.0))
+        active_model.rotation.x = lerpf(active_model.rotation.x, desired_pitch, minf(1.0, delta * 5.0))
+        if active_animator != null:
+            var wanted := "boost" if boosting else ("steer" if absf(lean) > 0.25 else "idle")
+            if active_animator.has_animation(wanted) and active_animator.current_animation != wanted:
+                active_animator.play(wanted, 0.2)
 
 func set_character_model(model: Node3D) -> void:
-    # Replace only the visual rider; gameplay continues to track this root.
-    # Imported models can use AnimationPlayer or AnimationTree independently.
     if model == null:
         return
-    var old := get_node_or_null("ImportedRider")
-    if old != null:
-        old.queue_free()
+    if is_instance_valid(active_model):
+        active_model.queue_free()
+    active_model = model
     model.name = "ImportedRider"
     add_child(model)
-    if is_instance_valid(legacy_rider):
-        legacy_rider.visible = false
+    model.scale = Vector3.ONE * model_scale
+    model.position.y = model_vertical_offset
+    active_animator = _find_animator(model)
+    # Keep the original animated board and lights, hide only its old body.
+    var old_body := legacy_rider.get_node_or_null("Animated racer rig")
+    if old_body != null:
+        old_body.visible = false
+
+func _find_animator(node: Node) -> AnimationPlayer:
+    if node is AnimationPlayer:
+        return node as AnimationPlayer
+    for child in node.get_children():
+        var player := _find_animator(child)
+        if player != null:
+            return player
+    return null
 
 func restore_fallback() -> void:
-    var imported := get_node_or_null("ImportedRider")
-    if imported != null:
-        imported.queue_free()
-    if is_instance_valid(legacy_rider):
-        legacy_rider.visible = true
+    if is_instance_valid(active_model):
+        active_model.queue_free()
+    active_model = null
+    active_animator = null
+    var old_body := legacy_rider.get_node_or_null("Animated racer rig")
+    if old_body != null:
+        old_body.visible = true
