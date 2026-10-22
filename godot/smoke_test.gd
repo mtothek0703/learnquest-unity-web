@@ -42,6 +42,13 @@ func _run_checks() -> void:
     if fallback.visible:
         _fail("Fallback body must be hidden while imported 3D rider is active")
         return
+    var rider_mesh := installed_model as Node3D
+    rider.set("animation_clock", 0.0)
+    var previous_hover_height := rider_mesh.position.y
+    rider.call("_process", 0.2)
+    if is_equal_approx(rider_mesh.position.y, previous_hover_height):
+        _fail("Imported rider must visibly bob while hovering")
+        return
     # Exercise the new replacement contract without requiring any paid model.
     var placeholder := Node3D.new()
     rider.call("set_character_model", placeholder)
