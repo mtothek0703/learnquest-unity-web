@@ -27,6 +27,24 @@ func _run_checks() -> void:
     if game.get("rider") == null:
         _fail("Animated hoverboard character is missing")
         return
+    var rider := game.get("rider") as Node3D
+    if rider == null or rider.get_node_or_null("LegacyRider/Floating hoverboard") == null:
+        _fail("Rider scene must preserve the animated hoverboard")
+        return
+    var fallback := rider.get_node_or_null("LegacyRider/Animated racer rig") as Node3D
+    if fallback == null or not fallback.visible:
+        _fail("Legacy rider must remain visible without an imported 3D asset")
+        return
+    # Exercise the new replacement contract without requiring any paid model.
+    var placeholder := Node3D.new()
+    rider.call("set_character_model", placeholder)
+    if rider.get_node_or_null("ImportedRider") == null or fallback.visible:
+        _fail("Imported visual does not replace the legacy character correctly")
+        return
+    rider.call("restore_fallback")
+    if not fallback.visible:
+        _fail("Restoring the legacy character failed")
+        return
     var items := game.get("run_items") as Node3D
     if items == null or items.get_child_count() < 10:
         _fail("Obstacles and pickups were not created")
