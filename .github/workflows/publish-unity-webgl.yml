@@ -124,8 +124,10 @@ jobs:
           html = (root / "index.html").read_text(encoding="utf-8")
           if "index.js" not in html:
               raise SystemExit("Godot HTML does not reference the exported JavaScript")
-          if "index.pck" not in html:
-              raise SystemExit("Godot HTML does not reference the game package")
+          # Godot derives the .pck name from the executable config at runtime,
+          # so the HTML does not necessarily contain the literal index.pck.
+          if '"executable":"index"' not in html and '"executable": "index"' not in html:
+              raise SystemExit("Godot HTML lacks the expected executable config")
           print("Skyway V9 web export integrity passed")
           PY
       - name: Upload Godot build and test diagnostics
