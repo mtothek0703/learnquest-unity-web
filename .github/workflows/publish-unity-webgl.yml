@@ -105,6 +105,29 @@ jobs:
           echo "$GITHUB_SHA" > _site/neon-city-v5/build.txt
           echo "$GITHUB_SHA" > _site/neon-city-v4/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
+      - name: Check browser export integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+
+          root = Path("_site/skyway-v9")
+          required = ("index.html", "index.js", "index.wasm", "index.pck")
+          for name in required:
+              path = root / name
+              if not path.is_file() or path.stat().st_size == 0:
+                  raise SystemExit(f"Invalid Godot web export: missing or empty {path}")
+              print(f"OK {path}: {path.stat().st_size:,} bytes")
+
+          html = (root / "index.html").read_text(encoding="utf-8")
+          if "index.js" not in html:
+              raise SystemExit("Godot HTML does not reference the exported JavaScript")
+          if "index.pck" not in html:
+              raise SystemExit("Godot HTML does not reference the game package")
+          print("Skyway V9 web export integrity passed")
+          PY
       - name: Upload Godot build and test diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -134,7 +157,7 @@ jobs:
           python - <<'PY'
           import os, time, urllib.request
           root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v9/"
-          checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.wasm": None, "index.pck": None}
+          checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.js": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
                   try:
