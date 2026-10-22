@@ -141,6 +141,21 @@ func _assemble() -> void:
         var pad := ball(body, Vector3(side * 0.58, 1.93, -0.06), Vector3(0.28, 0.18, 0.31), bright)
         shoulder_lights.append(pad)
         box(body, Vector3(side * 0.47, 1.53, 0.23), Vector3(0.12, 0.46, 0.06), cyan, true)
+    # Layered curved jacket armour replaces a flat rectangular torso silhouette.
+    # Low-poly geometry keeps this lightweight in the iPhone browser.
+    var torso_plate := SphereMesh.new()
+    torso_plate.radial_segments = 20
+    torso_plate.rings = 10
+    piece(body, torso_plate, Vector3(0, 1.57, -0.22), Vector3(0.48, 0.53, 0.22), navy)
+    piece(body, torso_plate, Vector3(0, 1.65, -0.40), Vector3(0.24, 0.29, 0.055), cyan, true)
+    for side in [-1.0, 1.0]:
+        var rib := capsule(body, Vector3(side * 0.37, 1.45, -0.20), Vector3(0.16, 0.41, 0.17), suit)
+        rib.rotation_degrees.z = side * 14.0
+        ball(body, Vector3(side * 0.47, 1.25, -0.15), Vector3(0.22, 0.14, 0.20), bright)
+    # Visible collar and shoulder-to-helmet neck connection.
+    capsule(body, Vector3(0, 2.11, 0), Vector3(0.24, 0.19, 0.24), navy)
+    ball(body, Vector3(0, 2.14, -0.18), Vector3(0.24, 0.10, 0.13), yellow)
+
     # Twin backpack modules and glowing power cell face the player.
     box(body, Vector3(0, 1.62, 0.48), Vector3(0.62, 0.80, 0.25), navy)
     globe_power(body, Vector3(0, 1.66, 0.65), cyan)
@@ -186,6 +201,10 @@ func _assemble() -> void:
     for arm in [left_arm, right_arm]:
         capsule(arm, Vector3(0, -0.25, -0.06), Vector3(0.17, 0.40, 0.20), suit)
         ball(arm, Vector3(0, -0.57, -0.16), Vector3(0.18, 0.15, 0.19), navy)
+        # Articulated glove, elbow shell and wrist cuff.
+        ball(arm, Vector3(0, -0.38, -0.18), Vector3(0.21, 0.16, 0.21), bright)
+        ball(arm, Vector3(0, -0.59, -0.25), Vector3(0.20, 0.13, 0.23), skin)
+        box(arm, Vector3(0, -0.49, -0.20), Vector3(0.24, 0.09, 0.20), cyan, true)
     for leg in [left_leg, right_leg]:
         capsule(leg, Vector3(0, -0.23, 0), Vector3(0.22, 0.44, 0.24), navy)
         box(leg, Vector3(0, -0.60, -0.16), Vector3(0.29, 0.19, 0.48), yellow)
