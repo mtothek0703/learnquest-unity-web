@@ -2,7 +2,7 @@ extends Node3D
 ## Visual model adapter for LearnQuest riders. The working hoverboard, jets,
 ## trails and gameplay remain in LegacyRider when a new character is installed.
 ## A CC0 glTF/GLB can be placed at the exported path without rewriting world.gd.
-@export_file("*.glb", "*.gltf", "*.tscn") var character_asset_path: String = "res://models/rider.glb"
+@export_file("*.glb,*.gltf,*.tscn") var character_asset_path: String = "res://models/rider.glb"
 @export var model_scale: float = 1.0
 @export var model_vertical_offset: float = 0.0
 
