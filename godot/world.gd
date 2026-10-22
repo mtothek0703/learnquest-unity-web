@@ -122,8 +122,8 @@ func _create_world() -> void:
             cube(road_marks, Vector3(side * 1.8, -0.025, z), Vector3(0.15, 0.05, 3.4), Color("#ad62ff"), true)
 
     # A dedicated, articulated hero with its own hoverboard and procedural animation.
-    var hero_script = preload("res://hover_hero.gd")
-    rider = hero_script.new()
+    var rider_scene: PackedScene = preload("res://rider_character.tscn")
+    rider = rider_scene.instantiate()
     rider.name = "Animated Hover Hero"
     rider.position = Vector3(0, 0, 0.2)
     rider.scale = Vector3(1.55, 1.55, 1.55)
