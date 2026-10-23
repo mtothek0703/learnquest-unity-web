@@ -80,9 +80,11 @@ def main() -> None:
         for name in OPTIONAL:
             download(url + name, folder / name)
         if missing:
-            if version == "skyway-v16":
-                raise RuntimeError(f"V16 is incomplete ({missing}); refusing to deploy")
-            print(f"WARNING: existing {version} has missing files: {missing}", flush=True)
+            # Any incomplete historical snapshot must block the entire deploy.
+            # A warning here would permanently remove files from an older URL.
+            raise RuntimeError(
+                f"Published {version} is incomplete ({missing}); refusing to deploy"
+            )
         manifest[version] = {
             "html_sha256": hashlib.sha256((folder / "index.html").read_bytes()).hexdigest(),
             "build": (folder / "build.txt").read_text().strip()
