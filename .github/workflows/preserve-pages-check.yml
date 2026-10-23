@@ -2,7 +2,7 @@ name: Verify historical Pages preservation
 on:
   push:
     branches:
-      - feat/skyway-v17-safe-archive-and-hover
+      - feat/skyway-v18-safe-archive-and-hover
     paths:
       - '.github/scripts/preserve_legacy_pages.py'
       - '.github/scripts/test_preserve_legacy_pages.py'
@@ -31,11 +31,11 @@ jobs:
           from pathlib import Path
           text = Path(".github/workflows/publish-unity-webgl.yml").read_text()
           assert "python .github/scripts/preserve_legacy_pages.py" in text
-          assert "cp -a _site/godot/. _site/skyway-v17/" in text
-          assert 'root = Path("_site/skyway-v17")' in text
+          assert "cp -a _site/godot/. _site/skyway-v18/" in text
+          assert 'root = Path("_site/skyway-v18")' in text
           assert "/skyway-v17/" in text
-          assert "Skyway V17 already exists: refusing to overwrite" in text
-          for old in ("skyway-v16", "skyway-v15", "skyway-v10", "neon-city-v3"):
+          assert "Skyway V18 already exists: refusing to overwrite" in text
+          for old in ("skyway-v17", "skyway-v16", "skyway-v15", "skyway-v10", "neon-city-v3"):
               assert f"cp -a _site/godot/. _site/{old}/" not in text
           print("Immutable historical-version wiring verified")
           PY
