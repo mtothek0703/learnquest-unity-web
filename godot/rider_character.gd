@@ -101,6 +101,7 @@ func set_character_model(model: Node3D) -> void:
     _add_balance_legs(model)
     _add_face_details(model)
     _add_hairstyle(model)
+    _add_sculpted_jacket(model)
     # Keep the original animated board and lights, hide only its old body.
     var old_body := legacy_rider.get_node_or_null("Animated racer rig")
     if old_body != null:
@@ -299,13 +300,12 @@ func _add_hairstyle(model: Node3D) -> void:
         hairstyle.add_child(pivot)
         var lock := MeshInstance3D.new()
         lock.name = "HairLock"
-        var lock_mesh := SphereMesh.new()
-        lock_mesh.radius = 0.15 if i == 1 else 0.11
-        lock_mesh.height = 0.68 if i == 1 else 0.50
-        lock.mesh = lock_mesh
+        # Sculpted, tapered 3D strands replace the old ellipsoid ponytail.
+        # Each lock keeps its own wind-reactive pivot and neon hair clip.
+        lock.mesh = _build_tapered_hair_mesh(0.72 if i == 1 else 0.55, 0.17 if i == 1 else 0.12, 0.22)
         lock.material_override = highlight if i == 1 else hair
-        lock.position = Vector3(0.0, -0.30, 0.12)
-        lock.rotation.x = 0.38
+        lock.position = Vector3(0.0, -0.06, 0.12)
+        lock.rotation.x = 0.18
         pivot.add_child(lock)
         var clip := MeshInstance3D.new()
         clip.name = "NeonHairClip"
@@ -316,6 +316,113 @@ func _add_hairstyle(model: Node3D) -> void:
         clip.position = Vector3(0.0, -0.07, 0.11)
         pivot.add_child(clip)
         hair_strands.append(pivot)
+
+
+func _build_tapered_hair_mesh(length: float, width: float, sweep: float) -> ArrayMesh:
+    # Smooth, swept 3D hair mesh with an actual taper, rather than sphere parts.
+    # Sixteen sides would be wasteful in Safari; eight keep the silhouette crisp.
+    var surface := SurfaceTool.new()
+    surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+    const SIDES := 8
+    const SECTIONS := 8
+    for section in range(SECTIONS):
+        var t0 := float(section) / float(SECTIONS)
+        var t1 := float(section + 1) / float(SECTIONS)
+        for side in range(SIDES):
+            var a0 := TAU * float(side) / float(SIDES)
+            var a1 := TAU * float(side + 1) / float(SIDES)
+            var p00 := _hair_mesh_point(t0, a0, length, width, sweep)
+            var p01 := _hair_mesh_point(t0, a1, length, width, sweep)
+            var p10 := _hair_mesh_point(t1, a0, length, width, sweep)
+            var p11 := _hair_mesh_point(t1, a1, length, width, sweep)
+            surface.add_vertex(p00)
+            surface.add_vertex(p10)
+            surface.add_vertex(p11)
+            surface.add_vertex(p00)
+            surface.add_vertex(p11)
+            surface.add_vertex(p01)
+    surface.generate_normals()
+    return surface.commit()
+
+func _hair_mesh_point(t: float, angle: float, length: float, width: float, sweep: float) -> Vector3:
+    var taper := pow(1.0 - t, 0.72)
+    var radius := width * (0.10 + 0.90 * taper)
+    return Vector3(
+        cos(angle) * radius + sin(t * PI) * 0.045,
+        -length * t,
+        sweep * t * t + sin(t * PI) * 0.09 + sin(angle) * radius * 0.78
+    )
+
+func _add_sculpted_jacket(model: Node3D) -> void:
+    # A shaped back shell and glowing chevron read clearly from the chase camera.
+    # Geometry is original and generated in-engine: no paid or unlicensed assets.
+    var jacket := MeshInstance3D.new()
+    jacket.name = "SculptedJacketBack"
+    jacket.mesh = _build_jacket_back_mesh()
+    var fabric := StandardMaterial3D.new()
+    fabric.albedo_color = Color(0.28, 0.16, 0.69)
+    fabric.metallic = 0.16
+    fabric.roughness = 0.49
+    fabric.cull_mode = BaseMaterial3D.CULL_DISABLED
+    jacket.material_override = fabric
+    model.add_child(jacket)
+
+    var emblem := MeshInstance3D.new()
+    emblem.name = "NeonJacketEmblem"
+    var lines := SurfaceTool.new()
+    lines.begin(Mesh.PRIMITIVE_TRIANGLES)
+    _add_jacket_ribbon(lines, Vector3(-0.27, 1.83, 0.79), Vector3(0.0, 1.46, 0.87), 0.07)
+    _add_jacket_ribbon(lines, Vector3(0.27, 1.83, 0.79), Vector3(0.0, 1.46, 0.87), 0.07)
+    lines.generate_normals()
+    emblem.mesh = lines.commit()
+    var glow := StandardMaterial3D.new()
+    glow.albedo_color = Color(0.12, 0.94, 1.0)
+    glow.emission_enabled = true
+    glow.emission = Color(0.04, 0.62, 0.83)
+    glow.emission_energy_multiplier = 2.1
+    glow.cull_mode = BaseMaterial3D.CULL_DISABLED
+    emblem.material_override = glow
+    model.add_child(emblem)
+
+func _build_jacket_back_mesh() -> ArrayMesh:
+    var surface := SurfaceTool.new()
+    surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+    const COLUMNS := 12
+    const ROWS := 7
+    for row in range(ROWS):
+        var v0 := float(row) / float(ROWS)
+        var v1 := float(row + 1) / float(ROWS)
+        for column in range(COLUMNS):
+            var u0 := float(column) / float(COLUMNS)
+            var u1 := float(column + 1) / float(COLUMNS)
+            var p00 := _jacket_back_point(u0, v0)
+            var p01 := _jacket_back_point(u1, v0)
+            var p10 := _jacket_back_point(u0, v1)
+            var p11 := _jacket_back_point(u1, v1)
+            surface.add_vertex(p00)
+            surface.add_vertex(p01)
+            surface.add_vertex(p11)
+            surface.add_vertex(p00)
+            surface.add_vertex(p11)
+            surface.add_vertex(p10)
+    surface.generate_normals()
+    return surface.commit()
+
+func _jacket_back_point(u: float, v: float) -> Vector3:
+    var centered := u * 2.0 - 1.0
+    var width := lerpf(0.38, 0.53, v)
+    var depth := 0.58 + (1.0 - centered * centered) * 0.17 + sin(v * PI) * 0.03
+    return Vector3(centered * width, 1.12 + v * 1.04, depth)
+
+func _add_jacket_ribbon(surface: SurfaceTool, start: Vector3, finish: Vector3, width: float) -> void:
+    var direction := (finish - start).normalized()
+    var perpendicular := Vector3(-direction.y, direction.x, 0.0).normalized() * width * 0.5
+    surface.add_vertex(start - perpendicular)
+    surface.add_vertex(finish - perpendicular)
+    surface.add_vertex(finish + perpendicular)
+    surface.add_vertex(start - perpendicular)
+    surface.add_vertex(finish + perpendicular)
+    surface.add_vertex(start + perpendicular)
 
 func _find_animator(node: Node) -> AnimationPlayer:
     if node is AnimationPlayer:
