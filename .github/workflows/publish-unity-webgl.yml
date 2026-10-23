@@ -82,6 +82,20 @@ jobs:
           # GitHub Pages deploys replace the whole website. Preserve the actual
           # published older builds instead of silently replacing their contents.
           python .github/scripts/preserve_legacy_pages.py
+          # Never overwrite V17 if it was already published by an earlier run.
+          # A future release must deliberately use a new URL (V18, V19, ...).
+          python - <<'PY'
+          from urllib.error import HTTPError
+          from urllib.request import Request, urlopen
+          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v17/index.html"
+          try:
+              with urlopen(Request(url, headers={"Cache-Control": "no-cache"}), timeout=20):
+                  raise SystemExit("Skyway V17 already exists: refusing to overwrite an immutable release")
+          except HTTPError as error:
+              if error.code != 404:
+                  raise
+          print("Skyway V17 is not published yet; safe to create")
+          PY
           # V17 gets a fresh URL; historical folders are never rebuilt from V17.
           mkdir -p _site/skyway-v17
           cp -a _site/godot/. _site/skyway-v17/
