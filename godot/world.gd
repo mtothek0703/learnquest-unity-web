@@ -558,9 +558,9 @@ func _use_turbo() -> void:
 func _refresh_hud() -> void:
     if hud != null:
         if mobile_hud_layout:
-            hud.text = "V29  LEBEN %d  XP %d\nENERGIE %d%%  KOMBO x%d  %dm" % [lives, xp, power, combo, int(distance)]
+            hud.text = "V30  LEBEN %d  XP %d\nENERGIE %d%%  KOMBO x%d  %dm" % [lives, xp, power, combo, int(distance)]
         else:
-            hud.text = "SKYWAY V29   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [lives, xp, power, combo, int(distance)]
+            hud.text = "SKYWAY V30   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [lives, xp, power, combo, int(distance)]
 
 # Follow the racer on lane changes and jumps; widen the view during turbo.
 func _update_camera(delta: float) -> void:
