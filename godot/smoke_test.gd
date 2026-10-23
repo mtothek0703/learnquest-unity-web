@@ -52,6 +52,20 @@ func _run_checks() -> void:
     if not fallback.visible:
         _fail("Restoring the legacy character failed")
         return
+    # Regression: world.gd animates the rider root, not LegacyRider.position.
+    # The old code always read zero and never triggered jump/landing poses.
+    rider.position.y = 1.4
+    await process_frame
+    await process_frame
+    var legacy := rider.get_node("LegacyRider")
+    if float(legacy.get("jump_pose")) <= 0.0:
+        _fail("Hoverboard rider does not animate during a real jump")
+        return
+    rider.position.y = 0.0
+    await process_frame
+    if float(legacy.get("landing_pulse")) <= 0.0:
+        _fail("Hoverboard landing shockwave did not trigger")
+        return
     var items := game.get("run_items") as Node3D
     if items == null or items.get_child_count() < 10:
         _fail("Obstacles and pickups were not created")
