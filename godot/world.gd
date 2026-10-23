@@ -33,6 +33,8 @@ var jump_left := 0.0
 var hit_cooldown := 0.0
 var end_panel: PanelContainer
 var hud: Label
+var hud_panel: PanelContainer
+var mobile_hud_layout := false
 var splash: PanelContainer
 var controls_grid: GridContainer
 var start_heading: Label
@@ -362,14 +364,14 @@ func _create_ui() -> void:
     canvas.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     layer.add_child(canvas)
 
-    var top := PanelContainer.new()
-    _style_panel(top)
-    top.position = Vector2(15, 12)
-    top.custom_minimum_size = Vector2(360, 56)
-    canvas.add_child(top)
+    hud_panel = PanelContainer.new()
+    _style_panel(hud_panel)
+    hud_panel.position = Vector2(15, 12)
+    hud_panel.custom_minimum_size = Vector2(360, 56)
+    canvas.add_child(hud_panel)
     hud = Label.new()
     hud.add_theme_font_size_override("font_size", 18)
-    top.add_child(hud)
+    hud_panel.add_child(hud)
 
     # Four fixed-width buttons overflow a phone screen. Two rows fit in portrait.
     controls_grid = GridContainer.new()
@@ -473,6 +475,9 @@ func _create_ui() -> void:
 # Responsive phone portrait layout, while keeping the four desktop controls.
 func _apply_mobile_layout(viewport_width: float) -> void:
     var narrow := viewport_width < 720.0
+    mobile_hud_layout = narrow
+    hud_panel.custom_minimum_size.x = minf(360.0, maxf(0.0, viewport_width - 30.0)) if narrow else 360.0
+    hud.add_theme_font_size_override("font_size", 16 if narrow else 18)
     controls_grid.columns = 2 if narrow else 4
     controls_grid.offset_top = -142.0 if narrow else -90.0
     start_heading.add_theme_font_size_override("font_size", 26 if narrow else 34)
@@ -483,6 +488,7 @@ func _apply_mobile_layout(viewport_width: float) -> void:
         panel.custom_minimum_size.x = panel_width
         panel.offset_left = -panel_width / 2.0
         panel.offset_right = panel_width / 2.0
+    _refresh_hud()
 
 func _change_grade(delta: int) -> void:
     grade = clampi(grade + delta, 1, 10)
@@ -541,7 +547,10 @@ func _use_turbo() -> void:
 
 func _refresh_hud() -> void:
     if hud != null:
-        hud.text = "SKYWAY V21   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [lives, xp, power, combo, int(distance)]
+        if mobile_hud_layout:
+            hud.text = "V22  LEBEN %d  XP %d\nENERGIE %d%%  KOMBO x%d  %dm" % [lives, xp, power, combo, int(distance)]
+        else:
+            hud.text = "SKYWAY V22   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [lives, xp, power, combo, int(distance)]
 
 # Follow the racer on lane changes and jumps; widen the view during turbo.
 func _update_camera(delta: float) -> void:
