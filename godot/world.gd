@@ -517,7 +517,7 @@ func _use_turbo() -> void:
 
 func _refresh_hud() -> void:
     if hud != null:
-        hud.text = "SKYWAY V6   LEBEN %d   XP %d   TURBO %d%%   %dm" % [lives, xp, power, int(distance)]
+        hud.text = "SKYWAY V20   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [lives, xp, power, combo, int(distance)]
 
 # Follow the racer on lane changes and jumps; widen the view during turbo.
 func _update_camera(delta: float) -> void:

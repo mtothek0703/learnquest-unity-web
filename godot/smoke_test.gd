@@ -70,6 +70,10 @@ func _run_checks() -> void:
         _fail("Obstacles and pickups were not created")
         return
     game.call("_start_game")
+    var hud := game.get("hud") as Label
+    if hud == null or not hud.text.contains("SKYWAY V20") or not hud.text.contains("KOMBO x0"):
+        _fail("Race HUD must show the current version and starting combo")
+        return
     if not bool(game.get("started")):
         _fail("The race did not start")
         return
@@ -138,5 +142,16 @@ func _run_checks() -> void:
         if (game.get("question_label") as Label).text.is_empty():
             _fail("Vocabulary question missing for grade %d" % school_grade)
             return
-    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary")
+    # Correct vocabulary answers must update the visible streak counter.
+    game.set("grade", 5)
+    game.call("_ask")
+    var correct_option: int = (game.get("options") as Array).find(int(game.get("correct_index")))
+    if correct_option < 0:
+        _fail("Correct vocabulary option cannot be selected")
+        return
+    game.call("_answer", correct_option)
+    if int(game.get("combo")) != 1 or not hud.text.contains("KOMBO x1"):
+        _fail("Correct vocabulary answer does not update the HUD combo")
+        return
+    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary, combo HUD")
     quit(0)
