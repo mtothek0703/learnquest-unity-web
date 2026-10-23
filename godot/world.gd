@@ -516,6 +516,7 @@ func _ask() -> void:
     options.shuffle()
     question_label.text = WORDS[_group()][correct_index][0]
     for i in range(3):
+        answer_buttons[i].disabled = false
         answer_buttons[i].text = WORDS[_group()][options[i]][1]
     quiz_box.show()
 
@@ -526,8 +527,13 @@ func _answer(index: int) -> void:
         return
     if options[index] != correct_index:
         combo = 0
-        info_label.text = "NOCHMAL VERSUCHEN!"
+        # Disable the wrong choice until the next question, so the player
+        # can retry without repeatedly tapping the same incorrect answer.
+        answer_buttons[index].disabled = true
+        info_label.text = "FALSCH! ANDERE ANTWORT WÄHLEN"
         feedback_time = 2.0
+        # The game loop is paused during a quiz; update the combo HUD now.
+        _refresh_hud()
         return
     combo += 1
     xp += 45 if combo >= 3 else 35
@@ -552,9 +558,9 @@ func _use_turbo() -> void:
 func _refresh_hud() -> void:
     if hud != null:
         if mobile_hud_layout:
-            hud.text = "V24  LEBEN %d  XP %d\nENERGIE %d%%  KOMBO x%d  %dm" % [lives, xp, power, combo, int(distance)]
+            hud.text = "V25  LEBEN %d  XP %d\nENERGIE %d%%  KOMBO x%d  %dm" % [lives, xp, power, combo, int(distance)]
         else:
-            hud.text = "SKYWAY V24   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [lives, xp, power, combo, int(distance)]
+            hud.text = "SKYWAY V25   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [lives, xp, power, combo, int(distance)]
 
 # Follow the racer on lane changes and jumps; widen the view during turbo.
 func _update_camera(delta: float) -> void:
