@@ -69,9 +69,26 @@ func _run_checks() -> void:
     if items == null or items.get_child_count() < 10:
         _fail("Obstacles and pickups were not created")
         return
+    # Simulate portrait and desktop viewport widths without a real phone.
+    var controls := game.get("controls_grid") as GridContainer
+    if controls == null or controls.get_child_count() != 4:
+        _fail("Hoverboard touch controls are missing")
+        return
+    game.call("_apply_mobile_layout", 390.0)
+    if controls.columns != 2 or controls.offset_top > -130.0:
+        _fail("Phone portrait controls must use two rows")
+        return
+    for panel in [game.get("splash"), game.get("quiz_box"), game.get("end_panel")]:
+        if (panel as PanelContainer).custom_minimum_size.x > 366.0:
+            _fail("Phone portrait overlay exceeds the available width")
+            return
+    game.call("_apply_mobile_layout", 960.0)
+    if controls.columns != 4:
+        _fail("Desktop controls must return to one row")
+        return
     game.call("_start_game")
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V20") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V21") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
