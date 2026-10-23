@@ -88,5 +88,28 @@ func _run_checks() -> void:
     if game.get("quiz_box") == null:
         _fail("Vocabulary overlay is missing")
         return
+    # A child should not receive the same word twice in a row.
+    var previous_word: int = int(game.get("correct_index"))
+    for attempt in range(20):
+        game.call("_ask")
+        var current_word: int = int(game.get("correct_index"))
+        if current_word == previous_word:
+            _fail("Vocabulary challenge repeated the previous word")
+            return
+        var choices: Array = game.get("options")
+        if choices.size() != 3 or not choices.has(current_word):
+            _fail("Vocabulary answers are missing the correct translation")
+            return
+        if choices[0] == choices[1] or choices[0] == choices[2] or choices[1] == choices[2]:
+            _fail("Vocabulary challenge contains duplicate answer options")
+            return
+        previous_word = current_word
+    # Cover both the youngest and oldest available grade bands.
+    for school_grade in [1, 10]:
+        game.set("grade", school_grade)
+        game.call("_ask")
+        if (game.get("question_label") as Label).text.is_empty():
+            _fail("Vocabulary question missing for grade %d" % school_grade)
+            return
     print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary")
     quit(0)

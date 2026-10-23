@@ -29,12 +29,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Prepare Unity website
-        # The archived Unity demo is optional; a broken or missing archive must
-        # not prevent publishing the actively maintained Godot game.
-        continue-on-error: true
+        # Fail closed: never deploy a new Pages artifact without the Unity site.
         run: |
           python -m pip install --disable-pip-version-check brotli
           python .github/scripts/prepare_webgl.py LearnQuest3D_WebGL_Testfix.zip _site
+          test -s _site/index.html
+          test -n "$(find _site/Build -name '*.wasm' -print -quit)"
       - name: Install free Godot editor and web export templates
         run: |
           wget -q https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip -O /tmp/godot.zip
@@ -79,61 +79,36 @@ jobs:
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://smoke_test.gd 2>&1 | tee /tmp/godot-gameplay-test.log
           grep -Fq "LEARNQUEST SMOKE TEST PASSED" /tmp/godot-gameplay-test.log || { echo "::error::Gameplay checks did not complete"; exit 1; }
           echo "Gameplay integration tests passed"
-          # Fresh asset path bypasses cached Godot .wasm/.pck from earlier deployments.
-          mkdir -p _site/neon-city-v3
-          cp -a _site/godot/. _site/neon-city-v3/
-          mkdir -p _site/neon-city-v4
-          cp -a _site/godot/. _site/neon-city-v4/
-          mkdir -p _site/neon-city-v5
-          cp -a _site/godot/. _site/neon-city-v5/
-          mkdir -p _site/skyway-v6
-          cp -a _site/godot/. _site/skyway-v6/
-          mkdir -p _site/skyway-v7
-          cp -a _site/godot/. _site/skyway-v7/
-          mkdir -p _site/skyway-v8
-          cp -a _site/godot/. _site/skyway-v8/
-          mkdir -p _site/skyway-v9
-          cp -a _site/godot/. _site/skyway-v9/
-          mkdir -p _site/skyway-v10
-          cp -a _site/godot/. _site/skyway-v10/
-          test -s _site/skyway-v10/index.html
-          test -s _site/skyway-v10/index.js
-          test -s _site/skyway-v10/index.wasm
-          test -s _site/skyway-v10/index.pck
-          echo "Skyway V10 files prepared before Pages deployment"
-          mkdir -p _site/skyway-v11
-          cp -a _site/godot/. _site/skyway-v11/
-          mkdir -p _site/skyway-v12
-          cp -a _site/godot/. _site/skyway-v12/
-          mkdir -p _site/skyway-v13
-          cp -a _site/godot/. _site/skyway-v13/
-          mkdir -p _site/skyway-v14
-          cp -a _site/godot/. _site/skyway-v14/
-          mkdir -p _site/skyway-v15
-          cp -a _site/godot/. _site/skyway-v15/
-          mkdir -p _site/skyway-v16
-          cp -a _site/godot/. _site/skyway-v16/
-          echo "$GITHUB_SHA" > _site/skyway-v16/build.txt
-          echo "$GITHUB_SHA" > _site/skyway-v15/build.txt
-          echo "$GITHUB_SHA" > _site/skyway-v14/build.txt
-          echo "$GITHUB_SHA" > _site/skyway-v13/build.txt
-          echo "$GITHUB_SHA" > _site/skyway-v12/build.txt
-          echo "$GITHUB_SHA" > _site/skyway-v11/build.txt
-          echo "$GITHUB_SHA" > _site/skyway-v10/build.txt
-          echo "$GITHUB_SHA" > _site/skyway-v9/build.txt
-          echo "$GITHUB_SHA" > _site/skyway-v8/build.txt
-          echo "$GITHUB_SHA" > _site/skyway-v7/build.txt
-          echo "$GITHUB_SHA" > _site/skyway-v6/build.txt
-          echo "$GITHUB_SHA" > _site/neon-city-v5/build.txt
-          echo "$GITHUB_SHA" > _site/neon-city-v4/build.txt
+          # GitHub Pages deploys replace the whole website. Preserve the actual
+          # published older builds instead of silently replacing their contents.
+          python .github/scripts/preserve_legacy_pages.py
+          # Never overwrite V17 if it was already published by an earlier run.
+          # A future release must deliberately use a new URL (V18, V19, ...).
+          python - <<'PY'
+          from urllib.error import HTTPError
+          from urllib.request import Request, urlopen
+          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v17/index.html"
+          try:
+              with urlopen(Request(url, headers={"Cache-Control": "no-cache"}), timeout=20):
+                  raise SystemExit("Skyway V17 already exists: refusing to overwrite an immutable release")
+          except HTTPError as error:
+              if error.code != 404:
+                  raise
+          print("Skyway V17 is not published yet; safe to create")
+          PY
+          # V17 gets a fresh URL; historical folders are never rebuilt from V17.
+          mkdir -p _site/skyway-v17
+          cp -a _site/godot/. _site/skyway-v17/
+          echo "$GITHUB_SHA" > _site/skyway-v17/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
+          echo "Archived previous versions and prepared immutable Skyway V17"
       - name: Check browser export integrity
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          root = Path("_site/skyway-v16")
+          root = Path("_site/skyway-v17")
           for name in ("index.html", "index.js", "index.wasm", "index.pck"):
               file = root / name
               if not file.is_file() or file.stat().st_size == 0:
@@ -200,7 +175,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request, urllib.error
-          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v16/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v17/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.js": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
