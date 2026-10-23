@@ -520,6 +520,10 @@ func _ask() -> void:
     quiz_box.show()
 
 func _answer(index: int) -> void:
+    # Ignore stale/double taps after a quiz closes and invalid input indices.
+    # Otherwise a queued second press can award XP and energy more than once.
+    if not started or not quiz_active or index < 0 or index >= options.size():
+        return
     if options[index] != correct_index:
         combo = 0
         info_label.text = "NOCHMAL VERSUCHEN!"
@@ -548,9 +552,9 @@ func _use_turbo() -> void:
 func _refresh_hud() -> void:
     if hud != null:
         if mobile_hud_layout:
-            hud.text = "V23  LEBEN %d  XP %d\nENERGIE %d%%  KOMBO x%d  %dm" % [lives, xp, power, combo, int(distance)]
+            hud.text = "V24  LEBEN %d  XP %d\nENERGIE %d%%  KOMBO x%d  %dm" % [lives, xp, power, combo, int(distance)]
         else:
-            hud.text = "SKYWAY V23   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [lives, xp, power, combo, int(distance)]
+            hud.text = "SKYWAY V24   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [lives, xp, power, combo, int(distance)]
 
 # Follow the racer on lane changes and jumps; widen the view during turbo.
 func _update_camera(delta: float) -> void:
