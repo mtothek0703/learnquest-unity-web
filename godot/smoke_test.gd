@@ -87,7 +87,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V22") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V23") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -97,12 +97,12 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V22") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V23") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V22") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V23") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -120,6 +120,23 @@ func _run_checks() -> void:
     if float(game.get("jump_left")) <= 0.0:
         _fail("Jump did not trigger")
         return
+    # Regression: repeated turbo taps must not spend energy while boost is active.
+    game.set("power", 80)
+    game.call("_use_turbo")
+    if int(game.get("power")) != 40 or float(game.get("turbo_left")) <= 0.0:
+        _fail("Turbo did not activate or charge the expected energy")
+        return
+    var active_boost: float = float(game.get("turbo_left"))
+    game.call("_use_turbo")
+    if int(game.get("power")) != 40 or not is_equal_approx(float(game.get("turbo_left")), active_boost):
+        _fail("Repeated turbo tap consumed energy or reset the active boost")
+        return
+    game.set("turbo_left", 0.0)
+    game.call("_use_turbo")
+    if int(game.get("power")) != 0 or float(game.get("turbo_left")) <= 0.0:
+        _fail("Turbo cannot be reactivated after the previous boost expires")
+        return
+    game.set("turbo_left", 0.0)
     # Energy rings must rotate and pulse without replacing the existing meshes.
     var energy_gate: MeshInstance3D = null
     for item in items.get_children():
@@ -184,5 +201,5 @@ func _run_checks() -> void:
     if int(game.get("combo")) != 1 or not hud.text.contains("KOMBO x1"):
         _fail("Correct vocabulary answer does not update the HUD combo")
         return
-    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary, responsive V22 HUD")
+    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary, responsive V23 HUD")
     quit(0)
