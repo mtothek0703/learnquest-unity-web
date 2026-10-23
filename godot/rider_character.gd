@@ -99,7 +99,10 @@ func set_character_model(model: Node3D) -> void:
     _add_animated_costume(model)
     _add_balance_arms(model)
     _add_balance_legs(model)
-    _add_face_details(model)
+    # Original animated facial rig replaces the old box-shaped smile and brows.
+    var face := preload("res://rider_face.gd").new() as Node3D
+    face.name = "ExpressiveFace"
+    model.add_child(face)
     _add_hairstyle(model)
     _add_sculpted_jacket(model)
     # Keep the original animated board and lights, hide only its old body.
@@ -400,12 +403,10 @@ func _add_hairstyle(model: Node3D) -> void:
         var side := float(index - 2)
         var tuft := MeshInstance3D.new()
         tuft.name = "SweptHair%d" % index
-        var tuft_mesh := SphereMesh.new()
-        tuft_mesh.radius = 0.15
-        tuft_mesh.height = 0.43
-        tuft.mesh = tuft_mesh
+        # Individually sculpted swept locks replace the spherical hair cap.
+        tuft.mesh = _build_tapered_hair_mesh(0.55, 0.15, 0.25)
         tuft.material_override = highlight if index == 2 else hair
-        tuft.position = Vector3(side * 0.17, 2.92 - absf(side) * 0.045, 0.28)
+        tuft.position = Vector3(side * 0.17, 3.05 - absf(side) * 0.045, 0.28)
         tuft.rotation.x = -0.48
         tuft.rotation.z = side * -0.17
         hairstyle.add_child(tuft)

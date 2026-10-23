@@ -57,6 +57,28 @@ func _run_checks() -> void:
     if (sculpted_lock.mesh as ArrayMesh).surface_get_array_len(0) < 200:
         _fail("Tapered hair mesh has insufficient geometry")
         return
+    # V29: expressive face has original curved geometry and timed blinking.
+    var face := installed_model.get_node_or_null("ExpressiveFace") as Node3D
+    if face == null:
+        _fail("Expressive facial rig is missing")
+        return
+    var smile := face.get_node_or_null("CurvedSmile") as MeshInstance3D
+    if smile == null or not (smile.mesh is ArrayMesh) or (smile.mesh as ArrayMesh).surface_get_array_len(0) < 200:
+        _fail("Sculpted curved smile mesh is missing")
+        return
+    for eye_name in ["LeftEye", "RightEye"]:
+        var eye := face.get_node_or_null(eye_name) as Node3D
+        if eye == null or eye.get_node_or_null("EyeGlint") == null:
+            _fail("Layered eye and highlight missing: " + eye_name)
+            return
+    if float(face.call("_blink_factor", 3.90)) > 0.2 or not is_equal_approx(float(face.call("_blink_factor", 1.0)), 1.0):
+        _fail("Expressive face blink timing is incorrect")
+        return
+    for index in range(5):
+        var swept := hairstyle.get_node_or_null("SweptHair%d" % index) as MeshInstance3D
+        if swept == null or not (swept.mesh is ArrayMesh) or (swept.mesh as ArrayMesh).surface_get_array_len(0) < 200:
+            _fail("Sculpted hair crest lock is missing")
+            return
     var jacket := installed_model.get_node_or_null("SculptedJacketBack") as MeshInstance3D
     var emblem := installed_model.get_node_or_null("NeonJacketEmblem") as MeshInstance3D
     if jacket == null or not (jacket.mesh is ArrayMesh) or (jacket.mesh as ArrayMesh).surface_get_array_len(0) < 300:
@@ -145,7 +167,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V28") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V29") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -155,12 +177,12 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V28") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V29") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V28") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V29") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -300,5 +322,5 @@ func _run_checks() -> void:
         if answer_button.disabled:
             _fail("A new vocabulary question kept an old answer disabled")
             return
-    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary, responsive V28 HUD")
+    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary, responsive V29 HUD")
     quit(0)
