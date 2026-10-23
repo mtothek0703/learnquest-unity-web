@@ -69,7 +69,7 @@ def main() -> None:
         folder = destination / version
         url = BASE + version + "/"
         if not download(url + "index.html", folder / "index.html"):
-            if version in ("skyway-v16", "skyway-v17", "skyway-v18", "skyway-v19", "skyway-v20", "skyway-v21", "skyway-v22", "skyway-v23", "skyway-v24", "skyway-v25", "skyway-v26"):
+            if version in ("skyway-v16", "skyway-v17", "skyway-v18", "skyway-v19", "skyway-v20", "skyway-v21", "skyway-v22", "skyway-v23", "skyway-v24", "skyway-v25", "skyway-v26", "skyway-v27"):
                 raise RuntimeError("Verified %s is missing; refusing to replace old Pages site" % version)
             print(f"SKIP: {version} is not currently published", flush=True)
             continue
@@ -92,7 +92,7 @@ def main() -> None:
             "missing_required": missing,
         }
         print(f"Archived {version}: {len(list(folder.iterdir()))} files", flush=True)
-    for required_version in ("skyway-v16", "skyway-v17", "skyway-v18", "skyway-v19", "skyway-v20", "skyway-v21", "skyway-v22", "skyway-v23", "skyway-v24", "skyway-v25", "skyway-v26"):
+    for required_version in ("skyway-v16", "skyway-v17", "skyway-v18", "skyway-v19", "skyway-v20", "skyway-v21", "skyway-v22", "skyway-v23", "skyway-v24", "skyway-v25", "skyway-v26", "skyway-v27"):
         if required_version not in manifest:
             raise RuntimeError("%s preservation failed" % required_version)
     (destination / "preserved-versions.json").write_text(
