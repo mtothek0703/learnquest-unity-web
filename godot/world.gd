@@ -540,7 +540,7 @@ func _shift(delta: int) -> void:
         lane = clampi(lane + delta, -1, 1)
 
 func _use_turbo() -> void:
-    if started and not quiz_active and power >= 40:
+    if started and not quiz_active and turbo_left <= 0.0 and power >= 40:
         power -= 40
         turbo_left = 5.0
         _refresh_hud()
@@ -548,9 +548,9 @@ func _use_turbo() -> void:
 func _refresh_hud() -> void:
     if hud != null:
         if mobile_hud_layout:
-            hud.text = "V22  LEBEN %d  XP %d\nENERGIE %d%%  KOMBO x%d  %dm" % [lives, xp, power, combo, int(distance)]
+            hud.text = "V23  LEBEN %d  XP %d\nENERGIE %d%%  KOMBO x%d  %dm" % [lives, xp, power, combo, int(distance)]
         else:
-            hud.text = "SKYWAY V22   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [lives, xp, power, combo, int(distance)]
+            hud.text = "SKYWAY V23   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [lives, xp, power, combo, int(distance)]
 
 # Follow the racer on lane changes and jumps; widen the view during turbo.
 func _update_camera(delta: float) -> void:
