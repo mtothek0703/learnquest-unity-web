@@ -20,7 +20,7 @@ VERSIONS = (
     "neon-city-v3", "neon-city-v4", "neon-city-v5",
     "skyway-v6", "skyway-v7", "skyway-v8", "skyway-v9",
     "skyway-v10", "skyway-v11", "skyway-v12", "skyway-v13",
-    "skyway-v14", "skyway-v15", "skyway-v16",
+    "skyway-v14", "skyway-v15", "skyway-v16", "skyway-v17",
 )
 REQUIRED = ("index.html", "index.js", "index.wasm", "index.pck")
 OPTIONAL = (
@@ -69,8 +69,8 @@ def main() -> None:
         folder = destination / version
         url = BASE + version + "/"
         if not download(url + "index.html", folder / "index.html"):
-            if version == "skyway-v16":
-                raise RuntimeError("Latest verified V16 is missing; refusing to replace old Pages site")
+            if version in ("skyway-v16", "skyway-v17"):
+                raise RuntimeError("Verified %s is missing; refusing to replace old Pages site" % version)
             print(f"SKIP: {version} is not currently published", flush=True)
             continue
         missing = []
@@ -92,8 +92,9 @@ def main() -> None:
             "missing_required": missing,
         }
         print(f"Archived {version}: {len(list(folder.iterdir()))} files", flush=True)
-    if "skyway-v16" not in manifest:
-        raise RuntimeError("V16 preservation failed")
+    for required_version in ("skyway-v16", "skyway-v17"):
+        if required_version not in manifest:
+            raise RuntimeError("%s preservation failed" % required_version)
     (destination / "preserved-versions.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
