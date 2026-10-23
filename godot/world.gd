@@ -16,6 +16,8 @@ var started := false
 var quiz_active := false
 var quiz_time := 7.0
 var correct_index := 0
+# Prevent back-to-back repetitions of the same English vocabulary challenge.
+var previous_quiz_index := -1
 var options: Array[int] = []
 var answer_buttons: Array[Button] = []
 var combo := 0
@@ -227,6 +229,7 @@ func _reset_run() -> void:
     turbo_left = 0.0
     quiz_time = 7.0
     quiz_active = false
+    previous_quiz_index = -1
     rider.position = Vector3(0, 0, 0.2)
     for i in range(run_items.get_child_count()):
         var item: Node3D = run_items.get_child(i)
@@ -463,7 +466,12 @@ func _group() -> int:
 
 func _ask() -> void:
     quiz_active = true
-    correct_index = randi_range(0, WORDS[_group()].size() - 1)
+    var word_count: int = WORDS[_group()].size()
+    correct_index = randi_range(0, word_count - 1)
+    if word_count > 1 and correct_index == previous_quiz_index:
+        # Randomly select a different word; do not force the same next item.
+        correct_index = (correct_index + randi_range(1, word_count - 1)) % word_count
+    previous_quiz_index = correct_index
     options = [correct_index]
     while options.size() < 3:
         var candidate := randi_range(0, WORDS[_group()].size() - 1)
