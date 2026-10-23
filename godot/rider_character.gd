@@ -16,6 +16,7 @@ var pose_pivot: Node3D
 var scarf_tails: Array[Node3D] = []
 var balance_arms: Array[Node3D] = []
 var balance_legs: Array[Node3D] = []
+var hair_strands: Array[Node3D] = []
 
 func _ready() -> void:
     _try_load_character_asset()
@@ -69,6 +70,14 @@ func _process(delta: float) -> void:
                 var target := direction * lean * 0.11 + (0.12 if boosting else 0.0)
                 leg.rotation.x = lerpf(leg.rotation.x, target, minf(1.0, delta * 7.0))
                 leg.rotation.z = lerpf(leg.rotation.z, -direction * absf(lean) * 0.10, minf(1.0, delta * 7.0))
+        # Soft wind response on the stylized ponytail. Stay in sync with steering
+        # and turbo without depending on a skeletal animation asset.
+        for i in range(hair_strands.size()):
+            var strand := hair_strands[i]
+            if is_instance_valid(strand):
+                var wind := 0.18 if boosting else 0.06
+                strand.rotation.x = lerpf(strand.rotation.x, -0.28 - wind + sin(animation_clock * 5.0 + float(i) * 0.8) * 0.08, minf(1.0, delta * 5.0))
+                strand.rotation.z = lerpf(strand.rotation.z, -lean * 0.12 + sin(animation_clock * 3.0 + float(i) * 1.2) * 0.08, minf(1.0, delta * 6.0))
         if active_animator != null:
             var wanted := "jump" if airborne else ("boost" if boosting else ("steer" if absf(lean) > 0.25 else "idle"))
             if active_animator.has_animation(wanted) and active_animator.current_animation != wanted:
@@ -91,6 +100,7 @@ func set_character_model(model: Node3D) -> void:
     _add_balance_arms(model)
     _add_balance_legs(model)
     _add_face_details(model)
+    _add_hairstyle(model)
     # Keep the original animated board and lights, hide only its old body.
     var old_body := legacy_rider.get_node_or_null("Animated racer rig")
     if old_body != null:
@@ -248,6 +258,65 @@ func _add_face_details(model: Node3D) -> void:
     headset.position = Vector3(0.44, 2.44, 0.0)
     model.add_child(headset)
 
+func _add_hairstyle(model: Node3D) -> void:
+    # Clearly readable from the chase camera: swept-back hair crest and
+    # three separately animated locks. No external downloads or textures.
+    hair_strands.clear()
+    var hair := StandardMaterial3D.new()
+    hair.albedo_color = Color(0.11, 0.08, 0.27)
+    hair.metallic = 0.10
+    hair.roughness = 0.58
+    var highlight := StandardMaterial3D.new()
+    highlight.albedo_color = Color(0.69, 0.23, 0.83)
+    highlight.metallic = 0.15
+    highlight.roughness = 0.48
+    var neon := StandardMaterial3D.new()
+    neon.albedo_color = Color(0.12, 0.89, 0.94)
+    neon.emission_enabled = true
+    neon.emission = Color(0.04, 0.49, 0.62)
+    neon.emission_energy_multiplier = 1.2
+    var hairstyle := Node3D.new()
+    hairstyle.name = "RiderHair"
+    model.add_child(hairstyle)
+    # The glTF model's head is around Y=2.4; +Z is visible from behind.
+    for index in range(5):
+        var side := float(index - 2)
+        var tuft := MeshInstance3D.new()
+        tuft.name = "SweptHair%d" % index
+        var tuft_mesh := SphereMesh.new()
+        tuft_mesh.radius = 0.15
+        tuft_mesh.height = 0.43
+        tuft.mesh = tuft_mesh
+        tuft.material_override = highlight if index == 2 else hair
+        tuft.position = Vector3(side * 0.17, 2.92 - absf(side) * 0.045, 0.28)
+        tuft.rotation.x = -0.48
+        tuft.rotation.z = side * -0.17
+        hairstyle.add_child(tuft)
+    for i in range(3):
+        var pivot := Node3D.new()
+        pivot.name = "WindHair%d" % i
+        pivot.position = Vector3(float(i - 1) * 0.18, 2.71, 0.48)
+        hairstyle.add_child(pivot)
+        var lock := MeshInstance3D.new()
+        lock.name = "HairLock"
+        var lock_mesh := SphereMesh.new()
+        lock_mesh.radius = 0.15 if i == 1 else 0.11
+        lock_mesh.height = 0.68 if i == 1 else 0.50
+        lock.mesh = lock_mesh
+        lock.material_override = highlight if i == 1 else hair
+        lock.position = Vector3(0.0, -0.30, 0.12)
+        lock.rotation.x = 0.38
+        pivot.add_child(lock)
+        var clip := MeshInstance3D.new()
+        clip.name = "NeonHairClip"
+        var clip_mesh := BoxMesh.new()
+        clip_mesh.size = Vector3(0.20, 0.08, 0.09)
+        clip.mesh = clip_mesh
+        clip.material_override = neon
+        clip.position = Vector3(0.0, -0.07, 0.11)
+        pivot.add_child(clip)
+        hair_strands.append(pivot)
+
 func _find_animator(node: Node) -> AnimationPlayer:
     if node is AnimationPlayer:
         return node as AnimationPlayer
@@ -266,6 +335,7 @@ func restore_fallback() -> void:
     scarf_tails.clear()
     balance_arms.clear()
     balance_legs.clear()
+    hair_strands.clear()
     var old_body := legacy_rider.get_node_or_null("Animated racer rig")
     if old_body != null:
         old_body.visible = true
