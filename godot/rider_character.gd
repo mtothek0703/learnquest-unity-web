@@ -120,26 +120,62 @@ func _add_animated_costume(model: Node3D) -> void:
     trim.emission_enabled = true
     trim.emission = Color(0.06, 0.55, 0.7)
     trim.emission_energy_multiplier = 1.8
+    cloth.cull_mode = BaseMaterial3D.CULL_DISABLED
+    trim.cull_mode = BaseMaterial3D.CULL_DISABLED
     for i in range(2):
         var tail := Node3D.new()
         tail.name = "AnimatedScarfTail%d" % i
-        tail.position = Vector3(-0.13 if i == 0 else 0.13, 2.1, 0.26)
+        # The flowing cloth clears the sculpted jacket and is visible from behind.
+        tail.position = Vector3(-0.15 if i == 0 else 0.15, 2.13, 0.79)
         model.add_child(tail)
         var ribbon := MeshInstance3D.new()
-        var shape := BoxMesh.new()
-        shape.size = Vector3(0.16, 0.77, 0.045)
-        ribbon.mesh = shape
+        ribbon.name = "FlowingCloth"
+        ribbon.mesh = _build_wind_scarf_mesh(0.93, 0.29, 0.0, 1.0)
         ribbon.material_override = cloth
-        ribbon.position = Vector3(0.0, -0.37, 0.0)
         tail.add_child(ribbon)
         var stripe := MeshInstance3D.new()
-        var accent := BoxMesh.new()
-        accent.size = Vector3(0.18, 0.055, 0.054)
-        stripe.mesh = accent
+        stripe.name = "NeonHem"
+        stripe.mesh = _build_wind_scarf_mesh(0.93, 0.29, 0.86, 0.96)
         stripe.material_override = trim
-        stripe.position = Vector3(0.0, -0.69, 0.0)
+        stripe.position.z = 0.012
         tail.add_child(stripe)
         scarf_tails.append(tail)
+
+func _build_wind_scarf_mesh(length: float, width: float, from_t: float, to_t: float) -> ArrayMesh:
+    # Original lightweight curved cloth, not a box. Shared parametric surface
+    # lets the luminous hem follow the same silhouette as the animated fabric.
+    var surface := SurfaceTool.new()
+    surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+    const ROWS := 12
+    const COLUMNS := 4
+    for row in range(ROWS):
+        var t0 := lerpf(from_t, to_t, float(row) / float(ROWS))
+        var t1 := lerpf(from_t, to_t, float(row + 1) / float(ROWS))
+        for column in range(COLUMNS):
+            var u0 := float(column) / float(COLUMNS)
+            var u1 := float(column + 1) / float(COLUMNS)
+            var p00 := _scarf_surface_point(t0, u0, length, width)
+            var p01 := _scarf_surface_point(t0, u1, length, width)
+            var p10 := _scarf_surface_point(t1, u0, length, width)
+            var p11 := _scarf_surface_point(t1, u1, length, width)
+            surface.add_vertex(p00)
+            surface.add_vertex(p10)
+            surface.add_vertex(p11)
+            surface.add_vertex(p00)
+            surface.add_vertex(p11)
+            surface.add_vertex(p01)
+    surface.generate_normals()
+    return surface.commit()
+
+func _scarf_surface_point(t: float, u: float, length: float, width: float) -> Vector3:
+    var across := u * 2.0 - 1.0
+    var taper := 1.0 - 0.42 * t
+    var flutter := sin(t * PI) * 0.065 * sin(across * PI)
+    return Vector3(
+        across * width * taper * 0.5 + sin(t * PI) * 0.085,
+        -length * t,
+        0.05 + 0.28 * t * t + flutter + 0.025 * across * across
+    )
 
 func _add_balance_arms(model: Node3D) -> void:
     balance_arms.clear()
