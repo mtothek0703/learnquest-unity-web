@@ -258,6 +258,12 @@ func _update_run_items(delta: float) -> void:
         item.position.z += speed * delta
         var is_energy: bool = bool(item.get_meta("energy"))
         if is_energy:
+            # Rotate and pulse the existing gate mesh: no additional draw calls.
+            var gate := item.get_node_or_null("Energy gate") as MeshInstance3D
+            if gate != null:
+                gate.rotation.z += delta * 0.45
+                var glow_pulse := 1.0 + sin(distance * 0.10 + float(item.get_index()) * 0.7) * 0.08
+                gate.scale = Vector3.ONE * glow_pulse
             # Animate the collectible independently from the world motion.
             var core: Node3D = item.get_node_or_null("Animated core")
             if core != null:

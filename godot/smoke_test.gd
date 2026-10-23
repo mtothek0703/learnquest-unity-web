@@ -72,7 +72,21 @@ func _run_checks() -> void:
     if float(game.get("jump_left")) <= 0.0:
         _fail("Jump did not trigger")
         return
+    # Energy rings must rotate and pulse without replacing the existing meshes.
+    var energy_gate: MeshInstance3D = null
+    for item in items.get_children():
+        if bool(item.get_meta("energy")):
+            energy_gate = item.get_node_or_null("Energy gate") as MeshInstance3D
+            break
+    if energy_gate == null:
+        _fail("Collectible energy gate is missing")
+        return
+    var previous_angle := energy_gate.rotation.z
+    game.set("distance", 14.0)
     game.call("_update_run_items", 0.016)
+    if energy_gate.rotation.z <= previous_angle or absf(energy_gate.scale.x - 1.0) < 0.001:
+        _fail("Collectible energy gate rotation or pulse is not animated")
+        return
     var camera := game.get("chase_camera") as Camera3D
     if camera == null:
         _fail("Chase camera missing")
