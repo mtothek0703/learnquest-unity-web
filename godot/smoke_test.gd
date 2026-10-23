@@ -118,9 +118,9 @@ func _run_checks() -> void:
         return
     for tail_name in ["LeftCoatTail", "RightCoatTail"]:
         var tail := coat.get_node_or_null(tail_name) as Node3D
-        var cloth := tail.get_node_or_null("SculptedCloth") as MeshInstance3D if tail != null else null
+        var coat_cloth := tail.get_node_or_null("SculptedCloth") as MeshInstance3D if tail != null else null
         var seams := tail.get_node_or_null("NeonSeams") as MeshInstance3D if tail != null else null
-        if cloth == null or not (cloth.mesh is ArrayMesh) or (cloth.mesh as ArrayMesh).surface_get_array_len(0) < 650:
+        if coat_cloth == null or not (coat_cloth.mesh is ArrayMesh) or (coat_cloth.mesh as ArrayMesh).surface_get_array_len(0) < 650:
             _fail("Detailed curved coat fabric missing: " + tail_name)
             return
         if seams == null or not (seams.mesh is ArrayMesh) or (seams.mesh as ArrayMesh).surface_get_array_len(0) < 200:
