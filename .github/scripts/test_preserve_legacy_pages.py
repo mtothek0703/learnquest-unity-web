@@ -18,7 +18,7 @@ class PreservePagesTests(unittest.TestCase):
         self.env = patch.dict(os.environ, {"SITE_ROOT": str(self.root)})
         self.env.start()
         self.addCleanup(self.env.stop)
-        self.versions = patch.object(archive, "VERSIONS", ("skyway-v15", "skyway-v16"))
+        self.versions = patch.object(archive, "VERSIONS", ("skyway-v15", "skyway-v16", "skyway-v17"))
         self.versions.start()
         self.addCleanup(self.versions.stop)
 
@@ -36,7 +36,7 @@ class PreservePagesTests(unittest.TestCase):
         with patch.object(archive, "download", side_effect=self.mock_download):
             archive.main()
         manifest = json.loads((self.root / "preserved-versions.json").read_text())
-        self.assertEqual(set(manifest), {"skyway-v15", "skyway-v16"})
+        self.assertEqual(set(manifest), {"skyway-v15", "skyway-v16", "skyway-v17"})
         for version in manifest:
             self.assertEqual(
                 (self.root / version / "build.txt").read_text(),
@@ -50,6 +50,14 @@ class PreservePagesTests(unittest.TestCase):
             return self.mock_download(url, destination, ("skyway-v15/index.wasm",))
         with patch.object(archive, "download", side_effect=download):
             with self.assertRaisesRegex(RuntimeError, "skyway-v15 is incomplete"):
+                archive.main()
+        self.assertFalse((self.root / "preserved-versions.json").exists())
+
+    def test_missing_v17_blocks_deployment(self):
+        def download(url, destination):
+            return self.mock_download(url, destination, ("skyway-v17/index.html",))
+        with patch.object(archive, "download", side_effect=download):
+            with self.assertRaisesRegex(RuntimeError, "skyway-v17 is missing"):
                 archive.main()
         self.assertFalse((self.root / "preserved-versions.json").exists())
 
