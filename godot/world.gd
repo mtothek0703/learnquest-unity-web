@@ -34,6 +34,9 @@ var hit_cooldown := 0.0
 var end_panel: PanelContainer
 var hud: Label
 var splash: PanelContainer
+var controls_grid: GridContainer
+var start_heading: Label
+var end_heading: Label
 var quiz_box: PanelContainer
 var question_label: Label
 var grade_label: Label
@@ -368,21 +371,24 @@ func _create_ui() -> void:
     hud.add_theme_font_size_override("font_size", 18)
     top.add_child(hud)
 
-    var controls := HBoxContainer.new()
-    controls.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-    controls.offset_top = -90
-    controls.offset_bottom = -12
-    controls.offset_left = 15
-    controls.offset_right = -15
-    controls.add_theme_constant_override("separation", 12)
-    canvas.add_child(controls)
-    _make_button("< LINKS", func(): _shift(-1), controls)
-    _make_button("RECHTS >", func(): _shift(1), controls)
-    _make_button("SPRINGEN", _jump, controls)
-    var spacer := Control.new()
-    spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    controls.add_child(spacer)
-    _make_button("TURBO", _use_turbo, controls)
+    # Four fixed-width buttons overflow a phone screen. Two rows fit in portrait.
+    controls_grid = GridContainer.new()
+    controls_grid.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+    controls_grid.offset_top = -90
+    controls_grid.offset_bottom = -12
+    controls_grid.offset_left = 15
+    controls_grid.offset_right = -15
+    controls_grid.add_theme_constant_override("h_separation", 12)
+    controls_grid.add_theme_constant_override("v_separation", 10)
+    canvas.add_child(controls_grid)
+    for button in [
+        _make_button("< LINKS", func(): _shift(-1), controls_grid),
+        _make_button("RECHTS >", func(): _shift(1), controls_grid),
+        _make_button("SPRINGEN", _jump, controls_grid),
+        _make_button("TURBO", _use_turbo, controls_grid)
+    ]:
+        button.custom_minimum_size.x = 0
+        button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
     splash = PanelContainer.new()
     _style_panel(splash)
@@ -393,11 +399,11 @@ func _create_ui() -> void:
     var start_column := VBoxContainer.new()
     start_column.add_theme_constant_override("separation", 14)
     splash.add_child(start_column)
-    var heading := Label.new()
-    heading.text = "LEARNQUEST 3D"
-    heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    heading.add_theme_font_size_override("font_size", 34)
-    start_column.add_child(heading)
+    start_heading = Label.new()
+    start_heading.text = "LEARNQUEST 3D"
+    start_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    start_heading.add_theme_font_size_override("font_size", 34)
+    start_column.add_child(start_heading)
     var sub := Label.new()
     sub.text = "SKYWAY CITY - VOCAB RACE"
     sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -408,8 +414,10 @@ func _create_ui() -> void:
     var grade_buttons := HBoxContainer.new()
     grade_buttons.alignment = BoxContainer.ALIGNMENT_CENTER
     start_column.add_child(grade_buttons)
-    _make_button("−", func(): _change_grade(-1), grade_buttons)
-    _make_button("+", func(): _change_grade(1), grade_buttons)
+    var grade_down := _make_button("−", func(): _change_grade(-1), grade_buttons)
+    var grade_up := _make_button("+", func(): _change_grade(1), grade_buttons)
+    grade_down.custom_minimum_size.x = 68
+    grade_up.custom_minimum_size.x = 68
     _make_button("RENNEN STARTEN", _start_game, start_column)
     _change_grade(0)
 
@@ -452,13 +460,29 @@ func _create_ui() -> void:
     var end_column := VBoxContainer.new()
     end_column.add_theme_constant_override("separation", 18)
     end_panel.add_child(end_column)
-    var end_title := Label.new()
-    end_title.text = "RENNEN BEENDET!"
-    end_title.add_theme_font_size_override("font_size", 30)
-    end_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    end_column.add_child(end_title)
+    end_heading = Label.new()
+    end_heading.text = "RENNEN BEENDET!"
+    end_heading.add_theme_font_size_override("font_size", 30)
+    end_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    end_column.add_child(end_heading)
     _make_button("NOCHMAL FAHREN", _reset_run, end_column)
     end_panel.hide()
+    _apply_mobile_layout(get_viewport().get_visible_rect().size.x)
+    get_viewport().size_changed.connect(func(): _apply_mobile_layout(get_viewport().get_visible_rect().size.x))
+
+# Responsive phone portrait layout, while keeping the four desktop controls.
+func _apply_mobile_layout(viewport_width: float) -> void:
+    var narrow := viewport_width < 720.0
+    controls_grid.columns = 2 if narrow else 4
+    controls_grid.offset_top = -142.0 if narrow else -90.0
+    start_heading.add_theme_font_size_override("font_size", 26 if narrow else 34)
+    end_heading.add_theme_font_size_override("font_size", 24 if narrow else 30)
+    for panel in [splash, quiz_box, end_panel]:
+        var desktop_width: float = 440.0 if panel == splash else (460.0 if panel == quiz_box else 410.0)
+        var panel_width: float = minf(desktop_width, maxf(280.0, viewport_width - 24.0))
+        panel.custom_minimum_size.x = panel_width
+        panel.offset_left = -panel_width / 2.0
+        panel.offset_right = panel_width / 2.0
 
 func _change_grade(delta: int) -> void:
     grade = clampi(grade + delta, 1, 10)
@@ -517,7 +541,7 @@ func _use_turbo() -> void:
 
 func _refresh_hud() -> void:
     if hud != null:
-        hud.text = "SKYWAY V20   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [lives, xp, power, combo, int(distance)]
+        hud.text = "SKYWAY V21   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [lives, xp, power, combo, int(distance)]
 
 # Follow the racer on lane changes and jumps; widen the view during turbo.
 func _update_camera(delta: float) -> void:
