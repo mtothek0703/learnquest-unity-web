@@ -90,6 +90,7 @@ func set_character_model(model: Node3D) -> void:
     _add_animated_costume(model)
     _add_balance_arms(model)
     _add_balance_legs(model)
+    _add_face_details(model)
     # Keep the original animated board and lights, hide only its old body.
     var old_body := legacy_rider.get_node_or_null("Animated racer rig")
     if old_body != null:
@@ -194,6 +195,58 @@ func _add_balance_legs(model: Node3D) -> void:
         light_band.position = Vector3(0.0, -0.39, 0.18)
         pivot.add_child(light_band)
         balance_legs.append(pivot)
+
+func _add_face_details(model: Node3D) -> void:
+    # Visor is on the character's forward (-Z) side.
+    var eye_white := StandardMaterial3D.new()
+    eye_white.albedo_color = Color(0.98, 0.96, 0.93)
+    var pupil := StandardMaterial3D.new()
+    pupil.albedo_color = Color(0.04, 0.05, 0.11)
+    var eyebrow := StandardMaterial3D.new()
+    eyebrow.albedo_color = Color(0.20, 0.10, 0.17)
+    var highlight := StandardMaterial3D.new()
+    highlight.albedo_color = Color(0.18, 0.92, 0.97)
+    highlight.emission_enabled = true
+    highlight.emission = Color(0.04, 0.42, 0.54)
+    highlight.emission_energy_multiplier = 1.2
+    for side in [-1.0, 1.0]:
+        var eye := MeshInstance3D.new()
+        var eye_mesh := SphereMesh.new()
+        eye_mesh.radius = 0.105
+        eye_mesh.height = 0.15
+        eye.mesh = eye_mesh
+        eye.material_override = eye_white
+        eye.position = Vector3(side * 0.17, 2.47, -0.402)
+        model.add_child(eye)
+        var iris := MeshInstance3D.new()
+        var iris_mesh := SphereMesh.new()
+        iris_mesh.radius = 0.045
+        iris_mesh.height = 0.065
+        iris.mesh = iris_mesh
+        iris.material_override = pupil
+        iris.position = Vector3(side * 0.17, 2.47, -0.49)
+        model.add_child(iris)
+        var brow := MeshInstance3D.new()
+        var brow_mesh := BoxMesh.new()
+        brow_mesh.size = Vector3(0.19, 0.037, 0.045)
+        brow.mesh = brow_mesh
+        brow.material_override = eyebrow
+        brow.position = Vector3(side * 0.17, 2.60, -0.403)
+        model.add_child(brow)
+    var smile := MeshInstance3D.new()
+    var smile_mesh := BoxMesh.new()
+    smile_mesh.size = Vector3(0.19, 0.028, 0.034)
+    smile.mesh = smile_mesh
+    smile.material_override = eyebrow
+    smile.position = Vector3(0.0, 2.23, -0.414)
+    model.add_child(smile)
+    var headset := MeshInstance3D.new()
+    var headset_mesh := BoxMesh.new()
+    headset_mesh.size = Vector3(0.12, 0.13, 0.05)
+    headset.mesh = headset_mesh
+    headset.material_override = highlight
+    headset.position = Vector3(0.44, 2.44, 0.0)
+    model.add_child(headset)
 
 func _find_animator(node: Node) -> AnimationPlayer:
     if node is AnimationPlayer:
