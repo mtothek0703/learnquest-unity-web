@@ -14,6 +14,7 @@ var active_model: Node3D
 var active_animator: AnimationPlayer
 var pose_pivot: Node3D
 var scarf_tails: Array[Node3D] = []
+var balance_arms: Array[Node3D] = []
 
 func _ready() -> void:
     _try_load_character_asset()
@@ -52,6 +53,14 @@ func _process(delta: float) -> void:
             if is_instance_valid(tail):
                 tail.rotation.x = -0.35 + sin(animation_clock * (8.0 if boosting else 4.0) + float(i) * 1.3) * (0.18 if boosting else 0.09)
                 tail.rotation.z = sin(animation_clock * 3.0 + float(i)) * 0.1
+        for i in range(balance_arms.size()):
+            var arm := balance_arms[i]
+            if is_instance_valid(arm):
+                var direction := -1.0 if i == 0 else 1.0
+                var balance := clampf(lean * 0.22 * direction, -0.32, 0.32)
+                var turbo_pose := -0.20 if boosting else 0.0
+                arm.rotation.x = lerpf(arm.rotation.x, turbo_pose + sin(animation_clock * 4.0 + float(i)) * 0.025, minf(1.0, delta * 8.0))
+                arm.rotation.z = lerpf(arm.rotation.z, balance, minf(1.0, delta * 8.0))
         if active_animator != null:
             var wanted := "jump" if airborne else ("boost" if boosting else ("steer" if absf(lean) > 0.25 else "idle"))
             if active_animator.has_animation(wanted) and active_animator.current_animation != wanted:
@@ -71,6 +80,7 @@ func set_character_model(model: Node3D) -> void:
     # A visible breathing and balance motion works even for non-rigged glTF meshes.
     pose_pivot = model
     _add_animated_costume(model)
+    _add_balance_arms(model)
     # Keep the original animated board and lights, hide only its old body.
     var old_body := legacy_rider.get_node_or_null("Animated racer rig")
     if old_body != null:
@@ -110,6 +120,38 @@ func _add_animated_costume(model: Node3D) -> void:
         tail.add_child(stripe)
         scarf_tails.append(tail)
 
+func _add_balance_arms(model: Node3D) -> void:
+    balance_arms.clear()
+    var sleeve := StandardMaterial3D.new()
+    sleeve.albedo_color = Color(0.35, 0.23, 0.85)
+    sleeve.roughness = 0.6
+    var glove := StandardMaterial3D.new()
+    glove.albedo_color = Color(0.10, 0.14, 0.28)
+    glove.roughness = 0.5
+    for i in range(2):
+        var direction := -1.0 if i == 0 else 1.0
+        var pivot := Node3D.new()
+        pivot.name = "BalanceArm%d" % i
+        pivot.position = Vector3(direction * 0.57, 1.86, -0.01)
+        model.add_child(pivot)
+        var upper := MeshInstance3D.new()
+        var shape := CapsuleMesh.new()
+        shape.radius = 0.13
+        shape.height = 0.61
+        upper.mesh = shape
+        upper.material_override = sleeve
+        upper.position = Vector3(direction * 0.06, -0.22, 0.0)
+        pivot.add_child(upper)
+        var hand := MeshInstance3D.new()
+        var hand_shape := SphereMesh.new()
+        hand_shape.radius = 0.14
+        hand_shape.height = 0.23
+        hand.mesh = hand_shape
+        hand.material_override = glove
+        hand.position = Vector3(direction * 0.1, -0.52, -0.05)
+        pivot.add_child(hand)
+        balance_arms.append(pivot)
+
 func _find_animator(node: Node) -> AnimationPlayer:
     if node is AnimationPlayer:
         return node as AnimationPlayer
@@ -126,6 +168,7 @@ func restore_fallback() -> void:
     active_animator = null
     pose_pivot = null
     scarf_tails.clear()
+    balance_arms.clear()
     var old_body := legacy_rider.get_node_or_null("Animated racer rig")
     if old_body != null:
         old_body.visible = true
