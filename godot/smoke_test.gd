@@ -57,7 +57,7 @@ func _run_checks() -> void:
     if (sculpted_lock.mesh as ArrayMesh).surface_get_array_len(0) < 200:
         _fail("Tapered hair mesh has insufficient geometry")
         return
-    # V30: expressive face has original curved geometry and timed blinking.
+    # V31: expressive face has original curved geometry and timed blinking.
     var face := installed_model.get_node_or_null("ExpressiveFace") as Node3D
     if face == null:
         _fail("Expressive facial rig is missing")
@@ -111,7 +111,7 @@ func _run_checks() -> void:
         if trim_material == null or not trim_material.emission_enabled:
             _fail("Neon shoulder piping is not emissive on " + arm_name)
             return
-    # V30: mesh-built two-panel coat, gradient fabric, luminous seams and collar.
+    # V31: mesh-built two-panel coat, gradient fabric, luminous seams and collar.
     var coat := installed_model.get_node_or_null("AnimatedSculptedCoat") as Node3D
     if coat == null:
         _fail("Sculpted animated coat is missing")
@@ -135,6 +135,26 @@ func _run_checks() -> void:
     if collar == null or not (collar.mesh is ArrayMesh) or (collar.mesh as ArrayMesh).surface_get_array_len(0) < 100 or collar_light == null:
         _fail("Raised curved collar and luminous trim are missing")
         return
+    # V31: original articulated aerofoil costume must have sculpted geometry.
+    var aero := installed_model.get_node_or_null("AnimatedAeroWings") as Node3D
+    if aero == null:
+        _fail("Animated sculpted aerofoil costume is missing")
+        return
+    for side_name in ["LeftWing", "RightWing"]:
+        var wing := aero.get_node_or_null(side_name) as Node3D
+        if wing == null:
+            _fail("Articulated aerofoil missing: " + side_name)
+            return
+        for fin_name in ["SculptedUpperFin", "SculptedLowerFin"]:
+            var fin := wing.get_node_or_null(fin_name) as MeshInstance3D
+            if fin == null or not (fin.mesh is ArrayMesh) or (fin.mesh as ArrayMesh).surface_get_array_len(0) < 700:
+                _fail("Detailed sculpted wing geometry missing: " + side_name + "/" + fin_name)
+                return
+        for edge_name in ["UpperNeonEdge", "LowerNeonEdge", "UpperNeonVein", "LowerNeonVein"]:
+            var light := wing.get_node_or_null(edge_name) as MeshInstance3D
+            if light == null or not (light.mesh is ArrayMesh) or not (light.material_override as StandardMaterial3D).emission_enabled:
+                _fail("Luminous aerofoil edge missing: " + side_name + "/" + edge_name)
+                return
     rider.set("boosting", true)
     rider.set("lean", 0.8)
     await process_frame
@@ -147,6 +167,10 @@ func _run_checks() -> void:
     var left_tail := coat.get_node("LeftCoatTail") as Node3D
     if left_tail.rotation.x >= 0.0:
         _fail("Coat fabric does not respond to turbo wind")
+        return
+    var left_wing := aero.get_node("LeftWing") as Node3D
+    if absf(left_wing.rotation.z) < 0.001 or absf(left_wing.rotation.x) < 0.001:
+        _fail("Articulated aerofoil does not react to steering and turbo")
         return
     rider.set("boosting", false)
     rider.set("lean", 0.0)
@@ -195,7 +219,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V30") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V31") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -205,12 +229,12 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V30") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V31") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V30") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V31") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -350,5 +374,5 @@ func _run_checks() -> void:
         if answer_button.disabled:
             _fail("A new vocabulary question kept an old answer disabled")
             return
-    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary, responsive V30 HUD")
+    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary, responsive V31 HUD")
     quit(0)
