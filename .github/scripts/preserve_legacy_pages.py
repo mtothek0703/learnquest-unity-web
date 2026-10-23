@@ -20,7 +20,7 @@ VERSIONS = (
     "neon-city-v3", "neon-city-v4", "neon-city-v5",
     "skyway-v6", "skyway-v7", "skyway-v8", "skyway-v9",
     "skyway-v10", "skyway-v11", "skyway-v12", "skyway-v13",
-    "skyway-v14", "skyway-v15", "skyway-v16", "skyway-v17", "skyway-v18", "skyway-v19", "skyway-v20", "skyway-v21", "skyway-v22", "skyway-v23", "skyway-v24", "skyway-v25", "skyway-v26", "skyway-v27",
+    "skyway-v14", "skyway-v15", "skyway-v16", "skyway-v17", "skyway-v18", "skyway-v19", "skyway-v20", "skyway-v21", "skyway-v22", "skyway-v23", "skyway-v24", "skyway-v25", "skyway-v26", "skyway-v27", "skyway-v28",
 )
 REQUIRED = ("index.html", "index.js", "index.wasm", "index.pck")
 OPTIONAL = (

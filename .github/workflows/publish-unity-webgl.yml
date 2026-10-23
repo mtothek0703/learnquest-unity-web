@@ -82,33 +82,33 @@ jobs:
           # GitHub Pages deploys replace the whole website. Preserve the actual
           # published older builds instead of silently replacing their contents.
           python .github/scripts/preserve_legacy_pages.py
-          # Never overwrite V27 if it was already published by an earlier run.
-          # A future release must deliberately use a new URL (V28, V29, ...).
+          # Never overwrite V28 if it was already published by an earlier run.
+          # A future release must deliberately use a new URL (V29, V30, ...).
           python - <<'PY'
           from urllib.error import HTTPError
           from urllib.request import Request, urlopen
-          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v28/index.html"
+          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v29/index.html"
           try:
               with urlopen(Request(url, headers={"Cache-Control": "no-cache"}), timeout=20):
-                  raise SystemExit("Skyway V28 already exists: refusing to overwrite an immutable release")
+                  raise SystemExit("Skyway V29 already exists: refusing to overwrite an immutable release")
           except HTTPError as error:
               if error.code != 404:
                   raise
-          print("Skyway V28 is not published yet; safe to create")
+          print("Skyway V29 is not published yet; safe to create")
           PY
-          # V28 gets a fresh URL; historical folders are never rebuilt from V23.
-          mkdir -p _site/skyway-v28
-          cp -a _site/godot/. _site/skyway-v28/
-          echo "$GITHUB_SHA" > _site/skyway-v28/build.txt
+          # V29 gets a fresh URL; historical folders are never rebuilt from V23.
+          mkdir -p _site/skyway-v29
+          cp -a _site/godot/. _site/skyway-v29/
+          echo "$GITHUB_SHA" > _site/skyway-v29/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
-          echo "Archived previous versions and prepared immutable Skyway V28"
+          echo "Archived previous versions and prepared immutable Skyway V29"
       - name: Check browser export integrity
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          root = Path("_site/skyway-v28")
+          root = Path("_site/skyway-v29")
           for name in ("index.html", "index.js", "index.wasm", "index.pck"):
               file = root / name
               if not file.is_file() or file.stat().st_size == 0:
@@ -175,7 +175,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request, urllib.error
-          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v28/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v29/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.js": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
