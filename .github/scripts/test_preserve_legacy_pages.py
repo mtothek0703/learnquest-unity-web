@@ -32,7 +32,7 @@ class PreservePagesTests(unittest.TestCase):
         destination.write_bytes(("historical:" + relative).encode())
         return True
 
-    def test_preserves_both_versions_and_original_build_markers(self):
+    def test_preserves_all_versions_and_original_build_markers(self):
         with patch.object(archive, "download", side_effect=self.mock_download):
             archive.main()
         manifest = json.loads((self.root / "preserved-versions.json").read_text())
@@ -65,7 +65,7 @@ class PreservePagesTests(unittest.TestCase):
         def download(url, destination):
             return self.mock_download(url, destination, ("skyway-v16/index.html",))
         with patch.object(archive, "download", side_effect=download):
-            with self.assertRaisesRegex(RuntimeError, "V16 is missing"):
+            with self.assertRaisesRegex(RuntimeError, "skyway-v16 is missing"):
                 archive.main()
         self.assertFalse((self.root / "preserved-versions.json").exists())
 
