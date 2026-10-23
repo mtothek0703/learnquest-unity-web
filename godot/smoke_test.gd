@@ -87,7 +87,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V24") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V25") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -97,12 +97,12 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V24") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V25") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V24") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V25") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -216,5 +216,31 @@ func _run_checks() -> void:
     if bool(game.get("quiz_active")) or int(game.get("combo")) != 1 or int(game.get("xp")) != rewarded_xp or int(game.get("power")) != rewarded_power:
         _fail("Stale answer awarded vocabulary rewards twice")
         return
-    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary, responsive V24 HUD")
+    # Wrong answers must reset the visible combo immediately while the quiz
+    # is paused; disable only the incorrect choice, not the whole quiz.
+    game.call("_ask")
+    var next_choices: Array = game.get("options")
+    var next_correct: int = int(game.get("correct_index"))
+    var wrong_option: int = -1
+    for option_index in range(next_choices.size()):
+        if int(next_choices[option_index]) != next_correct:
+            wrong_option = option_index
+            break
+    if wrong_option < 0:
+        _fail("Could not find an incorrect vocabulary choice")
+        return
+    game.call("_answer", wrong_option)
+    var quiz_buttons: Array = game.get("answer_buttons")
+    if not bool(game.get("quiz_active")) or int(game.get("combo")) != 0 or not hud.text.contains("KOMBO x0"):
+        _fail("Wrong vocabulary answer did not reset the visible combo")
+        return
+    if not quiz_buttons[wrong_option].disabled:
+        _fail("Wrong vocabulary choice remains tappable")
+        return
+    game.call("_ask")
+    for answer_button in quiz_buttons:
+        if answer_button.disabled:
+            _fail("A new vocabulary question kept an old answer disabled")
+            return
+    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary, responsive V25 HUD")
     quit(0)
