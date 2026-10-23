@@ -74,6 +74,21 @@ func _run_checks() -> void:
     if hem == null or not (hem.mesh is ArrayMesh) or (hem.mesh as ArrayMesh).surface_get_array_len(0) < 250:
         _fail("Curved neon scarf hem is missing")
         return
+    # Curved shoulder plates and their emissive piping must exist on both
+    # articulated arms, with sufficient original mesh geometry.
+    for arm_name in ["BalanceArm0", "BalanceArm1"]:
+        var guard := installed_model.get_node_or_null(arm_name + "/SculptedShoulderGuard") as MeshInstance3D
+        var trim := installed_model.get_node_or_null(arm_name + "/ShoulderNeonTrim") as MeshInstance3D
+        if guard == null or not (guard.mesh is ArrayMesh) or (guard.mesh as ArrayMesh).surface_get_array_len(0) < 700:
+            _fail("Sculpted shoulder armor is missing on " + arm_name)
+            return
+        if trim == null or not (trim.mesh is ArrayMesh) or (trim.mesh as ArrayMesh).surface_get_array_len(0) < 150:
+            _fail("Curved neon shoulder piping is missing on " + arm_name)
+            return
+        var trim_material := trim.material_override as StandardMaterial3D
+        if trim_material == null or not trim_material.emission_enabled:
+            _fail("Neon shoulder piping is not emissive on " + arm_name)
+            return
     rider.set("boosting", true)
     rider.set("lean", 0.8)
     await process_frame
@@ -130,7 +145,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V27") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V28") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -140,12 +155,12 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V27") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V28") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V27") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V28") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -285,5 +300,5 @@ func _run_checks() -> void:
         if answer_button.disabled:
             _fail("A new vocabulary question kept an old answer disabled")
             return
-    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary, responsive V27 HUD")
+    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary, responsive V28 HUD")
     quit(0)
