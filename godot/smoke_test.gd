@@ -87,7 +87,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V23") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V24") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -97,12 +97,12 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V23") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V24") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V23") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V24") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -197,9 +197,24 @@ func _run_checks() -> void:
     if correct_option < 0:
         _fail("Correct vocabulary option cannot be selected")
         return
+    # An invalid or delayed tap must not crash or change the challenge.
+    var before_xp: int = int(game.get("xp"))
+    var before_power: int = int(game.get("power"))
+    game.call("_answer", -1)
+    game.call("_answer", 3)
+    if not bool(game.get("quiz_active")) or int(game.get("xp")) != before_xp or int(game.get("power")) != before_power:
+        _fail("Invalid quiz answer index modified the active challenge")
+        return
     game.call("_answer", correct_option)
     if int(game.get("combo")) != 1 or not hud.text.contains("KOMBO x1"):
         _fail("Correct vocabulary answer does not update the HUD combo")
         return
-    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary, responsive V23 HUD")
+    # Double tapping a correct answer must never grant a second reward.
+    var rewarded_xp: int = int(game.get("xp"))
+    var rewarded_power: int = int(game.get("power"))
+    game.call("_answer", correct_option)
+    if bool(game.get("quiz_active")) or int(game.get("combo")) != 1 or int(game.get("xp")) != rewarded_xp or int(game.get("power")) != rewarded_power:
+        _fail("Stale answer awarded vocabulary rewards twice")
+        return
+    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary, responsive V24 HUD")
     quit(0)
