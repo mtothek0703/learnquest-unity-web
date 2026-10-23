@@ -57,7 +57,7 @@ func _run_checks() -> void:
     if (sculpted_lock.mesh as ArrayMesh).surface_get_array_len(0) < 200:
         _fail("Tapered hair mesh has insufficient geometry")
         return
-    # V29: expressive face has original curved geometry and timed blinking.
+    # V30: expressive face has original curved geometry and timed blinking.
     var face := installed_model.get_node_or_null("ExpressiveFace") as Node3D
     if face == null:
         _fail("Expressive facial rig is missing")
@@ -111,6 +111,30 @@ func _run_checks() -> void:
         if trim_material == null or not trim_material.emission_enabled:
             _fail("Neon shoulder piping is not emissive on " + arm_name)
             return
+    # V30: mesh-built two-panel coat, gradient fabric, luminous seams and collar.
+    var coat := installed_model.get_node_or_null("AnimatedSculptedCoat") as Node3D
+    if coat == null:
+        _fail("Sculpted animated coat is missing")
+        return
+    for tail_name in ["LeftCoatTail", "RightCoatTail"]:
+        var tail := coat.get_node_or_null(tail_name) as Node3D
+        var coat_cloth := tail.get_node_or_null("SculptedCloth") as MeshInstance3D if tail != null else null
+        var seams := tail.get_node_or_null("NeonSeams") as MeshInstance3D if tail != null else null
+        if coat_cloth == null or not (coat_cloth.mesh is ArrayMesh) or (coat_cloth.mesh as ArrayMesh).surface_get_array_len(0) < 650:
+            _fail("Detailed curved coat fabric missing: " + tail_name)
+            return
+        if seams == null or not (seams.mesh is ArrayMesh) or (seams.mesh as ArrayMesh).surface_get_array_len(0) < 200:
+            _fail("Glowing tailored coat seams missing: " + tail_name)
+            return
+        var seam_material := seams.material_override as StandardMaterial3D
+        if seam_material == null or not seam_material.emission_enabled:
+            _fail("Coat seams must be emissive")
+            return
+    var collar := coat.get_node_or_null("RaisedSculptedCollar") as MeshInstance3D
+    var collar_light := coat.get_node_or_null("CollarLight") as MeshInstance3D
+    if collar == null or not (collar.mesh is ArrayMesh) or (collar.mesh as ArrayMesh).surface_get_array_len(0) < 100 or collar_light == null:
+        _fail("Raised curved collar and luminous trim are missing")
+        return
     rider.set("boosting", true)
     rider.set("lean", 0.8)
     await process_frame
@@ -119,6 +143,10 @@ func _run_checks() -> void:
         return
     if absf(hair_lock.rotation.x) < 0.001 or absf(hair_lock.rotation.z) < 0.001:
         _fail("The 3D rider hair is not responding to turbo and steering")
+        return
+    var left_tail := coat.get_node("LeftCoatTail") as Node3D
+    if left_tail.rotation.x >= 0.0:
+        _fail("Coat fabric does not respond to turbo wind")
         return
     rider.set("boosting", false)
     rider.set("lean", 0.0)
@@ -167,7 +195,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V29") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V30") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -177,12 +205,12 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V29") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V30") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V29") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V30") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -322,5 +350,5 @@ func _run_checks() -> void:
         if answer_button.disabled:
             _fail("A new vocabulary question kept an old answer disabled")
             return
-    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary, responsive V29 HUD")
+    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary, responsive V30 HUD")
     quit(0)

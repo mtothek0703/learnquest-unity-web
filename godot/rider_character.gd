@@ -105,6 +105,9 @@ func set_character_model(model: Node3D) -> void:
     model.add_child(face)
     _add_hairstyle(model)
     _add_sculpted_jacket(model)
+    var coat := preload("res://rider_coat.gd").new() as Node3D
+    coat.name = "AnimatedSculptedCoat"
+    model.add_child(coat)
     # Keep the original animated board and lights, hide only its old body.
     var old_body := legacy_rider.get_node_or_null("Animated racer rig")
     if old_body != null:
