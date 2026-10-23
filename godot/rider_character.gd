@@ -185,6 +185,19 @@ func _add_balance_arms(model: Node3D) -> void:
     var glove := StandardMaterial3D.new()
     glove.albedo_color = Color(0.10, 0.14, 0.28)
     glove.roughness = 0.5
+    # Original curved shoulder armor adds a readable, layered silhouette from
+    # the chase camera without a heavy skeletal mesh or licensed texture.
+    var armor := StandardMaterial3D.new()
+    armor.albedo_color = Color(0.12, 0.15, 0.38)
+    armor.metallic = 0.46
+    armor.roughness = 0.34
+    armor.cull_mode = BaseMaterial3D.CULL_DISABLED
+    var piping := StandardMaterial3D.new()
+    piping.albedo_color = Color(0.12, 0.92, 1.0)
+    piping.emission_enabled = true
+    piping.emission = Color(0.04, 0.58, 0.83)
+    piping.emission_energy_multiplier = 2.0
+    piping.cull_mode = BaseMaterial3D.CULL_DISABLED
     for i in range(2):
         var direction := -1.0 if i == 0 else 1.0
         var pivot := Node3D.new()
@@ -207,7 +220,74 @@ func _add_balance_arms(model: Node3D) -> void:
         hand.material_override = glove
         hand.position = Vector3(direction * 0.1, -0.52, -0.05)
         pivot.add_child(hand)
+        var shoulder := MeshInstance3D.new()
+        shoulder.name = "SculptedShoulderGuard"
+        shoulder.mesh = _build_shoulder_guard_mesh(direction)
+        shoulder.material_override = armor
+        pivot.add_child(shoulder)
+        var trim := MeshInstance3D.new()
+        trim.name = "ShoulderNeonTrim"
+        trim.mesh = _build_shoulder_trim_mesh(direction)
+        trim.material_override = piping
+        pivot.add_child(trim)
         balance_arms.append(pivot)
+
+func _shoulder_surface_point(u: float, v: float, direction: float) -> Vector3:
+    # A curved armor shell: taper toward the elbow and bulge toward the camera.
+    # Positive Z is the rider's back, where the third-person camera sees it.
+    var across := u * 2.0 - 1.0
+    var dome := sqrt(maxf(0.0, 1.0 - across * across))
+    return Vector3(
+        direction * 0.055 + across * (0.30 - 0.08 * v),
+        0.18 - 0.36 * v,
+        0.045 + dome * (0.22 - 0.035 * v) + sin(v * PI) * 0.03
+    )
+
+func _build_shoulder_guard_mesh(direction: float) -> ArrayMesh:
+    var surface := SurfaceTool.new()
+    surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+    const ROWS := 9
+    const COLUMNS := 14
+    for row in range(ROWS):
+        var v0 := float(row) / float(ROWS)
+        var v1 := float(row + 1) / float(ROWS)
+        for column in range(COLUMNS):
+            var u0 := float(column) / float(COLUMNS)
+            var u1 := float(column + 1) / float(COLUMNS)
+            var p00 := _shoulder_surface_point(u0, v0, direction)
+            var p01 := _shoulder_surface_point(u1, v0, direction)
+            var p10 := _shoulder_surface_point(u0, v1, direction)
+            var p11 := _shoulder_surface_point(u1, v1, direction)
+            surface.add_vertex(p00)
+            surface.add_vertex(p10)
+            surface.add_vertex(p11)
+            surface.add_vertex(p00)
+            surface.add_vertex(p11)
+            surface.add_vertex(p01)
+    surface.generate_normals()
+    return surface.commit()
+
+func _build_shoulder_trim_mesh(direction: float) -> ArrayMesh:
+    # Two thin curved neon seams follow the shell, not straight box edges.
+    var surface := SurfaceTool.new()
+    surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+    const SEGMENTS := 14
+    for band in [0.10, 0.78]:
+        for column in range(SEGMENTS):
+            var u0 := float(column) / float(SEGMENTS)
+            var u1 := float(column + 1) / float(SEGMENTS)
+            var p00 := _shoulder_surface_point(u0, band, direction) + Vector3(0.0, 0.0, 0.008)
+            var p01 := _shoulder_surface_point(u1, band, direction) + Vector3(0.0, 0.0, 0.008)
+            var p10 := _shoulder_surface_point(u0, band + 0.045, direction) + Vector3(0.0, 0.0, 0.008)
+            var p11 := _shoulder_surface_point(u1, band + 0.045, direction) + Vector3(0.0, 0.0, 0.008)
+            surface.add_vertex(p00)
+            surface.add_vertex(p10)
+            surface.add_vertex(p11)
+            surface.add_vertex(p00)
+            surface.add_vertex(p11)
+            surface.add_vertex(p01)
+    surface.generate_normals()
+    return surface.commit()
 
 func _add_balance_legs(model: Node3D) -> void:
     balance_legs.clear()
