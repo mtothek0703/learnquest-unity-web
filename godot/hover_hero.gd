@@ -280,7 +280,9 @@ func _process(delta: float) -> void:
     turbo_pose = lerpf(turbo_pose, 1.0 if boosting else 0.0, minf(1.0, delta * 3.8))
     # Height is controlled by the existing gameplay script; animate the pose
     # from the real jump arc without changing jump timing or collision rules.
-    var jump_height := maxf(0.0, position.y)
+    # The gameplay jump moves RiderCharacter, while this visual rig stays at local y=0.
+    var rider_root := get_parent() as Node3D
+    var jump_height := maxf(0.0, rider_root.position.y if rider_root != null else position.y)
     jump_pose = lerpf(jump_pose, clampf(jump_height / 1.8, 0.0, 1.0), minf(1.0, delta * 11.0))
     if last_jump_height > 0.14 and jump_height < 0.05:
         landing_pulse = 1.0
