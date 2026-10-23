@@ -42,6 +42,22 @@ func _run_checks() -> void:
     if fallback.visible:
         _fail("Fallback body must be hidden while imported 3D rider is active")
         return
+    var hairstyle := installed_model.get_node_or_null("RiderHair") as Node3D
+    if hairstyle == null or hairstyle.get_child_count() < 8:
+        _fail("The stylized 3D rider hair and animated locks are missing")
+        return
+    var hair_lock := hairstyle.get_node_or_null("WindHair1") as Node3D
+    if hair_lock == null:
+        _fail("The central wind-animated hair lock is missing")
+        return
+    rider.set("boosting", true)
+    rider.set("lean", 0.8)
+    await process_frame
+    if absf(hair_lock.rotation.x) < 0.001 or absf(hair_lock.rotation.z) < 0.001:
+        _fail("The 3D rider hair is not responding to turbo and steering")
+        return
+    rider.set("boosting", false)
+    rider.set("lean", 0.0)
     # Exercise the new replacement contract without requiring any paid model.
     var placeholder := Node3D.new()
     rider.call("set_character_model", placeholder)
