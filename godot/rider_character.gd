@@ -109,7 +109,7 @@ func set_character_model(model: Node3D) -> void:
     var volume := preload("res://rider_hair_volume.gd").new() as Node3D
     volume.name = "SculptedVolumetricHair"
     model.add_child(volume)
-    var braid := preload("res://rider_braid.gd").new() as Node3D
+    # V39: four large, two-joint wind-reactive locks frame the original braid.\n    var cascade := preload("res://rider_hair_cascade.gd").new() as Node3D\n    cascade.name = "AnimatedWindHairCascade"\n    model.add_child(cascade)\n    var braid := preload("res://rider_braid.gd").new() as Node3D
     braid.name = "AnimatedBraidedPonytail"
     model.add_child(braid)
     _add_sculpted_jacket(model)
