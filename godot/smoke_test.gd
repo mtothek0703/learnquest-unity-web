@@ -228,15 +228,64 @@ func _check_native_gestures() -> bool:
         _fail("V52 long two-finger hold accidentally activated an ability")
         return false
 
+    # V55: deliberate two-finger upward movement attacks immediately on the
+    # second moving finger, without waiting for either finger to be lifted.
     gestures.reset()
     gestures.handle(_screen_touch(0, true, Vector2(480, 370)), true, false, 10000, 0, 960.0)
     gestures.handle(_screen_touch(1, true, Vector2(580, 370)), true, false, 10020, 0, 960.0)
-    gestures.handle(_screen_drag(0, Vector2(480, 240)), true, false, 10100, 0, 960.0)
-    gestures.handle(_screen_drag(1, Vector2(580, 240)), true, false, 10120, 0, 960.0)
-    gestures.handle(_screen_touch(0, false, Vector2(480, 220)), true, false, 10200, 0, 960.0)
-    event_result = gestures.handle(_screen_touch(1, false, Vector2(580, 220)), true, false, 10220, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(480, 240)), true, false, 10100, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V55 one moving finger must not activate a two-finger attack")
+        return false
+    event_result = gestures.handle(_screen_drag(1, Vector2(580, 240)), true, false, 10120, 0, 960.0)
     if event_result.get("action", "") != "attack":
-        _fail("V52 two-finger upward swipe did not activate Super Attack")
+        _fail("V55 second upward drag must activate Super Attack immediately")
+        return false
+    event_result = gestures.handle(_screen_drag(1, Vector2(580, 210)), true, false, 10140, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V55 held two-finger attack must not repeat on later drag")
+        return false
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(480, 220)), true, false, 10200, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V55 releasing first finger must not repeat Super Attack")
+        return false
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(580, 210)), true, false, 10220, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V55 releasing second finger must not repeat Super Attack")
+        return false
+
+    # The recognizer must recover after an attack, including two-finger Shield.
+    gestures.handle(_screen_touch(0, true, Vector2(480, 300)), true, false, 10300, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(580, 300)), true, false, 10320, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(480, 300)), true, false, 10350, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(580, 300)), true, false, 10370, 0, 960.0)
+    if event_result.get("action", "") != "shield":
+        _fail("V55 Shield must recover after an early Super Attack")
+        return false
+
+    # If a browser skips ScreenDrag frames, the release-only fallback remains.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 370)), true, false, 10400, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(580, 370)), true, false, 10420, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(480, 220)), true, false, 10500, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(580, 220)), true, false, 10520, 0, 960.0)
+    if event_result.get("action", "") != "attack":
+        _fail("V55 missed drag events must still allow release-only Super Attack")
+        return false
+
+    # Two-finger sideways scrolling must not become a vertical attack.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 370)), true, false, 10600, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(580, 370)), true, false, 10620, 0, 960.0)
+    gestures.handle(_screen_drag(0, Vector2(630, 310)), true, false, 10680, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(730, 310)), true, false, 10700, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V55 horizontal two-finger scroll must not trigger Super Attack")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(630, 310)), true, false, 10720, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(730, 310)), true, false, 10740, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V55 horizontal two-finger release must not trigger Super Attack")
         return false
     if not gestures.handle(InputEventMouseMotion.new(), true, false, 10300, 0, 960.0).is_empty():
         _fail("V52 synthetic mouse movement must not become a touch gesture")
