@@ -36,7 +36,7 @@ jobs:
           # Only one new immutable release may be created per deployment.
           # Derive its name from the copy target, rather than pinning the
           # regression test to the previous Skyway release forever.
-          copies = re.findall(r"cp -a _site/godot/\\. _site/(skyway-v\\d+)/", text)
+          copies = re.findall(r"cp -a _site/godot/\. _site/(skyway-v\d+)/", text)
           assert len(copies) == 1, f"Expected one versioned export, found {copies}"
           release = copies[0]
           version = release.replace("skyway-v", "Skyway V")
