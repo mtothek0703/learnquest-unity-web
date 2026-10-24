@@ -77,7 +77,7 @@ func _run_checks() -> void:
         if clasp == null or not (clasp.material_override as StandardMaterial3D).emission_enabled:
             _fail("Luminous hair clasp missing: " + clasp_name)
             return
-    # V41: expressive face has original curved geometry and timed blinking.
+    # V42: expressive face has original curved geometry and timed blinking.
     var face := installed_model.get_node_or_null("ExpressiveFace") as Node3D
     if face == null:
         _fail("Expressive facial rig is missing")
@@ -323,7 +323,7 @@ func _run_checks() -> void:
         if trim == null or not (trim.mesh is ArrayMesh) or (trim.material_override as StandardMaterial3D) == null or not (trim.material_override as StandardMaterial3D).emission_enabled:
             _fail("Glowing knee armor piping missing: " + leg_name)
             return
-    # V41: mesh-built two-panel coat, gradient fabric, luminous seams and collar.
+    # V42: mesh-built two-panel coat, gradient fabric, luminous seams and collar.
     var coat := installed_model.get_node_or_null("AnimatedSculptedCoat") as Node3D
     if coat == null:
         _fail("Sculpted animated coat is missing")
@@ -347,7 +347,7 @@ func _run_checks() -> void:
     if collar == null or not (collar.mesh is ArrayMesh) or (collar.mesh as ArrayMesh).surface_get_array_len(0) < 100 or collar_light == null:
         _fail("Raised curved collar and luminous trim are missing")
         return
-    # V41: original articulated aerofoil costume must have sculpted geometry.
+    # V42: original articulated aerofoil costume must have sculpted geometry.
     var aero := installed_model.get_node_or_null("AnimatedAeroWings") as Node3D
     if aero == null:
         _fail("Animated sculpted aerofoil costume is missing")
@@ -480,7 +480,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V41") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V42") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -490,12 +490,12 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V41") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V42") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V41") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V42") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -676,7 +676,7 @@ func _run_checks() -> void:
     if str(game.get("phase")) != "training" or int(game.get("training_correct")) != 0:
         _fail("The next round must start with fresh vocabulary tasks")
         return
-    # V41: the power-up bar must exist without replacing steering controls.
+    # V42: the power-up bar must exist without replacing steering controls.
     game.call("_start_game")
     var special_grid := game.get("powerups_grid") as GridContainer
     if special_grid == null or special_grid.get_child_count() != 3:
@@ -746,6 +746,63 @@ func _run_checks() -> void:
     game.call("_use_super_attack")
     if int(game.get("power")) != 55:
         _fail("Repeated super attack consumed energy")
+        return
+    # V42: world selection must change real 3D geometry and the mission goal.
+    game.call("_finish_run")
+    game.call("_show_world_menu")
+    if str(game.get("phase")) != "menu":
+        _fail("World selection did not return to the menu")
+        return
+    game.call("_change_world")
+    var canyon := game.get_node_or_null("LearnQuest Crystal Canyon world") as Node3D
+    var city := game.get_node_or_null("LearnQuest Skyway world") as Node3D
+    if canyon == null or city == null or not canyon.visible or city.visible:
+        _fail("Crystal Canyon selection did not switch actual 3D worlds")
+        return
+    if int(game.get("world_choice")) != 1 or not is_equal_approx(float(game.get("mission_target")), 950.0):
+        _fail("Crystal Canyon must have a separate 950-meter mission")
+        return
+    var rock_mesh: MeshInstance3D = null
+    var arch_mesh: MeshInstance3D = null
+    for child in canyon.get_children():
+        if child.name.begins_with("Canyon rock cluster") and rock_mesh == null:
+            rock_mesh = child.get_node_or_null("Sculpted canyon spire") as MeshInstance3D
+        if child.name.begins_with("Crystal Canyon sky arch") and arch_mesh == null:
+            arch_mesh = child.get_node_or_null("Luminous canyon arch") as MeshInstance3D
+    if rock_mesh == null or not (rock_mesh.mesh is ArrayMesh) or (rock_mesh.mesh as ArrayMesh).surface_get_array_len(0) < 150:
+        _fail("Crystal Canyon needs sculpted, shaded 3D rock geometry")
+        return
+    if arch_mesh == null or arch_mesh.mesh == null or not (arch_mesh.material_override as StandardMaterial3D).emission_enabled:
+        _fail("Crystal Canyon is missing its luminous 3D gateway")
+        return
+    var mission_bar := game.get("progress_bar") as ProgressBar
+    if mission_bar == null or not is_equal_approx(mission_bar.max_value, 950.0):
+        _fail("Mission progress bar does not reflect the selected world")
+        return
+    game.call("_begin_training")
+    game.call("_shift", 1)
+    game.call("_use_turbo")
+    if int(game.get("lane")) != 0 or float(game.get("turbo_left")) > 0.0:
+        _fail("Racing controls must not bypass mandatory vocabulary training")
+        return
+    for task_index in range(3):
+        var choices: Array = game.get("options")
+        game.call("_answer", choices.find(int(game.get("correct_index"))))
+    if str(game.get("phase")) != "race" or not is_equal_approx(float(game.get("mission_target")), 950.0):
+        _fail("Canyon mission did not unlock after three vocabulary answers")
+        return
+    game.set("distance", 949.0)
+    game.call("_process", 0.15)
+    if str(game.get("phase")) != "results" or int(game.get("rounds_finished")) != 2:
+        _fail("Canyon mission did not finish at its 950-meter target")
+        return
+    if int(game.get("total_stars")) < 1 or (game.get("reward_label") as Label).text.find("STERNE") < 0:
+        _fail("Successful missions must award visible stars")
+        return
+    game.call("_show_world_menu")
+    game.call("_change_world")
+    if int(game.get("world_choice")) != 0 or not city.visible or canyon.visible:
+        _fail("Switching back to Neon City did not restore its 3D environment")
         return
     print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, V35 sculpted hair volume, sculpted V34 rider legs, V33 braid and V32 boots, rider, steering, jump, pickups, vocabulary, responsive HUD")
     quit(0)
