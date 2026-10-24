@@ -52,6 +52,27 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
         return {}
     var touch := event as InputEventScreenTouch
     if touch != null:
+        # iOS/Android may cancel a pointer when the app loses focus, the OS
+        # takes over a gesture or a browser interrupts a touch sequence.
+        # Cancellation is NOT a release: never award Turbo, Shield or a jump.
+        # Keep other fingers quarantined until lifted so a half-cancelled
+        # two-finger gesture cannot become a new power-up.
+        if touch.canceled:
+            var was_playfield := fingers.has(touch.index)
+            var was_blocked := blocked_fingers.has(touch.index)
+            if not was_playfield and not was_blocked:
+                return {}
+            fingers.erase(touch.index)
+            multi_positions.erase(touch.index)
+            blocked_fingers.erase(touch.index)
+            last_tap_ms = -10000
+            if fingers.is_empty():
+                _clear_active()
+                cancelled = not blocked_fingers.is_empty()
+            else:
+                cancelled = true
+                multi_tap_allowed = false
+            return {"captured": true} if was_playfield else {}
         if touch.pressed:
             if fingers.has(touch.index) or blocked_fingers.has(touch.index):
                 return {}
