@@ -480,7 +480,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V44") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V45") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -490,12 +490,12 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V44") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V45") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V44") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V45") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -840,7 +840,7 @@ func _run_checks() -> void:
     if int(game.get("total_stars")) < 7 or (game.get("reward_label") as Label).text.find("BONUSSTERN") < 0:
         _fail("Successful missions must award visible stars")
         return
-    # V44: third selectable 3D world, original mesh geometry and collection mission.
+    # V45: third selectable 3D world, original mesh geometry and collection mission.
     game.call("_show_world_menu")
     game.call("_change_world")
     var harbor := game.get_node_or_null("LearnQuest Star Harbor world") as Node3D
@@ -894,10 +894,90 @@ func _run_checks() -> void:
     if (game.get("reward_label") as Label).text.find("HAFEN-MISSION ERFÜLLT") < 0:
         _fail("Star Harbor crystal mission did not grant a bonus star")
         return
+    # V45: fourth real 3D world with sculpted ice, translucent aurora and
+    # skill-based airborne gate mission. No paid or third-party assets.
     game.call("_show_world_menu")
     game.call("_change_world")
-    if int(game.get("world_choice")) != 0 or not city.visible or canyon.visible or harbor.visible:
+    var glacier := game.get_node_or_null("LearnQuest Aurora Glacier world") as Node3D
+    if glacier == null or not glacier.visible or city.visible or canyon.visible or harbor.visible:
+        _fail("Aurora Glacier selection must switch to the fourth actual 3D world")
+        return
+    if int(game.get("world_choice")) != 3 or not is_equal_approx(float(game.get("mission_target")), 1200.0):
+        _fail("Aurora Glacier must have an independent 1200-meter mission")
+        return
+    var ridge := glacier.get_node_or_null("Glacier ridge cluster 0/Sculpted ice ridge") as MeshInstance3D
+    var ice_arch := glacier.get_node_or_null("Sculpted ice arch 0/Continuous sculpted ice arch") as MeshInstance3D
+    var silk := glacier.get_node_or_null("Aurora silk 0") as MeshInstance3D
+    var jump_ring := glacier.get_node_or_null("Aurora jump gate 0/Sculpted jump ring") as MeshInstance3D
+    if ridge == null or not (ridge.mesh is ArrayMesh) or (ridge.mesh as ArrayMesh).surface_get_array_len(0) < 700:
+        _fail("Glacier ridges must be sculpted and vertex shaded")
+        return
+    if ice_arch == null or not (ice_arch.mesh is ArrayMesh) or (ice_arch.mesh as ArrayMesh).surface_get_array_len(0) < 2000:
+        _fail("Glacier needs continuous sculpted ice arch geometry")
+        return
+    if silk == null or not (silk.mesh is ArrayMesh) or (silk.mesh as ArrayMesh).surface_get_array_len(0) < 1500:
+        _fail("Aurora ribbons must use a detailed original 3D surface mesh")
+        return
+    var aurora_material := silk.material_override as StandardMaterial3D
+    if aurora_material == null or aurora_material.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA or not aurora_material.vertex_color_use_as_albedo:
+        _fail("Aurora must preserve translucent vertex-color gradients")
+        return
+    if jump_ring == null or not (jump_ring.mesh is ArrayMesh) or (jump_ring.mesh as ArrayMesh).surface_get_array_len(0) < 2500:
+        _fail("Airborne mission gate must be a sculpted 3D ring")
+        return
+    var silk_angle: float = silk.rotation.z
+    glacier.call("_process", 0.8)
+    if is_equal_approx(silk.rotation.z, silk_angle):
+        _fail("Aurora sky ribbons do not animate")
+        return
+    game.call("_begin_training")
+    game.call("_shift", 1)
+    game.call("_use_turbo")
+    if int(game.get("lane")) != 0 or float(game.get("turbo_left")) > 0.0:
+        _fail("Glacier controls bypassed the mandatory vocabulary tasks")
+        return
+    for task_index in range(3):
+        var glacier_choices: Array = game.get("options")
+        game.call("_answer", glacier_choices.find(int(game.get("correct_index"))))
+    if str(game.get("phase")) != "race" or int(glacier.get("completed_gates")) != 0:
+        _fail("Glacier mission must start only after three correct answers")
+        return
+    var gates: Array = glacier.get("jump_gates")
+    if gates.size() != 5:
+        _fail("Aurora Glacier must have five real skill-based jump gates")
+        return
+    for gate_index in range(3):
+        var mission_gate := gates[gate_index] as Node3D
+        mission_gate.position.z = 0.3
+        rider.position.x = mission_gate.position.x
+        rider.position.y = 1.4
+        game.call("_update_glacier_mission")
+    if int(glacier.get("completed_gates")) != 3 or not hud.text.contains("AURORA-SPRUNGTORE"):
+        game.call("_refresh_hud")
+        if int(glacier.get("completed_gates")) != 3 or not hud.text.contains("AURORA-SPRUNGTORE"):
+            _fail("Three actual steering-and-jump gates did not score the mission")
+            return
+    var missed_gate := gates[3] as Node3D
+    missed_gate.position.z = 0.3
+    rider.position.y = 0.0
+    rider.position.x = missed_gate.position.x
+    game.call("_update_glacier_mission")
+    game.call("_update_glacier_mission")
+    if int(glacier.get("missed_gates")) != 1 or int(glacier.get("completed_gates")) != 3:
+        _fail("Missed jump gates must score only once and never grant rewards")
+        return
+    game.set("distance", 1199.0)
+    game.call("_process", 0.2)
+    if str(game.get("phase")) != "results" or int(game.get("rounds_finished")) != 4:
+        _fail("Aurora Glacier did not finish at its 1200-meter target")
+        return
+    if (game.get("reward_label") as Label).text.find("AURORA-SPRUNG-MISSION") < 0:
+        _fail("Glacier airborne mission did not grant its bonus star")
+        return
+    game.call("_show_world_menu")
+    game.call("_change_world")
+    if int(game.get("world_choice")) != 0 or not city.visible or canyon.visible or harbor.visible or glacier.visible:
         _fail("Switching back to Neon City did not restore its 3D environment")
         return
-    print("LEARNQUEST SMOKE TEST PASSED: 3 worlds, original Star Harbor meshes, collection mission, guardian combat, vocabulary grades 1-10, powers and uninterrupted rounds")
+    print("LEARNQUEST SMOKE TEST PASSED: 4 worlds, sculpted Aurora Glacier, airborne jump gates, guardian combat, vocabulary grades 1-10, powers and uninterrupted rounds")
     quit(0)

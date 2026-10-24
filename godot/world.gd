@@ -8,10 +8,11 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V44"
-const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN"]
-const WORLD_GOALS := [800.0, 950.0, 1100.0]
+const VERSION_LABEL := "V45"
+const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
+const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
 const HARBOR_BONUS_TARGET := 4
+const GLACIER_BONUS_TARGET := 3
 const SHIELD_COST := 30
 const MEGA_JUMP_COST := 30
 const ATTACK_COST := 45
@@ -56,6 +57,7 @@ var moving: Node3D
 var skyway_zone: Node3D
 var canyon_zone: Node3D
 var harbor_zone: Node3D
+var glacier_zone: Node3D
 var harbor_crystals := 0
 var guardian: Node3D
 var guardian_beam: MeshInstance3D
@@ -202,6 +204,10 @@ func _create_world() -> void:
     harbor_zone.name = "LearnQuest Star Harbor world"
     add_child(harbor_zone)
     harbor_zone.visible = false
+    glacier_zone = preload("res://aurora_glacier.gd").new() as Node3D
+    glacier_zone.name = "LearnQuest Aurora Glacier world"
+    add_child(glacier_zone)
+    glacier_zone.visible = false
     _create_guardian()
 
     # Moving roadside silhouettes supplement the richer scrolling Skyway world.
@@ -295,6 +301,8 @@ func _apply_world_theme() -> void:
         canyon_zone.visible = world_choice == 1
     if harbor_zone != null:
         harbor_zone.visible = world_choice == 2
+    if glacier_zone != null:
+        glacier_zone.visible = world_choice == 3
     if moving != null:
         moving.visible = world_choice == 0
     if sky_material != null:
@@ -314,6 +322,11 @@ func _apply_world_theme() -> void:
                 sky_material.sky_horizon_color = Color("#2f9fbb")
                 sky_material.ground_horizon_color = Color("#a36fd6")
                 sky_material.ground_bottom_color = Color("#1d265b")
+            3:
+                sky_material.sky_top_color = Color("#061b38")
+                sky_material.sky_horizon_color = Color("#26a9b5")
+                sky_material.ground_horizon_color = Color("#a4c8ed")
+                sky_material.ground_bottom_color = Color("#183b63")
 
 func _change_world() -> void:
     if phase != "menu":
@@ -322,6 +335,17 @@ func _change_world() -> void:
     _apply_world_theme()
     world_button.text = "WELT: %s" % WORLD_NAMES[world_choice]
     _refresh_hud()
+
+func _update_glacier_mission() -> void:
+    if world_choice != 3 or phase != "race" or not started:
+        return
+    var gate_result: int = int(glacier_zone.call("check_jump_gates", rider.position.x, rider.position.y))
+    if gate_result > 0:
+        info_label.text = "AURORA-SPRUNG GESCHAFFT! %d/%d" % [int(glacier_zone.get("completed_gates")), GLACIER_BONUS_TARGET]
+        feedback_time = 1.5
+    elif gate_result < 0:
+        info_label.text = "SPRUNG-TOR VERPASST! NÄCHSTES TOR ANPEILEN"
+        feedback_time = 1.5
 
 func _show_world_menu() -> void:
     if phase != "results":
@@ -449,6 +473,7 @@ func _reset_run() -> void:
     mega_jump_active = false
     guardian_hp = GUARDIAN_HEALTH
     harbor_crystals = 0
+    glacier_zone.call("reset_course")
     guardian_active = false
     guardian_defeated = false
     guardian_attack_timer = 0.0
@@ -615,7 +640,7 @@ func _finish_run() -> void:
     if completed:
         rounds_finished += 1
         round_number += 1
-        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 1 and guardian_defeated else 0) + (1 if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET else 0)
+        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 1 and guardian_defeated else 0) + (1 if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET else 0) + (1 if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET else 0)
         total_stars += stars_earned
         total_reward_xp += xp
         reward_label.text = "+%d STERNE  |  +%d XP\nGESAMT: %d STERNE" % [stars_earned, xp, total_stars]
@@ -623,6 +648,8 @@ func _finish_run() -> void:
             reward_label.text += "\nKRISTALL-WÄCHTER BESIEGT: +1 BONUSSTERN!"
         if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET:
             reward_label.text += "\nHAFEN-MISSION ERFÜLLT: +1 BONUSSTERN!"
+        if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET:
+            reward_label.text += "\nAURORA-SPRUNG-MISSION: +1 BONUSSTERN!"
     else:
         reward_label.text = "NOCH %dm BIS ZUM ZIEL\nVERSUCHE ES ERNEUT!" % maxi(0, int(mission_target - distance))
     phase = "results"
@@ -972,6 +999,8 @@ func _refresh_hud() -> void:
                 hud.text += "\nKRISTALL-WÄCHTER %d/%d  %s" % [guardian_hp, GUARDIAN_HEALTH, "LASER!" if guardian_warning_left > 0.0 else "ANGRIFF LADEN"]
             if world_choice == 2:
                 hud.text += "\nHAFEN-MISSION: %d/%d ENERGIEKRISTALLE" % [mini(harbor_crystals, HARBOR_BONUS_TARGET), HARBOR_BONUS_TARGET]
+            if world_choice == 3:
+                hud.text += "\nAURORA-SPRUNGTORE: %d/%d  (SPRINGEN + LENKEN)" % [mini(int(glacier_zone.get("completed_gates")), GLACIER_BONUS_TARGET), GLACIER_BONUS_TARGET]
     if progress_bar != null:
         progress_bar.visible = phase == "race"
         progress_bar.max_value = mission_target
@@ -1000,6 +1029,8 @@ func _process(delta: float) -> void:
     canyon_zone.set("travel_speed", speed)
     harbor_zone.set("running", phase == "race" and started and not quiz_active and world_choice == 2)
     harbor_zone.set("travel_speed", speed)
+    glacier_zone.set("running", phase == "race" and started and not quiz_active and world_choice == 3)
+    glacier_zone.set("travel_speed", speed)
     if phase != "race" or not started or quiz_active:
         _update_camera(delta)
         return
@@ -1045,6 +1076,7 @@ func _process(delta: float) -> void:
     rider.rotation.z = lerpf(rider.rotation.z, (float(lane) * 3.1 - rider.position.x) * -0.14, delta * 5)
     rider.rotation.y = sin(distance * 0.03) * 0.035
     _update_run_items(delta)
+    _update_glacier_mission()
     _update_camera(delta)
     if not started:
         return
