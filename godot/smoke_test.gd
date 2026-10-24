@@ -77,7 +77,7 @@ func _run_checks() -> void:
         if clasp == null or not (clasp.material_override as StandardMaterial3D).emission_enabled:
             _fail("Luminous hair clasp missing: " + clasp_name)
             return
-    # V31: expressive face has original curved geometry and timed blinking.
+    # V41: expressive face has original curved geometry and timed blinking.
     var face := installed_model.get_node_or_null("ExpressiveFace") as Node3D
     if face == null:
         _fail("Expressive facial rig is missing")
@@ -323,7 +323,7 @@ func _run_checks() -> void:
         if trim == null or not (trim.mesh is ArrayMesh) or (trim.material_override as StandardMaterial3D) == null or not (trim.material_override as StandardMaterial3D).emission_enabled:
             _fail("Glowing knee armor piping missing: " + leg_name)
             return
-    # V31: mesh-built two-panel coat, gradient fabric, luminous seams and collar.
+    # V41: mesh-built two-panel coat, gradient fabric, luminous seams and collar.
     var coat := installed_model.get_node_or_null("AnimatedSculptedCoat") as Node3D
     if coat == null:
         _fail("Sculpted animated coat is missing")
@@ -347,7 +347,7 @@ func _run_checks() -> void:
     if collar == null or not (collar.mesh is ArrayMesh) or (collar.mesh as ArrayMesh).surface_get_array_len(0) < 100 or collar_light == null:
         _fail("Raised curved collar and luminous trim are missing")
         return
-    # V31: original articulated aerofoil costume must have sculpted geometry.
+    # V41: original articulated aerofoil costume must have sculpted geometry.
     var aero := installed_model.get_node_or_null("AnimatedAeroWings") as Node3D
     if aero == null:
         _fail("Animated sculpted aerofoil costume is missing")
@@ -480,7 +480,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V31") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V41") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -490,12 +490,12 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V31") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V41") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V31") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V41") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -675,6 +675,77 @@ func _run_checks() -> void:
     game.call("_begin_training")
     if str(game.get("phase")) != "training" or int(game.get("training_correct")) != 0:
         _fail("The next round must start with fresh vocabulary tasks")
+        return
+    # V41: the power-up bar must exist without replacing steering controls.
+    game.call("_start_game")
+    var special_grid := game.get("powerups_grid") as GridContainer
+    if special_grid == null or special_grid.get_child_count() != 3:
+        _fail("Shield, mega jump and super attack touch buttons are missing")
+        return
+    var shield_fx := rider.get_node_or_null("Active energy shield") as MeshInstance3D
+    var jump_fx := rider.get_node_or_null("Mega jump energy") as MeshInstance3D
+    var attack_fx := rider.get_node_or_null("Super attack shockwave") as MeshInstance3D
+    if shield_fx == null or jump_fx == null or attack_fx == null:
+        _fail("Visible 3D special ability effects are missing")
+        return
+    game.set("power", 100)
+    game.call("_use_shield")
+    var shield_energy: int = int(game.get("power"))
+    if not shield_fx.visible or float(game.get("shield_left")) <= 0.0 or shield_energy != 70:
+        _fail("Energy shield activation or cost is incorrect")
+        return
+    game.call("_use_shield")
+    if int(game.get("power")) != shield_energy:
+        _fail("Repeated shield button consumed energy")
+        return
+    var shield_barrier: Node3D = null
+    for candidate in items.get_children():
+        if not bool(candidate.get_meta("energy")):
+            shield_barrier = candidate
+            break
+    if shield_barrier == null:
+        _fail("No obstacle available to test the energy shield")
+        return
+    shield_barrier.position.x = rider.position.x
+    shield_barrier.position.z = rider.position.z - 0.1
+    shield_barrier.set_meta("collected", false)
+    var lives_before_shield: int = int(game.get("lives"))
+    game.call("_update_run_items", 0.02)
+    if int(game.get("lives")) != lives_before_shield or not bool(shield_barrier.get_meta("collected")):
+        _fail("The shield did not block an obstacle collision")
+        return
+    game.set("power", 100)
+    game.call("_use_mega_jump")
+    if int(game.get("power")) != 70 or not jump_fx.visible or not bool(game.get("mega_jump_active")):
+        _fail("Mega jump activation or cost is incorrect")
+        return
+    game.call("_update_run_items", 0.35)
+    if rider.position.y < 2.0:
+        _fail("Mega jump does not leap higher than a standard jump")
+        return
+    game.set("power", 100)
+    var attack_barrier: Node3D = null
+    for candidate in items.get_children():
+        if not bool(candidate.get_meta("energy")) and candidate != shield_barrier:
+            attack_barrier = candidate
+            break
+    if attack_barrier == null:
+        _fail("No obstacle available to test the super attack")
+        return
+    attack_barrier.position.z = rider.position.z - 24.0
+    attack_barrier.set_meta("collected", false)
+    attack_barrier.visible = true
+    var before_attack_xp: int = int(game.get("xp"))
+    game.call("_use_super_attack")
+    if int(game.get("power")) != 55 or not attack_fx.visible:
+        _fail("Super attack activation or energy cost is incorrect")
+        return
+    if not bool(attack_barrier.get_meta("collected")) or attack_barrier.visible or int(game.get("xp")) < before_attack_xp + 20:
+        _fail("Super attack did not destroy the forward barrier and award XP")
+        return
+    game.call("_use_super_attack")
+    if int(game.get("power")) != 55:
+        _fail("Repeated super attack consumed energy")
         return
     print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, V35 sculpted hair volume, sculpted V34 rider legs, V33 braid and V32 boots, rider, steering, jump, pickups, vocabulary, responsive HUD")
     quit(0)
