@@ -45,8 +45,8 @@ func _run_checks() -> void:
     # V50: showcase the real detailed rider from the front, with original
     # animated curved geometry, without replacing the playable hoverboard.
     var gallery := game.get_node_or_null("Cinematic hero gallery") as Node3D
-    var camera := game.get("chase_camera") as Camera3D
-    if gallery == null or camera == null or not gallery.visible:
+    var portrait_camera := game.get("chase_camera") as Camera3D
+    if gallery == null or portrait_camera == null or not gallery.visible:
         _fail("Cinematic hero showcase or camera is missing in the menu")
         return
     var halo := gallery.get_node_or_null("Layered luminous landing rings") as MeshInstance3D
@@ -61,7 +61,7 @@ func _run_checks() -> void:
     if gallery_material == null or not gallery_material.vertex_color_use_as_albedo or gallery_material.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA:
         _fail("Gallery must preserve translucent neon vertex gradients")
         return
-    if camera.position.z >= -3.0 or camera.fov >= 62.0:
+    if portrait_camera.position.z >= -3.0 or portrait_camera.fov >= 62.0:
         _fail("Menu must reveal the rider's front-facing face and hair")
         return
     var gallery_angle: float = halo.rotation.y
@@ -522,7 +522,7 @@ func _run_checks() -> void:
         return
     game.call("_start_game")
     game.call("_update_camera", 1.0)
-    if camera.position.z <= 6.0 or camera.fov < 62.0:
+    if portrait_camera.position.z <= 6.0 or portrait_camera.fov < 62.0:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
