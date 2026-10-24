@@ -120,6 +120,10 @@ func set_character_model(model: Node3D) -> void:
     var wings := preload("res://rider_wings.gd").new() as Node3D
     wings.name = "AnimatedAeroWings"
     model.add_child(wings)
+    # V36: large curved back armor, rotating energy reactor and articulated jets.
+    var harness := preload("res://rider_aero_harness.gd").new() as Node3D
+    harness.name = "AnimatedAeroHarness"
+    model.add_child(harness)
     # Keep the original animated board and lights, hide only its old body.
     var old_body := legacy_rider.get_node_or_null("Animated racer rig")
     if old_body != null:

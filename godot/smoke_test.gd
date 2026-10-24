@@ -254,9 +254,45 @@ func _run_checks() -> void:
             if light == null or not (light.mesh is ArrayMesh) or not (light.material_override as StandardMaterial3D).emission_enabled:
                 _fail("Luminous aerofoil edge missing: " + side_name + "/" + edge_name)
                 return
+    # V36: the sculpted aero harness must be visible, vertex-shaded and animated.
+    var harness := installed_model.get_node_or_null("AnimatedAeroHarness") as Node3D
+    if harness == null:
+        _fail("Back-mounted aero harness is missing")
+        return
+    var plate := harness.get_node_or_null("CurvedAeroBackplate") as MeshInstance3D
+    if plate == null or not (plate.mesh is ArrayMesh) or (plate.mesh as ArrayMesh).surface_get_array_len(0) < 1400:
+        _fail("Curved back armor requires detailed original mesh geometry")
+        return
+    var plate_material := plate.material_override as StandardMaterial3D
+    if plate_material == null or not plate_material.vertex_color_use_as_albedo:
+        _fail("Back armor color gradients are missing")
+        return
+    var reactor := harness.get_node_or_null("RotatingEnergyReactor") as Node3D
+    var ring := reactor.get_node_or_null("SculptedReactorRing") as MeshInstance3D if reactor != null else null
+    if ring == null or not (ring.mesh is ArrayMesh) or (ring.mesh as ArrayMesh).surface_get_array_len(0) < 250:
+        _fail("Sculpted rotating reactor ring is missing")
+        return
+    for thruster_name in ["LeftAeroThruster", "RightAeroThruster"]:
+        var thruster := harness.get_node_or_null(thruster_name) as Node3D
+        var housing := thruster.get_node_or_null("SculptedThrusterHousing") as MeshInstance3D if thruster != null else null
+        var plume := thruster.get_node_or_null("NeonExhaustPlume") as MeshInstance3D if thruster != null else null
+        if housing == null or not (housing.mesh is ArrayMesh) or (housing.mesh as ArrayMesh).surface_get_array_len(0) < 1200:
+            _fail("Sculpted thruster housing is missing: " + thruster_name)
+            return
+        if plume == null or not (plume.mesh is ArrayMesh) or not (plume.material_override as StandardMaterial3D).emission_enabled:
+            _fail("Neon thruster exhaust is missing: " + thruster_name)
+            return
+    var old_reactor_angle := reactor.rotation.z
     rider.set("boosting", true)
     rider.set("lean", 0.8)
     await process_frame
+    if reactor.rotation.z <= old_reactor_angle or absf(reactor.scale.x - 1.0) < 0.001:
+        _fail("Aero reactor did not animate under turbo")
+        return
+    var left_thruster := harness.get_node("LeftAeroThruster") as Node3D
+    if absf(left_thruster.rotation.z) < 0.001:
+        _fail("Aero thrusters must react to steering")
+        return
     if absf(scarf.rotation.x) < 0.001:
         _fail("Flowing scarf did not respond to rider motion")
         return
