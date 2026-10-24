@@ -44,7 +44,7 @@ func _wave_mesh() -> ArrayMesh:
             var t := (float(step) + 0.5) / 14.0
             var z := (t - 0.5) * 35.0
             var height := 0.65 + 0.58 * absf(sin(t * TAU * 3.5))
-            var x := side * 1.08
+            var x: float = float(side) * 1.08
             var root_front := Vector3(x, 0.13, z - 0.9)
             var root_back := Vector3(x, 0.13, z + 0.9)
             var tip := Vector3(side * 0.52, height, z + 0.25)
