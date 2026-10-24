@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V48"
+const VERSION_LABEL := "V49"
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
 const HARBOR_BONUS_TARGET := 4
@@ -511,53 +511,29 @@ func _show_world_menu() -> void:
     _refresh_hud()
 
 func _create_powerup_effects() -> void:
-    # Three cheap, mobile-friendly visual effects stay attached to the racer.
+    # V49: large, curved, gradient-lit energy surfaces instead of stock spheres
+    # and a torus. The effect node names and gameplay costs remain unchanged.
+    var effect_factory = preload("res://ability_effects.gd")
     shield_visual = MeshInstance3D.new()
     shield_visual.name = "Active energy shield"
-    var bubble := SphereMesh.new()
-    bubble.radius = 1.4
-    bubble.height = 2.8
-    shield_visual.mesh = bubble
-    var shield_mat := StandardMaterial3D.new()
-    shield_mat.albedo_color = Color(0.17, 0.83, 1.0, 0.18)
-    shield_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-    shield_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-    shield_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-    shield_mat.emission_enabled = true
-    shield_mat.emission = Color(0.06, 0.40, 0.65)
-    shield_mat.emission_energy_multiplier = 1.25
-    shield_visual.material_override = shield_mat
+    shield_visual.mesh = effect_factory.shield_mesh()
+    shield_visual.material_override = effect_factory.effect_material(Color(0.05, 0.30, 0.53), 0.30)
     shield_visual.position.y = 1.35
     rider.add_child(shield_visual)
     shield_visual.visible = false
 
     mega_jump_visual = MeshInstance3D.new()
     mega_jump_visual.name = "Mega jump energy"
-    var mega_ring := TorusMesh.new()
-    mega_ring.inner_radius = 0.68
-    mega_ring.outer_radius = 0.80
-    mega_jump_visual.mesh = mega_ring
-    mega_jump_visual.material_override = mat(Color("#ffe36c"), true)
-    mega_jump_visual.rotation_degrees.x = 90.0
+    mega_jump_visual.mesh = effect_factory.jump_mesh()
+    mega_jump_visual.material_override = effect_factory.effect_material(Color(0.37, 0.19, 0.09), 0.90)
     mega_jump_visual.position.y = 0.20
     rider.add_child(mega_jump_visual)
     mega_jump_visual.visible = false
 
     attack_visual = MeshInstance3D.new()
     attack_visual.name = "Super attack shockwave"
-    var shockwave := SphereMesh.new()
-    shockwave.radius = 1.2
-    shockwave.height = 2.4
-    attack_visual.mesh = shockwave
-    var attack_mat := StandardMaterial3D.new()
-    attack_mat.albedo_color = Color(1.0, 0.22, 0.75, 0.25)
-    attack_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-    attack_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-    attack_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-    attack_mat.emission_enabled = true
-    attack_mat.emission = Color(0.7, 0.10, 0.50)
-    attack_mat.emission_energy_multiplier = 1.6
-    attack_visual.material_override = attack_mat
+    attack_visual.mesh = effect_factory.attack_mesh()
+    attack_visual.material_override = effect_factory.effect_material(Color(0.55, 0.08, 0.33), 0.80)
     attack_visual.position.y = 1.3
     rider.add_child(attack_visual)
     attack_visual.visible = false
@@ -1279,10 +1255,12 @@ func _process(delta: float) -> void:
     attack_left = maxf(0.0, attack_left - delta)
     shield_visual.visible = shield_left > 0.0
     if shield_visual.visible:
+        shield_visual.rotation.y += delta * 0.62
         var pulse := 1.0 + sin(distance * 0.24) * 0.04
         shield_visual.scale = Vector3.ONE * pulse
     attack_visual.visible = attack_left > 0.0
     if attack_visual.visible:
+        attack_visual.rotation.y += delta * 2.0
         attack_visual.scale = Vector3.ONE * (1.0 + (0.72 - attack_left) * 8.0)
     if mega_jump_active:
         mega_jump_visual.rotation.y += delta * 3.0
