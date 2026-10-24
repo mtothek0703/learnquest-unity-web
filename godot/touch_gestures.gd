@@ -23,6 +23,8 @@ var multi_deltas: Array[Vector2] = []
 # Track both live positions so a deliberate attack can fire before release.
 var multi_positions: Dictionary = {}
 var multi_attack_fired := false
+# Lock out an attack after sideways-first two-finger scrolling or pinching.
+var multi_attack_blocked := false
 var cancelled := false
 var single_mode := "" # undecided -> steer OR jump, never both
 var moved_outside_tap := false
@@ -36,6 +38,7 @@ func _clear_active() -> void:
     multi_deltas.clear()
     multi_positions.clear()
     multi_attack_fired = false
+    multi_attack_blocked = false
     single_mode = ""
     moved_outside_tap = false
     last_target_lane = 0
@@ -100,6 +103,7 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                 if single_mode != "" or moved_outside_tap:
                     cancelled = true
                 multi_moved = false
+                multi_attack_blocked = false
                 multi_deltas.clear()
                 last_tap_ms = -10000
             return {"captured": true}
@@ -136,7 +140,7 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
             if multi_deltas.size() == 2:
                 var a: Vector2 = multi_deltas[0]
                 var b: Vector2 = multi_deltas[1]
-                if now_ms - multi_start_ms <= MAX_ATTACK_MS and a.y < -SWIPE_UP and b.y < -SWIPE_UP and absf(a.x) < absf(a.y) and absf(b.x) < absf(b.y):
+                if not multi_attack_blocked and now_ms - multi_start_ms <= MAX_ATTACK_MS and a.y < -SWIPE_UP and b.y < -SWIPE_UP and absf(a.x) < absf(a.y) and absf(b.x) < absf(b.y):
                     result["action"] = "attack"
                 elif multi_tap_allowed and not multi_moved and now_ms - multi_start_ms <= TWO_FINGER_MS and a.length() <= TAP_SLOP and b.length() <= TAP_SLOP:
                     result["action"] = "shield"
@@ -178,9 +182,13 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
         # move deliberately upward; the player need not lift their fingers.
         # Never treat one moving finger or a UI-cancelled gesture as an attack.
         if multi_active and not cancelled:
-            if drag.position.distance_to(fingers[drag.index]["start"]) > TAP_SLOP:
+            var travel: Vector2 = drag.position - fingers[drag.index]["start"]
+            if travel.length() > TAP_SLOP:
                 multi_moved = true
-            if not multi_attack_fired and fingers.size() == 2 and now_ms - multi_start_ms <= MAX_ATTACK_MS:
+            # Never turn an earlier horizontal scroll into a vertical attack.
+            if absf(travel.x) >= 48.0 and absf(travel.x) > absf(travel.y) * 1.15:
+                multi_attack_blocked = true
+            if not multi_attack_fired and not multi_attack_blocked and fingers.size() == 2 and now_ms - multi_start_ms <= MAX_ATTACK_MS:
                 var ids: Array = fingers.keys()
                 var a: Vector2 = multi_positions[ids[0]] - fingers[ids[0]]["start"]
                 var b: Vector2 = multi_positions[ids[1]] - fingers[ids[1]]["start"]
