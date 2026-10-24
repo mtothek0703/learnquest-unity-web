@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V51"
+const VERSION_LABEL := "V52"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -934,7 +934,7 @@ func _input(event: InputEvent) -> void:
             _use_super_attack()
 
 func _touch_ui_blocked(position: Vector2) -> bool:
-    for control in [splash, quiz_box, end_panel, controls_grid, powerups_grid, hud_panel, progress_bar, gesture_toggle]:
+    for control in [splash, quiz_box, end_panel, controls_grid, powerups_grid, hud_panel, progress_bar, gesture_toggle, gesture_hint]:
         if control != null and control.is_visible_in_tree() and control.get_global_rect().has_point(position):
             return true
     return false
@@ -1036,7 +1036,8 @@ func _create_ui() -> void:
     gesture_toggle.offset_bottom = 168.0
     gesture_toggle.add_theme_font_size_override("font_size", 14)
     gesture_hint = Label.new()
-    gesture_hint.text = "ZIEHEN ↔ LENKEN · ↑ SPRUNG · 2× TIP TURBO\\n2 FINGER SCHILD · 2 FINGER ↑ ATTACKE"
+    gesture_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    gesture_hint.text = "ZIEHEN ↔ LENKEN · ↑ SPRUNG · 2× TIPP TURBO\n2 FINGER: TIPP SCHILD · ↑ ATTACKE"
     gesture_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     gesture_hint.add_theme_font_size_override("font_size", 12)
     gesture_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
