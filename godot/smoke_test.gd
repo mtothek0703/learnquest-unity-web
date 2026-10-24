@@ -287,6 +287,33 @@ func _check_native_gestures() -> bool:
     if event_result.has("action"):
         _fail("V55 horizontal two-finger release must not trigger Super Attack")
         return false
+    # V57: sideways-first multi-touch cannot later become Super Attack.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 370)), true, false, 10800, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(580, 370)), true, false, 10820, 0, 960.0)
+    gestures.handle(_screen_drag(0, Vector2(600, 370)), true, false, 10840, 0, 960.0)
+    gestures.handle(_screen_drag(1, Vector2(700, 370)), true, false, 10860, 0, 960.0)
+    gestures.handle(_screen_drag(0, Vector2(480, 220)), true, false, 10880, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(580, 220)), true, false, 10900, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V57 sideways-first two-finger scroll turned into Super Attack")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(480, 220)), true, false, 10920, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(580, 220)), true, false, 10940, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V57 sideways-first two-finger release spent attack energy")
+        return false
+    # A new deliberate upward gesture must still trigger immediately.
+    gestures.handle(_screen_touch(0, true, Vector2(480, 370)), true, false, 10960, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(580, 370)), true, false, 10980, 0, 960.0)
+    gestures.handle(_screen_drag(0, Vector2(485, 220)), true, false, 11000, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(585, 220)), true, false, 11020, 0, 960.0)
+    if event_result.get("action", "") != "attack":
+        _fail("V57 direction guard blocked a genuine two-finger Super Attack")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(485, 220)), true, false, 11040, 0, 960.0)
+    gestures.handle(_screen_touch(1, false, Vector2(585, 220)), true, false, 11060, 0, 960.0)
+
     # V56: an OS/browser-cancelled touch is NOT a normal release. It
     # must never complete Turbo, a jump or either two-finger ability.
     gestures.reset()
@@ -867,7 +894,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V56") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V57") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -877,7 +904,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V56") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V57") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1011,7 +1038,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V56") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V57") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
