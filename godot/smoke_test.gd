@@ -53,61 +53,69 @@ func _check_native_gestures() -> bool:
         _fail("V52 a finished steering drag must not become a double tap")
         return false
 
-    # V53: a moving thumb can wobble around the 1->2 lane threshold.
-    # Do not flicker between lanes until the finger crosses a clear margin.
+    # V53: test BOTH real lane boundaries by starting on the left.
+    # A moving thumb can wobble near the center-to-right threshold.
     gestures.reset()
-    gestures.handle(_screen_touch(0, true, Vector2(480, 300)), true, false, 2100, 0, 960.0)
-    event_result = gestures.handle(_screen_drag(0, Vector2(570, 300)), true, false, 2110, 0, 960.0)
-    if int(event_result.get("lane", -9)) != 1:
+    gestures.handle(_screen_touch(0, true, Vector2(480, 300)), true, false, 2100, -1, 960.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(570, 300)), true, false, 2110, -1, 960.0)
+    if int(event_result.get("lane", -9)) != 0:
         _fail("V53 first horizontal drag should enter the adjacent lane")
         return false
     for wobble in [576.0, 578.0, 574.0]:
-        event_result = gestures.handle(_screen_drag(0, Vector2(wobble, 300)), true, false, 2120, 1, 960.0)
+        event_result = gestures.handle(_screen_drag(0, Vector2(wobble, 300)), true, false, 2120, 0, 960.0)
         if event_result.has("lane"):
             _fail("V53 thumb jitter near the next lane boundary changed lanes")
             return false
-    event_result = gestures.handle(_screen_drag(0, Vector2(600, 300)), true, false, 2130, 1, 960.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(600, 300)), true, false, 2130, 0, 960.0)
     if int(event_result.get("lane", -9)) != 1:
-        _fail("V53 lane cap must prevent moving past the rightmost lane")
+        _fail("V53 a deliberate wider drag must reach the rightmost lane")
         return false
     event_result = gestures.handle(_screen_drag(0, Vector2(572, 300)), true, false, 2140, 1, 960.0)
     if event_result.has("lane"):
         _fail("V53 small reverse movement must not immediately change lanes")
         return false
     event_result = gestures.handle(_screen_drag(0, Vector2(550, 300)), true, false, 2150, 1, 960.0)
-    if int(event_result.get("lane", -9)) != 1:
+    if int(event_result.get("lane", -9)) != 0:
         _fail("V53 deliberate reverse movement must reach the center lane")
         return false
-    event_result = gestures.handle(_screen_drag(0, Vector2(515, 300)), true, false, 2160, 1, 960.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(515, 300)), true, false, 2160, 0, 960.0)
     if event_result.has("lane"):
         _fail("V53 small center-line jitter should not snap back")
         return false
-    event_result = gestures.handle(_screen_drag(0, Vector2(480, 300)), true, false, 2170, 1, 960.0)
-    if int(event_result.get("lane", -9)) != 0:
+    event_result = gestures.handle(_screen_drag(0, Vector2(480, 300)), true, false, 2170, 0, 960.0)
+    if int(event_result.get("lane", -9)) != -1:
         _fail("V53 returning to the touch origin must restore the original lane")
         return false
-    gestures.handle(_screen_touch(0, false, Vector2(480, 300)), true, false, 2180, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(480, 300)), true, false, 2180, -1, 960.0)
 
-    # Left steering and narrow screens use the same proportional hysteresis.
+    # Mirror the same test on a 320px phone from right to left.
     gestures.reset()
-    gestures.handle(_screen_touch(0, true, Vector2(160, 200)), true, false, 2200, 0, 320.0)
-    event_result = gestures.handle(_screen_drag(0, Vector2(115, 200)), true, false, 2210, 0, 320.0)
-    if int(event_result.get("lane", 9)) != -1:
+    gestures.handle(_screen_touch(0, true, Vector2(160, 200)), true, false, 2200, 1, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(115, 200)), true, false, 2210, 1, 320.0)
+    if int(event_result.get("lane", 9)) != 0:
         _fail("V53 leftward thumb drag on a narrow phone failed")
         return false
-    event_result = gestures.handle(_screen_drag(0, Vector2(111, 200)), true, false, 2220, -1, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(111, 200)), true, false, 2220, 0, 320.0)
     if event_result.has("lane"):
         _fail("V53 narrow-phone thumb jitter unexpectedly changed lanes")
         return false
-    event_result = gestures.handle(_screen_drag(0, Vector2(90, 200)), true, false, 2230, -1, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(90, 200)), true, false, 2230, 0, 320.0)
+    if int(event_result.get("lane", 9)) != -1:
+        _fail("V53 deliberate leftward drag must reach the leftmost lane")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(113, 200)), true, false, 2240, -1, 320.0)
     if event_result.has("lane"):
-        _fail("V53 leftmost lane must remain clamped")
+        _fail("V53 small reverse movement must not oscillate the leftmost lane")
         return false
-    event_result = gestures.handle(_screen_drag(0, Vector2(160, 200)), true, false, 2240, -1, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(128, 200)), true, false, 2250, -1, 320.0)
     if int(event_result.get("lane", 9)) != 0:
-        _fail("V53 reversing leftward drag must restore center on a phone")
+        _fail("V53 deliberate reverse drag must reach center on a phone")
         return false
-    gestures.handle(_screen_touch(0, false, Vector2(160, 200)), true, false, 2250, 0, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(160, 200)), true, false, 2260, 0, 320.0)
+    if int(event_result.get("lane", 9)) != 1:
+        _fail("V53 returning to touch origin must restore right lane on a phone")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(160, 200)), true, false, 2270, 1, 320.0)
 
     # Small horizontal/vertical finger drift must not break a double tap.
     gestures.reset()
