@@ -11,6 +11,7 @@ var fingers: Dictionary = {}
 var blocked_fingers: Dictionary = {}
 var primary_id := -1
 var start_lane := 0
+var last_target_lane := 0 # Stable lane while the finger hovers near a boundary.
 var last_tap_ms := -10000
 var last_tap_position := Vector2(-10000.0, -10000.0)
 var multi_active := false
@@ -29,6 +30,7 @@ func _clear_active() -> void:
     multi_deltas.clear()
     single_mode = ""
     moved_outside_tap = false
+    last_target_lane = 0
 
 func reset() -> void:
     _clear_active()
@@ -57,6 +59,7 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
             if fingers.size() == 1:
                 primary_id = touch.index
                 start_lane = lane_now
+                last_target_lane = lane_now
                 single_mode = ""
                 moved_outside_tap = false
             else:
@@ -154,6 +157,32 @@ func _steer_step(viewport_width: float) -> float:
 
 func _steer_target(horizontal: float, viewport_width: float) -> int:
     var step := _steer_step(viewport_width)
-    if absf(horizontal) < step * 0.65:
-        return start_lane
-    return clampi(start_lane + clampi(roundi(horizontal / step), -2, 2), -1, 1)
+    var target := start_lane
+    if absf(horizontal) >= step * 0.65:
+        target = clampi(start_lane + clampi(roundi(horizontal / step), -2, 2), -1, 1)
+    if target == last_target_lane:
+        return target
+    # Finger jitter near a lane boundary must not oscillate the rider
+    # between lanes. The margin is relative to viewport width, so narrow
+    # phones and tablets have the same proportional steering feel.
+    var previous_relative := last_target_lane - start_lane
+    var next_relative := target - start_lane
+    var boundary := 0.0
+    if next_relative > previous_relative:
+        boundary = (float(previous_relative) + 0.5) * step
+        if previous_relative == 0:
+            boundary = 0.65 * step
+        elif previous_relative == -1:
+            boundary = -0.65 * step
+        if horizontal < boundary + 0.18 * step:
+            return last_target_lane
+    else:
+        boundary = (float(previous_relative) - 0.5) * step
+        if previous_relative == 0:
+            boundary = -0.65 * step
+        elif previous_relative == 1:
+            boundary = 0.65 * step
+        if horizontal > boundary - 0.18 * step:
+            return last_target_lane
+    last_target_lane = target
+    return target

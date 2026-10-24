@@ -53,6 +53,70 @@ func _check_native_gestures() -> bool:
         _fail("V52 a finished steering drag must not become a double tap")
         return false
 
+    # V53: test BOTH real lane boundaries by starting on the left.
+    # A moving thumb can wobble near the center-to-right threshold.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 300)), true, false, 2100, -1, 960.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(570, 300)), true, false, 2110, -1, 960.0)
+    if int(event_result.get("lane", -9)) != 0:
+        _fail("V53 first horizontal drag should enter the adjacent lane")
+        return false
+    for wobble in [576.0, 578.0, 574.0]:
+        event_result = gestures.handle(_screen_drag(0, Vector2(wobble, 300)), true, false, 2120, 0, 960.0)
+        if event_result.has("lane"):
+            _fail("V53 thumb jitter near the next lane boundary changed lanes")
+            return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(600, 300)), true, false, 2130, 0, 960.0)
+    if int(event_result.get("lane", -9)) != 1:
+        _fail("V53 a deliberate wider drag must reach the rightmost lane")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(572, 300)), true, false, 2140, 1, 960.0)
+    if event_result.has("lane"):
+        _fail("V53 small reverse movement must not immediately change lanes")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(550, 300)), true, false, 2150, 1, 960.0)
+    if int(event_result.get("lane", -9)) != 0:
+        _fail("V53 deliberate reverse movement must reach the center lane")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(515, 300)), true, false, 2160, 0, 960.0)
+    if event_result.has("lane"):
+        _fail("V53 small center-line jitter should not snap back")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(480, 300)), true, false, 2170, 0, 960.0)
+    if int(event_result.get("lane", -9)) != -1:
+        _fail("V53 returning to the touch origin must restore the original lane")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(480, 300)), true, false, 2180, -1, 960.0)
+
+    # Mirror the same test on a 320px phone from right to left.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(160, 200)), true, false, 2200, 1, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(115, 200)), true, false, 2210, 1, 320.0)
+    if int(event_result.get("lane", 9)) != 0:
+        _fail("V53 leftward thumb drag on a narrow phone failed")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(111, 200)), true, false, 2220, 0, 320.0)
+    if event_result.has("lane"):
+        _fail("V53 narrow-phone thumb jitter unexpectedly changed lanes")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(90, 200)), true, false, 2230, 0, 320.0)
+    if int(event_result.get("lane", 9)) != -1:
+        _fail("V53 deliberate leftward drag must reach the leftmost lane")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(113, 200)), true, false, 2240, -1, 320.0)
+    if event_result.has("lane"):
+        _fail("V53 small reverse movement must not oscillate the leftmost lane")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(128, 200)), true, false, 2250, -1, 320.0)
+    if int(event_result.get("lane", 9)) != 0:
+        _fail("V53 deliberate reverse drag must reach center on a phone")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(160, 200)), true, false, 2260, 0, 320.0)
+    if int(event_result.get("lane", 9)) != 1:
+        _fail("V53 returning to touch origin must restore right lane on a phone")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(160, 200)), true, false, 2270, 1, 320.0)
+
     # Small horizontal/vertical finger drift must not break a double tap.
     gestures.reset()
     gestures.handle(_screen_touch(0, true, Vector2(480, 300)), true, false, 3000, 0, 960.0)
@@ -659,7 +723,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V52") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V53") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -669,7 +733,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V52") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V53") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -797,7 +861,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V52") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V53") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
