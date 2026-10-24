@@ -19,3 +19,5 @@ Skyway V34: Original modellierte, verlaufsschattierte Hosenbeine mit geschwungen
 Skyway V35: Volumetrische Haarhaube aus eigenem 3D-Oberflächenmesh, sechs überlappende, verlaufsschattierte Haarlagen mit leuchtenden Strähnen und zwei windanimierte Schläfenlocken. Kostenlose Originalgeometrie, keine Fremdassets; vorhandener Zopf und Spielmechanik bleiben erhalten.
 
 Skyway V36: Großflächiger, gebogener Aero-Rückenpanzer mit verlaufsschattiertem 3D-Mesh, animiertem Neon-Reaktorring und zwei schwenkbaren Schubdüsen. Alle Modelle sind eigene, einmalig generierte Meshes; die bisherige Spiellogik und ältere Versionen bleiben erhalten.
+
+Skyway V38: Geschneiderte, dreidimensional modellierte Frontjacke mit zwei hochaufgelösten Stoffpaneelen, schattierten Brustpanzern, hohem Rundkragen, leuchtendem Reißverschluss und animierter Atembewegung. Originalgeometrie ohne Fremdassets, nur Godot-4-Meshes; bestehendes Hoverboard und Englisch-Quiz bleiben unverändert.
