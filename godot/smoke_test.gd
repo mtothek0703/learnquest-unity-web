@@ -23,7 +23,146 @@ func _screen_drag(index: int, position: Vector2) -> InputEventScreenDrag:
     event.position = position
     return event
 
+
+# Deterministic interpreter checks: timings and finger IDs do not depend on
+# the CI runner's frame rate or on an attached phone.
+func _check_native_gestures() -> bool:
+    var gestures = preload("res://touch_gestures.gd").new()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 360)), true, false, 1000, 0, 960.0)
+    var event_result: Dictionary = gestures.handle(_screen_drag(0, Vector2(482, 270)), true, false, 1030, 0, 960.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V52 upward swipe must jump on drag, without waiting for release")
+        return false
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(482, 255)), true, false, 1060, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V52 upward swipe jumped twice on finger release")
+        return false
+
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 300)), true, false, 2000, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(570, 300)), true, false, 2030, 0, 960.0)
+    if int(event_result.get("lane", 0)) != 1:
+        _fail("V52 drag steering must react immediately")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(480, 300)), true, false, 2050, 1, 960.0)
+    if int(event_result.get("lane", 9)) != 0:
+        _fail("V52 returning a finger to its start must restore its starting lane")
+        return false
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(480, 300)), true, false, 2070, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V52 a finished steering drag must not become a double tap")
+        return false
+
+    # Small horizontal/vertical finger drift must not break a double tap.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 300)), true, false, 3000, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(482, 301)), true, false, 3030, 0, 960.0)
+    gestures.handle(_screen_touch(0, true, Vector2(483, 302)), true, false, 3100, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(485, 302)), true, false, 3130, 0, 960.0)
+    if event_result.get("action", "") != "turbo":
+        _fail("V52 double tap with normal finger jitter must activate Turbo")
+        return false
+
+    # A scroll/steer between two taps cancels the pending Turbo gesture.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 300)), true, false, 4000, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(480, 300)), true, false, 4020, 0, 960.0)
+    gestures.handle(_screen_touch(0, true, Vector2(480, 300)), true, false, 4080, 0, 960.0)
+    gestures.handle(_screen_drag(0, Vector2(560, 300)), true, false, 4110, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(560, 300)), true, false, 4130, 1, 960.0)
+    gestures.handle(_screen_touch(0, true, Vector2(480, 300)), true, false, 4170, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(480, 300)), true, false, 4200, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V52 scrolling between taps accidentally activated Turbo")
+        return false
+
+    # A finger that starts over the UI suspends all playfield touches.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(150, 200)), true, true, 5000, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, true, Vector2(480, 350)), true, false, 5010, 0, 960.0)
+    if event_result.get("captured", false):
+        _fail("V52 UI touch must not capture a second playfield finger")
+        return false
+    event_result = gestures.handle(_screen_drag(1, Vector2(480, 220)), true, false, 5030, 0, 960.0)
+    if not event_result.is_empty():
+        _fail("V52 blocked secondary finger triggered a gesture")
+        return false
+    gestures.handle(_screen_touch(1, false, Vector2(480, 220)), true, false, 5040, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(150, 200)), true, false, 5050, 0, 960.0)
+
+    # Adding a UI finger to an active gesture cancels, not finishes, the jump.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 350)), true, false, 6000, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(150, 200)), true, true, 6010, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(480, 210)), true, false, 6030, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V52 second finger on UI triggered a playfield action")
+        return false
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(480, 210)), true, false, 6040, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V52 releasing a cancelled gesture triggered an action")
+        return false
+    gestures.handle(_screen_touch(1, false, Vector2(150, 200)), true, false, 6050, 0, 960.0)
+    gestures.handle(_screen_touch(0, true, Vector2(480, 350)), true, false, 6100, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(480, 220)), true, false, 6130, 0, 960.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V52 gesture cancellation did not recover after all fingers lifted")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(480, 220)), true, false, 6150, 0, 960.0)
+
+    # A third finger, including one added after the first finger lifted,
+    # must never turn an incomplete multi-touch into a Shield or Attack.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 300)), true, false, 7000, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(580, 300)), true, false, 7020, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(480, 300)), true, false, 7050, 0, 960.0)
+    gestures.handle(_screen_touch(2, true, Vector2(650, 300)), true, false, 7060, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(580, 300)), true, false, 7070, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V52 third finger activated a power-up")
+        return false
+    gestures.handle(_screen_touch(2, false, Vector2(650, 300)), true, false, 7080, 0, 960.0)
+    gestures.handle(_screen_touch(0, true, Vector2(480, 300)), true, false, 7100, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(580, 300)), true, false, 7120, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(480, 300)), true, false, 7150, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(580, 300)), true, false, 7170, 0, 960.0)
+    if event_result.get("action", "") != "shield":
+        _fail("V52 two-finger shield must work again after a cancelled gesture")
+        return false
+
+    # Holding two fingers for a long time is not a deliberate power-up.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 300)), true, false, 8000, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(580, 300)), true, false, 8020, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(480, 300)), true, false, 9000, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(580, 300)), true, false, 9010, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V52 long two-finger hold accidentally activated an ability")
+        return false
+
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 370)), true, false, 10000, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(580, 370)), true, false, 10020, 0, 960.0)
+    gestures.handle(_screen_drag(0, Vector2(480, 240)), true, false, 10100, 0, 960.0)
+    gestures.handle(_screen_drag(1, Vector2(580, 240)), true, false, 10120, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(480, 220)), true, false, 10200, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(580, 220)), true, false, 10220, 0, 960.0)
+    if event_result.get("action", "") != "attack":
+        _fail("V52 two-finger upward swipe did not activate Super Attack")
+        return false
+    if not gestures.handle(InputEventMouseMotion.new(), true, false, 10300, 0, 960.0).is_empty():
+        _fail("V52 synthetic mouse movement must not become a touch gesture")
+        return false
+    gestures.handle(_screen_touch(0, true, Vector2(480, 350)), true, false, 10400, 0, 960.0)
+    gestures.handle(_screen_drag(0, Vector2(480, 220)), false, false, 10430, 0, 960.0)
+    if not gestures.handle(_screen_touch(0, false, Vector2(480, 220)), true, false, 10450, 0, 960.0).is_empty():
+        _fail("V52 disabled gestures must discard in-flight fingers")
+        return false
+    return true
+
 func _run_checks() -> void:
+    if not _check_native_gestures():
+        return
     var scene := load("res://main.tscn") as PackedScene
     if scene == null:
         _fail("Unable to load main.tscn")
@@ -55,7 +194,7 @@ func _run_checks() -> void:
     if fallback.visible:
         _fail("Fallback body must be hidden while imported 3D rider is active")
         return
-    # V51: showcase the real detailed rider from the front, with original
+    # V52: showcase the real detailed rider from the front, with original
     # animated curved geometry, without replacing the playable hoverboard.
     var gallery := game.get_node_or_null("Cinematic hero gallery") as Node3D
     var portrait_camera := game.get("chase_camera") as Camera3D
@@ -520,7 +659,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V51") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V52") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -530,11 +669,11 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V51") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V52") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
-    # V51: real native screen touch events, not mouse-button stand-ins.
+    # V52: real native screen touch events, not mouse-button stand-ins.
     # Dragging across the road steers immediately, clamped to three lanes.
     game.call("_input", _screen_touch(0, true, Vector2(500, 300)))
     game.call("_input", _screen_drag(0, Vector2(630, 300)))
@@ -554,9 +693,13 @@ func _run_checks() -> void:
     # One-finger upward swipe jumps, and two taps at one spot activate Turbo.
     game.call("_input", _screen_touch(0, true, Vector2(520, 360)))
     game.call("_input", _screen_drag(0, Vector2(520, 250)))
-    game.call("_input", _screen_touch(0, false, Vector2(520, 230)))
     if float(game.get("jump_left")) <= 0.0:
-        _fail("Upward swipe failed to trigger a real jump")
+        _fail("Upward swipe did not jump immediately while the finger was moving")
+        return
+    game.set("jump_left", 0.0)
+    game.call("_input", _screen_touch(0, false, Vector2(520, 230)))
+    if float(game.get("jump_left")) > 0.0:
+        _fail("Releasing an already-triggered swipe caused a second jump")
         return
     game.set("power", 100)
     game.call("_input", _screen_touch(0, true, Vector2(520, 300)))
@@ -599,6 +742,29 @@ func _run_checks() -> void:
     if int(game.get("lane")) != 0:
         _fail("Touch beginning on UI accidentally steered the rider")
         return
+    # A second finger touching a visible button must cancel an active swipe.
+    game.set("jump_left", 0.0)
+    game.set("lane", 0)
+    game.call("_input", _screen_touch(0, true, Vector2(500, 350)))
+    game.call("_input", _screen_touch(1, true, blocked_control))
+    game.call("_input", _screen_drag(0, Vector2(500, 220)))
+    game.call("_input", _screen_touch(0, false, Vector2(500, 220)))
+    game.call("_input", _screen_touch(1, false, blocked_control))
+    if float(game.get("jump_left")) > 0.0 or int(game.get("lane")) != 0:
+        _fail("Second UI finger failed to cancel the active gameplay gesture")
+        return
+    # A three-finger tap must never spend energy or trigger a Shield.
+    game.set("shield_left", 0.0)
+    game.set("power", 100)
+    game.call("_input", _screen_touch(0, true, Vector2(500, 300)))
+    game.call("_input", _screen_touch(1, true, Vector2(590, 300)))
+    game.call("_input", _screen_touch(0, false, Vector2(500, 300)))
+    game.call("_input", _screen_touch(2, true, Vector2(660, 300)))
+    game.call("_input", _screen_touch(1, false, Vector2(590, 300)))
+    game.call("_input", _screen_touch(2, false, Vector2(660, 300)))
+    if float(game.get("shield_left")) > 0.0 or int(game.get("power")) != 100:
+        _fail("Three-finger touch accidentally activated an energy ability")
+        return
     # The accessibility controls can be hidden and independently restored.
     game.call("_apply_mobile_layout", 390.0)
     game.call("_toggle_touch_buttons")
@@ -631,7 +797,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V51") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V52") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -824,7 +990,7 @@ func _run_checks() -> void:
     if shield_fx == null or jump_fx == null or attack_fx == null:
         _fail("Visible 3D special ability effects are missing")
         return
-    # V51: all three powers render detailed curved surfaces, not primitive meshes.
+    # V52: all three powers render detailed curved surfaces, not primitive meshes.
     for effect in [shield_fx, jump_fx, attack_fx]:
         if not (effect.mesh is ArrayMesh) or effect.mesh.get_surface_count() != 1:
             _fail("Ability effect must be a generated 3D ribbon mesh: " + effect.name)
@@ -1213,7 +1379,7 @@ func _run_checks() -> void:
     if ice_waves.size() != 2 or not ice_waves[0].visible or not ice_waves[1].visible:
         _fail("Frost dragon must telegraph two dangerous lanes")
         return
-    # V51: the warning is a shaded, animated two-surface ice wave, not a box.
+    # V52: the warning is a shaded, animated two-surface ice wave, not a box.
     for wave in ice_waves:
         if not (wave.mesh is ArrayMesh) or wave.mesh.get_surface_count() != 2:
             _fail("Aurora warning must use a sculpted two-surface ice mesh")
