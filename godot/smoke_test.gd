@@ -635,5 +635,46 @@ func _run_checks() -> void:
         if answer_button.disabled:
             _fail("A new vocabulary question kept an old answer disabled")
             return
+    # V40: the real start flow is tasks -> uninterrupted finite round -> results.
+    game.call("_begin_training")
+    if str(game.get("phase")) != "training" or not bool(game.get("quiz_active")):
+        _fail("Player must solve vocabulary tasks before riding")
+        return
+    if int(game.get("training_correct")) != 0:
+        _fail("Training counter did not reset for a new round")
+        return
+    for task_index in range(3):
+        var task_choices: Array = game.get("options")
+        var answer_index: int = task_choices.find(int(game.get("correct_index")))
+        if answer_index < 0:
+            _fail("Training task has no correct answer")
+            return
+        game.call("_answer", answer_index)
+        if task_index < 2 and (not bool(game.get("quiz_active")) or int(game.get("training_correct")) != task_index + 1):
+            _fail("The next training task was not presented")
+            return
+    if str(game.get("phase")) != "race" or not bool(game.get("started")) or bool(game.get("quiz_active")):
+        _fail("Three correct answers did not unlock uninterrupted racing")
+        return
+    if int(game.get("power")) < 75:
+        _fail("Solving tasks did not grant a starting power-up")
+        return
+    game.set("quiz_time", -999.0)
+    game.call("_process", 0.016)
+    if bool(game.get("quiz_active")):
+        _fail("Race was interrupted by a vocabulary quiz")
+        return
+    game.set("distance", 799.0)
+    game.call("_process", 0.20)
+    if str(game.get("phase")) != "results" or bool(game.get("started")):
+        _fail("A full 800-meter round did not reach a clear finish")
+        return
+    if int(game.get("rounds_finished")) != 1 or int(game.get("round_number")) != 2:
+        _fail("Winning did not unlock the next round")
+        return
+    game.call("_begin_training")
+    if str(game.get("phase")) != "training" or int(game.get("training_correct")) != 0:
+        _fail("The next round must start with fresh vocabulary tasks")
+        return
     print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, V35 sculpted hair volume, sculpted V34 rider legs, V33 braid and V32 boots, rider, steering, jump, pickups, vocabulary, responsive HUD")
     quit(0)
