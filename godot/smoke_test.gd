@@ -160,6 +160,38 @@ func _run_checks() -> void:
         if trim_material == null or not trim_material.emission_enabled:
             _fail("Neon shoulder piping is not emissive on " + arm_name)
             return
+    # V37: each hand has a shaped forearm, knuckles, articulated fingers
+    # and a curved emissive wrist display, not just the legacy hand sphere.
+    for arm_name in ["BalanceArm0", "BalanceArm1"]:
+        var gauntlet := installed_model.get_node_or_null(arm_name + "/SculptedRiderGauntlet") as Node3D
+        if gauntlet == null:
+            _fail("Sculpted glove missing on " + arm_name)
+            return
+        for part_name in ["SculptedForearmShell", "LayeredKnuckleGuard", "LuminousGauntletSeams"]:
+            var part := gauntlet.get_node_or_null(part_name) as MeshInstance3D
+            if part == null or not (part.mesh is ArrayMesh) or (part.mesh as ArrayMesh).surface_get_array_len(0) < 180:
+                _fail("Gauntlet mesh missing: " + arm_name + "/" + part_name)
+                return
+        var fabric := (gauntlet.get_node("SculptedForearmShell") as MeshInstance3D).material_override as StandardMaterial3D
+        if fabric == null or not fabric.vertex_color_use_as_albedo:
+            _fail("Gauntlet must retain sculpted fabric gradients")
+            return
+        var display := gauntlet.get_node_or_null("AnimatedWristDisplay/CurvedHolographicDisplay") as MeshInstance3D
+        if display == null or not (display.mesh is ArrayMesh) or (display.mesh as ArrayMesh).surface_get_array_len(0) < 700:
+            _fail("Curved wrist hologram missing on " + arm_name)
+            return
+        var display_material := display.material_override as StandardMaterial3D
+        if display_material == null or not display_material.emission_enabled:
+            _fail("Wrist display must glow")
+            return
+        for finger_index in range(4):
+            var finger := gauntlet.get_node_or_null("ArticulatedFinger%d/TaperedFingerMesh" % finger_index) as MeshInstance3D
+            if finger == null or not (finger.mesh is ArrayMesh) or (finger.mesh as ArrayMesh).surface_get_array_len(0) < 400:
+                _fail("Articulated finger missing: " + arm_name)
+                return
+        if gauntlet.get_node_or_null("SculptedThumb") == null:
+            _fail("Sculpted thumb missing: " + arm_name)
+            return
     # V32: custom-meshed high-top footwear follows both articulated legs.
     for leg_name in ["BalanceLeg0", "BalanceLeg1"]:
         var footwear := installed_model.get_node_or_null(leg_name + "/SculptedHoverBoot") as Node3D
@@ -288,6 +320,12 @@ func _run_checks() -> void:
     await process_frame
     if reactor.rotation.z <= old_reactor_angle or absf(reactor.scale.x - 1.0) < 0.001:
         _fail("Aero reactor did not animate under turbo")
+        return
+    var glove := installed_model.get_node("BalanceArm0/SculptedRiderGauntlet") as Node3D
+    var finger := glove.get_node("ArticulatedFinger0") as Node3D
+    var display_pivot := glove.get_node("AnimatedWristDisplay") as Node3D
+    if finger.rotation.x <= 0.0 or absf(display_pivot.rotation.z) < 0.001:
+        _fail("Gauntlet fingers and wrist display must respond to turbo and steering")
         return
     var left_thruster := harness.get_node("LeftAeroThruster") as Node3D
     if absf(left_thruster.rotation.z) < 0.001:
