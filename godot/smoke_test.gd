@@ -128,6 +128,46 @@ func _run_checks() -> void:
         if strand == null or not (strand.mesh is ArrayMesh) or (strand.mesh as ArrayMesh).surface_get_array_len(0) < 1000:
             _fail("Sculpted articulated temple curl missing: " + curl_name)
             return
+    # V39: four substantial two-joint hair locks, shaded original geometry,
+    # emissive filaments and independent wind response without changing gameplay.
+    var cascade := installed_model.get_node_or_null("AnimatedWindHairCascade") as Node3D
+    if cascade == null:
+        _fail("Articulated hair cascade is missing")
+        return
+    for i in range(4):
+        var root_lock := cascade.get_node_or_null("WindCascadeRoot%d" % i) as Node3D
+        var tip_lock := root_lock.get_node_or_null("WindCascadeTip%d" % i) as Node3D if root_lock != null else null
+        if root_lock == null or tip_lock == null:
+            _fail("Two-joint hair strand is missing: %d" % i)
+            return
+        for segment in range(2):
+            var pivot := root_lock if segment == 0 else tip_lock
+            var sculpted := pivot.get_node_or_null("SculptedHairSegment%d" % segment) as MeshInstance3D
+            var filament := pivot.get_node_or_null("LuminousHairFilament%d" % segment) as MeshInstance3D
+            if sculpted == null or not (sculpted.mesh is ArrayMesh) or (sculpted.mesh as ArrayMesh).surface_get_array_len(0) < 1000:
+                _fail("Detailed gradient hair segment missing: %d/%d" % [i, segment])
+                return
+            var gradient := sculpted.material_override as StandardMaterial3D
+            if gradient == null or not gradient.vertex_color_use_as_albedo:
+                _fail("Hair cascade must use original vertex-color shading")
+                return
+            if filament == null or not (filament.mesh is ArrayMesh):
+                _fail("Sculpted hair filament missing: %d/%d" % [i, segment])
+                return
+            var neon := filament.material_override as StandardMaterial3D
+            if neon == null or not neon.emission_enabled:
+                _fail("Hair filament must emit light")
+                return
+    rider.set("boosting", true)
+    rider.set("lean", 0.8)
+    cascade.call("_process", 0.25)
+    var root_motion := cascade.get_node("WindCascadeRoot0") as Node3D
+    var tip_motion := root_motion.get_node("WindCascadeTip0") as Node3D
+    if absf(root_motion.rotation.x) < 0.01 or absf(root_motion.rotation.z) < 0.01 or absf(tip_motion.rotation.x) < 0.01 or absf(tip_motion.rotation.z) < 0.01:
+        _fail("Independent hair cascade joints must react to turbo and steering")
+        return
+    rider.set("boosting", false)
+    rider.set("lean", 0.0)
     # V38: two real curved jacket panels, raised collar, sculpted chest
     # plates and an animated luminous zipper; gameplay nodes are untouched.
     var torso := installed_model.get_node_or_null("AnimatedTailoredFlightJacket") as Node3D

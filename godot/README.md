@@ -21,3 +21,5 @@ Skyway V35: Volumetrische Haarhaube aus eigenem 3D-Oberflächenmesh, sechs über
 Skyway V36: Großflächiger, gebogener Aero-Rückenpanzer mit verlaufsschattiertem 3D-Mesh, animiertem Neon-Reaktorring und zwei schwenkbaren Schubdüsen. Alle Modelle sind eigene, einmalig generierte Meshes; die bisherige Spiellogik und ältere Versionen bleiben erhalten.
 
 Skyway V38: Geschneiderte, dreidimensional modellierte Frontjacke mit zwei hochaufgelösten Stoffpaneelen, schattierten Brustpanzern, hohem Rundkragen, leuchtendem Reißverschluss und animierter Atembewegung. Originalgeometrie ohne Fremdassets, nur Godot-4-Meshes; bestehendes Hoverboard und Englisch-Quiz bleiben unverändert.
+
+Skyway V39: Vier große, zweigelenkig animierte Haarsträhnen rahmen den bisherigen Zopf. Jede Strähne besteht aus zwei plastisch geformten, farbverlaufsschattierten 3D-Meshes mit separater leuchtender Kontur. Eigenentwicklung ohne Fremdassets, optimiert für WebGL; Spiellogik, Vokabeln und ältere Versionen bleiben unverändert.
