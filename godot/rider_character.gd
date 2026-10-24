@@ -113,6 +113,10 @@ func set_character_model(model: Node3D) -> void:
     braid.name = "AnimatedBraidedPonytail"
     model.add_child(braid)
     _add_sculpted_jacket(model)
+    # V38: shaped front jacket, layered chest armor and animated breathing.
+    var torso := preload("res://rider_torso_detail.gd").new() as Node3D
+    torso.name = "AnimatedTailoredFlightJacket"
+    model.add_child(torso)
     var coat := preload("res://rider_coat.gd").new() as Node3D
     coat.name = "AnimatedSculptedCoat"
     model.add_child(coat)
