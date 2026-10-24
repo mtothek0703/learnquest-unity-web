@@ -252,6 +252,12 @@ func _add_balance_arms(model: Node3D) -> void:
         trim.mesh = _build_shoulder_trim_mesh(direction)
         trim.material_override = piping
         pivot.add_child(trim)
+        # V37: sculpted gauntlet and articulated fingers follow each arm.
+        var gauntlet := preload("res://rider_gauntlets.gd").new() as Node3D
+        gauntlet.name = "SculptedRiderGauntlet"
+        gauntlet.set("side_sign", direction)
+        gauntlet.position = Vector3(direction * 0.10, -0.31, 0.0)
+        pivot.add_child(gauntlet)
         balance_arms.append(pivot)
 
 func _shoulder_surface_point(u: float, v: float, direction: float) -> Vector3:
