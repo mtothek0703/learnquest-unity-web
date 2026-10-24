@@ -154,6 +154,33 @@ func _run_checks() -> void:
         if footwear.get_node_or_null("TailoredAnkleCuff") == null:
             _fail("Boot ankle cuff missing: " + leg_name)
             return
+    # V34: original sculpted fabric legs and articulated knee armor.
+    for leg_name in ["BalanceLeg0", "BalanceLeg1"]:
+        var leg_armor := installed_model.get_node_or_null(leg_name + "/SculptedRiderLeg") as Node3D
+        if leg_armor == null:
+            _fail("Tailored rider leg mesh missing: " + leg_name)
+            return
+        var trousers := leg_armor.get_node_or_null("TailoredTrouserShell") as MeshInstance3D
+        var seams := leg_armor.get_node_or_null("LuminousSideSeams") as MeshInstance3D
+        var knee := leg_armor.get_node_or_null("KneeArmorPivot") as Node3D
+        var guard := knee.get_node_or_null("CurvedKneeGuard") as MeshInstance3D if knee != null else null
+        var trim := knee.get_node_or_null("KneeNeonPiping") as MeshInstance3D if knee != null else null
+        if trousers == null or not (trousers.mesh is ArrayMesh) or (trousers.mesh as ArrayMesh).surface_get_array_len(0) < 1600:
+            _fail("Sculpted trouser shell needs detailed original mesh: " + leg_name)
+            return
+        var fabric := trousers.material_override as StandardMaterial3D
+        if fabric == null or not fabric.vertex_color_use_as_albedo:
+            _fail("Trouser fabric gradient missing: " + leg_name)
+            return
+        if seams == null or not (seams.mesh is ArrayMesh) or (seams.material_override as StandardMaterial3D) == null or not (seams.material_override as StandardMaterial3D).emission_enabled:
+            _fail("Glowing trouser seams missing: " + leg_name)
+            return
+        if guard == null or not (guard.mesh is ArrayMesh) or (guard.mesh as ArrayMesh).surface_get_array_len(0) < 800:
+            _fail("Sculpted articulated knee guard missing: " + leg_name)
+            return
+        if trim == null or not (trim.mesh is ArrayMesh) or (trim.material_override as StandardMaterial3D) == null or not (trim.material_override as StandardMaterial3D).emission_enabled:
+            _fail("Glowing knee armor piping missing: " + leg_name)
+            return
     # V31: mesh-built two-panel coat, gradient fabric, luminous seams and collar.
     var coat := installed_model.get_node_or_null("AnimatedSculptedCoat") as Node3D
     if coat == null:
@@ -420,5 +447,5 @@ func _run_checks() -> void:
         if answer_button.disabled:
             _fail("A new vocabulary question kept an old answer disabled")
             return
-    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, sculpted V33 braid and V32 boots, rider, steering, jump, pickups, vocabulary, responsive HUD")
+    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, sculpted V34 rider legs, V33 braid and V32 boots, rider, steering, jump, pickups, vocabulary, responsive HUD")
     quit(0)

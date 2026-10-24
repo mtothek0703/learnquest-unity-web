@@ -13,3 +13,5 @@ Der Workflow `.github/workflows/publish-unity-webgl.yml` exportiert das Projekt 
 Ein GitHub-Actions-Export muss erst erfolgreich durchlaufen, bevor die Version spielbar ist.
 
 Skyway V33: Eigenständig modellierter dreisträhniger 3D-Zopf mit Farbverlauf, zwei leuchtenden Haarspangen und weicher Wind-/Turbo-Animation. Originalgeometrie ohne Fremdlizenzen.
+
+Skyway V34: Original modellierte, verlaufsschattierte Hosenbeine mit geschwungenen, beweglichen Kniepanzern und leuchtenden Nähten. Alle Geometrien werden einmalig erzeugt; keine Fremdassets.
