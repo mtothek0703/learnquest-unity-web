@@ -871,13 +871,13 @@ func _process(delta: float) -> void:
     if phase != "race" or not started or quiz_active:
         _update_camera(delta)
         return
-    if Input.is_key_just_pressed(KEY_SPACE) and jump_left <= 0.0:
+    if Input.is_key_pressed(KEY_SPACE) and jump_left <= 0.0:
         _jump()
-    if Input.is_key_just_pressed(KEY_Q):
+    if Input.is_key_pressed(KEY_Q):
         _use_shield()
-    if Input.is_key_just_pressed(KEY_E):
+    if Input.is_key_pressed(KEY_E):
         _use_mega_jump()
-    if Input.is_key_just_pressed(KEY_R):
+    if Input.is_key_pressed(KEY_R):
         _use_super_attack()
     if Input.is_key_pressed(KEY_LEFT) or Input.is_key_pressed(KEY_A):
         lane = -1
