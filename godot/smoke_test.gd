@@ -1059,6 +1059,23 @@ func _run_checks() -> void:
     if ice_waves.size() != 2 or not ice_waves[0].visible or not ice_waves[1].visible:
         _fail("Frost dragon must telegraph two dangerous lanes")
         return
+    # V48: the warning is a shaded, animated two-surface ice wave, not a box.
+    for wave in ice_waves:
+        if not (wave.mesh is ArrayMesh) or wave.mesh.get_surface_count() != 2:
+            _fail("Aurora warning must use a sculpted two-surface ice mesh")
+            return
+        if wave.mesh.surface_get_array_len(0) < 3000:
+            _fail("Aurora shockwave is missing its detailed curved ice surface")
+            return
+        if wave.mesh.surface_get_material(1) == null:
+            _fail("Aurora shockwave crest needs a visible material")
+            return
+    var wave_y_before: float = ice_waves[0].position.y
+    var wave_x_before: float = ice_waves[0].position.x
+    ice_waves[0].call("_process", 0.25)
+    if is_equal_approx(ice_waves[0].position.y, wave_y_before) or not is_equal_approx(ice_waves[0].position.x, wave_x_before):
+        _fail("Frost warning must animate without changing the targeted lane")
+        return
     var safe_lane: int = int(game.get("frost_safe_lane"))
     var danger_lane: int = int(roundf(ice_waves[0].position.x / 3.1))
     if danger_lane == safe_lane or is_equal_approx(ice_waves[0].position.x, ice_waves[1].position.x):
@@ -1122,5 +1139,5 @@ func _run_checks() -> void:
     if int(game.get("world_choice")) != 0 or not city.visible or canyon.visible or harbor.visible or glacier.visible:
         _fail("Switching back to Neon City did not restore its 3D environment")
         return
-    print("LEARNQUEST SMOKE TEST PASSED: 4 worlds, sculpted Aurora Glacier and frost dragon, orbital sentinel and guardian combat, airborne gates, vocabulary grades 1-10, powers and uninterrupted rounds")
+    print("LEARNQUEST SMOKE TEST PASSED: 4 worlds, animated sculpted ice waves, Aurora Glacier and frost dragon, orbital sentinel and guardian combat, airborne gates, vocabulary grades 1-10, powers and uninterrupted rounds")
     quit(0)
