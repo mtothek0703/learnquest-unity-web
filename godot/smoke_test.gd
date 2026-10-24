@@ -480,7 +480,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V45") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V46") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -490,12 +490,12 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V45") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V46") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V45") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V46") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -886,6 +886,68 @@ func _run_checks() -> void:
     if int(game.get("harbor_crystals")) != 4 or not hud.text.contains("HAFEN-MISSION"):
         _fail("Star Harbor crystal collection is not reflected in mission HUD")
         return
+    # V46: a second, independently animated boss must be real 3D geometry
+    # with a fair visible plasma telegraph, distinct turbo behavior and rewards.
+    var sentinel := game.get_node_or_null("Star Harbor Orbit Sentinel Boss") as Node3D
+    var plasma := game.get("orbit_beam") as MeshInstance3D
+    if sentinel == null or plasma == null:
+        _fail("Star Harbor sentinel boss or visible plasma warning is missing")
+        return
+    var sentinel_hull := sentinel.get_node_or_null("Sculpted sentinel hull") as MeshInstance3D
+    var sentinel_wing := sentinel.get_node_or_null("Articulated wing left/Curved flight wing") as MeshInstance3D
+    if sentinel_hull == null or not (sentinel_hull.mesh is ArrayMesh) or (sentinel_hull.mesh as ArrayMesh).surface_get_array_len(0) < 3000:
+        _fail("Orbit sentinel must use a large sculpted, shaded hull")
+        return
+    if sentinel_wing == null or not (sentinel_wing.mesh is ArrayMesh) or (sentinel_wing.mesh as ArrayMesh).surface_get_array_len(0) < 1300:
+        _fail("Orbit sentinel must have detailed curved animated wings")
+        return
+    game.set("distance", 700.0)
+    game.set("hit_cooldown", 2.0)
+    game.call("_process", 0.016)
+    if not bool(game.get("orbit_active")) or not sentinel.visible or int(game.get("orbit_hp")) != 2:
+        _fail("Star Harbor boss did not spawn in the second half of the race")
+        return
+    var orbital_rings := sentinel.get_node_or_null("Animated orbital rings") as Node3D
+    var old_orbit_angle: float = orbital_rings.rotation.y
+    sentinel.call("_process", 0.25)
+    if is_equal_approx(old_orbit_angle, orbital_rings.rotation.y):
+        _fail("Star Harbor boss energy rings do not animate")
+        return
+    game.set("orbit_attack_timer", 0.0)
+    game.call("_update_orbit_sentinel", 0.016)
+    if not plasma.visible or float(game.get("orbit_warning_left")) <= 0.0:
+        _fail("Orbit Sentinel must warn before firing plasma")
+        return
+    game.set("hit_cooldown", 0.0)
+    game.set("shield_left", 0.0)
+    game.set("turbo_left", 2.0)
+    rider.position.y = 0.0
+    var lives_before_plasma: int = int(game.get("lives"))
+    game.set("orbit_warning_left", 0.01)
+    game.call("_update_orbit_sentinel", 0.02)
+    if int(game.get("lives")) != lives_before_plasma - 1 or plasma.visible:
+        _fail("Orbit plasma must damage an unshielded rider despite Turbo")
+        return
+    game.set("orbit_attack_timer", 0.0)
+    game.call("_update_orbit_sentinel", 0.016)
+    game.set("shield_left", 2.0)
+    game.set("hit_cooldown", 0.0)
+    var lives_before_block: int = int(game.get("lives"))
+    game.set("orbit_warning_left", 0.01)
+    game.call("_update_orbit_sentinel", 0.02)
+    if int(game.get("lives")) != lives_before_block or plasma.visible:
+        _fail("Energy Shield must block the Orbit Sentinel plasma blast")
+        return
+    for hit in range(2):
+        game.set("power", 100)
+        game.set("attack_left", 0.0)
+        game.call("_use_super_attack")
+        if int(game.get("orbit_hp")) != 1 - hit:
+            _fail("Super Attack did not reduce Orbit Sentinel health")
+            return
+    if not bool(game.get("orbit_defeated")) or sentinel.visible or plasma.visible:
+        _fail("Orbit Sentinel was not defeated after two Super Attacks")
+        return
     game.set("distance", 1099.0)
     game.call("_process", 0.15)
     if str(game.get("phase")) != "results" or int(game.get("rounds_finished")) != 3:
@@ -979,5 +1041,5 @@ func _run_checks() -> void:
     if int(game.get("world_choice")) != 0 or not city.visible or canyon.visible or harbor.visible or glacier.visible:
         _fail("Switching back to Neon City did not restore its 3D environment")
         return
-    print("LEARNQUEST SMOKE TEST PASSED: 4 worlds, sculpted Aurora Glacier, airborne jump gates, guardian combat, vocabulary grades 1-10, powers and uninterrupted rounds")
+    print("LEARNQUEST SMOKE TEST PASSED: 4 worlds, sculpted Aurora Glacier, orbital sentinel and guardian combat, airborne gates, vocabulary grades 1-10, powers and uninterrupted rounds")
     quit(0)

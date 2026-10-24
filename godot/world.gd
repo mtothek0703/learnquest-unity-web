@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V45"
+const VERSION_LABEL := "V46"
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
 const HARBOR_BONUS_TARGET := 4
@@ -18,6 +18,8 @@ const MEGA_JUMP_COST := 30
 const ATTACK_COST := 45
 const GUARDIAN_HEALTH := 3
 const GUARDIAN_SPAWN_FRACTION := 0.55
+const ORBIT_HEALTH := 2
+const ORBIT_SPAWN_FRACTION := 0.60
 var phase := "menu" # menu -> training -> race -> results
 var training_correct := 0
 var round_number := 1
@@ -67,6 +69,14 @@ var guardian_defeated := false
 var guardian_attack_timer := 0.0
 var guardian_warning_left := 0.0
 var guardian_lane := 0
+var orbit_sentinel: Node3D
+var orbit_beam: MeshInstance3D
+var orbit_hp := ORBIT_HEALTH
+var orbit_active := false
+var orbit_defeated := false
+var orbit_attack_timer := 0.0
+var orbit_warning_left := 0.0
+var orbit_lane := 0
 var sky_material: ProceduralSkyMaterial
 var world_button: Button
 var progress_bar: ProgressBar
@@ -209,6 +219,7 @@ func _create_world() -> void:
     add_child(glacier_zone)
     glacier_zone.visible = false
     _create_guardian()
+    _create_orbit_sentinel()
 
     # Moving roadside silhouettes supplement the richer scrolling Skyway world.
     moving = Node3D.new()
@@ -292,6 +303,65 @@ func _update_guardian(delta: float) -> void:
         info_label.text = "WARNUNG! ROTE LASER-SPUR VERLASSEN!"
         feedback_time = 1.35
 
+func _create_orbit_sentinel() -> void:
+    # A second, distinct 3D boss uses curved original geometry and visible lane targeting.
+    orbit_sentinel = preload("res://orbit_sentinel.gd").new() as Node3D
+    orbit_sentinel.name = "Star Harbor Orbit Sentinel Boss"
+    orbit_sentinel.position = Vector3(0, 1.1, -23.0)
+    add_child(orbit_sentinel)
+    orbit_sentinel.visible = false
+    orbit_beam = MeshInstance3D.new()
+    orbit_beam.name = "Sentinel plasma lane warning"
+    var beam_mesh := BoxMesh.new()
+    beam_mesh.size = Vector3(1.9, 0.15, 35.0)
+    orbit_beam.mesh = beam_mesh
+    orbit_beam.material_override = mat(Color("#ffb75b"), true)
+    orbit_beam.position = Vector3(0, 0.12, -13.0)
+    add_child(orbit_beam)
+    orbit_beam.visible = false
+
+func _update_orbit_sentinel(delta: float) -> void:
+    if world_choice != 2 or phase != "race" or not started or orbit_defeated:
+        return
+    if not orbit_active:
+        if distance < mission_target * ORBIT_SPAWN_FRACTION:
+            return
+        orbit_active = true
+        orbit_sentinel.visible = true
+        orbit_sentinel.set("active", true)
+        orbit_attack_timer = 2.3
+        info_label.text = "BOSS: ORBIT-WÄCHTER! ENERGIE-ATTACKE LADEN!"
+        feedback_time = 2.5
+    if orbit_warning_left > 0.0:
+        orbit_warning_left -= delta
+        if orbit_warning_left <= 0.0:
+            orbit_warning_left = 0.0
+            orbit_beam.visible = false
+            # Unlike the Canyon laser, turbo does not protect against plasma.
+            if lane == orbit_lane and rider.position.y <= 1.1 and shield_left <= 0.0 and hit_cooldown <= 0.0:
+                lives -= 1
+                hit_cooldown = 1.4
+                info_label.text = "PLASMA-TREFFER! NOCH %d LEBEN" % lives
+                feedback_time = 1.5
+                if lives <= 0:
+                    _finish_run()
+                    return
+            else:
+                info_label.text = "PLASMA AUSGEWICHEN!"
+                feedback_time = 1.1
+            orbit_attack_timer = 2.6 if orbit_hp == 1 else 4.5
+        return
+    orbit_attack_timer -= delta
+    if orbit_attack_timer <= 0.0:
+        # The sentinel targets the lane occupied at the beginning of its warning.
+        # A visible 1.25-second telegraph lets players steer, jump or use Shield.
+        orbit_lane = lane
+        orbit_warning_left = 1.25
+        orbit_beam.position.x = float(orbit_lane) * 3.1
+        orbit_beam.visible = true
+        info_label.text = "ORBIT-PLASMA! ORANGE SPUR VERLASSEN!"
+        feedback_time = 1.25
+
 func _apply_world_theme() -> void:
     # World selection changes real 3D geometry, lighting and the race mission.
     mission_target = float(WORLD_GOALS[world_choice])
@@ -355,6 +425,9 @@ func _show_world_menu() -> void:
     end_panel.hide()
     guardian.visible = false
     guardian_beam.visible = false
+    orbit_sentinel.visible = false
+    orbit_sentinel.set("active", false)
+    orbit_beam.visible = false
     splash.show()
     _refresh_hud()
 
@@ -481,6 +554,14 @@ func _reset_run() -> void:
     guardian.visible = false
     guardian.set("active", false)
     guardian_beam.visible = false
+    orbit_hp = ORBIT_HEALTH
+    orbit_active = false
+    orbit_defeated = false
+    orbit_attack_timer = 0.0
+    orbit_warning_left = 0.0
+    orbit_sentinel.visible = false
+    orbit_sentinel.set("active", false)
+    orbit_beam.visible = false
     jump_duration = 0.85
     jump_height = 1.8
     shield_visual.visible = false
@@ -564,6 +645,20 @@ func _use_super_attack() -> void:
             info_label.text = "BOSS BESIEGT! +120 XP UND BONUSSTERN!"
         else:
             info_label.text = "BOSS GETROFFEN! NOCH %d KERN-PUNKTE" % guardian_hp
+    elif orbit_active and not orbit_defeated:
+        orbit_hp -= 1
+        orbit_sentinel.call("take_hit")
+        if orbit_hp <= 0:
+            orbit_defeated = true
+            orbit_active = false
+            orbit_sentinel.visible = false
+            orbit_sentinel.set("active", false)
+            orbit_beam.visible = false
+            orbit_warning_left = 0.0
+            xp += 120
+            info_label.text = "ORBIT-WÄCHTER BESIEGT! +120 XP UND BONUSSTERN!"
+        else:
+            info_label.text = "ORBIT-WÄCHTER GETROFFEN! NOCH %d KERN-PUNKTE" % orbit_hp
     else:
         info_label.text = "SUPER ATTACK! %d HINDERNISSE ZERSTÖRT" % cleared
     feedback_time = 1.8
@@ -640,7 +735,7 @@ func _finish_run() -> void:
     if completed:
         rounds_finished += 1
         round_number += 1
-        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 1 and guardian_defeated else 0) + (1 if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET else 0) + (1 if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET else 0)
+        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 1 and guardian_defeated else 0) + (1 if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET else 0) + (1 if world_choice == 2 and orbit_defeated else 0) + (1 if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET else 0)
         total_stars += stars_earned
         total_reward_xp += xp
         reward_label.text = "+%d STERNE  |  +%d XP\nGESAMT: %d STERNE" % [stars_earned, xp, total_stars]
@@ -648,6 +743,8 @@ func _finish_run() -> void:
             reward_label.text += "\nKRISTALL-WÄCHTER BESIEGT: +1 BONUSSTERN!"
         if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET:
             reward_label.text += "\nHAFEN-MISSION ERFÜLLT: +1 BONUSSTERN!"
+        if world_choice == 2 and orbit_defeated:
+            reward_label.text += "\nORBIT-WÄCHTER BESIEGT: +1 BONUSSTERN!"
         if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET:
             reward_label.text += "\nAURORA-SPRUNG-MISSION: +1 BONUSSTERN!"
     else:
@@ -656,6 +753,9 @@ func _finish_run() -> void:
     guardian.visible = false
     guardian.set("active", false)
     guardian_beam.visible = false
+    orbit_sentinel.visible = false
+    orbit_sentinel.set("active", false)
+    orbit_beam.visible = false
     end_heading.text = "RUNDE GESCHAFFT!" if completed else "RUNDE NICHT GESCHAFFT"
     started = false
     quiz_active = false
@@ -894,6 +994,18 @@ func _begin_training() -> void:
     training_correct = 0
     combo = 0
     previous_quiz_index = -1
+    # Clear temporary abilities from the previous race before mandatory training.
+    # Without this, old Turbo/Shield effects leak into the next round's menu.
+    turbo_left = 0.0
+    shield_left = 0.0
+    attack_left = 0.0
+    mega_jump_active = false
+    if shield_visual != null:
+        shield_visual.visible = false
+    if attack_visual != null:
+        attack_visual.visible = false
+    if mega_jump_visual != null:
+        mega_jump_visual.visible = false
     started = true
     quiz_active = false
     splash.hide()
@@ -999,6 +1111,8 @@ func _refresh_hud() -> void:
                 hud.text += "\nKRISTALL-WÄCHTER %d/%d  %s" % [guardian_hp, GUARDIAN_HEALTH, "LASER!" if guardian_warning_left > 0.0 else "ANGRIFF LADEN"]
             if world_choice == 2:
                 hud.text += "\nHAFEN-MISSION: %d/%d ENERGIEKRISTALLE" % [mini(harbor_crystals, HARBOR_BONUS_TARGET), HARBOR_BONUS_TARGET]
+                if orbit_active:
+                    hud.text += "\nORBIT-WÄCHTER %d/%d  %s" % [orbit_hp, ORBIT_HEALTH, "PLASMA!" if orbit_warning_left > 0.0 else "ATTACKE LADEN"]
             if world_choice == 3:
                 hud.text += "\nAURORA-SPRUNGTORE: %d/%d  (SPRINGEN + LENKEN)" % [mini(int(glacier_zone.get("completed_gates")), GLACIER_BONUS_TARGET), GLACIER_BONUS_TARGET]
     if progress_bar != null:
@@ -1063,6 +1177,8 @@ func _process(delta: float) -> void:
     speed = 25.0 if turbo_left > 0 else 14.0
     distance += delta * speed
     _update_guardian(delta)
+    if started:
+        _update_orbit_sentinel(delta)
     if not started:
         _update_camera(delta)
         return
