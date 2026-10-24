@@ -198,9 +198,6 @@ class PreservePagesTests(unittest.TestCase):
         self.assertFalse((self.root / "preserved-versions.json").exists())
 
 
-if __name__ == "__main__":
-    unittest.main()
-
     def test_missing_v35_blocks_deployment(self):
         def download(url, destination):
             return self.mock_download(url, destination, ("skyway-v35/index.html",))
@@ -208,3 +205,7 @@ if __name__ == "__main__":
             with self.assertRaisesRegex(RuntimeError, "skyway-v35 is missing"):
                 archive.main()
         self.assertFalse((self.root / "preserved-versions.json").exists())
+
+
+if __name__ == "__main__":
+    unittest.main()
