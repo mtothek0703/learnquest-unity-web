@@ -840,10 +840,64 @@ func _run_checks() -> void:
     if int(game.get("total_stars")) < 7 or (game.get("reward_label") as Label).text.find("BONUSSTERN") < 0:
         _fail("Successful missions must award visible stars")
         return
+    # V44: third selectable 3D world, original mesh geometry and collection mission.
     game.call("_show_world_menu")
     game.call("_change_world")
-    if int(game.get("world_choice")) != 0 or not city.visible or canyon.visible:
+    var harbor := game.get_node_or_null("LearnQuest Star Harbor world") as Node3D
+    if harbor == null or not harbor.visible or city.visible or canyon.visible:
+        _fail("Star Harbor selection must switch actual 3D environments")
+        return
+    if int(game.get("world_choice")) != 2 or not is_equal_approx(float(game.get("mission_target")), 1100.0):
+        _fail("Star Harbor must have an independent 1100-meter mission")
+        return
+    var tower := harbor.get_node_or_null("Harbor tower cluster 0/Sculpted orbital tower") as MeshInstance3D
+    var ship := harbor.get_node_or_null("Harbor tower cluster 0/Sculpted sky freighter") as MeshInstance3D
+    var arch := harbor.get_node_or_null("Harbor flight arch 0/Sculpted luminous harbor arch") as MeshInstance3D
+    if tower == null or not (tower.mesh is ArrayMesh) or (tower.mesh as ArrayMesh).surface_get_array_len(0) < 700:
+        _fail("Sculpted Star Harbor tower geometry missing")
+        return
+    if ship == null or not (ship.mesh is ArrayMesh) or (ship.mesh as ArrayMesh).surface_get_array_len(0) < 900:
+        _fail("Sculpted Star Harbor airship geometry missing")
+        return
+    if arch == null or not (arch.mesh is ArrayMesh) or (arch.mesh as ArrayMesh).surface_get_array_len(0) < 600:
+        _fail("Curved Star Harbor portal geometry missing")
+        return
+    game.call("_begin_training")
+    for task_index in range(3):
+        var harbor_choices: Array = game.get("options")
+        game.call("_answer", harbor_choices.find(int(game.get("correct_index"))))
+    if str(game.get("phase")) != "race" or int(game.get("harbor_crystals")) != 0:
+        _fail("Star Harbor must begin only after three vocabulary answers")
+        return
+    var energy_item: Node3D = null
+    for candidate in items.get_children():
+        if bool(candidate.get_meta("energy")):
+            energy_item = candidate
+            break
+    if energy_item == null:
+        _fail("No collectible energy gate for Star Harbor mission")
+        return
+    for crystal in range(4):
+        energy_item.position.x = rider.position.x
+        energy_item.position.z = rider.position.z - 0.10
+        energy_item.set_meta("collected", false)
+        game.call("_update_run_items", 0.02)
+    game.call("_refresh_hud")
+    if int(game.get("harbor_crystals")) != 4 or not hud.text.contains("HAFEN-MISSION"):
+        _fail("Star Harbor crystal collection is not reflected in mission HUD")
+        return
+    game.set("distance", 1099.0)
+    game.call("_process", 0.15)
+    if str(game.get("phase")) != "results" or int(game.get("rounds_finished")) != 3:
+        _fail("Star Harbor mission did not reach its finish")
+        return
+    if (game.get("reward_label") as Label).text.find("HAFEN-MISSION ERFÜLLT") < 0:
+        _fail("Star Harbor crystal mission did not grant a bonus star")
+        return
+    game.call("_show_world_menu")
+    game.call("_change_world")
+    if int(game.get("world_choice")) != 0 or not city.visible or canyon.visible or harbor.visible:
         _fail("Switching back to Neon City did not restore its 3D environment")
         return
-    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, V35 sculpted hair volume, sculpted V34 rider legs, V33 braid and V32 boots, rider, steering, jump, pickups, vocabulary, responsive HUD")
+    print("LEARNQUEST SMOKE TEST PASSED: 3 worlds, original Star Harbor meshes, collection mission, guardian combat, vocabulary grades 1-10, powers and uninterrupted rounds")
     quit(0)
