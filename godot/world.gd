@@ -953,7 +953,7 @@ func _update_touch_ui() -> void:
     gesture_toggle.visible = racing and mobile_hud_layout
     gesture_hint.visible = racing and mobile_hud_layout
     gesture_toggle.text = "TASTEN AUS" if touch_buttons_visible else "TASTEN EIN"
-    gesture_hint.offset_top = -225.0 if touch_buttons_visible else -55.0
+    gesture_hint.offset_top = -245.0 if touch_buttons_visible else -75.0
     gesture_hint.offset_bottom = -205.0 if touch_buttons_visible else -35.0
 
 func _create_ui() -> void:
@@ -1032,11 +1032,11 @@ func _create_ui() -> void:
     gesture_toggle.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
     gesture_toggle.offset_left = -143.0
     gesture_toggle.offset_right = -15.0
-    gesture_toggle.offset_top = 13.0
-    gesture_toggle.offset_bottom = 54.0
+    gesture_toggle.offset_top = 127.0
+    gesture_toggle.offset_bottom = 168.0
     gesture_toggle.add_theme_font_size_override("font_size", 14)
     gesture_hint = Label.new()
-    gesture_hint.text = "ZIEHEN: LENKEN  |  ↑: SPRUNG  |  2× TIP: TURBO  |  2 FINGER: SCHILD  |  2↑: ATTACKE"
+    gesture_hint.text = "ZIEHEN ↔ LENKEN · ↑ SPRUNG · 2× TIP TURBO\\n2 FINGER SCHILD · 2 FINGER ↑ ATTACKE"
     gesture_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     gesture_hint.add_theme_font_size_override("font_size", 12)
     gesture_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
