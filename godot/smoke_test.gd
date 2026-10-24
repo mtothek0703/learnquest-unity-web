@@ -42,6 +42,33 @@ func _run_checks() -> void:
     if fallback.visible:
         _fail("Fallback body must be hidden while imported 3D rider is active")
         return
+    # V50: showcase the real detailed rider from the front, with original
+    # animated curved geometry, without replacing the playable hoverboard.
+    var gallery := game.get_node_or_null("Cinematic hero gallery") as Node3D
+    var camera := game.get("chase_camera") as Camera3D
+    if gallery == null or camera == null or not gallery.visible:
+        _fail("Cinematic hero showcase or camera is missing in the menu")
+        return
+    var halo := gallery.get_node_or_null("Layered luminous landing rings") as MeshInstance3D
+    var arches := gallery.get_node_or_null("Sculpted cinematic light arches") as MeshInstance3D
+    if halo == null or arches == null or not (halo.mesh is ArrayMesh) or not (arches.mesh is ArrayMesh):
+        _fail("Showcase needs actual original 3D ring and curved arch meshes")
+        return
+    if (halo.mesh as ArrayMesh).surface_get_array_len(0) < 1000 or (arches.mesh as ArrayMesh).surface_get_array_len(0) < 1500:
+        _fail("Cinematic gallery geometry is too sparse")
+        return
+    var gallery_material := arches.material_override as StandardMaterial3D
+    if gallery_material == null or not gallery_material.vertex_color_use_as_albedo or gallery_material.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA:
+        _fail("Gallery must preserve translucent neon vertex gradients")
+        return
+    if camera.position.z >= -3.0 or camera.fov >= 62.0:
+        _fail("Menu must reveal the rider's front-facing face and hair")
+        return
+    var gallery_angle: float = halo.rotation.y
+    gallery.call("_process", 0.5)
+    if is_equal_approx(gallery_angle, halo.rotation.y):
+        _fail("Gallery halo must animate")
+        return
     var hairstyle := installed_model.get_node_or_null("RiderHair") as Node3D
     if hairstyle == null or hairstyle.get_child_count() < 8:
         _fail("The stylized 3D rider hair and animated locks are missing")
@@ -480,7 +507,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V49") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V50") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -490,12 +517,16 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V49") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V50") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
+    game.call("_update_camera", 1.0)
+    if camera.position.z <= 6.0 or camera.fov < 62.0:
+        _fail("Racing must transition back to the playable chase camera")
+        return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V49") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V50") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -688,7 +719,7 @@ func _run_checks() -> void:
     if shield_fx == null or jump_fx == null or attack_fx == null:
         _fail("Visible 3D special ability effects are missing")
         return
-    # V49: all three powers render detailed curved surfaces, not primitive meshes.
+    # V50: all three powers render detailed curved surfaces, not primitive meshes.
     for effect in [shield_fx, jump_fx, attack_fx]:
         if not (effect.mesh is ArrayMesh) or effect.mesh.get_surface_count() != 1:
             _fail("Ability effect must be a generated 3D ribbon mesh: " + effect.name)
@@ -1077,7 +1108,7 @@ func _run_checks() -> void:
     if ice_waves.size() != 2 or not ice_waves[0].visible or not ice_waves[1].visible:
         _fail("Frost dragon must telegraph two dangerous lanes")
         return
-    # V49: the warning is a shaded, animated two-surface ice wave, not a box.
+    # V50: the warning is a shaded, animated two-surface ice wave, not a box.
     for wave in ice_waves:
         if not (wave.mesh is ArrayMesh) or wave.mesh.get_surface_count() != 2:
             _fail("Aurora warning must use a sculpted two-surface ice mesh")
