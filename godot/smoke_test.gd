@@ -57,6 +57,26 @@ func _run_checks() -> void:
     if (sculpted_lock.mesh as ArrayMesh).surface_get_array_len(0) < 200:
         _fail("Tapered hair mesh has insufficient geometry")
         return
+    # V33: a continuous three-strand braid and two luminous hair clasps.
+    var braid := installed_model.get_node_or_null("AnimatedBraidedPonytail") as Node3D
+    var sway := braid.get_node_or_null("WindSwayPivot") as Node3D if braid != null else null
+    if sway == null:
+        _fail("Braided ponytail is not attached to the imported rider")
+        return
+    for strand in range(3):
+        var part := sway.get_node_or_null("BraidedStrand%d" % strand) as MeshInstance3D
+        if part == null or not (part.mesh is ArrayMesh) or (part.mesh as ArrayMesh).surface_get_array_len(0) < 1500:
+            _fail("Interlaced hair geometry missing: strand %d" % strand)
+            return
+        var hair_material := part.material_override as StandardMaterial3D
+        if hair_material == null or not hair_material.vertex_color_use_as_albedo:
+            _fail("Braided hair must preserve shaded strand colors")
+            return
+    for clasp_name in ["RootClasp", "TipClasp"]:
+        var clasp := sway.get_node_or_null(clasp_name) as MeshInstance3D
+        if clasp == null or not (clasp.material_override as StandardMaterial3D).emission_enabled:
+            _fail("Luminous hair clasp missing: " + clasp_name)
+            return
     # V31: expressive face has original curved geometry and timed blinking.
     var face := installed_model.get_node_or_null("ExpressiveFace") as Node3D
     if face == null:
@@ -194,6 +214,9 @@ func _run_checks() -> void:
     var left_wing := aero.get_node("LeftWing") as Node3D
     if absf(left_wing.rotation.z) < 0.001 or absf(left_wing.rotation.x) < 0.001:
         _fail("Articulated aerofoil does not react to steering and turbo")
+        return
+    if absf(sway.rotation.x) < 0.001 or absf(sway.rotation.z) < 0.001:
+        _fail("Braided ponytail must sway with turbo and steering")
         return
     rider.set("boosting", false)
     rider.set("lean", 0.0)
@@ -397,5 +420,5 @@ func _run_checks() -> void:
         if answer_button.disabled:
             _fail("A new vocabulary question kept an old answer disabled")
             return
-    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, sculpted V32 boots, rider, steering, jump, pickups, vocabulary, responsive HUD")
+    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, sculpted V33 braid and V32 boots, rider, steering, jump, pickups, vocabulary, responsive HUD")
     quit(0)
