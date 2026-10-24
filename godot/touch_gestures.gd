@@ -20,6 +20,9 @@ var multi_tap_allowed := false
 # A shield tap must stay a tap for its entire path, not just at release.
 var multi_moved := false
 var multi_deltas: Array[Vector2] = []
+# Track both live positions so a deliberate attack can fire before release.
+var multi_positions: Dictionary = {}
+var multi_attack_fired := false
 var cancelled := false
 var single_mode := "" # undecided -> steer OR jump, never both
 var moved_outside_tap := false
@@ -31,6 +34,8 @@ func _clear_active() -> void:
     multi_tap_allowed = false
     multi_moved = false
     multi_deltas.clear()
+    multi_positions.clear()
+    multi_attack_fired = false
     single_mode = ""
     moved_outside_tap = false
     last_target_lane = 0
@@ -59,6 +64,7 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                     cancelled = true
                 return {}
             fingers[touch.index] = {"start": touch.position, "time": now_ms}
+            multi_positions[touch.index] = touch.position
             if fingers.size() == 1:
                 primary_id = touch.index
                 start_lane = lane_now
@@ -87,6 +93,7 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
         var duration: int = now_ms - int(fingers[touch.index]["time"])
         var delta: Vector2 = touch.position - origin
         fingers.erase(touch.index)
+        multi_positions.erase(touch.index)
         if cancelled:
             if fingers.is_empty():
                 _clear_active()
@@ -94,6 +101,11 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                     cancelled = false
             return {"captured": true}
         if multi_active:
+            # A two-finger attack already fired on drag must never fire twice.
+            if multi_attack_fired:
+                if fingers.is_empty():
+                    _clear_active()
+                return {"captured": true}
             multi_deltas.append(delta)
             if delta.length() > TAP_SLOP:
                 multi_moved = true
@@ -139,11 +151,23 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
     var drag := event as InputEventScreenDrag
     if drag == null or not fingers.has(drag.index):
         return {}
+    multi_positions[drag.index] = drag.position
     if multi_active or cancelled or drag.index != primary_id:
-        # Both fingers are captured. Remember their maximum excursion:
-        # swiping away and returning to the start must not trigger Shield.
-        if multi_active and not cancelled and drag.position.distance_to(fingers[drag.index]["start"]) > TAP_SLOP:
-            multi_moved = true
+        # Track both fingers separately. A Super Attack fires as soon as BOTH
+        # move deliberately upward; the player need not lift their fingers.
+        # Never treat one moving finger or a UI-cancelled gesture as an attack.
+        if multi_active and not cancelled:
+            if drag.position.distance_to(fingers[drag.index]["start"]) > TAP_SLOP:
+                multi_moved = true
+            if not multi_attack_fired and fingers.size() == 2 and now_ms - multi_start_ms <= MAX_ATTACK_MS:
+                var ids: Array = fingers.keys()
+                var a: Vector2 = multi_positions[ids[0]] - fingers[ids[0]]["start"]
+                var b: Vector2 = multi_positions[ids[1]] - fingers[ids[1]]["start"]
+                if a.y < -SWIPE_UP and b.y < -SWIPE_UP and absf(a.x) < absf(a.y) and absf(b.x) < absf(b.y):
+                    multi_attack_fired = true
+                    multi_tap_allowed = false
+                    last_tap_ms = -10000
+                    return {"captured": true, "action": "attack"}
         return {"captured": true}
     var delta: Vector2 = drag.position - fingers[drag.index]["start"]
     var result := {"captured": true}
