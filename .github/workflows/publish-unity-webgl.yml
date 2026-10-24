@@ -44,6 +44,37 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates/4.4.1.stable"
           unzip -q /tmp/templates.tpz -d /tmp/godot-templates
           cp /tmp/godot-templates/templates/* "$HOME/.local/share/godot/export_templates/4.4.1.stable/"
+      - name: Detect previously lost V34 release
+        id: historical_v34
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          from urllib.error import HTTPError
+          from urllib.request import Request, urlopen
+          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v34/index.html"
+          try:
+              with urlopen(Request(url, headers={"Cache-Control": "no-cache"}), timeout=20):
+                  missing = False
+          except HTTPError as error:
+              if error.code != 404:
+                  raise
+              missing = True
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write("missing=" + str(missing).lower() + "\n")
+          print("Original V34 archive restoration required:", missing)
+          PY
+      - name: Retrieve original V34 Pages artifact
+        if: steps.historical_v34.outputs.missing == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          run-id: 40053310388
+          github-token: ${{ github.token }}
+          path: /tmp/skyway-v34-original
+      - name: Restore original V34 bytes without rebuilding
+        if: steps.historical_v34.outputs.missing == 'true'
+        run: python .github/scripts/restore_skyway_v34.py
       - name: Export Godot browser game
         shell: bash
         run: |
