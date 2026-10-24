@@ -796,7 +796,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V54") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V55") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -806,7 +806,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V54") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V55") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -861,11 +861,17 @@ func _run_checks() -> void:
     game.call("_input", _screen_touch(0, true, Vector2(500, 370)))
     game.call("_input", _screen_touch(1, true, Vector2(590, 370)))
     game.call("_input", _screen_drag(0, Vector2(500, 250)))
+    if float(game.get("attack_left")) > 0.0 or int(game.get("power")) != 100:
+        _fail("V55 one-finger movement spent attack energy")
+        return
     game.call("_input", _screen_drag(1, Vector2(590, 250)))
+    if float(game.get("attack_left")) <= 0.0 or int(game.get("power")) != 55 or float(game.get("jump_left")) > 0.0:
+        _fail("V55 attack must spend exactly 45 energy DURING the second drag")
+        return
     game.call("_input", _screen_touch(0, false, Vector2(500, 230)))
     game.call("_input", _screen_touch(1, false, Vector2(590, 230)))
     if float(game.get("attack_left")) <= 0.0 or int(game.get("power")) != 55 or float(game.get("jump_left")) > 0.0:
-        _fail("Two-finger attack must spend 45 energy without accidental jump")
+        _fail("V55 release repeated attack or caused an accidental jump")
         return
     # UI origins cannot capture steering, even when the finger leaves the UI.
     game.set("lane", 0)
@@ -934,7 +940,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V54") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V55") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
