@@ -31,11 +31,11 @@ jobs:
           from pathlib import Path
           text = Path(".github/workflows/publish-unity-webgl.yml").read_text()
           assert "python .github/scripts/preserve_legacy_pages.py" in text
-          assert "cp -a _site/godot/. _site/skyway-v33/" in text
-          assert 'root = Path("_site/skyway-v33")' in text
-          assert "/skyway-v33/" in text
-          assert "Skyway V33 already exists: refusing to overwrite" in text
-          for old in ("skyway-v32", "skyway-v31", "skyway-v30", "skyway-v29", "skyway-v28", "skyway-v27", "skyway-v26", "skyway-v25", "skyway-v24", "skyway-v23", "skyway-v22", "skyway-v21", "skyway-v20", "skyway-v19", "skyway-v18", "skyway-v17", "skyway-v16", "skyway-v15", "skyway-v10", "neon-city-v3"):
+          assert "cp -a _site/godot/. _site/skyway-v34/" in text
+          assert 'root = Path("_site/skyway-v34")' in text
+          assert "/skyway-v34/" in text
+          assert "Skyway V34 already exists: refusing to overwrite" in text
+          for old in ("skyway-v33", "skyway-v32", "skyway-v31", "skyway-v30", "skyway-v29", "skyway-v28", "skyway-v27", "skyway-v26", "skyway-v25", "skyway-v24", "skyway-v23", "skyway-v22", "skyway-v21", "skyway-v20", "skyway-v19", "skyway-v18", "skyway-v17", "skyway-v16", "skyway-v15", "skyway-v10", "neon-city-v3"):
               assert f"cp -a _site/godot/. _site/{old}/" not in text
           print("Immutable historical-version wiring verified")
           PY

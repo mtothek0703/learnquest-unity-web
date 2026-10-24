@@ -339,6 +339,10 @@ func _add_balance_legs(model: Node3D) -> void:
         footwear.name = "SculptedHoverBoot"
         footwear.position = Vector3(0.0, -0.49, -0.08)
         pivot.add_child(footwear)
+        # Tailored mesh-built trousers and knee guards follow each steering leg.
+        var leg_armor := preload("res://rider_leg_armor.gd").new() as Node3D
+        leg_armor.name = "SculptedRiderLeg"
+        pivot.add_child(leg_armor)
         balance_legs.append(pivot)
 
 func _add_face_details(model: Node3D) -> void:
