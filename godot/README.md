@@ -11,3 +11,5 @@ Engine: Godot 4.4.1, GDScript, Compatibility Renderer, Single-Thread-Web-Export 
 Der Workflow `.github/workflows/publish-unity-webgl.yml` exportiert das Projekt automatisch und veröffentlicht es unter `/learnquest-unity-web/godot/`. Die bestehende Unity-Web-Testversion bleibt unter `/learnquest-unity-web/`.
 
 Ein GitHub-Actions-Export muss erst erfolgreich durchlaufen, bevor die Version spielbar ist.
+
+Skyway V33: Eigenständig modellierter dreisträhniger 3D-Zopf mit Farbverlauf, zwei leuchtenden Haarspangen und weicher Wind-/Turbo-Animation. Originalgeometrie ohne Fremdlizenzen.

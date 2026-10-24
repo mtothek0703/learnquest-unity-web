@@ -104,6 +104,9 @@ func set_character_model(model: Node3D) -> void:
     face.name = "ExpressiveFace"
     model.add_child(face)
     _add_hairstyle(model)
+    var braid := preload("res://rider_braid.gd").new() as Node3D
+    braid.name = "AnimatedBraidedPonytail"
+    model.add_child(braid)
     _add_sculpted_jacket(model)
     var coat := preload("res://rider_coat.gd").new() as Node3D
     coat.name = "AnimatedSculptedCoat"
