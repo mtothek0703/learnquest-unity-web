@@ -15,3 +15,5 @@ Ein GitHub-Actions-Export muss erst erfolgreich durchlaufen, bevor die Version s
 Skyway V33: Eigenständig modellierter dreisträhniger 3D-Zopf mit Farbverlauf, zwei leuchtenden Haarspangen und weicher Wind-/Turbo-Animation. Originalgeometrie ohne Fremdlizenzen.
 
 Skyway V34: Original modellierte, verlaufsschattierte Hosenbeine mit geschwungenen, beweglichen Kniepanzern und leuchtenden Nähten. Alle Geometrien werden einmalig erzeugt; keine Fremdassets.
+
+Skyway V35: Volumetrische Haarhaube aus eigenem 3D-Oberflächenmesh, sechs überlappende, verlaufsschattierte Haarlagen mit leuchtenden Strähnen und zwei windanimierte Schläfenlocken. Kostenlose Originalgeometrie, keine Fremdassets; vorhandener Zopf und Spielmechanik bleiben erhalten.
