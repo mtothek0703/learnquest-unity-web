@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V47"
+const VERSION_LABEL := "V48"
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
 const HARBOR_BONUS_TARGET := 4
@@ -380,14 +380,11 @@ func _create_frost_warden() -> void:
     frost_warden.position = Vector3(0, 0.65, -25.0)
     add_child(frost_warden)
     frost_warden.visible = false
-    var wave_mesh := BoxMesh.new()
-    wave_mesh.size = Vector3(1.9, 0.16, 35.0)
-    var wave_material := mat(Color("#79eaff"), true)
+    # Swept, shaded ice sheets and jagged translucent crests replace flat boxes.
+    # Keep one warning node per dangerous lane: collision rules stay unchanged.
     for index in range(2):
-        var wave := MeshInstance3D.new()
+        var wave := preload("res://frost_shockwave.gd").new() as MeshInstance3D
         wave.name = "Frost shockwave lane %d" % index
-        wave.mesh = wave_mesh
-        wave.material_override = wave_material
         wave.position = Vector3(0, 0.14, -13.0)
         add_child(wave)
         wave.visible = false
