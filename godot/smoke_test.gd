@@ -128,6 +128,47 @@ func _run_checks() -> void:
         if strand == null or not (strand.mesh is ArrayMesh) or (strand.mesh as ArrayMesh).surface_get_array_len(0) < 1000:
             _fail("Sculpted articulated temple curl missing: " + curl_name)
             return
+    # V38: two real curved jacket panels, raised collar, sculpted chest
+    # plates and an animated luminous zipper; gameplay nodes are untouched.
+    var torso := installed_model.get_node_or_null("AnimatedTailoredFlightJacket") as Node3D
+    if torso == null:
+        _fail("Sculpted front flight jacket is missing")
+        return
+    var breathing := torso.get_node_or_null("AnimatedBreathingJacket") as Node3D
+    if breathing == null:
+        _fail("Animated breathing jacket pivot is missing")
+        return
+    for part_name in ["TailoredLeftChest", "TailoredRightChest"]:
+        var panel := breathing.get_node_or_null(part_name) as MeshInstance3D
+        if panel == null or not (panel.mesh is ArrayMesh) or (panel.mesh as ArrayMesh).surface_get_array_len(0) < 1500:
+            _fail("Sculpted high-resolution jacket panel missing: " + part_name)
+            return
+        var fabric := panel.material_override as StandardMaterial3D
+        if fabric == null or not fabric.vertex_color_use_as_albedo:
+            _fail("Tailored jacket requires shaded fabric gradients")
+            return
+    for part_name in ["LayeredLeftChestArmor", "LayeredRightChestArmor"]:
+        var armor_panel := breathing.get_node_or_null(part_name) as MeshInstance3D
+        if armor_panel == null or not (armor_panel.mesh is ArrayMesh) or (armor_panel.mesh as ArrayMesh).surface_get_array_len(0) < 800:
+            _fail("Sculpted chest armor missing: " + part_name)
+            return
+    var collar := torso.get_node_or_null("RaisedFlightCollar") as MeshInstance3D
+    if collar == null or not (collar.mesh is ArrayMesh) or (collar.mesh as ArrayMesh).surface_get_array_len(0) < 1200:
+        _fail("Continuous curved flight collar is missing")
+        return
+    for seam_name in ["LuminousCenterZipper", "LuminousWaistPiping", "LuminousLeftChestEdge", "LuminousRightChestEdge"]:
+        var seam := breathing.get_node_or_null(seam_name) as MeshInstance3D
+        if seam == null or not (seam.mesh is ArrayMesh) or (seam.mesh as ArrayMesh).surface_get_array_len(0) < 100:
+            _fail("Curved jacket piping missing: " + seam_name)
+            return
+        var seam_mat := seam.material_override as StandardMaterial3D
+        if seam_mat == null or not seam_mat.emission_enabled:
+            _fail("Flight jacket neon piping is not emissive")
+            return
+    torso.call("_process", 0.20)
+    if absf(breathing.scale.z - 1.0) < 0.001:
+        _fail("Jacket breathing animation does not move the sculpted mesh")
+        return
     var jacket := installed_model.get_node_or_null("SculptedJacketBack") as MeshInstance3D
     var emblem := installed_model.get_node_or_null("NeonJacketEmblem") as MeshInstance3D
     if jacket == null or not (jacket.mesh is ArrayMesh) or (jacket.mesh as ArrayMesh).surface_get_array_len(0) < 300:
