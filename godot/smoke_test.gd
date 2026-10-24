@@ -152,8 +152,8 @@ func _run_checks() -> void:
         if armor_panel == null or not (armor_panel.mesh is ArrayMesh) or (armor_panel.mesh as ArrayMesh).surface_get_array_len(0) < 800:
             _fail("Sculpted chest armor missing: " + part_name)
             return
-    var collar := torso.get_node_or_null("RaisedFlightCollar") as MeshInstance3D
-    if collar == null or not (collar.mesh is ArrayMesh) or (collar.mesh as ArrayMesh).surface_get_array_len(0) < 1200:
+    var flight_collar := torso.get_node_or_null("RaisedFlightCollar") as MeshInstance3D
+    if flight_collar == null or not (flight_collar.mesh is ArrayMesh) or (flight_collar.mesh as ArrayMesh).surface_get_array_len(0) < 1200:
         _fail("Continuous curved flight collar is missing")
         return
     for seam_name in ["LuminousCenterZipper", "LuminousWaistPiping", "LuminousLeftChestEdge", "LuminousRightChestEdge"]:
