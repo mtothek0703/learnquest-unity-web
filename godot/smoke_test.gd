@@ -140,6 +140,30 @@ func _check_native_gestures() -> bool:
         _fail("V52 scrolling between taps accidentally activated Turbo")
         return false
 
+    # V54 regression: a two-finger swipe that returns to its origin is NOT
+    # a Shield tap. Prior code checked only final release coordinates.
+    for moved_index in [0, 1]:
+        gestures.reset()
+        gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 4500, 0, 960.0)
+        gestures.handle(_screen_touch(1, true, Vector2(460, 300)), true, false, 4530, 0, 960.0)
+        var origin := Vector2(400, 300) if moved_index == 0 else Vector2(460, 300)
+        gestures.handle(_screen_drag(moved_index, origin + Vector2(100, 0)), true, false, 4550, 0, 960.0)
+        gestures.handle(_screen_drag(moved_index, origin), true, false, 4570, 0, 960.0)
+        gestures.handle(_screen_touch(0, false, Vector2(400, 300)), true, false, 4590, 0, 960.0)
+        event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 300)), true, false, 4600, 0, 960.0)
+        if event_result.has("action"):
+            _fail("V54 swipe-and-return unexpectedly triggered Shield on finger %d" % moved_index)
+            return false
+    # Normal two-finger taps still work when neither finger has swiped.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 4700, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 300)), true, false, 4730, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(400, 300)), true, false, 4760, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 300)), true, false, 4780, 0, 960.0)
+    if event_result.get("action", "") != "shield":
+        _fail("V54 normal two-finger tap no longer activates Shield")
+        return false
+
     # A finger that starts over the UI suspends all playfield touches.
     gestures.reset()
     gestures.handle(_screen_touch(0, true, Vector2(150, 200)), true, true, 5000, 0, 960.0)
@@ -723,7 +747,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V53") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V54") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -733,7 +757,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V53") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V54") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -861,7 +885,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V53") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V54") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
