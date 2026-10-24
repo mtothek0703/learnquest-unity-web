@@ -8,8 +8,9 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const ROUND_LENGTH := 800.0
-const VERSION_LABEL := "V41"
+const VERSION_LABEL := "V42"
+const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON"]
+const WORLD_GOALS := [800.0, 950.0]
 const SHIELD_COST := 30
 const MEGA_JUMP_COST := 30
 const ATTACK_COST := 45
@@ -17,6 +18,10 @@ var phase := "menu" # menu -> training -> race -> results
 var training_correct := 0
 var round_number := 1
 var rounds_finished := 0
+var world_choice := 0
+var total_stars := 0
+var total_reward_xp := 0
+var mission_target := 800.0
 var lane := 0
 var grade := 5
 var xp := 0
@@ -46,6 +51,11 @@ var rider: Node3D
 var chase_camera: Camera3D
 var moving: Node3D
 var skyway_zone: Node3D
+var canyon_zone: Node3D
+var sky_material: ProceduralSkyMaterial
+var world_button: Button
+var progress_bar: ProgressBar
+var reward_label: Label
 var road_marks: Node3D
 var run_items: Node3D
 var lives := 3
@@ -110,14 +120,14 @@ func _create_world() -> void:
     var resource := Environment.new()
     resource.background_mode = Environment.BG_SKY
     var sky := Sky.new()
-    var sky_gradient := ProceduralSkyMaterial.new()
+    sky_material = ProceduralSkyMaterial.new()
     # V14 visual overhaul: electric sunset instead of the old dark-blue sky.
-    sky_gradient.sky_top_color = Color("#080d35")
-    sky_gradient.sky_horizon_color = Color("#ff789b")
-    sky_gradient.ground_horizon_color = Color("#ffbd8b")
-    sky_gradient.ground_bottom_color = Color("#39265e")
-    sky_gradient.use_debanding = true
-    sky.sky_material = sky_gradient
+    sky_material.sky_top_color = Color("#080d35")
+    sky_material.sky_horizon_color = Color("#ff789b")
+    sky_material.ground_horizon_color = Color("#ffbd8b")
+    sky_material.ground_bottom_color = Color("#39265e")
+    sky_material.use_debanding = true
+    sky.sky_material = sky_material
     resource.sky = sky
     resource.background_color = Color("#211b51")
     resource.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
@@ -171,6 +181,10 @@ func _create_world() -> void:
     skyway_zone = zone_script.new()
     skyway_zone.name = "LearnQuest Skyway world"
     add_child(skyway_zone)
+    canyon_zone = preload("res://crystal_canyon.gd").new() as Node3D
+    canyon_zone.name = "LearnQuest Crystal Canyon world"
+    add_child(canyon_zone)
+    canyon_zone.visible = false
 
     # Moving roadside silhouettes supplement the richer scrolling Skyway world.
     moving = Node3D.new()
@@ -195,7 +209,39 @@ func _create_world() -> void:
         moving.add_child(crystal)
         cube(crystal, Vector3.ZERO, Vector3(1.4, 2.2, 1.4), Color("#39e5ff") if i % 2 == 0 else Color("#fd47c1"), true).rotation_degrees = Vector3(27, 45, 15)
     _create_run_items()
+    _apply_world_theme()
 
+func _apply_world_theme() -> void:
+    # World selection changes real 3D geometry, lighting and the race mission.
+    mission_target = float(WORLD_GOALS[world_choice])
+    if skyway_zone != null:
+        skyway_zone.visible = world_choice == 0
+    if canyon_zone != null:
+        canyon_zone.visible = world_choice == 1
+    if moving != null:
+        moving.visible = world_choice == 0
+    if sky_material != null:
+        sky_material.sky_top_color = Color("#080d35") if world_choice == 0 else Color("#1c1040")
+        sky_material.sky_horizon_color = Color("#ff789b") if world_choice == 0 else Color("#ffb07c")
+        sky_material.ground_horizon_color = Color("#ffbd8b") if world_choice == 0 else Color("#dc83ac")
+        sky_material.ground_bottom_color = Color("#39265e") if world_choice == 0 else Color("#50254d")
+
+func _change_world() -> void:
+    if phase != "menu":
+        return
+    world_choice = (world_choice + 1) % WORLD_NAMES.size()
+    _apply_world_theme()
+    world_button.text = "WELT: %s" % WORLD_NAMES[world_choice]
+    _refresh_hud()
+
+func _show_world_menu() -> void:
+    if phase != "results":
+        return
+    phase = "menu"
+    started = false
+    end_panel.hide()
+    splash.show()
+    _refresh_hud()
 
 func _create_powerup_effects() -> void:
     # Three cheap, mobile-friendly visual effects stay attached to the racer.
@@ -295,6 +341,7 @@ func _create_run_items() -> void:
             cube(item, Vector3(0, 1.4, 0), Vector3(2.1, 0.13, 0.84), Color("#b927f7"), true)
 
 func _reset_run() -> void:
+    _apply_world_theme()
     phase = "race"
     lane = 0
     xp = 0
@@ -333,7 +380,7 @@ func _reset_run() -> void:
     _refresh_hud()
 
 func _jump() -> void:
-    if started and not quiz_active and jump_left <= 0.0:
+    if phase == "race" and started and not quiz_active and jump_left <= 0.0:
         jump_duration = 0.85
         jump_height = 1.8
         mega_jump_active = false
@@ -445,10 +492,16 @@ func _update_run_items(delta: float) -> void:
             item.visible = true
 
 func _finish_run() -> void:
-    var completed := phase == "race" and distance >= ROUND_LENGTH
+    var completed := phase == "race" and distance >= mission_target
     if completed:
         rounds_finished += 1
         round_number += 1
+        var stars_earned: int = clampi(lives, 1, 3)
+        total_stars += stars_earned
+        total_reward_xp += xp
+        reward_label.text = "+%d STERNE  |  +%d XP\nGESAMT: %d STERNE" % [stars_earned, xp, total_stars]
+    else:
+        reward_label.text = "NOCH %dm BIS ZUM ZIEL\nVERSUCHE ES ERNEUT!" % maxi(0, int(mission_target - distance))
     phase = "results"
     end_heading.text = "RUNDE GESCHAFFT!" if completed else "RUNDE NICHT GESCHAFFT"
     started = false
@@ -515,6 +568,21 @@ func _create_ui() -> void:
     hud = Label.new()
     hud.add_theme_font_size_override("font_size", 18)
     hud_panel.add_child(hud)
+    progress_bar = ProgressBar.new()
+    progress_bar.name = "Race mission progress"
+    progress_bar.position = Vector2(15, 91)
+    progress_bar.custom_minimum_size = Vector2(360, 20)
+    progress_bar.show_percentage = true
+    progress_bar.max_value = mission_target
+    var track_style := StyleBoxFlat.new()
+    track_style.bg_color = Color("#15213e")
+    track_style.set_corner_radius_all(9)
+    var fill_style := StyleBoxFlat.new()
+    fill_style.bg_color = Color("#6af5e5")
+    fill_style.set_corner_radius_all(9)
+    progress_bar.add_theme_stylebox_override("background", track_style)
+    progress_bar.add_theme_stylebox_override("fill", fill_style)
+    canvas.add_child(progress_bar)
 
     # Four fixed-width buttons overflow a phone screen. Two rows fit in portrait.
     controls_grid = GridContainer.new()
@@ -558,8 +626,8 @@ func _create_ui() -> void:
     splash = PanelContainer.new()
     _style_panel(splash)
     splash.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-    splash.position = Vector2(-220, -160)
-    splash.custom_minimum_size = Vector2(440, 320)
+    splash.position = Vector2(-220, -192)
+    splash.custom_minimum_size = Vector2(440, 384)
     canvas.add_child(splash)
     var start_column := VBoxContainer.new()
     start_column.add_theme_constant_override("separation", 14)
@@ -583,6 +651,7 @@ func _create_ui() -> void:
     var grade_up := _make_button("+", func(): _change_grade(1), grade_buttons)
     grade_down.custom_minimum_size.x = 68
     grade_up.custom_minimum_size.x = 68
+    world_button = _make_button("WELT: NEON CITY", _change_world, start_column)
     _make_button("AUFGABEN STARTEN", _begin_training, start_column)
     _change_grade(0)
 
@@ -630,7 +699,13 @@ func _create_ui() -> void:
     end_heading.add_theme_font_size_override("font_size", 30)
     end_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     end_column.add_child(end_heading)
+    reward_label = Label.new()
+    reward_label.name = "Round rewards"
+    reward_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    reward_label.add_theme_font_size_override("font_size", 20)
+    end_column.add_child(reward_label)
     _make_button("NEUE AUFGABEN", _begin_training, end_column)
+    _make_button("WELT WECHSELN", _show_world_menu, end_column)
     end_panel.hide()
     _apply_mobile_layout(get_viewport().get_visible_rect().size.x)
     get_viewport().size_changed.connect(func(): _apply_mobile_layout(get_viewport().get_visible_rect().size.x))
@@ -640,6 +715,7 @@ func _apply_mobile_layout(viewport_width: float) -> void:
     var narrow := viewport_width < 720.0
     mobile_hud_layout = narrow
     hud_panel.custom_minimum_size.x = minf(360.0, maxf(0.0, viewport_width - 30.0)) if narrow else 360.0
+    progress_bar.custom_minimum_size.x = hud_panel.custom_minimum_size.x
     hud.add_theme_font_size_override("font_size", 16 if narrow else 18)
     controls_grid.columns = 2 if narrow else 4
     controls_grid.offset_top = -142.0 if narrow else -90.0
@@ -749,11 +825,11 @@ func _answer(index: int) -> void:
     _refresh_hud()
 
 func _shift(delta: int) -> void:
-    if started and not quiz_active:
+    if phase == "race" and started and not quiz_active:
         lane = clampi(lane + delta, -1, 1)
 
 func _use_turbo() -> void:
-    if started and not quiz_active and turbo_left <= 0.0 and power >= 40:
+    if phase == "race" and started and not quiz_active and turbo_left <= 0.0 and power >= 40:
         power -= 40
         turbo_left = 5.0
         _refresh_hud()
@@ -765,7 +841,11 @@ func _refresh_hud() -> void:
         else:
             hud.text = "SKYWAY %s   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [VERSION_LABEL, lives, xp, power, combo, int(distance)]
         if phase == "race":
-            hud.text += "\nRUNDE %d  ZIEL %dm  SCHILD %ds  BOOST %ds" % [round_number, int(ROUND_LENGTH), ceili(shield_left), ceili(turbo_left)]
+            hud.text += "\n%s  RUNDE %d  ZIEL %dm  SCHILD %ds  BOOST %ds" % [WORLD_NAMES[world_choice], round_number, int(mission_target), ceili(shield_left), ceili(turbo_left)]
+    if progress_bar != null:
+        progress_bar.visible = phase == "race"
+        progress_bar.max_value = mission_target
+        progress_bar.value = clampf(distance, 0.0, mission_target)
 
 # Follow the racer on lane changes and jumps; widen the view during turbo.
 func _update_camera(delta: float) -> void:
@@ -784,18 +864,20 @@ func _process(delta: float) -> void:
         feedback_time -= delta
         if feedback_time <= 0:
             info_label.text = ""
-    skyway_zone.set("running", started and not quiz_active)
+    skyway_zone.set("running", phase == "race" and started and not quiz_active and world_choice == 0)
     skyway_zone.set("travel_speed", speed)
-    if not started or quiz_active:
+    canyon_zone.set("running", phase == "race" and started and not quiz_active and world_choice == 1)
+    canyon_zone.set("travel_speed", speed)
+    if phase != "race" or not started or quiz_active:
         _update_camera(delta)
         return
-    if Input.is_key_pressed(KEY_SPACE) and jump_left <= 0.0:
+    if Input.is_key_just_pressed(KEY_SPACE) and jump_left <= 0.0:
         _jump()
-    if Input.is_key_pressed(KEY_Q):
+    if Input.is_key_just_pressed(KEY_Q):
         _use_shield()
-    if Input.is_key_pressed(KEY_E):
+    if Input.is_key_just_pressed(KEY_E):
         _use_mega_jump()
-    if Input.is_key_pressed(KEY_R):
+    if Input.is_key_just_pressed(KEY_R):
         _use_super_attack()
     if Input.is_key_pressed(KEY_LEFT) or Input.is_key_pressed(KEY_A):
         lane = -1
@@ -817,7 +899,7 @@ func _process(delta: float) -> void:
         mega_jump_visual.rotation.y += delta * 3.0
     speed = 25.0 if turbo_left > 0 else 14.0
     distance += delta * speed
-    if phase == "race" and distance >= ROUND_LENGTH:
+    if phase == "race" and distance >= mission_target:
         _finish_run()
         _update_camera(delta)
         return
@@ -830,10 +912,11 @@ func _process(delta: float) -> void:
     _update_camera(delta)
     if not started:
         return
-    for object in moving.get_children():
-        object.position.z += delta * speed
-        if object.position.z > 12:
-            object.position.z -= 155
+    if world_choice == 0:
+        for object in moving.get_children():
+            object.position.z += delta * speed
+            if object.position.z > 12:
+                object.position.z -= 155
     for marker in road_marks.get_children():
         marker.position.z += delta * speed
         if marker.position.z > 16:
