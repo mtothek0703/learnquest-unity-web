@@ -104,6 +104,11 @@ func set_character_model(model: Node3D) -> void:
     face.name = "ExpressiveFace"
     model.add_child(face)
     _add_hairstyle(model)
+    # V35 volumetric hair shell and sculpted wind-reactive curls, layered
+    # behind the established braid without replacing its working animation.
+    var volume := preload("res://rider_hair_volume.gd").new() as Node3D
+    volume.name = "SculptedVolumetricHair"
+    model.add_child(volume)
     var braid := preload("res://rider_braid.gd").new() as Node3D
     braid.name = "AnimatedBraidedPonytail"
     model.add_child(braid)
