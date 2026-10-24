@@ -9,6 +9,10 @@ const WORDS := [
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
 const ROUND_LENGTH := 800.0
+const VERSION_LABEL := "V41"
+const SHIELD_COST := 30
+const MEGA_JUMP_COST := 30
+const ATTACK_COST := 45
 var phase := "menu" # menu -> training -> race -> results
 var training_correct := 0
 var round_number := 1
@@ -29,6 +33,15 @@ var options: Array[int] = []
 var answer_buttons: Array[Button] = []
 var combo := 0
 var turbo_left := 0.0
+var shield_left := 0.0
+var attack_left := 0.0
+var mega_jump_active := false
+var jump_duration := 0.85
+var jump_height := 1.8
+var shield_visual: MeshInstance3D
+var attack_visual: MeshInstance3D
+var mega_jump_visual: MeshInstance3D
+var powerups_grid: GridContainer
 var rider: Node3D
 var chase_camera: Camera3D
 var moving: Node3D
@@ -152,6 +165,7 @@ func _create_world() -> void:
     marker.omni_range = 5.0
     rider.add_child(marker)
     marker.position = Vector3(0, 2, 0)
+    _create_powerup_effects()
 
     var zone_script = preload("res://neon_environment.gd")
     skyway_zone = zone_script.new()
@@ -182,6 +196,58 @@ func _create_world() -> void:
         cube(crystal, Vector3.ZERO, Vector3(1.4, 2.2, 1.4), Color("#39e5ff") if i % 2 == 0 else Color("#fd47c1"), true).rotation_degrees = Vector3(27, 45, 15)
     _create_run_items()
 
+
+func _create_powerup_effects() -> void:
+    # Three cheap, mobile-friendly visual effects stay attached to the racer.
+    shield_visual = MeshInstance3D.new()
+    shield_visual.name = "Active energy shield"
+    var bubble := SphereMesh.new()
+    bubble.radius = 1.4
+    bubble.height = 2.8
+    shield_visual.mesh = bubble
+    var shield_mat := StandardMaterial3D.new()
+    shield_mat.albedo_color = Color(0.17, 0.83, 1.0, 0.18)
+    shield_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    shield_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    shield_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+    shield_mat.emission_enabled = true
+    shield_mat.emission = Color(0.06, 0.40, 0.65)
+    shield_mat.emission_energy_multiplier = 1.25
+    shield_visual.material_override = shield_mat
+    shield_visual.position.y = 1.35
+    rider.add_child(shield_visual)
+    shield_visual.visible = false
+
+    mega_jump_visual = MeshInstance3D.new()
+    mega_jump_visual.name = "Mega jump energy"
+    var mega_ring := TorusMesh.new()
+    mega_ring.inner_radius = 0.68
+    mega_ring.outer_radius = 0.80
+    mega_jump_visual.mesh = mega_ring
+    mega_jump_visual.material_override = mat(Color("#ffe36c"), true)
+    mega_jump_visual.rotation_degrees.x = 90.0
+    mega_jump_visual.position.y = 0.20
+    rider.add_child(mega_jump_visual)
+    mega_jump_visual.visible = false
+
+    attack_visual = MeshInstance3D.new()
+    attack_visual.name = "Super attack shockwave"
+    var shockwave := SphereMesh.new()
+    shockwave.radius = 1.2
+    shockwave.height = 2.4
+    attack_visual.mesh = shockwave
+    var attack_mat := StandardMaterial3D.new()
+    attack_mat.albedo_color = Color(1.0, 0.22, 0.75, 0.25)
+    attack_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    attack_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    attack_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+    attack_mat.emission_enabled = true
+    attack_mat.emission = Color(0.7, 0.10, 0.50)
+    attack_mat.emission_energy_multiplier = 1.6
+    attack_visual.material_override = attack_mat
+    attack_visual.position.y = 1.3
+    rider.add_child(attack_visual)
+    attack_visual.visible = false
 
 func _create_run_items() -> void:
     run_items = Node3D.new()
@@ -240,6 +306,14 @@ func _reset_run() -> void:
     jump_left = 0.0
     hit_cooldown = 0.0
     turbo_left = 0.0
+    shield_left = 0.0
+    attack_left = 0.0
+    mega_jump_active = false
+    jump_duration = 0.85
+    jump_height = 1.8
+    shield_visual.visible = false
+    attack_visual.visible = false
+    mega_jump_visual.visible = false
     quiz_time = 7.0
     quiz_active = false
     previous_quiz_index = -1
@@ -260,12 +334,63 @@ func _reset_run() -> void:
 
 func _jump() -> void:
     if started and not quiz_active and jump_left <= 0.0:
-        jump_left = 0.85
+        jump_duration = 0.85
+        jump_height = 1.8
+        mega_jump_active = false
+        jump_left = jump_duration
+
+func _use_shield() -> void:
+    if phase != "race" or not started or quiz_active or shield_left > 0.0 or power < SHIELD_COST:
+        return
+    power -= SHIELD_COST
+    shield_left = 8.0
+    shield_visual.visible = true
+    info_label.text = "ENERGIE-SCHILD AKTIV!"
+    feedback_time = 1.6
+    _refresh_hud()
+
+func _use_mega_jump() -> void:
+    if phase != "race" or not started or quiz_active or jump_left > 0.0 or power < MEGA_JUMP_COST:
+        return
+    power -= MEGA_JUMP_COST
+    jump_duration = 1.55
+    jump_height = 4.2
+    jump_left = jump_duration
+    mega_jump_active = true
+    mega_jump_visual.visible = true
+    info_label.text = "MEGA-SPRUNG!"
+    feedback_time = 1.4
+    _refresh_hud()
+
+func _use_super_attack() -> void:
+    if phase != "race" or not started or quiz_active or attack_left > 0.0 or power < ATTACK_COST:
+        return
+    power -= ATTACK_COST
+    attack_left = 0.72
+    attack_visual.visible = true
+    var cleared := 0
+    for item in run_items.get_children():
+        # Destroy upcoming hazards across all three lanes in shockwave range.
+        if bool(item.get_meta("energy")) or bool(item.get_meta("collected")):
+            continue
+        if item.position.z < rider.position.z and item.position.z > rider.position.z - 62.0:
+            item.set_meta("collected", true)
+            item.visible = false
+            cleared += 1
+    xp += cleared * 20
+    info_label.text = "SUPER ATTACK! %d HINDERNISSE ZERSTÖRT" % cleared
+    feedback_time = 1.8
+    _refresh_hud()
 
 func _update_run_items(delta: float) -> void:
     hit_cooldown = maxf(0.0, hit_cooldown - delta)
     jump_left = maxf(0.0, jump_left - delta)
-    rider.position.y = sin((1.0 - jump_left / 0.85) * PI) * 1.8 if jump_left > 0.0 else 0.0
+    rider.position.y = sin((1.0 - jump_left / jump_duration) * PI) * jump_height if jump_left > 0.0 else 0.0
+    if jump_left <= 0.0 and mega_jump_active:
+        mega_jump_active = false
+        mega_jump_visual.visible = false
+        jump_duration = 0.85
+        jump_height = 1.8
     for item in run_items.get_children():
         var previous_z: float = item.position.z
         item.position.z += speed * delta
@@ -300,6 +425,10 @@ func _update_run_items(delta: float) -> void:
                     xp += 10
                     info_label.text = "TURBO! +10 XP"
                     feedback_time = 1.2
+                elif shield_left > 0.0:
+                    info_label.text = "SCHILD BLOCKT DEN TREFFER!"
+                    feedback_time = 1.1
+                    item.visible = false
                 elif hit_cooldown <= 0.0:
                     lives -= 1
                     combo = 0
@@ -406,6 +535,26 @@ func _create_ui() -> void:
         button.custom_minimum_size.x = 0
         button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
+    # Separate mobile row: four movement controls stay unchanged for old saves/tests.
+    powerups_grid = GridContainer.new()
+    powerups_grid.name = "Special abilities"
+    powerups_grid.columns = 3
+    powerups_grid.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+    powerups_grid.offset_left = 15.0
+    powerups_grid.offset_right = -15.0
+    powerups_grid.offset_top = -152.0
+    powerups_grid.offset_bottom = -98.0
+    powerups_grid.add_theme_constant_override("h_separation", 7)
+    canvas.add_child(powerups_grid)
+    for power_button in [
+        _make_button("SCHILD", _use_shield, powerups_grid),
+        _make_button("MEGA ↑", _use_mega_jump, powerups_grid),
+        _make_button("ATTACKE", _use_super_attack, powerups_grid)
+    ]:
+        power_button.custom_minimum_size = Vector2(0, 46)
+        power_button.add_theme_font_size_override("font_size", 16)
+        power_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
     splash = PanelContainer.new()
     _style_panel(splash)
     splash.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -494,6 +643,8 @@ func _apply_mobile_layout(viewport_width: float) -> void:
     hud.add_theme_font_size_override("font_size", 16 if narrow else 18)
     controls_grid.columns = 2 if narrow else 4
     controls_grid.offset_top = -142.0 if narrow else -90.0
+    powerups_grid.offset_top = -200.0 if narrow else -152.0
+    powerups_grid.offset_bottom = -151.0 if narrow else -98.0
     start_heading.add_theme_font_size_override("font_size", 26 if narrow else 34)
     end_heading.add_theme_font_size_override("font_size", 24 if narrow else 30)
     for panel in [splash, quiz_box, end_panel]:
@@ -610,9 +761,11 @@ func _use_turbo() -> void:
 func _refresh_hud() -> void:
     if hud != null:
         if mobile_hud_layout:
-            hud.text = "V31  LEBEN %d  XP %d\nENERGIE %d%%  KOMBO x%d  %dm" % [lives, xp, power, combo, int(distance)]
+            hud.text = "%s  LEBEN %d  XP %d\nENERGIE %d%%  KOMBO x%d  %dm" % [VERSION_LABEL, lives, xp, power, combo, int(distance)]
         else:
-            hud.text = "SKYWAY V31   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [lives, xp, power, combo, int(distance)]
+            hud.text = "SKYWAY %s   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [VERSION_LABEL, lives, xp, power, combo, int(distance)]
+        if phase == "race":
+            hud.text += "\nRUNDE %d  ZIEL %dm  SCHILD %ds  BOOST %ds" % [round_number, int(ROUND_LENGTH), ceili(shield_left), ceili(turbo_left)]
 
 # Follow the racer on lane changes and jumps; widen the view during turbo.
 func _update_camera(delta: float) -> void:
@@ -638,6 +791,12 @@ func _process(delta: float) -> void:
         return
     if Input.is_key_pressed(KEY_SPACE) and jump_left <= 0.0:
         _jump()
+    if Input.is_key_pressed(KEY_Q):
+        _use_shield()
+    if Input.is_key_pressed(KEY_E):
+        _use_mega_jump()
+    if Input.is_key_pressed(KEY_R):
+        _use_super_attack()
     if Input.is_key_pressed(KEY_LEFT) or Input.is_key_pressed(KEY_A):
         lane = -1
     elif Input.is_key_pressed(KEY_RIGHT) or Input.is_key_pressed(KEY_D):
@@ -645,6 +804,17 @@ func _process(delta: float) -> void:
     elif Input.is_key_pressed(KEY_S):
         lane = 0
     turbo_left = maxf(0.0, turbo_left - delta)
+    shield_left = maxf(0.0, shield_left - delta)
+    attack_left = maxf(0.0, attack_left - delta)
+    shield_visual.visible = shield_left > 0.0
+    if shield_visual.visible:
+        var pulse := 1.0 + sin(distance * 0.24) * 0.04
+        shield_visual.scale = Vector3.ONE * pulse
+    attack_visual.visible = attack_left > 0.0
+    if attack_visual.visible:
+        attack_visual.scale = Vector3.ONE * (1.0 + (0.72 - attack_left) * 8.0)
+    if mega_jump_active:
+        mega_jump_visual.rotation.y += delta * 3.0
     speed = 25.0 if turbo_left > 0 else 14.0
     distance += delta * speed
     if phase == "race" and distance >= ROUND_LENGTH:
