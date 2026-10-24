@@ -207,5 +207,17 @@ class PreservePagesTests(unittest.TestCase):
         self.assertFalse((self.root / "preserved-versions.json").exists())
 
 
+    def test_restored_v34_keeps_original_bytes(self):
+        version = self.root / "skyway-v34"
+        version.mkdir()
+        (version / ".restored-from-original-pages").write_text("40053310388\n")
+        for name in archive.REQUIRED:
+            (version / name).write_bytes(("original:" + name).encode())
+        (version / "build.txt").write_text("6592da3530ed86904e972b9c375742f533f3d69a\n")
+        with patch.object(archive, "download", side_effect=self.mock_download) as download:
+            archive.main()
+        self.assertEqual((version / "index.html").read_bytes(), b"original:index.html")
+        self.assertFalse(any("skyway-v34/" in call.args[0] for call in download.call_args_list))
+
 if __name__ == "__main__":
     unittest.main()

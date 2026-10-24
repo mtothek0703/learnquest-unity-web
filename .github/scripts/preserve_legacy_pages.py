@@ -68,17 +68,33 @@ def main() -> None:
     for version in VERSIONS:
         folder = destination / version
         url = BASE + version + "/"
-        if not download(url + "index.html", folder / "index.html"):
-            if version in ("skyway-v16", "skyway-v17", "skyway-v18", "skyway-v19", "skyway-v20", "skyway-v21", "skyway-v22", "skyway-v23", "skyway-v24", "skyway-v25", "skyway-v26", "skyway-v27", "skyway-v28", "skyway-v29", "skyway-v30", "skyway-v31", "skyway-v32", "skyway-v33", "skyway-v34", "skyway-v35"):
-                raise RuntimeError("Verified %s is missing; refusing to replace old Pages site" % version)
-            print(f"SKIP: {version} is not currently published", flush=True)
-            continue
+        # V35 accidentally dropped V34. The only acceptable repair is a
+        # byte-for-byte copy from the successful V34 Pages artifact, never a
+        # newly exported build that merely looks like the old game.
+        marker = folder / ".restored-from-original-pages"
+        recovered = version == "skyway-v34" and marker.is_file()
         missing = []
-        for name in REQUIRED[1:]:
-            if not download(url + name, folder / name):
-                missing.append(name)
-        for name in OPTIONAL:
-            download(url + name, folder / name)
+        if recovered:
+            if marker.read_text().strip() != "40053310388":
+                raise RuntimeError("V34 recovery provenance is invalid")
+            for name in REQUIRED:
+                if not (folder / name).is_file() or (folder / name).stat().st_size == 0:
+                    missing.append(name)
+            if missing:
+                raise RuntimeError("Original V34 recovery is incomplete: " + str(missing))
+            if (folder / "build.txt").read_text().strip() != "6592da3530ed86904e972b9c375742f533f3d69a":
+                raise RuntimeError("Original V34 recovery revision mismatch")
+        else:
+            if not download(url + "index.html", folder / "index.html"):
+                if version in ("skyway-v16", "skyway-v17", "skyway-v18", "skyway-v19", "skyway-v20", "skyway-v21", "skyway-v22", "skyway-v23", "skyway-v24", "skyway-v25", "skyway-v26", "skyway-v27", "skyway-v28", "skyway-v29", "skyway-v30", "skyway-v31", "skyway-v32", "skyway-v33", "skyway-v34", "skyway-v35"):
+                    raise RuntimeError("Verified %s is missing; refusing to replace old Pages site" % version)
+                print(f"SKIP: {version} is not currently published", flush=True)
+                continue
+            for name in REQUIRED[1:]:
+                if not download(url + name, folder / name):
+                    missing.append(name)
+            for name in OPTIONAL:
+                download(url + name, folder / name)
         if missing:
             # Any incomplete historical snapshot must block the entire deploy.
             # A warning here would permanently remove files from an older URL.
