@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V49"
+const VERSION_LABEL := "V50"
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
 const HARBOR_BONUS_TARGET := 4
@@ -57,6 +57,9 @@ var mega_jump_visual: MeshInstance3D
 var powerups_grid: GridContainer
 var rider: Node3D
 var chase_camera: Camera3D
+var hero_gallery: Node3D
+var camera_focus := Vector3(0.0, 1.5, 0.5)
+var showcase_clock := 0.0
 var moving: Node3D
 var skyway_zone: Node3D
 var canyon_zone: Node3D
@@ -115,6 +118,8 @@ func _ready() -> void:
     _create_world()
     _create_ui()
     _refresh_hud()
+    # Start directly with a front-facing hero portrait, not the old rear view.
+    _update_camera(100.0)
 
 func mat(color: Color, glow: bool = false) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -211,6 +216,10 @@ func _create_world() -> void:
     rider.add_child(marker)
     marker.position = Vector3(0, 2, 0)
     _create_powerup_effects()
+    hero_gallery = preload("res://hero_gallery.gd").new() as Node3D
+    hero_gallery.name = "Cinematic hero gallery"
+    hero_gallery.position = Vector3(0.0, 0.0, 0.2)
+    add_child(hero_gallery)
 
     var zone_script = preload("res://neon_environment.gd")
     skyway_zone = zone_script.new()
@@ -1208,19 +1217,37 @@ func _refresh_hud() -> void:
         progress_bar.max_value = mission_target
         progress_bar.value = clampf(distance, 0.0, mission_target)
 
-# Follow the racer on lane changes and jumps; widen the view during turbo.
+# The menu showcases the actual modeled face, hair and outfit from the front.
+# Training/results keep the gallery; races transition to the existing chase
+# camera without interrupting controls, physics or the timed boss warnings.
 func _update_camera(delta: float) -> void:
     if chase_camera == null or rider == null:
         return
-    var racing := started and not quiz_active
+    var racing := phase == "race" and started and not quiz_active
     var boost := racing and turbo_left > 0.0
-    var x := rider.position.x * 0.36 if racing else 0.0
-    var y := rider.position.y * 0.25 if racing else 0.0
-    chase_camera.position = chase_camera.position.lerp(Vector3(x, 4.3 + y, 10.1 if boost else 9.0), clampf(delta * 4.5, 0.0, 1.0))
-    chase_camera.look_at(Vector3(rider.position.x * 0.42 if racing else 0.0, 1.5 + rider.position.y * 0.45 if racing else 1.5, 0.5), Vector3.UP)
-    chase_camera.fov = lerpf(chase_camera.fov, 74.0 if boost else 64.0, clampf(delta * 3.0, 0.0, 1.0))
+    var target_position: Vector3
+    var target_focus: Vector3
+    var target_fov: float
+    if racing:
+        target_position = Vector3(rider.position.x * 0.36, 4.3 + rider.position.y * 0.25, 10.1 if boost else 9.0)
+        target_focus = Vector3(rider.position.x * 0.42, 1.5 + rider.position.y * 0.45, 0.5)
+        target_fov = 74.0 if boost else 64.0
+    else:
+        showcase_clock += delta
+        # Frame the rider to the right of the central menu/quiz panel.
+        # Front-facing (-Z) perspective finally exposes the detailed face.
+        target_position = Vector3(-5.2 + sin(showcase_clock * 0.4) * 0.24, 3.15, -6.7)
+        target_focus = Vector3(-3.0, 2.05, 0.25)
+        target_fov = 58.0
+    var blend := clampf(delta * 3.8, 0.0, 1.0)
+    chase_camera.position = chase_camera.position.lerp(target_position, blend)
+    camera_focus = camera_focus.lerp(target_focus, blend)
+    chase_camera.look_at(camera_focus, Vector3.UP)
+    chase_camera.fov = lerpf(chase_camera.fov, target_fov, blend)
 
 func _process(delta: float) -> void:
+    if hero_gallery != null:
+        hero_gallery.visible = phase != "race"
     if feedback_time > 0:
         feedback_time -= delta
         if feedback_time <= 0:
