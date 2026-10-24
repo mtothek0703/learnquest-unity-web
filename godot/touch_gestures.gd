@@ -17,6 +17,8 @@ var last_tap_position := Vector2(-10000.0, -10000.0)
 var multi_active := false
 var multi_start_ms := 0
 var multi_tap_allowed := false
+# A shield tap must stay a tap for its entire path, not just at release.
+var multi_moved := false
 var multi_deltas: Array[Vector2] = []
 var cancelled := false
 var single_mode := "" # undecided -> steer OR jump, never both
@@ -27,6 +29,7 @@ func _clear_active() -> void:
     primary_id = -1
     multi_active = false
     multi_tap_allowed = false
+    multi_moved = false
     multi_deltas.clear()
     single_mode = ""
     moved_outside_tap = false
@@ -69,6 +72,7 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                 # A second finger after steering/scrolling is not a power-up.
                 if single_mode != "" or moved_outside_tap:
                     cancelled = true
+                multi_moved = false
                 multi_deltas.clear()
                 last_tap_ms = -10000
             return {"captured": true}
@@ -91,6 +95,8 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
             return {"captured": true}
         if multi_active:
             multi_deltas.append(delta)
+            if delta.length() > TAP_SLOP:
+                multi_moved = true
             if not fingers.is_empty():
                 return {"captured": true}
             var result := {"captured": true}
@@ -99,7 +105,7 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                 var b: Vector2 = multi_deltas[1]
                 if now_ms - multi_start_ms <= MAX_ATTACK_MS and a.y < -SWIPE_UP and b.y < -SWIPE_UP and absf(a.x) < absf(a.y) and absf(b.x) < absf(b.y):
                     result["action"] = "attack"
-                elif multi_tap_allowed and now_ms - multi_start_ms <= TWO_FINGER_MS and a.length() <= TAP_SLOP and b.length() <= TAP_SLOP:
+                elif multi_tap_allowed and not multi_moved and now_ms - multi_start_ms <= TWO_FINGER_MS and a.length() <= TAP_SLOP and b.length() <= TAP_SLOP:
                     result["action"] = "shield"
             _clear_active()
             return result
@@ -134,6 +140,10 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
     if drag == null or not fingers.has(drag.index):
         return {}
     if multi_active or cancelled or drag.index != primary_id:
+        # Both fingers are captured. Remember their maximum excursion:
+        # swiping away and returning to the start must not trigger Shield.
+        if multi_active and not cancelled and drag.position.distance_to(fingers[drag.index]["start"]) > TAP_SLOP:
+            multi_moved = true
         return {"captured": true}
     var delta: Vector2 = drag.position - fingers[drag.index]["start"]
     var result := {"captured": true}
