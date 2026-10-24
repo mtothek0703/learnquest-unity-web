@@ -8,12 +8,14 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V42"
+const VERSION_LABEL := "V43"
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON"]
 const WORLD_GOALS := [800.0, 950.0]
 const SHIELD_COST := 30
 const MEGA_JUMP_COST := 30
 const ATTACK_COST := 45
+const GUARDIAN_HEALTH := 3
+const GUARDIAN_SPAWN_FRACTION := 0.55
 var phase := "menu" # menu -> training -> race -> results
 var training_correct := 0
 var round_number := 1
@@ -52,6 +54,14 @@ var chase_camera: Camera3D
 var moving: Node3D
 var skyway_zone: Node3D
 var canyon_zone: Node3D
+var guardian: Node3D
+var guardian_beam: MeshInstance3D
+var guardian_hp := GUARDIAN_HEALTH
+var guardian_active := false
+var guardian_defeated := false
+var guardian_attack_timer := 0.0
+var guardian_warning_left := 0.0
+var guardian_lane := 0
 var sky_material: ProceduralSkyMaterial
 var world_button: Button
 var progress_bar: ProgressBar
@@ -185,6 +195,7 @@ func _create_world() -> void:
     canyon_zone.name = "LearnQuest Crystal Canyon world"
     add_child(canyon_zone)
     canyon_zone.visible = false
+    _create_guardian()
 
     # Moving roadside silhouettes supplement the richer scrolling Skyway world.
     moving = Node3D.new()
@@ -210,6 +221,63 @@ func _create_world() -> void:
         cube(crystal, Vector3.ZERO, Vector3(1.4, 2.2, 1.4), Color("#39e5ff") if i % 2 == 0 else Color("#fd47c1"), true).rotation_degrees = Vector3(27, 45, 15)
     _create_run_items()
     _apply_world_theme()
+
+func _create_guardian() -> void:
+    # Original, sculpted 3D boss model; no external downloads.
+    guardian = preload("res://canyon_guardian.gd").new() as Node3D
+    guardian.name = "Crystal Guardian Boss"
+    guardian.position = Vector3(0, 0.7, -20.0)
+    add_child(guardian)
+    guardian.visible = false
+    guardian_beam = MeshInstance3D.new()
+    guardian_beam.name = "Guardian telegraphed laser lane"
+    var beam_mesh := BoxMesh.new()
+    beam_mesh.size = Vector3(1.7, 0.12, 35.0)
+    guardian_beam.mesh = beam_mesh
+    guardian_beam.material_override = mat(Color("#ff547e"), true)
+    guardian_beam.position = Vector3(0, 0.10, -13.0)
+    add_child(guardian_beam)
+    guardian_beam.visible = false
+
+func _update_guardian(delta: float) -> void:
+    # Guardian battle is uninterrupted, after the mid-race checkpoint.
+    if world_choice != 1 or phase != "race" or not started or guardian_defeated:
+        return
+    if not guardian_active:
+        if distance < mission_target * GUARDIAN_SPAWN_FRACTION:
+            return
+        guardian_active = true
+        guardian.visible = true
+        guardian.set("active", true)
+        guardian_attack_timer = 2.8
+        info_label.text = "BOSS: KRISTALL-WÄCHTER! ATTACKE EINSETZEN!"
+        feedback_time = 2.5
+    if guardian_warning_left > 0.0:
+        guardian_warning_left -= delta
+        if guardian_warning_left <= 0.0:
+            guardian_warning_left = 0.0
+            guardian_beam.visible = false
+            if lane == guardian_lane and rider.position.y <= 0.85 and shield_left <= 0.0 and turbo_left <= 0.0 and hit_cooldown <= 0.0:
+                lives -= 1
+                hit_cooldown = 1.4
+                info_label.text = "BOSS-LASER! NOCH %d LEBEN" % lives
+                feedback_time = 1.5
+                if lives <= 0:
+                    _finish_run()
+                    return
+            else:
+                info_label.text = "BOSS-STRAHL AUSGEWICHEN!"
+                feedback_time = 1.1
+            guardian_attack_timer = 5.0
+        return
+    guardian_attack_timer -= delta
+    if guardian_attack_timer <= 0.0:
+        guardian_lane = randi_range(-1, 1)
+        guardian_warning_left = 1.35
+        guardian_beam.position.x = float(guardian_lane) * 3.1
+        guardian_beam.visible = true
+        info_label.text = "WARNUNG! ROTE LASER-SPUR VERLASSEN!"
+        feedback_time = 1.35
 
 func _apply_world_theme() -> void:
     # World selection changes real 3D geometry, lighting and the race mission.
@@ -240,6 +308,8 @@ func _show_world_menu() -> void:
     phase = "menu"
     started = false
     end_panel.hide()
+    guardian.visible = false
+    guardian_beam.visible = false
     splash.show()
     _refresh_hud()
 
@@ -356,6 +426,14 @@ func _reset_run() -> void:
     shield_left = 0.0
     attack_left = 0.0
     mega_jump_active = false
+    guardian_hp = GUARDIAN_HEALTH
+    guardian_active = false
+    guardian_defeated = false
+    guardian_attack_timer = 0.0
+    guardian_warning_left = 0.0
+    guardian.visible = false
+    guardian.set("active", false)
+    guardian_beam.visible = false
     jump_duration = 0.85
     jump_height = 1.8
     shield_visual.visible = false
@@ -425,7 +503,22 @@ func _use_super_attack() -> void:
             item.visible = false
             cleared += 1
     xp += cleared * 20
-    info_label.text = "SUPER ATTACK! %d HINDERNISSE ZERSTÖRT" % cleared
+    if guardian_active and not guardian_defeated:
+        guardian_hp -= 1
+        guardian.call("take_hit")
+        if guardian_hp <= 0:
+            guardian_defeated = true
+            guardian_active = false
+            guardian.visible = false
+            guardian.set("active", false)
+            guardian_beam.visible = false
+            guardian_warning_left = 0.0
+            xp += 120
+            info_label.text = "BOSS BESIEGT! +120 XP UND BONUSSTERN!"
+        else:
+            info_label.text = "BOSS GETROFFEN! NOCH %d KERN-PUNKTE" % guardian_hp
+    else:
+        info_label.text = "SUPER ATTACK! %d HINDERNISSE ZERSTÖRT" % cleared
     feedback_time = 1.8
     _refresh_hud()
 
@@ -496,13 +589,18 @@ func _finish_run() -> void:
     if completed:
         rounds_finished += 1
         round_number += 1
-        var stars_earned: int = clampi(lives, 1, 3)
+        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 1 and guardian_defeated else 0)
         total_stars += stars_earned
         total_reward_xp += xp
         reward_label.text = "+%d STERNE  |  +%d XP\nGESAMT: %d STERNE" % [stars_earned, xp, total_stars]
+        if world_choice == 1 and guardian_defeated:
+            reward_label.text += "\nKRISTALL-WÄCHTER BESIEGT: +1 BONUSSTERN!"
     else:
         reward_label.text = "NOCH %dm BIS ZUM ZIEL\nVERSUCHE ES ERNEUT!" % maxi(0, int(mission_target - distance))
     phase = "results"
+    guardian.visible = false
+    guardian.set("active", false)
+    guardian_beam.visible = false
     end_heading.text = "RUNDE GESCHAFFT!" if completed else "RUNDE NICHT GESCHAFFT"
     started = false
     quiz_active = false
@@ -842,6 +940,8 @@ func _refresh_hud() -> void:
             hud.text = "SKYWAY %s   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [VERSION_LABEL, lives, xp, power, combo, int(distance)]
         if phase == "race":
             hud.text += "\n%s  RUNDE %d  ZIEL %dm  SCHILD %ds  BOOST %ds" % [WORLD_NAMES[world_choice], round_number, int(mission_target), ceili(shield_left), ceili(turbo_left)]
+            if guardian_active and world_choice == 1:
+                hud.text += "\nKRISTALL-WÄCHTER %d/%d  %s" % [guardian_hp, GUARDIAN_HEALTH, "LASER!" if guardian_warning_left > 0.0 else "ANGRIFF LADEN"]
     if progress_bar != null:
         progress_bar.visible = phase == "race"
         progress_bar.max_value = mission_target
@@ -899,6 +999,10 @@ func _process(delta: float) -> void:
         mega_jump_visual.rotation.y += delta * 3.0
     speed = 25.0 if turbo_left > 0 else 14.0
     distance += delta * speed
+    _update_guardian(delta)
+    if not started:
+        _update_camera(delta)
+        return
     if phase == "race" and distance >= mission_target:
         _finish_run()
         _update_camera(delta)
