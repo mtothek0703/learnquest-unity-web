@@ -6,6 +6,13 @@ const WORDS := [
     [["Brücke","bridge"],["Garten","garden"],["Wetter","weather"],["Schule","school"],["Freund","friend"],["Fenster","window"]],
     [["Abenteuer","adventure"],["Umwelt","environment"],["Entscheidung","decision"],["Erfahrung","experience"],["entdecken","discover"],["wichtig","important"]]
 ]
+# Complete vocabulary missions first; racing is a continuous, finite level.
+const TASKS_PER_ROUND := 3
+const ROUND_LENGTH := 800.0
+var phase := "menu" # menu -> training -> race -> results
+var training_correct := 0
+var round_number := 1
+var rounds_finished := 0
 var lane := 0
 var grade := 5
 var xp := 0
@@ -222,6 +229,7 @@ func _create_run_items() -> void:
             cube(item, Vector3(0, 1.4, 0), Vector3(2.1, 0.13, 0.84), Color("#b927f7"), true)
 
 func _reset_run() -> void:
+    phase = "race"
     lane = 0
     xp = 0
     power = 0
@@ -308,11 +316,17 @@ func _update_run_items(delta: float) -> void:
             item.visible = true
 
 func _finish_run() -> void:
+    var completed := phase == "race" and distance >= ROUND_LENGTH
+    if completed:
+        rounds_finished += 1
+        round_number += 1
+    phase = "results"
+    end_heading.text = "RUNDE GESCHAFFT!" if completed else "RUNDE NICHT GESCHAFFT"
     started = false
     quiz_active = false
     quiz_box.hide()
     end_panel.show()
-    info_label.text = "RUNDE BEENDET - %d METER" % int(distance)
+    info_label.text = "ZIEL ERREICHT! NÄCHSTE RUNDE FREI" if completed else "VERSUCH BEENDET - %d METER" % int(distance)
     feedback_time = 4.0
     _refresh_hud()
 
@@ -407,7 +421,7 @@ func _create_ui() -> void:
     start_heading.add_theme_font_size_override("font_size", 34)
     start_column.add_child(start_heading)
     var sub := Label.new()
-    sub.text = "SKYWAY CITY - VOCAB RACE"
+    sub.text = "ERST 3 VOKABELN, DANN EINE GANZE RUNDE"
     sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     start_column.add_child(sub)
     grade_label = Label.new()
@@ -420,7 +434,7 @@ func _create_ui() -> void:
     var grade_up := _make_button("+", func(): _change_grade(1), grade_buttons)
     grade_down.custom_minimum_size.x = 68
     grade_up.custom_minimum_size.x = 68
-    _make_button("RENNEN STARTEN", _start_game, start_column)
+    _make_button("AUFGABEN STARTEN", _begin_training, start_column)
     _change_grade(0)
 
     quiz_box = PanelContainer.new()
@@ -467,7 +481,7 @@ func _create_ui() -> void:
     end_heading.add_theme_font_size_override("font_size", 30)
     end_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     end_column.add_child(end_heading)
-    _make_button("NOCHMAL FAHREN", _reset_run, end_column)
+    _make_button("NEUE AUFGABEN", _begin_training, end_column)
     end_panel.hide()
     _apply_mobile_layout(get_viewport().get_visible_rect().size.x)
     get_viewport().size_changed.connect(func(): _apply_mobile_layout(get_viewport().get_visible_rect().size.x))
@@ -494,7 +508,24 @@ func _change_grade(delta: int) -> void:
     grade = clampi(grade + delta, 1, 10)
     grade_label.text = "SCHULKLASSE: %d" % grade
 
+func _begin_training() -> void:
+    # Starts the mandatory preparation before every player-facing round.
+    phase = "training"
+    training_correct = 0
+    combo = 0
+    previous_quiz_index = -1
+    started = true
+    quiz_active = false
+    splash.hide()
+    end_panel.hide()
+    info_label.text = "LÖSE %d AUFGABEN FÜR RUNDE %d" % [TASKS_PER_ROUND, round_number]
+    feedback_time = 3.0
+    _ask()
+    _refresh_hud()
+
 func _start_game() -> void:
+    # Backwards-compatible low-level race entry point for gameplay diagnostics.
+    # The start and replay buttons always call _begin_training().
     _reset_run()
 
 func _group() -> int:
@@ -514,7 +545,10 @@ func _ask() -> void:
         if not options.has(candidate):
             options.append(candidate)
     options.shuffle()
-    question_label.text = WORDS[_group()][correct_index][0]
+    if phase == "training":
+        question_label.text = "%d/%d  %s" % [training_correct + 1, TASKS_PER_ROUND, WORDS[_group()][correct_index][0]]
+    else:
+        question_label.text = WORDS[_group()][correct_index][0]
     for i in range(3):
         answer_buttons[i].disabled = false
         answer_buttons[i].text = WORDS[_group()][options[i]][1]
@@ -538,6 +572,24 @@ func _answer(index: int) -> void:
     combo += 1
     xp += 45 if combo >= 3 else 35
     power = mini(power + 25, 100)
+    if phase == "training":
+        training_correct += 1
+        if training_correct >= TASKS_PER_ROUND:
+            # Award a useful starting boost, then run the entire track
+            # without interrupting play with further vocabulary questions.
+            _reset_run()
+            power = mini(100, TASKS_PER_ROUND * 25)
+            xp = TASKS_PER_ROUND * 35
+            combo = TASKS_PER_ROUND
+            info_label.text = "RUNDE %d FREIGESCHALTET! BIS INS ZIEL!" % round_number
+            feedback_time = 3.0
+            _refresh_hud()
+        else:
+            info_label.text = "RICHTIG! NOCH %d AUFGABEN" % (TASKS_PER_ROUND - training_correct)
+            feedback_time = 2.0
+            _ask()
+            _refresh_hud()
+        return
     info_label.text = "RICHTIG!  KOMBO x%d" % combo
     feedback_time = 2.0
     quiz_active = false
@@ -595,6 +647,10 @@ func _process(delta: float) -> void:
     turbo_left = maxf(0.0, turbo_left - delta)
     speed = 25.0 if turbo_left > 0 else 14.0
     distance += delta * speed
+    if phase == "race" and distance >= ROUND_LENGTH:
+        _finish_run()
+        _update_camera(delta)
+        return
     rider.position.x = move_toward(rider.position.x, float(lane) * 3.1, delta * 12)
     rider.set("lean", lerpf(float(rider.get("lean")), float(lane), minf(1.0, delta * 5.0)))
     rider.set("boosting", turbo_left > 0)
@@ -612,7 +668,10 @@ func _process(delta: float) -> void:
         marker.position.z += delta * speed
         if marker.position.z > 16:
             marker.position.z -= 144
-    quiz_time -= delta
-    if quiz_time <= 0:
-        _ask()
+    # In the actual level, avoid pausing the action for more questions.
+    # Manual _ask() remains available for diagnostics and future missions.
+    if phase != "race":
+        quiz_time -= delta
+        if quiz_time <= 0:
+            _ask()
     _refresh_hud()
