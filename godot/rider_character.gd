@@ -331,6 +331,11 @@ func _add_balance_legs(model: Node3D) -> void:
         light_band.material_override = glow
         light_band.position = Vector3(0.0, -0.39, 0.18)
         pivot.add_child(light_band)
+        # Original sculpted footwear is attached to each animated leg pivot.
+        var footwear := preload("res://rider_footwear.gd").new() as Node3D
+        footwear.name = "SculptedHoverBoot"
+        footwear.position = Vector3(0.0, -0.49, -0.08)
+        pivot.add_child(footwear)
         balance_legs.append(pivot)
 
 func _add_face_details(model: Node3D) -> void:
