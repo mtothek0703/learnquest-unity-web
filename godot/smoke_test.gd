@@ -99,6 +99,35 @@ func _run_checks() -> void:
         if swept == null or not (swept.mesh is ArrayMesh) or (swept.mesh as ArrayMesh).surface_get_array_len(0) < 200:
             _fail("Sculpted hair crest lock is missing")
             return
+    # V35: true volumetric hair shell, layered gradient strands and
+    # articulated side curls, all with original curved mesh geometry.
+    var volume := installed_model.get_node_or_null("SculptedVolumetricHair") as Node3D
+    if volume == null:
+        _fail("Volumetric hair sculpture is missing")
+        return
+    var scalp := volume.get_node_or_null("VolumetricScalp") as MeshInstance3D
+    if scalp == null or not (scalp.mesh is ArrayMesh) or (scalp.mesh as ArrayMesh).surface_get_array_len(0) < 2400:
+        _fail("Hair crown must have a detailed continuous 3D surface")
+        return
+    var scalp_material := scalp.material_override as StandardMaterial3D
+    if scalp_material == null or not scalp_material.vertex_color_use_as_albedo:
+        _fail("Hair crown needs the original shaded color gradient")
+        return
+    for layer in range(6):
+        var swept := volume.get_node_or_null("SweptLayer%d" % layer) as MeshInstance3D
+        var glint := volume.get_node_or_null("LuminousHairSheen%d" % layer) as MeshInstance3D
+        if swept == null or not (swept.mesh is ArrayMesh) or (swept.mesh as ArrayMesh).surface_get_array_len(0) < 450:
+            _fail("Detailed layered hair plate missing: %d" % layer)
+            return
+        if glint == null or not (glint.mesh is ArrayMesh) or not (glint.material_override as StandardMaterial3D).emission_enabled:
+            _fail("Glowing hair highlight missing: %d" % layer)
+            return
+    for curl_name in ["LeftTempleCurl", "RightTempleCurl"]:
+        var curl := volume.get_node_or_null(curl_name) as Node3D
+        var strand := curl.get_node_or_null("SculptedCurl") as MeshInstance3D if curl != null else null
+        if strand == null or not (strand.mesh is ArrayMesh) or (strand.mesh as ArrayMesh).surface_get_array_len(0) < 1000:
+            _fail("Sculpted articulated temple curl missing: " + curl_name)
+            return
     var jacket := installed_model.get_node_or_null("SculptedJacketBack") as MeshInstance3D
     var emblem := installed_model.get_node_or_null("NeonJacketEmblem") as MeshInstance3D
     if jacket == null or not (jacket.mesh is ArrayMesh) or (jacket.mesh as ArrayMesh).surface_get_array_len(0) < 300:
@@ -233,6 +262,10 @@ func _run_checks() -> void:
         return
     if absf(hair_lock.rotation.x) < 0.001 or absf(hair_lock.rotation.z) < 0.001:
         _fail("The 3D rider hair is not responding to turbo and steering")
+        return
+    var temple := volume.get_node("LeftTempleCurl") as Node3D
+    if absf(temple.rotation.x) < 0.001 or absf(temple.rotation.z) < 0.001:
+        _fail("Sculpted temple hair must respond to turbo and steering")
         return
     var left_tail := coat.get_node("LeftCoatTail") as Node3D
     if left_tail.rotation.x >= 0.0:
@@ -447,5 +480,5 @@ func _run_checks() -> void:
         if answer_button.disabled:
             _fail("A new vocabulary question kept an old answer disabled")
             return
-    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, sculpted V34 rider legs, V33 braid and V32 boots, rider, steering, jump, pickups, vocabulary, responsive HUD")
+    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, V35 sculpted hair volume, sculpted V34 rider legs, V33 braid and V32 boots, rider, steering, jump, pickups, vocabulary, responsive HUD")
     quit(0)
