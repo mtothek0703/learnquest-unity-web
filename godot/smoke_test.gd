@@ -577,7 +577,7 @@ func _run_checks() -> void:
             return
         previous_word = current_word
     # Cover both the youngest and oldest available grade bands.
-    for school_grade in [1, 10]:
+    for school_grade in range(1, 11):
         game.set("grade", school_grade)
         game.call("_ask")
         if (game.get("question_label") as Label).text.is_empty():
