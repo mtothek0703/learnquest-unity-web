@@ -111,6 +111,29 @@ func _run_checks() -> void:
         if trim_material == null or not trim_material.emission_enabled:
             _fail("Neon shoulder piping is not emissive on " + arm_name)
             return
+    # V32: custom-meshed high-top footwear follows both articulated legs.
+    for leg_name in ["BalanceLeg0", "BalanceLeg1"]:
+        var footwear := installed_model.get_node_or_null(leg_name + "/SculptedHoverBoot") as Node3D
+        if footwear == null:
+            _fail("Animated high-top boot missing: " + leg_name)
+            return
+        for mesh_name in ["SculptedUpper", "SculptedSole"]:
+            var part := footwear.get_node_or_null(mesh_name) as MeshInstance3D
+            if part == null or not (part.mesh is ArrayMesh) or (part.mesh as ArrayMesh).surface_get_array_len(0) < 1000:
+                _fail("Boot needs detailed sculpted geometry: " + leg_name + "/" + mesh_name)
+                return
+        for detail_name in ["NeonSoleWelt", "WovenLaces"]:
+            var detail := footwear.get_node_or_null(detail_name) as MeshInstance3D
+            if detail == null or not (detail.mesh is ArrayMesh):
+                _fail("Boot detail missing: " + leg_name + "/" + detail_name)
+                return
+            var detail_material := detail.material_override as StandardMaterial3D
+            if detail_material == null or not detail_material.emission_enabled:
+                _fail("Boot edge and laces must glow")
+                return
+        if footwear.get_node_or_null("TailoredAnkleCuff") == null:
+            _fail("Boot ankle cuff missing: " + leg_name)
+            return
     # V31: mesh-built two-panel coat, gradient fabric, luminous seams and collar.
     var coat := installed_model.get_node_or_null("AnimatedSculptedCoat") as Node3D
     if coat == null:
@@ -374,5 +397,5 @@ func _run_checks() -> void:
         if answer_button.disabled:
             _fail("A new vocabulary question kept an old answer disabled")
             return
-    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, rider, steering, jump, pickups, vocabulary, responsive V31 HUD")
+    print("LEARNQUEST SMOKE TEST PASSED: scene, 3D world, sculpted V32 boots, rider, steering, jump, pickups, vocabulary, responsive HUD")
     quit(0)
