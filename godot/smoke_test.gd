@@ -480,7 +480,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V46") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V47") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -490,12 +490,12 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V46") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V47") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V46") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V47") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -1028,6 +1028,84 @@ func _run_checks() -> void:
     if int(glacier.get("missed_gates")) != 1 or int(glacier.get("completed_gates")) != 3:
         _fail("Missed jump gates must score only once and never grant rewards")
         return
+    # V47: sculpted Aurora frost dragon, two warned lanes and a safe escape.
+    var frost := game.get_node_or_null("Aurora Frost Warden Boss") as Node3D
+    if frost == null:
+        _fail("Aurora frost dragon boss is missing")
+        return
+    var frost_body := frost.get_node_or_null("Sculpted frost dragon body") as MeshInstance3D
+    var frost_fin := frost.get_node_or_null("Animated frost fin left/Curved ice fin") as MeshInstance3D
+    var frost_jaw := frost.get_node_or_null("Articulated frost jaw") as Node3D
+    if frost_body == null or not (frost_body.mesh is ArrayMesh) or (frost_body.mesh as ArrayMesh).surface_get_array_len(0) < 6000:
+        _fail("Frost dragon needs a large, shaded original body mesh")
+        return
+    if frost_fin == null or not (frost_fin.mesh is ArrayMesh) or (frost_fin.mesh as ArrayMesh).surface_get_array_len(0) < 1300 or frost_jaw == null:
+        _fail("Frost dragon needs curved animated fins and a jaw")
+        return
+    game.set("distance", 900.0)
+    game.set("hit_cooldown", 2.0)
+    game.call("_process", 0.016)
+    if not bool(game.get("frost_active")) or not frost.visible or int(game.get("frost_hp")) != 3:
+        _fail("Aurora boss did not spawn during the second half of the race")
+        return
+    var jaw_angle: float = frost_jaw.rotation.x
+    frost.call("_process", 0.4)
+    if is_equal_approx(frost_jaw.rotation.x, jaw_angle):
+        _fail("Frost dragon jaw does not animate")
+        return
+    game.set("frost_attack_timer", 0.0)
+    game.call("_update_frost_warden", 0.016)
+    var ice_waves: Array = game.get("frost_warnings")
+    if ice_waves.size() != 2 or not ice_waves[0].visible or not ice_waves[1].visible:
+        _fail("Frost dragon must telegraph two dangerous lanes")
+        return
+    var safe_lane: int = int(game.get("frost_safe_lane"))
+    var danger_lane: int = int(roundf(ice_waves[0].position.x / 3.1))
+    if danger_lane == safe_lane or is_equal_approx(ice_waves[0].position.x, ice_waves[1].position.x):
+        _fail("Frost shockwave must leave a distinct safe lane")
+        return
+    game.set("lane", danger_lane)
+    rider.position.y = 0.0
+    game.set("shield_left", 0.0)
+    game.set("hit_cooldown", 0.0)
+    var lives_before_ice: int = int(game.get("lives"))
+    game.set("frost_warning_left", 0.01)
+    game.call("_update_frost_warden", 0.02)
+    if int(game.get("lives")) != lives_before_ice - 1 or ice_waves[0].visible or ice_waves[1].visible:
+        _fail("Unshielded rider in frost lane must take one hit")
+        return
+    game.set("frost_attack_timer", 0.0)
+    game.call("_update_frost_warden", 0.016)
+    game.set("lane", int(roundf(ice_waves[0].position.x / 3.1)))
+    game.set("shield_left", 2.0)
+    game.set("hit_cooldown", 0.0)
+    var lives_before_ice_shield: int = int(game.get("lives"))
+    game.set("frost_warning_left", 0.01)
+    game.call("_update_frost_warden", 0.02)
+    if int(game.get("lives")) != lives_before_ice_shield:
+        _fail("Shield must block frost shockwave")
+        return
+    game.set("frost_attack_timer", 0.0)
+    game.call("_update_frost_warden", 0.016)
+    game.set("lane", int(game.get("frost_safe_lane")))
+    game.set("shield_left", 0.0)
+    game.set("hit_cooldown", 0.0)
+    var lives_before_safe: int = int(game.get("lives"))
+    game.set("frost_warning_left", 0.01)
+    game.call("_update_frost_warden", 0.02)
+    if int(game.get("lives")) != lives_before_safe:
+        _fail("Unmarked third lane must remain safe")
+        return
+    for hit in range(3):
+        game.set("power", 100)
+        game.set("attack_left", 0.0)
+        game.call("_use_super_attack")
+        if int(game.get("frost_hp")) != 2 - hit:
+            _fail("Super Attack did not damage Aurora boss")
+            return
+    if not bool(game.get("frost_defeated")) or frost.visible or ice_waves[0].visible or ice_waves[1].visible:
+        _fail("Three attacks must defeat Aurora boss and clear warnings")
+        return
     game.set("distance", 1199.0)
     game.call("_process", 0.2)
     if str(game.get("phase")) != "results" or int(game.get("rounds_finished")) != 4:
@@ -1036,10 +1114,13 @@ func _run_checks() -> void:
     if (game.get("reward_label") as Label).text.find("AURORA-SPRUNG-MISSION") < 0:
         _fail("Glacier airborne mission did not grant its bonus star")
         return
+    if (game.get("reward_label") as Label).text.find("FROST-DRACHE BESIEGT") < 0:
+        _fail("Defeating Aurora boss must grant an additional bonus star")
+        return
     game.call("_show_world_menu")
     game.call("_change_world")
     if int(game.get("world_choice")) != 0 or not city.visible or canyon.visible or harbor.visible or glacier.visible:
         _fail("Switching back to Neon City did not restore its 3D environment")
         return
-    print("LEARNQUEST SMOKE TEST PASSED: 4 worlds, sculpted Aurora Glacier, orbital sentinel and guardian combat, airborne gates, vocabulary grades 1-10, powers and uninterrupted rounds")
+    print("LEARNQUEST SMOKE TEST PASSED: 4 worlds, sculpted Aurora Glacier and frost dragon, orbital sentinel and guardian combat, airborne gates, vocabulary grades 1-10, powers and uninterrupted rounds")
     quit(0)
