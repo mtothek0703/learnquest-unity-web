@@ -287,6 +287,77 @@ func _check_native_gestures() -> bool:
     if event_result.has("action"):
         _fail("V55 horizontal two-finger release must not trigger Super Attack")
         return false
+    # V56: an OS/browser-cancelled touch is NOT a normal release. It
+    # must never complete Turbo, a jump or either two-finger ability.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 300)), true, false, 11000, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(480, 300)), true, false, 11020, 0, 960.0)
+    gestures.handle(_screen_touch(0, true, Vector2(480, 300)), true, false, 11100, 0, 960.0)
+    var cancelled_touch := _screen_touch(0, false, Vector2(480, 300))
+    cancelled_touch.canceled = true
+    event_result = gestures.handle(cancelled_touch, true, false, 11120, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V56 cancelled tap must not trigger Turbo")
+        return false
+    gestures.handle(_screen_touch(0, true, Vector2(480, 300)), true, false, 11200, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(480, 300)), true, false, 11220, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V56 cancelled tap must break the double-tap sequence")
+        return false
+
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 360)), true, false, 12000, 0, 960.0)
+    cancelled_touch = _screen_touch(0, false, Vector2(480, 210))
+    cancelled_touch.canceled = true
+    event_result = gestures.handle(cancelled_touch, true, false, 12060, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V56 cancelled upward release must not become a jump")
+        return false
+    gestures.handle(_screen_touch(0, true, Vector2(480, 360)), true, false, 12100, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(480, 260)), true, false, 12130, 0, 960.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V56 a new swipe must work after touch cancellation")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(480, 260)), true, false, 12160, 0, 960.0)
+
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 370)), true, false, 13000, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(580, 370)), true, false, 13020, 0, 960.0)
+    cancelled_touch = _screen_touch(0, false, Vector2(480, 220))
+    cancelled_touch.canceled = true
+    event_result = gestures.handle(cancelled_touch, true, false, 13050, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V56 cancelled first finger must not fire Super Attack")
+        return false
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(580, 220)), true, false, 13080, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V56 remaining finger must not complete a cancelled attack")
+        return false
+    gestures.handle(_screen_touch(0, true, Vector2(480, 300)), true, false, 13100, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(580, 300)), true, false, 13120, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(480, 300)), true, false, 13140, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(580, 300)), true, false, 13160, 0, 960.0)
+    if event_result.get("action", "") != "shield":
+        _fail("V56 normal two-finger Shield must recover after cancellation")
+        return false
+
+    # A cancelled UI finger must release its exclusion zone without turning
+    # a subsequent playfield touch into a blocked or synthetic gesture.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(150, 200)), true, true, 14000, 0, 960.0)
+    cancelled_touch = _screen_touch(0, false, Vector2(150, 200))
+    cancelled_touch.canceled = true
+    gestures.handle(cancelled_touch, true, false, 14020, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, true, Vector2(480, 360)), true, false, 14040, 0, 960.0)
+    if not event_result.get("captured", false):
+        _fail("V56 playfield must recover after a cancelled UI touch")
+        return false
+    event_result = gestures.handle(_screen_drag(1, Vector2(480, 260)), true, false, 14070, 0, 960.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V56 cancelled UI touch must not poison later playfield input")
+        return false
+    gestures.handle(_screen_touch(1, false, Vector2(480, 260)), true, false, 14090, 0, 960.0)
+
     if not gestures.handle(InputEventMouseMotion.new(), true, false, 10300, 0, 960.0).is_empty():
         _fail("V52 synthetic mouse movement must not become a touch gesture")
         return false
@@ -796,7 +867,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V55") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V56") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -806,7 +877,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V55") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V56") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -940,7 +1011,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V55") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V56") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
