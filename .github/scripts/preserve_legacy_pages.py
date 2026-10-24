@@ -25,7 +25,7 @@ def _published_versions() -> tuple[str, ...]:
     import re
     workflow = Path(__file__).resolve().parents[1] / "workflows" / "publish-unity-webgl.yml"
     text = workflow.read_text(encoding="utf-8")
-    releases = re.findall(r"cp -a _site/godot/\\. _site/skyway-v(\\d+)/", text)
+    releases = re.findall(r"cp -a _site/godot/\. _site/skyway-v(\d+)/", text)
     if len(releases) != 1:
         raise RuntimeError("Cannot determine next immutable Skyway release")
     next_release = int(releases[0])
