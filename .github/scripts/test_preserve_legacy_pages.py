@@ -223,7 +223,7 @@ class PreservePagesTests(unittest.TestCase):
         import re
         workflow = Path(__file__).resolve().parents[1] / "workflows" / "publish-unity-webgl.yml"
         text = workflow.read_text(encoding="utf-8")
-        matches = re.findall(r"cp -a _site/godot/\\. _site/skyway-v(\\d+)/", text)
+        matches = re.findall(r"cp -a _site/godot/\. _site/skyway-v(\d+)/", text)
         self.assertEqual(len(matches), 1)
         next_version = int(matches[0])
         versions = archive._published_versions()
