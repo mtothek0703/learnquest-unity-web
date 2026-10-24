@@ -83,32 +83,32 @@ jobs:
           # published older builds instead of silently replacing their contents.
           python .github/scripts/preserve_legacy_pages.py
           # Never overwrite V35 if it was already published by an earlier run.
-          # A future release must deliberately use a new URL (V34, V35, ...).
+          # A future release must deliberately use a new URL (V36, V37, ...).
           python - <<'PY'
           from urllib.error import HTTPError
           from urllib.request import Request, urlopen
-          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v35/index.html"
+          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v36/index.html"
           try:
               with urlopen(Request(url, headers={"Cache-Control": "no-cache"}), timeout=20):
-                  raise SystemExit("Skyway V35 already exists: refusing to overwrite an immutable release")
+                  raise SystemExit("Skyway V36 already exists: refusing to overwrite an immutable release")
           except HTTPError as error:
               if error.code != 404:
                   raise
-          print("Skyway V35 is not published yet; safe to create")
+          print("Skyway V36 is not published yet; safe to create")
           PY
           # V35 gets a fresh URL; historical folders are never rebuilt from V23.
-          mkdir -p _site/skyway-v35
-          cp -a _site/godot/. _site/skyway-v35/
-          echo "$GITHUB_SHA" > _site/skyway-v35/build.txt
+          mkdir -p _site/skyway-v36
+          cp -a _site/godot/. _site/skyway-v36/
+          echo "$GITHUB_SHA" > _site/skyway-v36/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
-          echo "Archived previous versions and prepared immutable Skyway V35"
+          echo "Archived previous versions and prepared immutable Skyway V36"
       - name: Check browser export integrity
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          root = Path("_site/skyway-v35")
+          root = Path("_site/skyway-v36")
           for name in ("index.html", "index.js", "index.wasm", "index.pck"):
               file = root / name
               if not file.is_file() or file.stat().st_size == 0:
@@ -175,7 +175,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request, urllib.error
-          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v35/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v36/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.js": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):

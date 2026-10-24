@@ -17,3 +17,5 @@ Skyway V33: Eigenständig modellierter dreisträhniger 3D-Zopf mit Farbverlauf, 
 Skyway V34: Original modellierte, verlaufsschattierte Hosenbeine mit geschwungenen, beweglichen Kniepanzern und leuchtenden Nähten. Alle Geometrien werden einmalig erzeugt; keine Fremdassets.
 
 Skyway V35: Volumetrische Haarhaube aus eigenem 3D-Oberflächenmesh, sechs überlappende, verlaufsschattierte Haarlagen mit leuchtenden Strähnen und zwei windanimierte Schläfenlocken. Kostenlose Originalgeometrie, keine Fremdassets; vorhandener Zopf und Spielmechanik bleiben erhalten.
+
+Skyway V36: Großflächiger, gebogener Aero-Rückenpanzer mit verlaufsschattiertem 3D-Mesh, animiertem Neon-Reaktorring und zwei schwenkbaren Schubdüsen. Alle Modelle sind eigene, einmalig generierte Meshes; die bisherige Spiellogik und ältere Versionen bleiben erhalten.
