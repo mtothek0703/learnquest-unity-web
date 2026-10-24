@@ -994,6 +994,18 @@ func _begin_training() -> void:
     training_correct = 0
     combo = 0
     previous_quiz_index = -1
+    # Clear temporary abilities from the previous race before mandatory training.
+    # Without this, old Turbo/Shield effects leak into the next round's menu.
+    turbo_left = 0.0
+    shield_left = 0.0
+    attack_left = 0.0
+    mega_jump_active = false
+    if shield_visual != null:
+        shield_visual.visible = false
+    if attack_visual != null:
+        attack_visual.visible = false
+    if mega_jump_visual != null:
+        mega_jump_visual.visible = false
     started = true
     quiz_active = false
     splash.hide()
