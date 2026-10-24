@@ -8,9 +8,10 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V43"
-const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON"]
-const WORLD_GOALS := [800.0, 950.0]
+const VERSION_LABEL := "V44"
+const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN"]
+const WORLD_GOALS := [800.0, 950.0, 1100.0]
+const HARBOR_BONUS_TARGET := 4
 const SHIELD_COST := 30
 const MEGA_JUMP_COST := 30
 const ATTACK_COST := 45
@@ -54,6 +55,8 @@ var chase_camera: Camera3D
 var moving: Node3D
 var skyway_zone: Node3D
 var canyon_zone: Node3D
+var harbor_zone: Node3D
+var harbor_crystals := 0
 var guardian: Node3D
 var guardian_beam: MeshInstance3D
 var guardian_hp := GUARDIAN_HEALTH
@@ -195,6 +198,10 @@ func _create_world() -> void:
     canyon_zone.name = "LearnQuest Crystal Canyon world"
     add_child(canyon_zone)
     canyon_zone.visible = false
+    harbor_zone = preload("res://star_harbor.gd").new() as Node3D
+    harbor_zone.name = "LearnQuest Star Harbor world"
+    add_child(harbor_zone)
+    harbor_zone.visible = false
     _create_guardian()
 
     # Moving roadside silhouettes supplement the richer scrolling Skyway world.
@@ -286,13 +293,27 @@ func _apply_world_theme() -> void:
         skyway_zone.visible = world_choice == 0
     if canyon_zone != null:
         canyon_zone.visible = world_choice == 1
+    if harbor_zone != null:
+        harbor_zone.visible = world_choice == 2
     if moving != null:
         moving.visible = world_choice == 0
     if sky_material != null:
-        sky_material.sky_top_color = Color("#080d35") if world_choice == 0 else Color("#1c1040")
-        sky_material.sky_horizon_color = Color("#ff789b") if world_choice == 0 else Color("#ffb07c")
-        sky_material.ground_horizon_color = Color("#ffbd8b") if world_choice == 0 else Color("#dc83ac")
-        sky_material.ground_bottom_color = Color("#39265e") if world_choice == 0 else Color("#50254d")
+        match world_choice:
+            0:
+                sky_material.sky_top_color = Color("#080d35")
+                sky_material.sky_horizon_color = Color("#ff789b")
+                sky_material.ground_horizon_color = Color("#ffbd8b")
+                sky_material.ground_bottom_color = Color("#39265e")
+            1:
+                sky_material.sky_top_color = Color("#1c1040")
+                sky_material.sky_horizon_color = Color("#ffb07c")
+                sky_material.ground_horizon_color = Color("#dc83ac")
+                sky_material.ground_bottom_color = Color("#50254d")
+            2:
+                sky_material.sky_top_color = Color("#050d28")
+                sky_material.sky_horizon_color = Color("#2f9fbb")
+                sky_material.ground_horizon_color = Color("#a36fd6")
+                sky_material.ground_bottom_color = Color("#1d265b")
 
 func _change_world() -> void:
     if phase != "menu":
@@ -427,6 +448,7 @@ func _reset_run() -> void:
     attack_left = 0.0
     mega_jump_active = false
     guardian_hp = GUARDIAN_HEALTH
+    harbor_crystals = 0
     guardian_active = false
     guardian_defeated = false
     guardian_attack_timer = 0.0
@@ -555,7 +577,11 @@ func _update_run_items(delta: float) -> void:
                     power = mini(100, power + 18)
                     xp += 15
                     item.visible = false
-                    info_label.text = "ENERGIE +15 XP!"
+                    if world_choice == 2:
+                        harbor_crystals += 1
+                        info_label.text = "HAFEN-KRISTALL %d/%d  +15 XP" % [harbor_crystals, HARBOR_BONUS_TARGET]
+                    else:
+                        info_label.text = "ENERGIE +15 XP!"
                     feedback_time = 1.2
                 elif rider.position.y > 0.85:
                     xp += 10
@@ -589,12 +615,14 @@ func _finish_run() -> void:
     if completed:
         rounds_finished += 1
         round_number += 1
-        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 1 and guardian_defeated else 0)
+        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 1 and guardian_defeated else 0) + (1 if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET else 0)
         total_stars += stars_earned
         total_reward_xp += xp
         reward_label.text = "+%d STERNE  |  +%d XP\nGESAMT: %d STERNE" % [stars_earned, xp, total_stars]
         if world_choice == 1 and guardian_defeated:
             reward_label.text += "\nKRISTALL-WÄCHTER BESIEGT: +1 BONUSSTERN!"
+        if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET:
+            reward_label.text += "\nHAFEN-MISSION ERFÜLLT: +1 BONUSSTERN!"
     else:
         reward_label.text = "NOCH %dm BIS ZUM ZIEL\nVERSUCHE ES ERNEUT!" % maxi(0, int(mission_target - distance))
     phase = "results"
@@ -942,6 +970,8 @@ func _refresh_hud() -> void:
             hud.text += "\n%s  RUNDE %d  ZIEL %dm  SCHILD %ds  BOOST %ds" % [WORLD_NAMES[world_choice], round_number, int(mission_target), ceili(shield_left), ceili(turbo_left)]
             if guardian_active and world_choice == 1:
                 hud.text += "\nKRISTALL-WÄCHTER %d/%d  %s" % [guardian_hp, GUARDIAN_HEALTH, "LASER!" if guardian_warning_left > 0.0 else "ANGRIFF LADEN"]
+            if world_choice == 2:
+                hud.text += "\nHAFEN-MISSION: %d/%d ENERGIEKRISTALLE" % [mini(harbor_crystals, HARBOR_BONUS_TARGET), HARBOR_BONUS_TARGET]
     if progress_bar != null:
         progress_bar.visible = phase == "race"
         progress_bar.max_value = mission_target
@@ -968,6 +998,8 @@ func _process(delta: float) -> void:
     skyway_zone.set("travel_speed", speed)
     canyon_zone.set("running", phase == "race" and started and not quiz_active and world_choice == 1)
     canyon_zone.set("travel_speed", speed)
+    harbor_zone.set("running", phase == "race" and started and not quiz_active and world_choice == 2)
+    harbor_zone.set("travel_speed", speed)
     if phase != "race" or not started or quiz_active:
         _update_camera(delta)
         return
