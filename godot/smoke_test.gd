@@ -77,7 +77,7 @@ func _run_checks() -> void:
         if clasp == null or not (clasp.material_override as StandardMaterial3D).emission_enabled:
             _fail("Luminous hair clasp missing: " + clasp_name)
             return
-    # V42: expressive face has original curved geometry and timed blinking.
+    # V43: expressive face has original curved geometry and timed blinking.
     var face := installed_model.get_node_or_null("ExpressiveFace") as Node3D
     if face == null:
         _fail("Expressive facial rig is missing")
@@ -323,7 +323,7 @@ func _run_checks() -> void:
         if trim == null or not (trim.mesh is ArrayMesh) or (trim.material_override as StandardMaterial3D) == null or not (trim.material_override as StandardMaterial3D).emission_enabled:
             _fail("Glowing knee armor piping missing: " + leg_name)
             return
-    # V42: mesh-built two-panel coat, gradient fabric, luminous seams and collar.
+    # V43: mesh-built two-panel coat, gradient fabric, luminous seams and collar.
     var coat := installed_model.get_node_or_null("AnimatedSculptedCoat") as Node3D
     if coat == null:
         _fail("Sculpted animated coat is missing")
@@ -347,7 +347,7 @@ func _run_checks() -> void:
     if collar == null or not (collar.mesh is ArrayMesh) or (collar.mesh as ArrayMesh).surface_get_array_len(0) < 100 or collar_light == null:
         _fail("Raised curved collar and luminous trim are missing")
         return
-    # V42: original articulated aerofoil costume must have sculpted geometry.
+    # V43: original articulated aerofoil costume must have sculpted geometry.
     var aero := installed_model.get_node_or_null("AnimatedAeroWings") as Node3D
     if aero == null:
         _fail("Animated sculpted aerofoil costume is missing")
@@ -480,7 +480,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V42") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V43") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -490,12 +490,12 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V42") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V43") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V42") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V43") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -676,7 +676,7 @@ func _run_checks() -> void:
     if str(game.get("phase")) != "training" or int(game.get("training_correct")) != 0:
         _fail("The next round must start with fresh vocabulary tasks")
         return
-    # V42: the power-up bar must exist without replacing steering controls.
+    # V43: the power-up bar must exist without replacing steering controls.
     game.call("_start_game")
     var special_grid := game.get("powerups_grid") as GridContainer
     if special_grid == null or special_grid.get_child_count() != 3:
@@ -747,7 +747,7 @@ func _run_checks() -> void:
     if int(game.get("power")) != 55:
         _fail("Repeated super attack consumed energy")
         return
-    # V42: world selection must change real 3D geometry and the mission goal.
+    # V43: world selection must change real 3D geometry and the mission goal.
     game.call("_finish_run")
     game.call("_show_world_menu")
     if str(game.get("phase")) != "menu":
@@ -791,12 +791,53 @@ func _run_checks() -> void:
     if str(game.get("phase")) != "race" or not is_equal_approx(float(game.get("mission_target")), 950.0):
         _fail("Canyon mission did not unlock after three vocabulary answers")
         return
+    # V43: sculpted guardian, timed laser warning, shield and boss combat.
+    var guardian := game.get_node_or_null("Crystal Guardian Boss") as Node3D
+    var beam := game.get("guardian_beam") as MeshInstance3D
+    if guardian == null or beam == null:
+        _fail("Crystal Guardian boss or laser telegraph is missing")
+        return
+    var armor := guardian.get_node_or_null("Sculpted guardian armor") as MeshInstance3D
+    if armor == null or not (armor.mesh is ArrayMesh) or (armor.mesh as ArrayMesh).surface_get_array_len(0) < 1500:
+        _fail("Guardian needs a detailed curved original 3D armor mesh")
+        return
+    game.set("distance", 600.0)
+    game.call("_process", 0.016)
+    if not bool(game.get("guardian_active")) or not guardian.visible or int(game.get("guardian_hp")) != 3:
+        _fail("Canyon boss did not spawn at the mission midpoint")
+        return
+    game.set("guardian_attack_timer", 0.0)
+    game.call("_process", 0.016)
+    if not beam.visible or float(game.get("guardian_warning_left")) <= 0.0:
+        _fail("Guardian laser must visibly telegraph before hitting")
+        return
+    game.set("guardian_lane", int(game.get("lane")))
+    beam.position.x = float(game.get("lane")) * 3.1
+    game.set("guardian_warning_left", 0.01)
+    game.set("shield_left", 2.0)
+    var lives_before_laser: int = int(game.get("lives"))
+    game.call("_process", 0.02)
+    if int(game.get("lives")) != lives_before_laser or beam.visible:
+        _fail("Shield did not block guardian laser or clear warning")
+        return
+    game.set("shield_left", 0.0)
+    game.set("guardian_attack_timer", 99.0)
+    for hit in range(3):
+        game.set("power", 100)
+        game.set("attack_left", 0.0)
+        game.call("_use_super_attack")
+        if int(game.get("guardian_hp")) != 2 - hit:
+            _fail("Super Attack did not reduce guardian health")
+            return
+    if not bool(game.get("guardian_defeated")) or guardian.visible or beam.visible:
+        _fail("Guardian boss was not defeated after three attacks")
+        return
     game.set("distance", 949.0)
     game.call("_process", 0.15)
     if str(game.get("phase")) != "results" or int(game.get("rounds_finished")) != 2:
         _fail("Canyon mission did not finish at its 950-meter target")
         return
-    if int(game.get("total_stars")) < 1 or (game.get("reward_label") as Label).text.find("STERNE") < 0:
+    if int(game.get("total_stars")) < 7 or (game.get("reward_label") as Label).text.find("BONUSSTERN") < 0:
         _fail("Successful missions must award visible stars")
         return
     game.call("_show_world_menu")
