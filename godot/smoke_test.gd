@@ -10,6 +10,19 @@ func _fail(message: String) -> void:
     push_error("LEARNQUEST TEST FAILED: " + message)
     quit(1)
 
+func _screen_touch(index: int, pressed: bool, position: Vector2) -> InputEventScreenTouch:
+    var event := InputEventScreenTouch.new()
+    event.index = index
+    event.pressed = pressed
+    event.position = position
+    return event
+
+func _screen_drag(index: int, position: Vector2) -> InputEventScreenDrag:
+    var event := InputEventScreenDrag.new()
+    event.index = index
+    event.position = position
+    return event
+
 func _run_checks() -> void:
     var scene := load("res://main.tscn") as PackedScene
     if scene == null:
@@ -42,7 +55,7 @@ func _run_checks() -> void:
     if fallback.visible:
         _fail("Fallback body must be hidden while imported 3D rider is active")
         return
-    # V50: showcase the real detailed rider from the front, with original
+    # V51: showcase the real detailed rider from the front, with original
     # animated curved geometry, without replacing the playable hoverboard.
     var gallery := game.get_node_or_null("Cinematic hero gallery") as Node3D
     var portrait_camera := game.get("chase_camera") as Camera3D
@@ -507,7 +520,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V50") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V51") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -517,8 +530,100 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V50") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V51") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
+        return
+    game.call("_start_game")
+    # V51: real native screen touch events, not mouse-button stand-ins.
+    # Dragging across the road steers immediately, clamped to three lanes.
+    game.call("_input", _screen_touch(0, true, Vector2(500, 300)))
+    game.call("_input", _screen_drag(0, Vector2(630, 300)))
+    if int(game.get("lane")) != 1:
+        _fail("Horizontal finger drag did not immediately steer right")
+        return
+    game.call("_input", _screen_drag(0, Vector2(100, 300)))
+    if int(game.get("lane")) != -1:
+        _fail("Finger drag did not steer left or clamp to the leftmost lane")
+        return
+    game.call("_input", _screen_touch(0, false, Vector2(100, 300)))
+    game.set("lane", 0)
+    game.call("_input", _screen_drag(9, Vector2(900, 300)))
+    if int(game.get("lane")) != 0:
+        _fail("Uncaptured or stray finger drag changed the lane")
+        return
+    # One-finger upward swipe jumps, and two taps at one spot activate Turbo.
+    game.call("_input", _screen_touch(0, true, Vector2(520, 360)))
+    game.call("_input", _screen_drag(0, Vector2(520, 250)))
+    game.call("_input", _screen_touch(0, false, Vector2(520, 230)))
+    if float(game.get("jump_left")) <= 0.0:
+        _fail("Upward swipe failed to trigger a real jump")
+        return
+    game.set("power", 100)
+    game.call("_input", _screen_touch(0, true, Vector2(520, 300)))
+    game.call("_input", _screen_touch(0, false, Vector2(520, 300)))
+    game.call("_input", _screen_touch(0, true, Vector2(520, 300)))
+    game.call("_input", _screen_touch(0, false, Vector2(520, 300)))
+    if float(game.get("turbo_left")) <= 0.0 or int(game.get("power")) != 60:
+        _fail("Double-tap Turbo must activate exactly once and cost 40 energy")
+        return
+    # Two simultaneous fingers are a shield tap, not two Turbo taps.
+    game.set("power", 100)
+    game.call("_input", _screen_touch(0, true, Vector2(500, 300)))
+    game.call("_input", _screen_touch(1, true, Vector2(590, 300)))
+    game.call("_input", _screen_touch(0, false, Vector2(500, 300)))
+    game.call("_input", _screen_touch(1, false, Vector2(590, 300)))
+    if float(game.get("shield_left")) <= 0.0 or int(game.get("power")) != 70:
+        _fail("Two-finger shield tap failed or spent incorrect energy")
+        return
+    # Two-finger upward swipe triggers the attack without an extra jump.
+    game.set("power", 100)
+    game.set("jump_left", 0.0)
+    game.call("_input", _screen_touch(0, true, Vector2(500, 370)))
+    game.call("_input", _screen_touch(1, true, Vector2(590, 370)))
+    game.call("_input", _screen_drag(0, Vector2(500, 250)))
+    game.call("_input", _screen_drag(1, Vector2(590, 250)))
+    game.call("_input", _screen_touch(0, false, Vector2(500, 230)))
+    game.call("_input", _screen_touch(1, false, Vector2(590, 230)))
+    if float(game.get("attack_left")) <= 0.0 or int(game.get("power")) != 55 or float(game.get("jump_left")) > 0.0:
+        _fail("Two-finger attack must spend 45 energy without accidental jump")
+        return
+    # UI origins cannot capture steering, even when the finger leaves the UI.
+    game.set("lane", 0)
+    var blocked_control := controls.get_global_rect().get_center()
+    if not bool(game.call("_touch_ui_blocked", blocked_control)):
+        _fail("Visible touch buttons must be marked as protected UI")
+        return
+    game.call("_input", _screen_touch(0, true, blocked_control))
+    game.call("_input", _screen_drag(0, blocked_control + Vector2(250, -200)))
+    game.call("_input", _screen_touch(0, false, blocked_control + Vector2(250, -200)))
+    if int(game.get("lane")) != 0:
+        _fail("Touch beginning on UI accidentally steered the rider")
+        return
+    # The accessibility controls can be hidden and independently restored.
+    game.call("_apply_mobile_layout", 390.0)
+    game.call("_toggle_touch_buttons")
+    if controls.visible or (game.get("powerups_grid") as GridContainer).visible:
+        _fail("Mobile hide-buttons toggle did not hide both control rows")
+        return
+    var restore := game.get("gesture_toggle") as Button
+    if restore == null or not restore.visible or restore.text != "TASTEN EIN":
+        _fail("Restoring hidden accessibility buttons must stay possible")
+        return
+    game.call("_toggle_touch_buttons")
+    if not controls.visible or not (game.get("powerups_grid") as GridContainer).visible:
+        _fail("Accessible touch buttons could not be restored")
+        return
+    game.call("_apply_mobile_layout", 960.0)
+    # Training/quiz must ignore all gestures and clear captured touch state.
+    game.call("_begin_training")
+    var quiz_origin := (game.get("quiz_box") as PanelContainer).get_global_rect().get_center()
+    game.set("lane", 0)
+    game.set("jump_left", 0.0)
+    game.call("_input", _screen_touch(0, true, quiz_origin))
+    game.call("_input", _screen_drag(0, quiz_origin + Vector2(190, -140)))
+    game.call("_input", _screen_touch(0, false, quiz_origin + Vector2(190, -140)))
+    if int(game.get("lane")) != 0 or float(game.get("jump_left")) != 0.0 or not bool(game.get("quiz_active")):
+        _fail("Quiz touches leaked into race movement or dismissed the quiz")
         return
     game.call("_start_game")
     game.call("_update_camera", 1.0)
@@ -526,7 +631,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V50") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V51") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -719,7 +824,7 @@ func _run_checks() -> void:
     if shield_fx == null or jump_fx == null or attack_fx == null:
         _fail("Visible 3D special ability effects are missing")
         return
-    # V50: all three powers render detailed curved surfaces, not primitive meshes.
+    # V51: all three powers render detailed curved surfaces, not primitive meshes.
     for effect in [shield_fx, jump_fx, attack_fx]:
         if not (effect.mesh is ArrayMesh) or effect.mesh.get_surface_count() != 1:
             _fail("Ability effect must be a generated 3D ribbon mesh: " + effect.name)
@@ -1108,7 +1213,7 @@ func _run_checks() -> void:
     if ice_waves.size() != 2 or not ice_waves[0].visible or not ice_waves[1].visible:
         _fail("Frost dragon must telegraph two dangerous lanes")
         return
-    # V50: the warning is a shaded, animated two-surface ice wave, not a box.
+    # V51: the warning is a shaded, animated two-surface ice wave, not a box.
     for wave in ice_waves:
         if not (wave.mesh is ArrayMesh) or wave.mesh.get_surface_count() != 2:
             _fail("Aurora warning must use a sculpted two-surface ice mesh")
