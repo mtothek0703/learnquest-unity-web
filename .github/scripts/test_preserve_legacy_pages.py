@@ -219,5 +219,18 @@ class PreservePagesTests(unittest.TestCase):
         self.assertEqual((version / "index.html").read_bytes(), b"original:index.html")
         self.assertFalse(any("skyway-v34/" in call.args[0] for call in download.call_args_list))
 
+    def test_release_range_tracks_workflow_automatically(self):
+        import re
+        workflow = Path(__file__).resolve().parents[1] / "workflows" / "publish-unity-webgl.yml"
+        text = workflow.read_text(encoding="utf-8")
+        matches = re.findall(r"cp -a _site/godot/\. _site/skyway-v(\d+)/", text)
+        self.assertEqual(len(matches), 1)
+        next_version = int(matches[0])
+        versions = archive._published_versions()
+        self.assertEqual(versions[-1], "skyway-v%d" % (next_version - 1))
+        self.assertNotIn("skyway-v%d" % next_version, versions)
+        self.assertIn("skyway-v34", versions)
+        self.assertIn("skyway-v35", versions)
+
 if __name__ == "__main__":
     unittest.main()

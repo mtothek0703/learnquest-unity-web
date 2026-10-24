@@ -16,12 +16,32 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 BASE = "https://mtothek0703.github.io/learnquest-unity-web/"
-VERSIONS = (
-    "neon-city-v3", "neon-city-v4", "neon-city-v5",
-    "skyway-v6", "skyway-v7", "skyway-v8", "skyway-v9",
-    "skyway-v10", "skyway-v11", "skyway-v12", "skyway-v13",
-    "skyway-v14", "skyway-v15", "skyway-v16", "skyway-v17", "skyway-v18", "skyway-v19", "skyway-v20", "skyway-v21", "skyway-v22", "skyway-v23", "skyway-v24", "skyway-v25", "skyway-v26", "skyway-v27", "skyway-v28", "skyway-v29", "skyway-v30", "skyway-v31", "skyway-v32", "skyway-v33", "skyway-v34", "skyway-v35",
-)
+def _published_versions() -> tuple[str, ...]:
+    """Derive the historical range from the *next* immutable release URL.
+
+    This prevents the next release from silently dropping the version created
+    in the preceding run. Fail closed if release wiring is ambiguous.
+    """
+    import re
+    workflow = Path(__file__).resolve().parents[1] / "workflows" / "publish-unity-webgl.yml"
+    text = workflow.read_text(encoding="utf-8")
+    releases = re.findall(r"cp -a _site/godot/\. _site/skyway-v(\d+)/", text)
+    if len(releases) != 1:
+        raise RuntimeError("Cannot determine next immutable Skyway release")
+    next_release = int(releases[0])
+    if next_release < 36:
+        raise RuntimeError("Refusing to regress historical release range")
+    return ("neon-city-v3", "neon-city-v4", "neon-city-v5") + tuple(
+        "skyway-v%d" % number for number in range(6, next_release)
+    )
+
+
+def _required_version(version: str) -> bool:
+    return version.startswith("skyway-v") and version[8:].isdigit() and int(version[8:]) >= 16
+
+
+VERSIONS = _published_versions()
+
 REQUIRED = ("index.html", "index.js", "index.wasm", "index.pck")
 OPTIONAL = (
     "build.txt", "index.png", "index.icon.png",
@@ -86,7 +106,7 @@ def main() -> None:
                 raise RuntimeError("Original V34 recovery revision mismatch")
         else:
             if not download(url + "index.html", folder / "index.html"):
-                if version in ("skyway-v16", "skyway-v17", "skyway-v18", "skyway-v19", "skyway-v20", "skyway-v21", "skyway-v22", "skyway-v23", "skyway-v24", "skyway-v25", "skyway-v26", "skyway-v27", "skyway-v28", "skyway-v29", "skyway-v30", "skyway-v31", "skyway-v32", "skyway-v33", "skyway-v34", "skyway-v35"):
+                if _required_version(version):
                     raise RuntimeError("Verified %s is missing; refusing to replace old Pages site" % version)
                 print(f"SKIP: {version} is not currently published", flush=True)
                 continue
@@ -108,7 +128,7 @@ def main() -> None:
             "missing_required": missing,
         }
         print(f"Archived {version}: {len(list(folder.iterdir()))} files", flush=True)
-    for required_version in ("skyway-v16", "skyway-v17", "skyway-v18", "skyway-v19", "skyway-v20", "skyway-v21", "skyway-v22", "skyway-v23", "skyway-v24", "skyway-v25", "skyway-v26", "skyway-v27", "skyway-v28", "skyway-v29", "skyway-v30", "skyway-v31", "skyway-v32", "skyway-v33", "skyway-v34", "skyway-v35"):
+    for required_version in (version for version in VERSIONS if _required_version(version)):
         if required_version not in manifest:
             raise RuntimeError("%s preservation failed" % required_version)
     (destination / "preserved-versions.json").write_text(
