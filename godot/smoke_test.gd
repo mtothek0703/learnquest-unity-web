@@ -999,6 +999,28 @@ func _check_native_gestures() -> bool:
         _fail("V76 layout quarantine must recover after actual release")
         return false
     gestures.handle(_screen_touch(0, false, Vector2(400, 300)), true, false, 82060, 0, 960.0)
+
+    # V77: Safari may skip ScreenDrag and report only a very late release.
+    # A finger held on the playfield for >900ms is not an intentional jump.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 90000, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(400, 180)), true, false, 90901, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V77 long-held finger released upward must not trigger a jump")
+        return false
+    # The 900ms boundary still allows an intentional swipe if drag was lost.
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 91000, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(400, 180)), true, false, 91900, 0, 960.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V77 release-only swipe at 900ms must remain available")
+        return false
+    # Long holds must not disable the immediate, drag-driven jump on next touch.
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 92000, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(400, 180)), true, false, 92030, 0, 960.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V77 fresh upward drag must still jump immediately")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 180)), true, false, 92060, 0, 960.0)
     return true
 
 func _run_checks() -> void:
