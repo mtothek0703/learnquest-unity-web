@@ -6,6 +6,9 @@ const TAP_SLOP := 24.0
 # A near-45-degree scroll is neither a deliberate horizontal steer nor a jump.
 const DOWNWARD_SCROLL_RATIO := 0.85
 const SWIPE_UP := 72.0
+# When Safari drops ScreenDrag frames, only a prompt release can act as a
+# fallback jump. Long holds ending far from their origin are not swipes.
+const MAX_RELEASE_JUMP_MS := 900
 const DOUBLE_TAP_MS := 340
 const TWO_FINGER_MS := 420
 # A late second finger is a new touch, not a deliberate simultaneous gesture.
@@ -228,7 +231,7 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
             else:
                 last_tap_ms = now_ms
                 last_tap_position = touch.position
-        elif delta.y < -jump_swipe and absf(delta.y) > absf(delta.x) * 1.2:
+        elif duration <= MAX_RELEASE_JUMP_MS and delta.y < -jump_swipe and absf(delta.y) > absf(delta.x) * 1.2:
             single["action"] = "jump" # Fallback if no drag event was delivered.
             last_tap_ms = -10000
         elif absf(delta.x) > absf(delta.y) * 1.2:

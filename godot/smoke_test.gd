@@ -999,6 +999,28 @@ func _check_native_gestures() -> bool:
         _fail("V76 layout quarantine must recover after actual release")
         return false
     gestures.handle(_screen_touch(0, false, Vector2(400, 300)), true, false, 82060, 0, 960.0)
+
+    # V77: Safari may skip ScreenDrag and report only a very late release.
+    # A finger held on the playfield for >900ms is not an intentional jump.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 90000, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(400, 180)), true, false, 90901, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V77 long-held finger released upward must not trigger a jump")
+        return false
+    # The 900ms boundary still allows an intentional swipe if drag was lost.
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 91000, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(400, 180)), true, false, 91900, 0, 960.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V77 release-only swipe at 900ms must remain available")
+        return false
+    # Long holds must not disable the immediate, drag-driven jump on next touch.
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 92000, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(400, 180)), true, false, 92030, 0, 960.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V77 fresh upward drag must still jump immediately")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 180)), true, false, 92060, 0, 960.0)
     return true
 
 func _run_checks() -> void:
@@ -1560,7 +1582,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V76") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V77") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1570,7 +1592,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V76") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V77") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1814,7 +1836,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V76") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V77") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
