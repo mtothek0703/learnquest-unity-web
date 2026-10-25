@@ -1161,15 +1161,15 @@ func _apply_mobile_layout(viewport_width: float, touchscreen_override: int = -1,
     last_touch_layout_width = viewport_width
     last_touch_layout_height = layout_height
     var narrow := viewport_width < 720.0
-    mobile_hud_layout = narrow
-    # Safari/Android landscape often exceeds 720 px. Keep the desktop HUD
-    # layout there, but do not force accessibility buttons back on-screen.
-    # The override lets headless CI simulate a real landscape touchscreen.
     var has_touchscreen := DisplayServer.is_touchscreen_available() if touchscreen_override < 0 else touchscreen_override == 1
+    # The primary mobile format is landscape: reserve the middle for the rider.
+    # Never force a long desktop HUD across a short 16:9 mobile viewport.
+    var landscape_phone := has_touchscreen and viewport_width > layout_height and layout_height < 620.0
+    mobile_hud_layout = narrow or landscape_phone
     touch_screen_mode = narrow or has_touchscreen
-    hud_panel.custom_minimum_size.x = minf(360.0, maxf(0.0, viewport_width - 30.0)) if narrow else 360.0
+    hud_panel.custom_minimum_size.x = minf(360.0, maxf(0.0, viewport_width - 30.0)) if mobile_hud_layout else 360.0
     progress_bar.custom_minimum_size.x = hud_panel.custom_minimum_size.x
-    hud.add_theme_font_size_override("font_size", 16 if narrow else 18)
+    hud.add_theme_font_size_override("font_size", 14 if landscape_phone else (16 if narrow else 18))
     controls_grid.columns = 2 if narrow else 4
     controls_grid.offset_top = -142.0 if narrow else -90.0
     powerups_grid.offset_top = -200.0 if narrow else -152.0
