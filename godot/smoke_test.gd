@@ -489,6 +489,55 @@ func _check_native_gestures() -> bool:
         return false
     gestures.handle(_screen_touch(0, false, Vector2(455, 160)), true, false, 16460, 0, 800.0, 320.0)
 
+    # V61: A downward scroll that reverses upward is NOT a jump.
+    # The first deliberate direction wins until all fingers are released.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 180)), true, false, 17000, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(400, 225)), true, false, 17020, 0, 800.0, 320.0)
+    if event_result.has("action") or event_result.has("lane"):
+        _fail("V61 initial downward scroll must not trigger gameplay")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(400, 75)), true, false, 17040, 0, 800.0, 320.0)
+    if event_result.has("action") or event_result.has("lane"):
+        _fail("V61 reversed downward scroll incorrectly jumped or steered")
+        return false
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(400, 75)), true, false, 17060, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V61 releasing reversed downward scroll incorrectly jumped")
+        return false
+    gestures.handle(_screen_touch(0, true, Vector2(400, 180)), true, false, 17100, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(400, 110)), true, false, 17120, 0, 800.0, 320.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V61 new deliberate upward swipe must still jump immediately")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 110)), true, false, 17140, 0, 800.0, 320.0)
+
+    # Two-finger downward scroll, then reversal, must never activate Attack.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(360, 260)), true, false, 17200, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 260)), true, false, 17220, 0, 800.0, 320.0)
+    gestures.handle(_screen_drag(0, Vector2(360, 320)), true, false, 17240, 0, 800.0, 320.0)
+    gestures.handle(_screen_drag(1, Vector2(460, 320)), true, false, 17260, 0, 800.0, 320.0)
+    gestures.handle(_screen_drag(0, Vector2(360, 100)), true, false, 17280, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(460, 100)), true, false, 17300, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V61 reversing a two-finger downward scroll triggered Attack")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(360, 100)), true, false, 17320, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 100)), true, false, 17340, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V61 releasing a reversed two-finger scroll triggered Attack")
+        return false
+    gestures.handle(_screen_touch(0, true, Vector2(360, 260)), true, false, 17400, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 260)), true, false, 17420, 0, 800.0, 320.0)
+    gestures.handle(_screen_drag(0, Vector2(360, 110)), true, false, 17440, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(460, 110)), true, false, 17460, 0, 800.0, 320.0)
+    if event_result.get("action", "") != "attack":
+        _fail("V61 a fresh two-finger upward swipe must still Attack")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(360, 110)), true, false, 17480, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, false, Vector2(460, 110)), true, false, 17500, 0, 800.0, 320.0)
+
     if not gestures.handle(InputEventMouseMotion.new(), true, false, 10300, 0, 960.0).is_empty():
         _fail("V52 synthetic mouse movement must not become a touch gesture")
         return false
@@ -998,7 +1047,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V60") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V61") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1008,7 +1057,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V60") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V61") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1172,7 +1221,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V60") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V61") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
