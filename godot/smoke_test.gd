@@ -1021,6 +1021,56 @@ func _check_native_gestures() -> bool:
         _fail("V77 fresh upward drag must still jump immediately")
         return false
     gestures.handle(_screen_touch(0, false, Vector2(400, 180)), true, false, 92060, 0, 960.0)
+
+    # V78: some browser interruptions reuse an index without delivering the
+    # previous release or focus callback. A second press of an already-active
+    # index must invalidate the stale gesture origin, never jump/steer/attack.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 100000, 0, 960.0)
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 100030, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(400, 180)), true, false, 100060, 0, 960.0)
+    if event_result.has("action") or event_result.has("lane"):
+        _fail("V78 duplicate pointer press must quarantine stale single-finger movement")
+        return false
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(400, 180)), true, false, 100080, 0, 960.0)
+    if event_result.has("action") or event_result.has("lane"):
+        _fail("V78 stale pointer release must not activate jump, turbo or steering")
+        return false
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 100100, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(400, 180)), true, false, 100130, 0, 960.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V78 fresh touch after duplicate-index quarantine must jump immediately")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 180)), true, false, 100150, 0, 960.0)
+
+    # Duplicate press during multi-touch must also quarantine BOTH fingers:
+    # the remaining finger must not turn into a shield or Super Attack.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 360)), true, false, 101000, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(500, 360)), true, false, 101020, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(500, 360)), true, false, 101040, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(400, 220)), true, false, 101060, 0, 960.0)
+    if event_result.has("action") or event_result.has("lane"):
+        _fail("V78 duplicated multi-touch pointer must quarantine first finger")
+        return false
+    event_result = gestures.handle(_screen_drag(1, Vector2(500, 220)), true, false, 101080, 0, 960.0)
+    if event_result.has("action") or event_result.has("lane"):
+        _fail("V78 duplicated multi-touch pointer must not trigger Super Attack")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 220)), true, false, 101100, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(500, 220)), true, false, 101120, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V78 duplicate multi-touch release must not spend ability energy")
+        return false
+    gestures.handle(_screen_touch(0, true, Vector2(400, 360)), true, false, 101200, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(500, 360)), true, false, 101220, 0, 960.0)
+    gestures.handle(_screen_drag(0, Vector2(400, 220)), true, false, 101240, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(500, 220)), true, false, 101260, 0, 960.0)
+    if event_result.get("action", "") != "attack":
+        _fail("V78 fresh two-finger attack must work after quarantine is cleared")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 220)), true, false, 101280, 0, 960.0)
+    gestures.handle(_screen_touch(1, false, Vector2(500, 220)), true, false, 101300, 0, 960.0)
     return true
 
 func _run_checks() -> void:
@@ -1582,7 +1632,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V77") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V78") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1592,7 +1642,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V77") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V78") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1836,7 +1886,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V77") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V78") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
