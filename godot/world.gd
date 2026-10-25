@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V63"
+const VERSION_LABEL := "V64"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -108,6 +108,7 @@ var mobile_hud_layout := false
 var touch_screen_mode := false
 # A rotated/resized viewport invalidates active finger coordinates.
 var last_touch_layout_width := -1.0
+var last_touch_layout_height := -1.0
 var splash: PanelContainer
 var controls_grid: GridContainer
 var touch_steering = TouchGestures.new()
@@ -1138,13 +1139,15 @@ func _create_ui() -> void:
     get_viewport().size_changed.connect(func(): _apply_mobile_layout(get_viewport().get_visible_rect().size.x))
 
 # Responsive phone portrait layout, while keeping the four desktop controls.
-func _apply_mobile_layout(viewport_width: float, touchscreen_override: int = -1) -> void:
-    # Safari/Android may keep a finger down while rotating. Old coordinates
-    # must not turn into a jump, lane change or charged ability afterward.
-    # Ignore tiny browser rounding changes, but discard any real relayout.
-    if last_touch_layout_width >= 0.0 and absf(viewport_width - last_touch_layout_width) >= 2.0:
-        touch_steering.reset()
+func _apply_mobile_layout(viewport_width: float, touchscreen_override: int = -1, viewport_height: float = -1.0) -> void:
+    # iOS Safari's browser bars can change viewport HEIGHT without changing
+    # width. Both rotations and height-only relayouts invalidate touch origins.
+    # Quarantine held fingers until release so another finger cannot take over.
+    var layout_height: float = viewport_height if viewport_height > 0.0 else get_viewport().get_visible_rect().size.y
+    if last_touch_layout_width >= 0.0 and (absf(viewport_width - last_touch_layout_width) >= 2.0 or (last_touch_layout_height >= 0.0 and absf(layout_height - last_touch_layout_height) >= 2.0)):
+        touch_steering.invalidate_layout()
     last_touch_layout_width = viewport_width
+    last_touch_layout_height = layout_height
     var narrow := viewport_width < 720.0
     mobile_hud_layout = narrow
     # Safari/Android landscape often exceeds 720 px. Keep the desktop HUD

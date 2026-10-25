@@ -1087,7 +1087,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V63") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V64") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1097,7 +1097,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V63") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V64") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1271,6 +1271,37 @@ func _run_checks() -> void:
         return
     game.call("_input", _screen_touch(0, false, Vector2(300, 120)))
     game.set("jump_left", 0.0)
+    # V64: Safari browser chrome can change only viewport height. A held
+    # pointer and any extra finger must remain quarantined until both lift.
+    game.call("_apply_mobile_layout", 390.0, 1, 780.0)
+    game.set("jump_left", 0.0)
+    game.set("lane", 0)
+    game.call("_input", _screen_touch(0, true, Vector2(300, 260)))
+    if rotation_gestures.fingers.size() != 1:
+        _fail("V64 setup failed to capture a finger before height-only relayout")
+        return
+    game.call("_apply_mobile_layout", 390.0, 1, 680.0)
+    if not rotation_gestures.fingers.is_empty() or not rotation_gestures.blocked_fingers.has(0):
+        _fail("V64 height-only relayout must quarantine the held finger")
+        return
+    game.call("_input", _screen_touch(1, true, Vector2(300, 260)))
+    game.call("_input", _screen_drag(1, Vector2(300, 100)))
+    game.call("_input", _screen_touch(1, false, Vector2(300, 100)))
+    if float(game.get("jump_left")) > 0.0 or int(game.get("lane")) != 0:
+        _fail("V64 extra finger during relayout quarantine triggered movement")
+        return
+    game.call("_input", _screen_drag(0, Vector2(300, 100)))
+    game.call("_input", _screen_touch(0, false, Vector2(300, 100)))
+    if float(game.get("jump_left")) > 0.0 or not rotation_gestures.blocked_fingers.is_empty():
+        _fail("V64 stale finger triggered a jump or remained blocked after release")
+        return
+    game.call("_input", _screen_touch(0, true, Vector2(300, 260)))
+    game.call("_input", _screen_drag(0, Vector2(300, 100)))
+    if float(game.get("jump_left")) <= 0.0:
+        _fail("V64 new swipe must jump immediately after quarantined touches lift")
+        return
+    game.call("_input", _screen_touch(0, false, Vector2(300, 100)))
+    game.set("jump_left", 0.0)
     # Training/quiz must ignore all gestures and clear captured touch state.
     game.call("_begin_training")
     var quiz_origin := (game.get("quiz_box") as PanelContainer).get_global_rect().get_center()
@@ -1288,7 +1319,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V63") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V64") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
