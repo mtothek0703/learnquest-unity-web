@@ -705,6 +705,46 @@ func _check_native_gestures() -> bool:
     gestures.handle(_screen_touch(0, false, Vector2(360, 140)), true, false, 20980, 0, 960.0)
     gestures.handle(_screen_touch(1, false, Vector2(460, 140)), true, false, 21000, 0, 960.0)
 
+    # V70 regression: 30px is deliberate downward scrolling, not jitter.
+    # A short downward-first drag must never turn into a jump after reversal.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 180)), true, false, 22000, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(400, 210)), true, false, 22020, 0, 800.0, 320.0)
+    if event_result.has("action") or event_result.has("lane"):
+        _fail("V70 short downward-first drag must remain inert")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(400, 85)), true, false, 22040, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V70 short downward-first reversal incorrectly jumped")
+        return false
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(400, 85)), true, false, 22060, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V70 releasing a short downward-first reversal incorrectly jumped")
+        return false
+    # The same regression applies to two-finger scrolling and Super Attack.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(360, 260)), true, false, 22100, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 260)), true, false, 22120, 0, 800.0, 320.0)
+    gestures.handle(_screen_drag(0, Vector2(360, 290)), true, false, 22140, 0, 800.0, 320.0)
+    gestures.handle(_screen_drag(1, Vector2(460, 290)), true, false, 22160, 0, 800.0, 320.0)
+    gestures.handle(_screen_drag(0, Vector2(360, 100)), true, false, 22180, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(460, 100)), true, false, 22200, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V70 short two-finger downward-first reversal spent attack energy")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(360, 100)), true, false, 22220, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 100)), true, false, 22240, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V70 two-finger reversal spent attack energy on release")
+        return false
+    # Guard resets after release: fresh intentional swipes must stay immediate.
+    gestures.handle(_screen_touch(0, true, Vector2(400, 180)), true, false, 22300, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(400, 100)), true, false, 22320, 0, 800.0, 320.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V70 early scroll guard blocked a new deliberate jump")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 100)), true, false, 22340, 0, 800.0, 320.0)
+
     if not gestures.handle(InputEventMouseMotion.new(), true, false, 10300, 0, 960.0).is_empty():
         _fail("V52 synthetic mouse movement must not become a touch gesture")
         return false
