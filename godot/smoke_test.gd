@@ -314,6 +314,61 @@ func _check_native_gestures() -> bool:
     gestures.handle(_screen_touch(0, false, Vector2(485, 220)), true, false, 11040, 0, 960.0)
     gestures.handle(_screen_touch(1, false, Vector2(585, 220)), true, false, 11060, 0, 960.0)
 
+    # V58: pinching while moving upward must NOT fire Super Attack.
+    # Both fingers travel well beyond the attack threshold but converge.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 370)), true, false, 15000, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(580, 370)), true, false, 15020, 0, 960.0)
+    gestures.handle(_screen_drag(0, Vector2(525, 230)), true, false, 15050, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(535, 230)), true, false, 15070, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V58 upward pinch incorrectly triggered Super Attack during drag")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(525, 230)), true, false, 15100, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(535, 230)), true, false, 15120, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V58 upward pinch incorrectly triggered Super Attack on release")
+        return false
+
+    # A web browser may deliver only the start and end of the pinch.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 370)), true, false, 15200, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(580, 370)), true, false, 15220, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(525, 230)), true, false, 15280, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(535, 230)), true, false, 15300, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V58 release-only upward pinch incorrectly triggered Super Attack")
+        return false
+
+    # Pinch-then-return must stay blocked for the entire touch sequence.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 370)), true, false, 15400, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(580, 370)), true, false, 15420, 0, 960.0)
+    gestures.handle(_screen_drag(0, Vector2(525, 315)), true, false, 15450, 0, 960.0)
+    gestures.handle(_screen_drag(1, Vector2(535, 315)), true, false, 15470, 0, 960.0)
+    gestures.handle(_screen_drag(0, Vector2(480, 210)), true, false, 15490, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(580, 210)), true, false, 15510, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V58 pinch-then-return incorrectly activated Super Attack")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(480, 210)), true, false, 15530, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(580, 210)), true, false, 15550, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V58 pinch-then-return activated Super Attack on release")
+        return false
+
+    # Deliberate upward swipe with small lateral drift remains responsive.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 370)), true, false, 15600, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(580, 370)), true, false, 15620, 0, 960.0)
+    gestures.handle(_screen_drag(0, Vector2(472, 220)), true, false, 15650, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(588, 220)), true, false, 15670, 0, 960.0)
+    if event_result.get("action", "") != "attack":
+        _fail("V58 pinch guard blocked a genuine upward Super Attack")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(472, 220)), true, false, 15690, 0, 960.0)
+    gestures.handle(_screen_touch(1, false, Vector2(588, 220)), true, false, 15710, 0, 960.0)
+
     # V56: an OS/browser-cancelled touch is NOT a normal release. It
     # must never complete Turbo, a jump or either two-finger ability.
     gestures.reset()
@@ -894,7 +949,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V57") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V58") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -904,7 +959,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V57") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V58") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1038,7 +1093,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V57") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V58") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
