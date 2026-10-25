@@ -216,8 +216,12 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
             # energy when both fingers eventually pass the upward threshold.
             if travel.y >= 48.0 and travel.y > absf(travel.x) * 1.2:
                 multi_attack_blocked = true
-            # Never turn an earlier horizontal scroll into a vertical attack.
-            if absf(travel.x) >= 48.0 and absf(travel.x) > absf(travel.y) * 1.15:
+            # Lock horizontal intent as soon as it exceeds tap jitter.
+            # On landscape phones a 25-47px sideways-first pinch/scroll can
+            # otherwise reverse upward and spend Super Attack energy.
+            # Keep the vertical-dominance check so genuine upward swipes with
+            # a few pixels of lateral thumb drift still work immediately.
+            if absf(travel.x) > TAP_SLOP and absf(travel.x) > absf(travel.y) * 1.15:
                 multi_attack_blocked = true
             # Pinching with both fingers must not spend attack energy, even
             # when the gesture also travels upward. Wait for both fingers to
