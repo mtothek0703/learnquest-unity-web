@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V65"
+const VERSION_LABEL := "V66"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -130,6 +130,13 @@ func _ready() -> void:
     _refresh_hud()
     # Start directly with a front-facing hero portrait, not the old rear view.
     _update_camera(100.0)
+
+# Browser tab switches, calls and app suspension do not always emit a
+# ScreenTouch(canceled) event. Discard stale pointers and pending double taps
+# when focus is lost, so a resumed drag cannot spend energy or jump.
+func _notification(what: int) -> void:
+    if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+        touch_steering.reset()
 
 func mat(color: Color, glow: bool = false) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
