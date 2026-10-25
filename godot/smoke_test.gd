@@ -1362,6 +1362,17 @@ func _run_checks() -> void:
     if controls.visible or (game.get("powerups_grid") as GridContainer).visible:
         _fail("Mobile hide-buttons toggle did not hide both control rows")
         return
+    # V69: the bottom gesture instructions are a passive, mouse-ignored label.
+    # When buttons are hidden, their full-width label must not create a dead
+    # strip of playfield where thumb drags and swipes silently stop working.
+    var gesture_instructions := game.get("gesture_hint") as Label
+    if gesture_instructions == null or not gesture_instructions.visible or gesture_instructions.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+        _fail("V69 gesture instructions must be a visible pass-through label")
+        return
+    var hint_touch := gesture_instructions.get_global_rect().get_center()
+    if bool(game.call("_touch_ui_blocked", hint_touch)):
+        _fail("V69 passive gesture instructions block the lower playfield")
+        return
     var restore := game.get("gesture_toggle") as Button
     if restore == null or not restore.visible or restore.text != "TASTEN EIN":
         _fail("Restoring hidden accessibility buttons must stay possible")
