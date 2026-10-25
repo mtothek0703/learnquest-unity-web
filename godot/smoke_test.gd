@@ -745,6 +745,50 @@ func _check_native_gestures() -> bool:
         return false
     gestures.handle(_screen_touch(0, false, Vector2(400, 100)), true, false, 22340, 0, 800.0, 320.0)
 
+    # V74 regression: a diagonal downward-first thumb drag is a scroll,
+    # even if it is not 1.2x vertically dominant. Reversing it must not
+    # unexpectedly jump or spend Super Attack energy.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 220)), true, false, 39000, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(432, 250)), true, false, 39020, 0, 800.0, 320.0)
+    if event_result.has("action") or event_result.has("lane"):
+        _fail("V74 initial diagonal downward scroll must be inert")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(400, 100)), true, false, 39040, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V74 diagonal downward-first reversal must not jump")
+        return false
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(400, 100)), true, false, 39060, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V74 diagonal scroll release must not jump")
+        return false
+
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(360, 260)), true, false, 40000, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 260)), true, false, 40020, 0, 800.0, 320.0)
+    gestures.handle(_screen_drag(0, Vector2(392, 290)), true, false, 40040, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(492, 290)), true, false, 40060, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V74 diagonal two-finger scroll must not activate a power-up")
+        return false
+    gestures.handle(_screen_drag(0, Vector2(360, 140)), true, false, 40080, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(460, 140)), true, false, 40100, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V74 diagonal two-finger scroll reversal must not attack")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(360, 140)), true, false, 40120, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 140)), true, false, 40140, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V74 diagonal two-finger release must not attack")
+        return false
+    # The lock is per gesture; fresh intentional upward swipes still work.
+    gestures.handle(_screen_touch(0, true, Vector2(400, 260)), true, false, 40200, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(400, 170)), true, false, 40220, 0, 800.0, 320.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V74 fresh upward swipe must still jump immediately")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 170)), true, false, 40240, 0, 800.0, 320.0)
+
     # V71: A shield TAP is timed from the first finger down. Previously a
     # 520ms first-finger hold could still trigger Shield because the 420ms
     # timer started only when the second finger joined 170ms later.
