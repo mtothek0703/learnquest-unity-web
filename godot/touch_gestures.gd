@@ -21,7 +21,6 @@ var last_target_lane := 0 # Stable lane while the finger hovers near a boundary.
 var last_tap_ms := -10000
 var last_tap_position := Vector2(-10000.0, -10000.0)
 var multi_active := false
-var multi_start_ms := 0
 # Shield taps must finish promptly from the FIRST finger down, not just
 # from the second finger's arrival (which can lag by 180 ms).
 var multi_first_ms := 0
@@ -123,7 +122,6 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                 moved_outside_tap = false
             else:
                 multi_active = true
-                multi_start_ms = now_ms
                 multi_first_ms = int(fingers[primary_id]["time"])
                 multi_tap_allowed = now_ms - multi_first_ms <= 180 and not moved_outside_tap
                 # A second finger after steering/scrolling is not a power-up.
