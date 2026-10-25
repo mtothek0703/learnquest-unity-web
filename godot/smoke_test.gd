@@ -745,6 +745,41 @@ func _check_native_gestures() -> bool:
         return false
     gestures.handle(_screen_touch(0, false, Vector2(400, 100)), true, false, 22340, 0, 800.0, 320.0)
 
+    # V71: A shield TAP is timed from the first finger down. Previously a
+    # 520ms first-finger hold could still trigger Shield because the 420ms
+    # timer started only when the second finger joined 170ms later.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(360, 260)), true, false, 23000, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 260)), true, false, 23170, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(0, false, Vector2(360, 260)), true, false, 23500, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 260)), true, false, 23520, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V71 prolonged first-finger hold must not spend Shield energy")
+        return false
+    # The rejected long hold must not poison the next intentional quick tap.
+    gestures.handle(_screen_touch(0, true, Vector2(360, 260)), true, false, 23600, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 260)), true, false, 23650, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(0, false, Vector2(360, 260)), true, false, 23830, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 260)), true, false, 23860, 0, 800.0, 320.0)
+    if event_result.get("action", "") != "shield":
+        _fail("V71 quick two-finger tap must still activate Shield")
+        return false
+    # Exact boundary is valid; a single millisecond longer is a hold.
+    gestures.handle(_screen_touch(0, true, Vector2(360, 260)), true, false, 24000, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 260)), true, false, 24160, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(0, false, Vector2(360, 260)), true, false, 24400, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 260)), true, false, 24420, 0, 800.0, 320.0)
+    if event_result.get("action", "") != "shield":
+        _fail("V71 420ms two-finger tap must remain valid")
+        return false
+    gestures.handle(_screen_touch(0, true, Vector2(360, 260)), true, false, 25000, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 260)), true, false, 25160, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(0, false, Vector2(360, 260)), true, false, 25400, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 260)), true, false, 25421, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V71 421ms first-finger hold must not trigger Shield")
+        return false
+
     if not gestures.handle(InputEventMouseMotion.new(), true, false, 10300, 0, 960.0).is_empty():
         _fail("V52 synthetic mouse movement must not become a touch gesture")
         return false
@@ -1284,7 +1319,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V70") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V71") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1294,7 +1329,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V70") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V71") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1538,7 +1573,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V70") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V71") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):

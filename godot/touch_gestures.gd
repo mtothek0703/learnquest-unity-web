@@ -21,6 +21,9 @@ var last_tap_ms := -10000
 var last_tap_position := Vector2(-10000.0, -10000.0)
 var multi_active := false
 var multi_start_ms := 0
+# Shield taps must finish promptly from the FIRST finger down, not just
+# from the second finger's arrival (which can lag by 180 ms).
+var multi_first_ms := 0
 var multi_tap_allowed := false
 # A shield tap must stay a tap for its entire path, not just at release.
 var multi_moved := false
@@ -41,6 +44,7 @@ func _clear_active() -> void:
     fingers.clear()
     primary_id = -1
     multi_active = false
+    multi_first_ms = 0
     multi_tap_allowed = false
     multi_moved = false
     multi_deltas.clear()
@@ -119,7 +123,8 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
             else:
                 multi_active = true
                 multi_start_ms = now_ms
-                multi_tap_allowed = now_ms - int(fingers[primary_id]["time"]) <= 180 and not moved_outside_tap
+                multi_first_ms = int(fingers[primary_id]["time"])
+                multi_tap_allowed = now_ms - multi_first_ms <= 180 and not moved_outside_tap
                 # A second finger after steering/scrolling is not a power-up.
                 if single_mode != "" or moved_outside_tap or now_ms - int(fingers[primary_id]["time"]) > TWO_FINGER_START_MS:
                     cancelled = true
@@ -166,7 +171,7 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                 var b: Vector2 = multi_deltas[1]
                 if not multi_attack_blocked and now_ms - multi_start_ms <= MAX_ATTACK_MS and a.y < -SWIPE_UP and b.y < -SWIPE_UP and absf(a.x) < absf(a.y) and absf(b.x) < absf(b.y):
                     result["action"] = "attack"
-                elif multi_tap_allowed and not multi_moved and now_ms - multi_start_ms <= TWO_FINGER_MS and a.length() <= TAP_SLOP and b.length() <= TAP_SLOP:
+                elif multi_tap_allowed and not multi_moved and now_ms - multi_first_ms <= TWO_FINGER_MS and a.length() <= TAP_SLOP and b.length() <= TAP_SLOP:
                     result["action"] = "shield"
             _clear_active()
             return result
