@@ -656,7 +656,7 @@ func _run_checks() -> void:
     # events. Focus loss must invalidate held fingers and pending Turbo taps.
     var focus_gestures = game.get("touch_steering")
     focus_gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 1000, 0, 960.0)
-    game.notification(NOTIFICATION_WM_WINDOW_FOCUS_OUT)
+    game.notification(Node.NOTIFICATION_WM_WINDOW_FOCUS_OUT)
     var focus_result: Dictionary = focus_gestures.handle(_screen_drag(0, Vector2(400, 180)), true, false, 1040, 0, 960.0)
     if not focus_result.is_empty():
         _fail("V66 resumed drag after window focus loss triggered an old gesture")
@@ -667,7 +667,7 @@ func _run_checks() -> void:
         return
     focus_gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 1100, 0, 960.0)
     focus_gestures.handle(_screen_touch(1, true, Vector2(480, 300)), true, false, 1120, 0, 960.0)
-    game.notification(NOTIFICATION_APPLICATION_FOCUS_OUT)
+    game.notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_OUT)
     focus_result = focus_gestures.handle(_screen_touch(0, false, Vector2(400, 170)), true, false, 1150, 0, 960.0)
     if not focus_result.is_empty():
         _fail("V66 application focus loss must cancel two-finger abilities")
