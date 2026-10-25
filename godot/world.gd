@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V58"
+const VERSION_LABEL := "V59"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -104,6 +104,8 @@ var end_panel: PanelContainer
 var hud: Label
 var hud_panel: PanelContainer
 var mobile_hud_layout := false
+# Wide touchscreen phones must still offer the optional gesture-only mode.
+var touch_screen_mode := false
 var splash: PanelContainer
 var controls_grid: GridContainer
 var touch_steering = TouchGestures.new()
@@ -947,11 +949,11 @@ func _update_touch_ui() -> void:
     if controls_grid == null or powerups_grid == null or gesture_toggle == null or gesture_hint == null:
         return
     var racing := phase == "race" and started and not quiz_active
-    var show_buttons := racing and (touch_buttons_visible or not mobile_hud_layout)
+    var show_buttons := racing and (touch_buttons_visible or not touch_screen_mode)
     controls_grid.visible = show_buttons
     powerups_grid.visible = show_buttons
-    gesture_toggle.visible = racing and mobile_hud_layout
-    gesture_hint.visible = racing and mobile_hud_layout
+    gesture_toggle.visible = racing and touch_screen_mode
+    gesture_hint.visible = racing and touch_screen_mode
     gesture_toggle.text = "TASTEN AUS" if touch_buttons_visible else "TASTEN EIN"
     gesture_hint.offset_top = -245.0 if touch_buttons_visible else -75.0
     gesture_hint.offset_bottom = -205.0 if touch_buttons_visible else -35.0
@@ -1133,9 +1135,14 @@ func _create_ui() -> void:
     get_viewport().size_changed.connect(func(): _apply_mobile_layout(get_viewport().get_visible_rect().size.x))
 
 # Responsive phone portrait layout, while keeping the four desktop controls.
-func _apply_mobile_layout(viewport_width: float) -> void:
+func _apply_mobile_layout(viewport_width: float, touchscreen_override: int = -1) -> void:
     var narrow := viewport_width < 720.0
     mobile_hud_layout = narrow
+    # Safari/Android landscape often exceeds 720 px. Keep the desktop HUD
+    # layout there, but do not force accessibility buttons back on-screen.
+    # The override lets headless CI simulate a real landscape touchscreen.
+    var has_touchscreen := DisplayServer.is_touchscreen_available() if touchscreen_override < 0 else touchscreen_override == 1
+    touch_screen_mode = narrow or has_touchscreen
     hud_panel.custom_minimum_size.x = minf(360.0, maxf(0.0, viewport_width - 30.0)) if narrow else 360.0
     progress_bar.custom_minimum_size.x = hud_panel.custom_minimum_size.x
     hud.add_theme_font_size_override("font_size", 16 if narrow else 18)
