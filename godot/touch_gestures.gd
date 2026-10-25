@@ -5,6 +5,8 @@ const TAP_SLOP := 24.0
 const SWIPE_UP := 72.0
 const DOUBLE_TAP_MS := 340
 const TWO_FINGER_MS := 420
+# A late second finger is a new touch, not a deliberate simultaneous gesture.
+const TWO_FINGER_START_MS := 350
 const MAX_ATTACK_MS := 900
 
 var fingers: Dictionary = {}
@@ -106,7 +108,7 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                 multi_start_ms = now_ms
                 multi_tap_allowed = now_ms - int(fingers[primary_id]["time"]) <= 180 and not moved_outside_tap
                 # A second finger after steering/scrolling is not a power-up.
-                if single_mode != "" or moved_outside_tap:
+                if single_mode != "" or moved_outside_tap or now_ms - int(fingers[primary_id]["time"]) > TWO_FINGER_START_MS:
                     cancelled = true
                 multi_moved = false
                 multi_attack_blocked = false
