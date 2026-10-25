@@ -944,6 +944,61 @@ func _check_native_gestures() -> bool:
     if not gestures.handle(_screen_touch(0, false, Vector2(480, 220)), true, false, 10450, 0, 960.0).is_empty():
         _fail("V52 disabled gestures must discard in-flight fingers")
         return false
+    # V76: Safari can drop the release when the browser loses focus, then
+    # recycle pointer index 0 on the next real press. Without recovery the
+    # controls stay locked until a release event that will never arrive.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 60000, 0, 960.0)
+    gestures.invalidate_focus(60010)
+    event_result = gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 60609, 0, 960.0)
+    if not event_result.is_empty():
+        _fail("V76 focus quarantine must reject recycled presses before 600 ms")
+        return false
+    event_result = gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 60610, 0, 960.0)
+    if not bool(event_result.get("captured", false)):
+        _fail("V76 recycled pointer index must recover after focus grace period")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(400, 190)), true, false, 60640, 0, 960.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V76 recovered pointer must immediately respond to a fresh swipe")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 190)), true, false, 60660, 0, 960.0)
+
+    # Another pointer cannot bypass a quarantined finger even after 600 ms.
+    # A recycled index may recover only when it is the sole blocked pointer.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 70000, 0, 960.0)
+    gestures.invalidate_focus(70010)
+    event_result = gestures.handle(_screen_touch(1, true, Vector2(500, 300)), true, false, 70700, 0, 960.0)
+    if not event_result.is_empty():
+        _fail("V76 a different second finger must remain blocked after focus loss")
+        return false
+    event_result = gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 70710, 0, 960.0)
+    if not event_result.is_empty():
+        _fail("V76 focus recovery must wait while a second pointer is quarantined")
+        return false
+    gestures.handle(_screen_touch(1, false, Vector2(500, 300)), true, false, 70720, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 70730, 0, 960.0)
+    if not bool(event_result.get("captured", false)):
+        _fail("V76 sole recycled pointer must recover after other pointers lift")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 300)), true, false, 70750, 0, 960.0)
+
+    # Rotation/layout invalidation has no focus grace exception: a still-held
+    # finger must remain blocked until its actual release.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 80000, 0, 960.0)
+    gestures.invalidate_layout()
+    event_result = gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 82000, 0, 960.0)
+    if not event_result.is_empty():
+        _fail("V76 layout quarantine must not unlock on a duplicate press")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 300)), true, false, 82020, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 82040, 0, 960.0)
+    if not bool(event_result.get("captured", false)):
+        _fail("V76 layout quarantine must recover after actual release")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 300)), true, false, 82060, 0, 960.0)
     return true
 
 func _run_checks() -> void:
@@ -1505,7 +1560,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V75") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V76") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1515,7 +1570,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V75") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V76") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1759,7 +1814,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V75") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V76") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):

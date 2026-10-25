@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V75"
+const VERSION_LABEL := "V76"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -138,7 +138,7 @@ func _notification(what: int) -> void:
     if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
         # Quarantine still-held pointers until all fingers lift.
         # reset() forgets them and can mistake another finger for a new jump.
-        touch_steering.invalidate_layout()
+        touch_steering.invalidate_focus(Time.get_ticks_msec())
 
 func mat(color: Color, glow: bool = false) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
