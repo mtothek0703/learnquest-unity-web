@@ -53,6 +53,39 @@ func _check_native_gestures() -> bool:
         _fail("V52 a finished steering drag must not become a double tap")
         return false
 
+    # V67: On wide landscape screens a deliberate 30px sideways start is
+    # beyond tap slop, but below the former lane-change lock threshold.
+    # Reversing upward must not reinterpret this steering intent as a jump.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 360)), true, false, 2300, 0, 960.0, 360.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(510, 360)), true, false, 2320, 0, 960.0, 360.0)
+    if event_result.has("action") or event_result.has("lane"):
+        _fail("V67 early sideways intent must not fire an ability or change lane")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(510, 220)), true, false, 2340, 0, 960.0, 360.0)
+    if event_result.has("action"):
+        _fail("V67 sideways-first drag must not turn into an upward jump")
+        return false
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(510, 220)), true, false, 2360, 0, 960.0, 360.0)
+    if event_result.has("action"):
+        _fail("V67 sideways-first release must not trigger a jump")
+        return false
+    # Browsers may skip the final drag frame: release-only paths stay safe.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(480, 360)), true, false, 2400, 0, 960.0, 360.0)
+    gestures.handle(_screen_drag(0, Vector2(510, 360)), true, false, 2420, 0, 960.0, 360.0)
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(510, 200)), true, false, 2450, 0, 960.0, 360.0)
+    if event_result.has("action"):
+        _fail("V67 missing final drag frame must not turn steering into jump")
+        return false
+    # The lock is per touch, not global: a fresh upward swipe still jumps.
+    gestures.handle(_screen_touch(0, true, Vector2(480, 360)), true, false, 2500, 0, 960.0, 360.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(480, 270)), true, false, 2520, 0, 960.0, 360.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V67 fresh deliberate upward swipe must still jump immediately")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(480, 270)), true, false, 2540, 0, 960.0, 360.0)
+
     # V53: test BOTH real lane boundaries by starting on the left.
     # A moving thumb can wobble near the center-to-right threshold.
     gestures.reset()
