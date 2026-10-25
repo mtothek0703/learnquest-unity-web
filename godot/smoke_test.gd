@@ -1071,6 +1071,36 @@ func _check_native_gestures() -> bool:
         return false
     gestures.handle(_screen_touch(0, false, Vector2(400, 220)), true, false, 101280, 0, 960.0)
     gestures.handle(_screen_touch(1, false, Vector2(500, 220)), true, false, 101300, 0, 960.0)
+    # V79 regression: two fingers released far apart are NOT a coordinated
+    # Shield tap, even if the second finger lifts before the 420ms timeout.
+    # This used to spend shield energy on a normal staggered two-finger hold.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 110000, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(500, 300)), true, false, 110020, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(400, 300)), true, false, 110060, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V79 first release must not activate Shield")
+        return false
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(500, 300)), true, false, 110241, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V79 shield must reject a 181ms gap between finger releases")
+        return false
+    # A deliberately coordinated release at the 180ms boundary still works.
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 111000, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(500, 300)), true, false, 111020, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(400, 300)), true, false, 111060, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(500, 300)), true, false, 111240, 0, 960.0)
+    if event_result.get("action", "") != "shield":
+        _fail("V79 shield must accept a coordinated 180ms release gap")
+        return false
+    # After a rejected hold, a new ordinary quick two-finger tap must work.
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 112000, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(500, 300)), true, false, 112020, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(400, 300)), true, false, 112050, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(500, 300)), true, false, 112080, 0, 960.0)
+    if event_result.get("action", "") != "shield":
+        _fail("V79 fresh quick shield tap must still work after a rejected hold")
+        return false
     return true
 
 func _run_checks() -> void:
@@ -1632,7 +1662,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V78") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V79") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1642,7 +1672,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V78") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V79") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1886,7 +1916,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V78") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V79") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
