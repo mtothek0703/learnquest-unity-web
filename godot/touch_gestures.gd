@@ -2,6 +2,9 @@ extends RefCounted
 ## Native touch gesture interpreter: never consumes mouse events or UI controls.
 ## Only fingers that began on the 3D playfield may control the rider.
 const TAP_SLOP := 24.0
+# Treat downward diagonal movement as scrolling before an upward reversal.
+# A near-45-degree scroll is neither a deliberate horizontal steer nor a jump.
+const DOWNWARD_SCROLL_RATIO := 0.85
 const SWIPE_UP := 72.0
 const DOUBLE_TAP_MS := 340
 const TWO_FINGER_MS := 420
@@ -223,9 +226,9 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
             if travel.length() > TAP_SLOP:
                 multi_moved = true
             # Lock the first deliberate scroll direction beyond tap jitter.
-            # Reversing a two-finger downward scroll must not spend attack
+            # Reversing a two-finger downward or diagonal scroll must not spend attack
             # energy when both fingers eventually pass the upward threshold.
-            if travel.y > TAP_SLOP and travel.y > absf(travel.x) * 1.2:
+            if travel.y > TAP_SLOP and travel.y >= absf(travel.x) * DOWNWARD_SCROLL_RATIO:
                 multi_attack_blocked = true
             # Lock horizontal intent as soon as it exceeds tap jitter.
             # On landscape phones a 25-47px sideways-first pinch/scroll can
@@ -255,10 +258,10 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
         moved_outside_tap = true
         last_tap_ms = -10000
     if single_mode == "":
-        # A downward movement beyond tap slop locks this touch out of game actions.
+        # A downward or downward-diagonal movement beyond tap slop locks out game actions.
         # Without this, scrolling down and then reversing past the origin
         # could unexpectedly jump, especially on short landscape screens.
-        if delta.y > TAP_SLOP and delta.y > absf(delta.x) * 1.2:
+        if delta.y > TAP_SLOP and delta.y >= absf(delta.x) * DOWNWARD_SCROLL_RATIO:
             single_mode = "ignore"
         elif delta.y < -jump_swipe and absf(delta.y) > absf(delta.x) * 1.2:
             single_mode = "jump"
