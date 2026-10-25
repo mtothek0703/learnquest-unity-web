@@ -128,6 +128,17 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
             return {"captured": true} if was_playfield else {}
         if touch.pressed:
             if fingers.has(touch.index):
+                # A browser may reuse a touch index without delivering its old
+                # release (and sometimes without a focus notification). Do not
+                # keep the stale origin: a subsequent drag could otherwise
+                # trigger an accidental jump, lane change or Super Attack.
+                # Quarantine every active finger until its real release, just
+                # as for a canceled multi-touch sequence.
+                for index in fingers.keys():
+                    blocked_fingers[index] = true
+                _clear_active()
+                cancelled = true
+                last_tap_ms = -10000
                 return {}
             if blocked_fingers.has(touch.index):
                 # A genuine new press can reuse an index whose release was
