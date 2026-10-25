@@ -22,6 +22,9 @@ var multi_moved := false
 var multi_deltas: Array[Vector2] = []
 # Track both live positions so a deliberate attack can fire before release.
 var multi_positions: Dictionary = {}
+# Preserve both origins and final positions until the entire gesture ends.
+# This also protects the release-only fallback when browsers skip drag frames.
+var multi_origins: Dictionary = {}
 var multi_attack_fired := false
 # Lock out an attack after sideways-first two-finger scrolling or pinching.
 var multi_attack_blocked := false
@@ -37,6 +40,7 @@ func _clear_active() -> void:
     multi_moved = false
     multi_deltas.clear()
     multi_positions.clear()
+    multi_origins.clear()
     multi_attack_fired = false
     multi_attack_blocked = false
     single_mode = ""
@@ -89,6 +93,7 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                 return {}
             fingers[touch.index] = {"start": touch.position, "time": now_ms}
             multi_positions[touch.index] = touch.position
+            multi_origins[touch.index] = touch.position
             if fingers.size() == 1:
                 primary_id = touch.index
                 start_lane = lane_now
@@ -118,7 +123,8 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
         var duration: int = now_ms - int(fingers[touch.index]["time"])
         var delta: Vector2 = touch.position - origin
         fingers.erase(touch.index)
-        multi_positions.erase(touch.index)
+        # Keep the final location for a pinch check after both releases.
+        multi_positions[touch.index] = touch.position
         if cancelled:
             if fingers.is_empty():
                 _clear_active()
@@ -138,6 +144,8 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                 return {"captured": true}
             var result := {"captured": true}
             if multi_deltas.size() == 2:
+                if _pinch_changed_span():
+                    multi_attack_blocked = true
                 var a: Vector2 = multi_deltas[0]
                 var b: Vector2 = multi_deltas[1]
                 if not multi_attack_blocked and now_ms - multi_start_ms <= MAX_ATTACK_MS and a.y < -SWIPE_UP and b.y < -SWIPE_UP and absf(a.x) < absf(a.y) and absf(b.x) < absf(b.y):
@@ -187,6 +195,11 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                 multi_moved = true
             # Never turn an earlier horizontal scroll into a vertical attack.
             if absf(travel.x) >= 48.0 and absf(travel.x) > absf(travel.y) * 1.15:
+                multi_attack_blocked = true
+            # Pinching with both fingers must not spend attack energy, even
+            # when the gesture also travels upward. Wait for both fingers to
+            # move so a normal staggered upward swipe is not misclassified.
+            if fingers.size() == 2 and _both_fingers_moved() and _pinch_changed_span():
                 multi_attack_blocked = true
             if not multi_attack_fired and not multi_attack_blocked and fingers.size() == 2 and now_ms - multi_start_ms <= MAX_ATTACK_MS:
                 var ids: Array = fingers.keys()
@@ -249,3 +262,24 @@ func _steer_target(horizontal: float, viewport_width: float) -> int:
             return last_target_lane
     last_target_lane = target
     return target
+
+# Compare changes along the original two-finger separation axis. This
+# avoids mistaking a slight difference in upward swipe timing for a pinch.
+func _pinch_changed_span() -> bool:
+    if multi_origins.size() != 2 or multi_positions.size() != 2:
+        return false
+    var ids: Array = multi_origins.keys()
+    var original: Vector2 = multi_origins[ids[1]] - multi_origins[ids[0]]
+    if original.length() < 40.0:
+        return false
+    var current: Vector2 = multi_positions[ids[1]] - multi_positions[ids[0]]
+    var span_change := absf((current - original).dot(original.normalized()))
+    return span_change > maxf(36.0, original.length() * 0.30)
+
+func _both_fingers_moved() -> bool:
+    if multi_origins.size() != 2 or multi_positions.size() != 2:
+        return false
+    for id in multi_origins:
+        if multi_positions[id].distance_to(multi_origins[id]) <= TAP_SLOP:
+            return false
+    return true
