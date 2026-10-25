@@ -1302,6 +1302,8 @@ func _run_checks() -> void:
         return
     game.call("_input", _screen_touch(0, false, Vector2(300, 100)))
     game.set("jump_left", 0.0)
+    # Restore the wide HUD expected by the existing end-to-end race checks.
+    game.call("_apply_mobile_layout", 960.0, 0)
     # Training/quiz must ignore all gestures and clear captured touch state.
     game.call("_begin_training")
     var quiz_origin := (game.get("quiz_box") as PanelContainer).get_global_rect().get_center()
