@@ -1214,6 +1214,12 @@ func _run_checks() -> void:
     if hull == null or not (hull.mesh is ArrayMesh) or (hull.mesh as ArrayMesh).surface_get_array_len(0) < 200:
         _fail("V81 trains need sculpted shaded hull meshes, not placeholder cubes")
         return
+    # The hull must face outward: inward triangle winding is invisible with
+    # normal back-face culling on iPhone and would look like a missing train.
+    var hull_normals: PackedVector3Array = (hull.mesh as ArrayMesh).surface_get_arrays(0)[Mesh.ARRAY_NORMAL]
+    if hull_normals.is_empty() or hull_normals[0].x < 0.3:
+        _fail("V81 maglev hull has inward-facing triangles and will be culled")
+        return
     if window == null or spark == null:
         _fail("V81 trains need real panoramic glass and animated energy trails")
         return

@@ -49,8 +49,8 @@ func _hull_mesh() -> ArrayMesh:
             var a1 := TAU * float(side + 1) / 12.0
             var shade := Color("#7b9ac8").lerp(Color("#d8e9ff"), maxf(0.0, sin(a0)) * 0.72)
             for vertex in [
-                _hull_point(section, a0), _hull_point(section + 1, a0), _hull_point(section, a1),
-                _hull_point(section, a1), _hull_point(section + 1, a0), _hull_point(section + 1, a1)
+                _hull_point(section, a0), _hull_point(section, a1), _hull_point(section + 1, a0),
+                _hull_point(section, a1), _hull_point(section + 1, a1), _hull_point(section + 1, a0)
             ]:
                 surface.set_color(shade)
                 surface.add_vertex(vertex)
@@ -61,8 +61,8 @@ func _hull_mesh() -> ArrayMesh:
             var center := Vector3(0.0, 0.0, -1.75 if end == 0 else 1.75)
             surface.set_color(Color("#49668d"))
             surface.add_vertex(center)
-            surface.add_vertex(_hull_point(end, a0))
-            surface.add_vertex(_hull_point(end, a1))
+            surface.add_vertex(_hull_point(end, a1 if end == 0 else a0))
+            surface.add_vertex(_hull_point(end, a0 if end == 0 else a1))
     surface.generate_normals()
     return surface.commit()
 
