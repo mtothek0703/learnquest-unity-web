@@ -8,6 +8,7 @@ var scenery: Array[Node3D] = []
 var running := false
 var speed_streaks: Array[MeshInstance3D] = []
 var travel_speed := 14.0
+var cinematic_bridges: Node3D
 var rand := RandomNumberGenerator.new()
 
 func _ready() -> void:
@@ -20,6 +21,11 @@ func _ready() -> void:
     _build_speed_streaks()
     _build_landmarks()
     _build_sunset_landmark()
+    # Wide-screen foreground architecture creates strong depth and parallax.
+    var bridge_script := preload("res://cinematic_city_bridges.gd")
+    cinematic_bridges = bridge_script.new()
+    cinematic_bridges.name = "Cinematic skybridges"
+    add_child(cinematic_bridges)
 
 func material(tint: Color, glow: bool = false) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -262,6 +268,8 @@ func _build_sunset_landmark() -> void:
             arch.scale = Vector3(1.0, 1.5, 1.0)
 
 func _process(delta: float) -> void:
+    cinematic_bridges.set("running", running)
+    cinematic_bridges.set("travel_speed", travel_speed)
     elapsed += delta
     if running:
         for streak in speed_streaks:
