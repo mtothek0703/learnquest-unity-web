@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V59"
+const VERSION_LABEL := "V60"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -919,7 +919,8 @@ func _input(event: InputEvent) -> void:
     var down := event as InputEventScreenTouch
     if down != null and down.pressed:
         blocked = _touch_ui_blocked(down.position)
-    var outcome: Dictionary = touch_steering.handle(event, racing, blocked, Time.get_ticks_msec(), lane, get_viewport().get_visible_rect().size.x)
+    var viewport_size := get_viewport().get_visible_rect().size
+    var outcome: Dictionary = touch_steering.handle(event, racing, blocked, Time.get_ticks_msec(), lane, viewport_size.x, viewport_size.y)
     if not bool(outcome.get("captured", false)):
         return
     get_viewport().set_input_as_handled()

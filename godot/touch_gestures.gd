@@ -53,10 +53,11 @@ func reset() -> void:
     cancelled = false
     last_tap_ms = -10000
 
-func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, lane_now: int, viewport_width: float) -> Dictionary:
+func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, lane_now: int, viewport_width: float, viewport_height: float = 0.0) -> Dictionary:
     if not enabled:
         reset()
         return {}
+    var jump_swipe := _jump_swipe_threshold(viewport_height)
     var touch := event as InputEventScreenTouch
     if touch != null:
         # iOS/Android may cancel a pointer when the app loses focus, the OS
@@ -169,7 +170,7 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
             else:
                 last_tap_ms = now_ms
                 last_tap_position = touch.position
-        elif delta.y < -SWIPE_UP and absf(delta.y) > absf(delta.x) * 1.2:
+        elif delta.y < -jump_swipe and absf(delta.y) > absf(delta.x) * 1.2:
             single["action"] = "jump" # Fallback if no drag event was delivered.
             last_tap_ms = -10000
         elif absf(delta.x) > absf(delta.y) * 1.2:
@@ -217,7 +218,7 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
         moved_outside_tap = true
         last_tap_ms = -10000
     if single_mode == "":
-        if delta.y < -SWIPE_UP and absf(delta.y) > absf(delta.x) * 1.2:
+        if delta.y < -jump_swipe and absf(delta.y) > absf(delta.x) * 1.2:
             single_mode = "jump"
             result["action"] = "jump" # Fire immediately, without finger lift.
         elif absf(delta.x) > absf(delta.y) * 1.2 and absf(delta.x) >= _steer_step(viewport_width) * 0.65:
@@ -227,6 +228,13 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
         if target != lane_now:
             result["lane"] = target
     return result
+
+## Short landscape screens should not require a quarter-screen thumb sweep.
+## Keep the longer original threshold on portrait screens to avoid false jumps.
+func _jump_swipe_threshold(viewport_height: float) -> float:
+    if viewport_height <= 0.0:
+        return SWIPE_UP # Compatibility with callers that only pass width.
+    return clampf(viewport_height * 0.16, 48.0, SWIPE_UP)
 
 func _steer_step(viewport_width: float) -> float:
     return clampf(viewport_width * 0.10, 32.0, 64.0)
