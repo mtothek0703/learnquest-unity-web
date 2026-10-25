@@ -944,6 +944,61 @@ func _check_native_gestures() -> bool:
     if not gestures.handle(_screen_touch(0, false, Vector2(480, 220)), true, false, 10450, 0, 960.0).is_empty():
         _fail("V52 disabled gestures must discard in-flight fingers")
         return false
+    # V76: Safari can drop the release when the browser loses focus, then
+    # recycle pointer index 0 on the next real press. Without recovery the
+    # controls stay locked until a release event that will never arrive.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 60000, 0, 960.0)
+    gestures.invalidate_focus(60010)
+    event_result = gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 60609, 0, 960.0)
+    if not event_result.is_empty():
+        _fail("V76 focus quarantine must reject recycled presses before 600 ms")
+        return false
+    event_result = gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 60610, 0, 960.0)
+    if not bool(event_result.get("captured", false)):
+        _fail("V76 recycled pointer index must recover after focus grace period")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(400, 190)), true, false, 60640, 0, 960.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V76 recovered pointer must immediately respond to a fresh swipe")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 190)), true, false, 60660, 0, 960.0)
+
+    # Another pointer cannot bypass a quarantined finger even after 600 ms.
+    # A recycled index may recover only when it is the sole blocked pointer.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 70000, 0, 960.0)
+    gestures.invalidate_focus(70010)
+    event_result = gestures.handle(_screen_touch(1, true, Vector2(500, 300)), true, false, 70700, 0, 960.0)
+    if not event_result.is_empty():
+        _fail("V76 a different second finger must remain blocked after focus loss")
+        return false
+    event_result = gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 70710, 0, 960.0)
+    if not event_result.is_empty():
+        _fail("V76 focus recovery must wait while a second pointer is quarantined")
+        return false
+    gestures.handle(_screen_touch(1, false, Vector2(500, 300)), true, false, 70720, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 70730, 0, 960.0)
+    if not bool(event_result.get("captured", false)):
+        _fail("V76 sole recycled pointer must recover after other pointers lift")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 300)), true, false, 70750, 0, 960.0)
+
+    # Rotation/layout invalidation has no focus grace exception: a still-held
+    # finger must remain blocked until its actual release.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 80000, 0, 960.0)
+    gestures.invalidate_layout()
+    event_result = gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 82000, 0, 960.0)
+    if not event_result.is_empty():
+        _fail("V76 layout quarantine must not unlock on a duplicate press")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 300)), true, false, 82020, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 82040, 0, 960.0)
+    if not bool(event_result.get("captured", false)):
+        _fail("V76 layout quarantine must recover after actual release")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 300)), true, false, 82060, 0, 960.0)
     return true
 
 func _run_checks() -> void:
