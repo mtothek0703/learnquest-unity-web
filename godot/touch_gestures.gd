@@ -248,7 +248,11 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
         elif delta.y < -jump_swipe and absf(delta.y) > absf(delta.x) * 1.2:
             single_mode = "jump"
             result["action"] = "jump" # Fire immediately, without finger lift.
-        elif absf(delta.x) > absf(delta.y) * 1.2 and absf(delta.x) >= _steer_step(viewport_width) * 0.65:
+        elif absf(delta.x) > absf(delta.y) * 1.2 and absf(delta.x) > TAP_SLOP:
+            # Lock horizontal intent as soon as the finger leaves tap slop,
+            # even before crossing the lane-change threshold on wide phones.
+            # Otherwise a small sideways-first drag can turn into a jump.
+            # _steer_target() still applies its lane hysteresis separately.
             single_mode = "steer"
     if single_mode == "steer":
         var target := _steer_target(delta.x, viewport_width)
