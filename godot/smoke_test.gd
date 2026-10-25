@@ -1200,6 +1200,49 @@ func _run_checks() -> void:
         _fail("Cinematic skybridges do not scroll with the race")
         return
     cinematic.set("running", false)
+    # V81: visible, independently animated 3D maglev convoys frame the
+    # landscape playfield without adding collisions or changing gestures.
+    var maglev := game.get_node_or_null("LearnQuest Skyway world/Cinematic maglev traffic") as Node3D
+    if maglev == null or maglev.get("trains").size() != 2:
+        _fail("Neon City needs two real animated maglev trains")
+        return
+    var train := maglev.get_node_or_null("Sky tram 0") as Node3D
+    var car := train.get_node_or_null("Car 0") as Node3D if train != null else null
+    var hull := car.get_node_or_null("Sculpted car hull") as MeshInstance3D if car != null else null
+    var window := car.get_node_or_null("Side panoramic window") as MeshInstance3D if car != null else null
+    var spark := train.get_node_or_null("Trailing energy spark 0") as MeshInstance3D if train != null else null
+    if hull == null or not (hull.mesh is ArrayMesh) or (hull.mesh as ArrayMesh).surface_get_array_len(0) < 200:
+        _fail("V81 trains need sculpted shaded hull meshes, not placeholder cubes")
+        return
+    # The hull must face outward: inward triangle winding is invisible with
+    # normal back-face culling on iPhone and would look like a missing train.
+    var hull_normals: PackedVector3Array = (hull.mesh as ArrayMesh).surface_get_arrays(0)[Mesh.ARRAY_NORMAL]
+    if hull_normals.is_empty() or hull_normals[0].x < 0.3:
+        _fail("V81 maglev hull has inward-facing triangles and will be culled")
+        return
+    if window == null or spark == null:
+        _fail("V81 trains need real panoramic glass and animated energy trails")
+        return
+    var window_mat := window.material_override as StandardMaterial3D
+    if window_mat == null or window_mat.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA:
+        _fail("V81 maglev panoramic windows must be translucent")
+        return
+    if absf(train.position.x) < 9.0 or train.position.y < 6.0:
+        _fail("V81 trains must stay above and outside the playable lanes")
+        return
+    var train_z := train.position.z
+    var spark_size := spark.scale.x
+    maglev.set("running", true)
+    maglev.call("_process", 0.3)
+    if train.position.z <= train_z or is_equal_approx(spark.scale.x, spark_size):
+        _fail("V81 maglev movement or trailing spark animation is broken")
+        return
+    maglev.set("running", false)
+    var paused_z := train.position.z
+    maglev.call("_process", 0.3)
+    if not is_equal_approx(train.position.z, paused_z):
+        _fail("V81 trains must not move down the track during menus or quizzes")
+        return
     if game.get("rider") == null:
         _fail("Animated hoverboard character is missing")
         return
@@ -1683,7 +1726,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V80") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V81") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1693,7 +1736,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V80") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V81") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1832,7 +1875,7 @@ func _run_checks() -> void:
     # V59: an iPhone in landscape is wider than 720px but still needs the
     # optional gesture-only mode. Simulate touch hardware in headless CI.
     game.call("_apply_mobile_layout", 844.0, 1, 390.0)
-    if not mobile_hud.text.contains("V80") or not mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("V81") or not mobile_hud.text.contains("\n"):
         _fail("Landscape-first phone layout must use a compact two-line HUD")
         return
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
@@ -1940,7 +1983,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V80") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V81") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):

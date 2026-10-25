@@ -9,6 +9,7 @@ var running := false
 var speed_streaks: Array[MeshInstance3D] = []
 var travel_speed := 14.0
 var cinematic_bridges: Node3D
+var cinematic_traffic: Node3D
 var rand := RandomNumberGenerator.new()
 
 func _ready() -> void:
@@ -26,6 +27,12 @@ func _ready() -> void:
     cinematic_bridges = bridge_script.new()
     cinematic_bridges.name = "Cinematic skybridges"
     add_child(cinematic_bridges)
+    # Animated side-lane maglev convoys add shaded silhouettes and moving
+    # light trails without altering the confirmed touch/gameplay systems.
+    var traffic_script := preload("res://cinematic_sky_traffic.gd")
+    cinematic_traffic = traffic_script.new()
+    cinematic_traffic.name = "Cinematic maglev traffic"
+    add_child(cinematic_traffic)
 
 func material(tint: Color, glow: bool = false) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -270,6 +277,8 @@ func _build_sunset_landmark() -> void:
 func _process(delta: float) -> void:
     cinematic_bridges.set("running", running)
     cinematic_bridges.set("travel_speed", travel_speed)
+    cinematic_traffic.set("running", running)
+    cinematic_traffic.set("travel_speed", travel_speed)
     elapsed += delta
     if running:
         for streak in speed_streaks:
