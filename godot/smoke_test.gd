@@ -949,7 +949,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V58") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V59") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -959,7 +959,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V58") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V59") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1075,7 +1075,37 @@ func _run_checks() -> void:
     if not controls.visible or not (game.get("powerups_grid") as GridContainer).visible:
         _fail("Accessible touch buttons could not be restored")
         return
-    game.call("_apply_mobile_layout", 960.0)
+    # V59: an iPhone in landscape is wider than 720px but still needs the
+    # optional gesture-only mode. Simulate touch hardware in headless CI.
+    game.call("_apply_mobile_layout", 844.0, 1)
+    if not bool(game.get("touch_screen_mode")) or not restore.visible:
+        _fail("V59 landscape touchscreen lost its button-visibility toggle")
+        return
+    if controls.columns != 4:
+        _fail("V59 landscape touchscreen should keep the wide HUD layout")
+        return
+    var landscape_toggle_point := restore.get_global_rect().get_center()
+    if not bool(game.call("_touch_ui_blocked", landscape_toggle_point)):
+        _fail("V59 landscape toggle must remain protected from game gestures")
+        return
+    game.call("_toggle_touch_buttons")
+    if controls.visible or (game.get("powerups_grid") as GridContainer).visible or not restore.visible:
+        _fail("V59 landscape touchscreen cannot hide accessibility buttons")
+        return
+    # Rotating back to portrait and landscape must preserve the choice.
+    game.call("_apply_mobile_layout", 390.0, 1)
+    game.call("_apply_mobile_layout", 844.0, 1)
+    if controls.visible or (game.get("powerups_grid") as GridContainer).visible or restore.text != "TASTEN EIN":
+        _fail("V59 rotating a phone unexpectedly restored hidden buttons")
+        return
+    game.call("_toggle_touch_buttons")
+    if not controls.visible or not (game.get("powerups_grid") as GridContainer).visible:
+        _fail("V59 landscape touchscreen cannot restore accessibility buttons")
+        return
+    game.call("_apply_mobile_layout", 960.0, 0)
+    if bool(game.get("touch_screen_mode")) or restore.visible or not controls.visible:
+        _fail("V59 non-touch desktop must retain its visible controls")
+        return
     # Training/quiz must ignore all gestures and clear captured touch state.
     game.call("_begin_training")
     var quiz_origin := (game.get("quiz_box") as PanelContainer).get_global_rect().get_center()
@@ -1093,7 +1123,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V58") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V59") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
