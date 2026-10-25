@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V68"
+const VERSION_LABEL := "V69"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -947,7 +947,10 @@ func _input(event: InputEvent) -> void:
             _use_super_attack()
 
 func _touch_ui_blocked(position: Vector2) -> bool:
-    for control in [splash, quiz_box, end_panel, controls_grid, powerups_grid, hud_panel, progress_bar, gesture_toggle, gesture_hint]:
+    # The instructions are a non-interactive MOUSE_FILTER_IGNORE label. They
+    # must not reserve a full-width dead zone over the lower playfield when
+    # the optional touch buttons are hidden. Keep real UI and HUD protected.
+    for control in [splash, quiz_box, end_panel, controls_grid, powerups_grid, hud_panel, progress_bar, gesture_toggle]:
         if control != null and control.is_visible_in_tree() and control.get_global_rect().has_point(position):
             return true
     return false

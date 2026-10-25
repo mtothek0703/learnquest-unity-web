@@ -1244,7 +1244,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V68") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V69") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1254,7 +1254,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V68") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V69") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1362,6 +1362,26 @@ func _run_checks() -> void:
     if controls.visible or (game.get("powerups_grid") as GridContainer).visible:
         _fail("Mobile hide-buttons toggle did not hide both control rows")
         return
+    # V69: the bottom gesture instructions are a passive, mouse-ignored label.
+    # When buttons are hidden, their full-width label must not create a dead
+    # strip of playfield where thumb drags and swipes silently stop working.
+    var gesture_instructions := game.get("gesture_hint") as Label
+    if gesture_instructions == null or not gesture_instructions.visible or gesture_instructions.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+        _fail("V69 gesture instructions must be a visible pass-through label")
+        return
+    var hint_touch := gesture_instructions.get_global_rect().get_center()
+    if bool(game.call("_touch_ui_blocked", hint_touch)):
+        _fail("V69 passive gesture instructions block the lower playfield")
+        return
+    # A real swipe starting on the instructions must steer immediately.
+    game.set("lane", 0)
+    game.call("_input", _screen_touch(0, true, hint_touch))
+    game.call("_input", _screen_drag(0, hint_touch + Vector2(100, 0)))
+    if int(game.get("lane")) != 1:
+        _fail("V69 drag over passive instructions failed to steer")
+        return
+    game.call("_input", _screen_touch(0, false, hint_touch + Vector2(100, 0)))
+    game.set("lane", 0)
     var restore := game.get("gesture_toggle") as Button
     if restore == null or not restore.visible or restore.text != "TASTEN EIN":
         _fail("Restoring hidden accessibility buttons must stay possible")
@@ -1478,7 +1498,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V68") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V69") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
