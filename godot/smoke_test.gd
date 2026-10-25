@@ -842,6 +842,45 @@ func _check_native_gestures() -> bool:
     gestures.handle(_screen_touch(0, false, Vector2(360, 150)), true, false, 34110, 0, 800.0, 320.0)
     gestures.handle(_screen_touch(1, false, Vector2(460, 150)), true, false, 34130, 0, 800.0, 320.0)
 
+    # V73 regression: an attack must be one coordinated two-finger swipe,
+    # not two upward strokes completed hundreds of milliseconds apart.
+    # WebKit may skip drag frames, so check release-only events as well.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(360, 300)), true, false, 35000, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 300)), true, false, 35020, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(0, false, Vector2(360, 150)), true, false, 35100, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 150)), true, false, 35320, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V73 staggered finger releases spent Super Attack energy")
+        return false
+
+    # Keep release-only fallback for near-simultaneous two-finger swipes.
+    gestures.handle(_screen_touch(0, true, Vector2(360, 300)), true, false, 36000, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 300)), true, false, 36020, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(0, false, Vector2(360, 150)), true, false, 36100, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 150)), true, false, 36280, 0, 800.0, 320.0)
+    if event_result.get("action", "") != "attack":
+        _fail("V73 180ms two-finger release gap must preserve deliberate attack")
+        return false
+
+    # Just beyond the boundary is sequential, not a simultaneous attack.
+    gestures.handle(_screen_touch(0, true, Vector2(360, 300)), true, false, 37000, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 300)), true, false, 37020, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(0, false, Vector2(360, 150)), true, false, 37100, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 150)), true, false, 37281, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V73 181ms release gap must not activate attack")
+        return false
+
+    # The rejected attempt must not block a new quick gesture.
+    gestures.handle(_screen_touch(0, true, Vector2(360, 300)), true, false, 38000, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 300)), true, false, 38020, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(0, false, Vector2(360, 150)), true, false, 38100, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 150)), true, false, 38120, 0, 800.0, 320.0)
+    if event_result.get("action", "") != "attack":
+        _fail("V73 quick two-finger attack did not recover")
+        return false
+
     if not gestures.handle(InputEventMouseMotion.new(), true, false, 10300, 0, 960.0).is_empty():
         _fail("V52 synthetic mouse movement must not become a touch gesture")
         return false
