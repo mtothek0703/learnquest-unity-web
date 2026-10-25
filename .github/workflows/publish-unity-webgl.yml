@@ -118,28 +118,28 @@ jobs:
           python - <<'PY'
           from urllib.error import HTTPError
           from urllib.request import Request, urlopen
-          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v69/index.html"
+          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v70/index.html"
           try:
               with urlopen(Request(url, headers={"Cache-Control": "no-cache"}), timeout=20):
-                  raise SystemExit("Skyway V69 already exists: refusing to overwrite an immutable release")
+                  raise SystemExit("Skyway V70 already exists: refusing to overwrite an immutable release")
           except HTTPError as error:
               if error.code != 404:
                   raise
-          print("Skyway V69 is not published yet; safe to create")
+          print("Skyway V70 is not published yet; safe to create")
           PY
           # Each release gets a fresh URL; historical folders are never rebuilt from newer exports.
-          mkdir -p _site/skyway-v69
-          cp -a _site/godot/. _site/skyway-v69/
-          echo "$GITHUB_SHA" > _site/skyway-v69/build.txt
+          mkdir -p _site/skyway-v70
+          cp -a _site/godot/. _site/skyway-v70/
+          echo "$GITHUB_SHA" > _site/skyway-v70/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
-          echo "Archived previous versions and prepared immutable Skyway V69"
+          echo "Archived previous versions and prepared immutable Skyway V70"
       - name: Check browser export integrity
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          root = Path("_site/skyway-v69")
+          root = Path("_site/skyway-v70")
           for name in ("index.html", "index.js", "index.wasm", "index.pck"):
               file = root / name
               if not file.is_file() or file.stat().st_size == 0:
@@ -206,7 +206,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request, urllib.error
-          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v69/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v70/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.js": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
