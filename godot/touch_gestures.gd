@@ -55,6 +55,16 @@ func reset() -> void:
     cancelled = false
     last_tap_ms = -10000
 
+# A viewport relayout changes touch coordinates while fingers may still be
+# physically down. Quarantine every old pointer until it is released; unlike
+# reset(), this also prevents a new finger from starting a stray gesture.
+func invalidate_layout() -> void:
+    for index in fingers.keys():
+        blocked_fingers[index] = true
+    _clear_active()
+    cancelled = not blocked_fingers.is_empty()
+    last_tap_ms = -10000
+
 func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, lane_now: int, viewport_width: float, viewport_height: float = 0.0) -> Dictionary:
     if not enabled:
         reset()
