@@ -1179,6 +1179,27 @@ func _run_checks() -> void:
     if game.get_node_or_null("LearnQuest Skyway world") == null:
         _fail("Skyway 3D environment is missing")
         return
+    # V80: the landscape-first version has substantial foreground 3D depth.
+    var cinematic := game.get_node_or_null("LearnQuest Skyway world/Cinematic skybridges") as Node3D
+    if cinematic == null or cinematic.get_child_count() != 3:
+        _fail("Three cinematic 3D skybridges are missing from Neon City")
+        return
+    var first_bridge := cinematic.get_node_or_null("Cinematic Skybridge 0") as Node3D
+    var arch := first_bridge.get_node_or_null("Sculpted Luminous Arch 0") as MeshInstance3D if first_bridge != null else null
+    var floating_sign := first_bridge.get_node_or_null("Floating Holographic Road Sign") as Node3D if first_bridge != null else null
+    if arch == null or not (arch.mesh is ArrayMesh) or (arch.mesh as ArrayMesh).surface_get_array_len(0) < 1500:
+        _fail("Sculpted luminous landscape bridge requires real curved mesh geometry")
+        return
+    if floating_sign == null or floating_sign.get_node_or_null("Translucent Hologram") == null:
+        _fail("The animated floating city hologram is missing")
+        return
+    var bridge_z := first_bridge.position.z
+    cinematic.set("running", true)
+    cinematic.call("_process", 0.1)
+    if first_bridge.position.z <= bridge_z:
+        _fail("Cinematic skybridges do not scroll with the race")
+        return
+    cinematic.set("running", false)
     if game.get("rider") == null:
         _fail("Animated hoverboard character is missing")
         return
@@ -1662,7 +1683,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V79") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V80") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1672,7 +1693,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V79") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V80") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1810,7 +1831,10 @@ func _run_checks() -> void:
         return
     # V59: an iPhone in landscape is wider than 720px but still needs the
     # optional gesture-only mode. Simulate touch hardware in headless CI.
-    game.call("_apply_mobile_layout", 844.0, 1)
+    game.call("_apply_mobile_layout", 844.0, 1, 390.0)
+    if not mobile_hud.text.contains("V80") or not mobile_hud.text.contains("\\n"):
+        _fail("Landscape-first phone layout must use a compact two-line HUD")
+        return
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
         _fail("V59 landscape touchscreen lost its button-visibility toggle")
         return
@@ -1916,7 +1940,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V79") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V80") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
