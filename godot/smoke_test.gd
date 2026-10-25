@@ -538,6 +538,46 @@ func _check_native_gestures() -> bool:
     gestures.handle(_screen_touch(0, false, Vector2(360, 110)), true, false, 17480, 0, 800.0, 320.0)
     gestures.handle(_screen_touch(1, false, Vector2(460, 110)), true, false, 17500, 0, 800.0, 320.0)
 
+    # V62: A second finger added after a long one-finger hold is NOT a
+    # deliberate simultaneous gesture. It must not spend attack energy.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(360, 260)), true, false, 18000, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 260)), true, false, 18500, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(360, 110)), true, false, 18530, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V62 late second finger incorrectly activated an ability on first drag")
+        return false
+    event_result = gestures.handle(_screen_drag(1, Vector2(460, 110)), true, false, 18560, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V62 late second finger incorrectly triggered Super Attack")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(360, 110)), true, false, 18580, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 110)), true, false, 18600, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V62 late second finger triggered an attack on release")
+        return false
+
+    # The same delayed hold must not be interpreted as a two-finger Shield.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(360, 260)), true, false, 18700, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 260)), true, false, 19150, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(0, false, Vector2(360, 260)), true, false, 19170, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 260)), true, false, 19190, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V62 delayed second finger incorrectly triggered Shield")
+        return false
+
+    # A fresh, near-simultaneous two-finger swipe still attacks immediately.
+    gestures.handle(_screen_touch(0, true, Vector2(360, 260)), true, false, 19250, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 260)), true, false, 19290, 0, 800.0, 320.0)
+    gestures.handle(_screen_drag(0, Vector2(360, 110)), true, false, 19320, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(460, 110)), true, false, 19350, 0, 800.0, 320.0)
+    if event_result.get("action", "") != "attack":
+        _fail("V62 fresh two-finger swipe must still activate Super Attack")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(360, 110)), true, false, 19370, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, false, Vector2(460, 110)), true, false, 19390, 0, 800.0, 320.0)
+
     if not gestures.handle(InputEventMouseMotion.new(), true, false, 10300, 0, 960.0).is_empty():
         _fail("V52 synthetic mouse movement must not become a touch gesture")
         return false
@@ -1047,7 +1087,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V61") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V62") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1057,7 +1097,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V61") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V62") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1221,7 +1261,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V61") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V62") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
