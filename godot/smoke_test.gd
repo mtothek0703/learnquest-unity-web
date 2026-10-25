@@ -652,6 +652,36 @@ func _run_checks() -> void:
         return
     root.add_child(game)
     await process_frame
+    # V66: a browser tab switch / incoming call can suppress touch-cancel
+    # events. Focus loss must invalidate held fingers and pending Turbo taps.
+    var focus_gestures = game.get("touch_steering")
+    focus_gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 1000, 0, 960.0)
+    game.notification(NOTIFICATION_WM_WINDOW_FOCUS_OUT)
+    var focus_result: Dictionary = focus_gestures.handle(_screen_drag(0, Vector2(400, 180)), true, false, 1040, 0, 960.0)
+    if not focus_result.is_empty():
+        _fail("V66 resumed drag after window focus loss triggered an old gesture")
+        return
+    focus_result = focus_gestures.handle(_screen_touch(0, false, Vector2(400, 180)), true, false, 1060, 0, 960.0)
+    if not focus_result.is_empty():
+        _fail("V66 stale finger release after focus loss was not ignored")
+        return
+    focus_gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 1100, 0, 960.0)
+    focus_gestures.handle(_screen_touch(1, true, Vector2(480, 300)), true, false, 1120, 0, 960.0)
+    game.notification(NOTIFICATION_APPLICATION_FOCUS_OUT)
+    focus_result = focus_gestures.handle(_screen_touch(0, false, Vector2(400, 170)), true, false, 1150, 0, 960.0)
+    if not focus_result.is_empty():
+        _fail("V66 application focus loss must cancel two-finger abilities")
+        return
+    focus_result = focus_gestures.handle(_screen_touch(1, false, Vector2(480, 170)), true, false, 1170, 0, 960.0)
+    if not focus_result.is_empty():
+        _fail("V66 second stale finger must not fire Super Attack")
+        return
+    focus_gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 1200, 0, 960.0)
+    focus_result = focus_gestures.handle(_screen_drag(0, Vector2(400, 180)), true, false, 1230, 0, 960.0)
+    if focus_result.get("action", "") != "jump":
+        _fail("V66 fresh gestures must work immediately after focus resumes")
+        return
+    focus_gestures.handle(_screen_touch(0, false, Vector2(400, 180)), true, false, 1260, 0, 960.0)
     if game.get_node_or_null("LearnQuest Skyway world") == null:
         _fail("Skyway 3D environment is missing")
         return
