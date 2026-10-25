@@ -989,6 +989,36 @@ func _run_checks() -> void:
         _fail("V66 fresh gestures must work immediately after focus resumes")
         return
     focus_gestures.handle(_screen_touch(0, false, Vector2(400, 180)), true, false, 1260, 0, 960.0)
+    # V75 regression: if the browser loses focus while finger 0 is still
+    # physically down, a second finger must not become a new game gesture.
+    # A simple reset() forgets the held pointer and wrongly accepts finger 1.
+    focus_gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 1300, 0, 960.0)
+    game.notification(Node.NOTIFICATION_WM_WINDOW_FOCUS_OUT)
+    focus_result = focus_gestures.handle(_screen_touch(1, true, Vector2(480, 300)), true, false, 1320, 0, 960.0)
+    if not focus_result.is_empty():
+        _fail("V75 second finger after focus loss must not start a new gesture while first is held")
+        return
+    focus_result = focus_gestures.handle(_screen_drag(1, Vector2(480, 180)), true, false, 1350, 0, 960.0)
+    if not focus_result.is_empty():
+        _fail("V75 second finger drag after focus loss must remain quarantined")
+        return
+    focus_result = focus_gestures.handle(_screen_touch(0, false, Vector2(400, 300)), true, false, 1370, 0, 960.0)
+    if not focus_result.is_empty():
+        _fail("V75 old finger release must not activate an ability")
+        return
+    focus_result = focus_gestures.handle(_screen_touch(1, false, Vector2(480, 180)), true, false, 1390, 0, 960.0)
+    if not focus_result.is_empty():
+        _fail("V75 quarantined second finger release must not activate an ability")
+        return
+    focus_result = focus_gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 1420, 0, 960.0)
+    if not bool(focus_result.get("captured", false)):
+        _fail("V75 fresh gesture must recover after all held fingers release")
+        return
+    focus_result = focus_gestures.handle(_screen_drag(0, Vector2(400, 180)), true, false, 1450, 0, 960.0)
+    if focus_result.get("action", "") != "jump":
+        _fail("V75 fresh upward swipe must jump immediately after focus recovery")
+        return
+    focus_gestures.handle(_screen_touch(0, false, Vector2(400, 180)), true, false, 1470, 0, 960.0)
     if game.get_node_or_null("LearnQuest Skyway world") == null:
         _fail("Skyway 3D environment is missing")
         return
@@ -1475,7 +1505,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V74") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V75") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1485,7 +1515,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V74") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V75") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1729,7 +1759,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V74") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V75") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
