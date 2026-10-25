@@ -194,6 +194,11 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
             var travel: Vector2 = drag.position - fingers[drag.index]["start"]
             if travel.length() > TAP_SLOP:
                 multi_moved = true
+            # Lock the first deliberate scroll direction for the full touch.
+            # Reversing a two-finger downward scroll must not spend attack
+            # energy when both fingers eventually pass the upward threshold.
+            if travel.y >= 48.0 and travel.y > absf(travel.x) * 1.2:
+                multi_attack_blocked = true
             # Never turn an earlier horizontal scroll into a vertical attack.
             if absf(travel.x) >= 48.0 and absf(travel.x) > absf(travel.y) * 1.15:
                 multi_attack_blocked = true
@@ -218,7 +223,12 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
         moved_outside_tap = true
         last_tap_ms = -10000
     if single_mode == "":
-        if delta.y < -jump_swipe and absf(delta.y) > absf(delta.x) * 1.2:
+        # A deliberate downward scroll locks this touch out of game actions.
+        # Without this, scrolling down and then reversing past the origin
+        # could unexpectedly jump, especially on short landscape screens.
+        if delta.y >= maxf(36.0, jump_swipe * 0.65) and delta.y > absf(delta.x) * 1.2:
+            single_mode = "ignore"
+        elif delta.y < -jump_swipe and absf(delta.y) > absf(delta.x) * 1.2:
             single_mode = "jump"
             result["action"] = "jump" # Fire immediately, without finger lift.
         elif absf(delta.x) > absf(delta.y) * 1.2 and absf(delta.x) >= _steer_step(viewport_width) * 0.65:
