@@ -745,6 +745,61 @@ func _check_native_gestures() -> bool:
         return false
     gestures.handle(_screen_touch(0, false, Vector2(400, 100)), true, false, 22340, 0, 800.0, 320.0)
 
+    # V74 regression: a diagonal downward-first thumb drag is a scroll,
+    # even if it is not 1.2x vertically dominant. Reversing it must not
+    # unexpectedly jump or spend Super Attack energy.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 220)), true, false, 39000, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(432, 250)), true, false, 39020, 0, 800.0, 320.0)
+    if event_result.has("action") or event_result.has("lane"):
+        _fail("V74 initial diagonal downward scroll must be inert")
+        return false
+    event_result = gestures.handle(_screen_drag(0, Vector2(400, 100)), true, false, 39040, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V74 diagonal downward-first reversal must not jump")
+        return false
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(400, 100)), true, false, 39060, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V74 diagonal scroll release must not jump")
+        return false
+
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(360, 260)), true, false, 40000, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 260)), true, false, 40020, 0, 800.0, 320.0)
+    gestures.handle(_screen_drag(0, Vector2(392, 290)), true, false, 40040, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(492, 290)), true, false, 40060, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V74 diagonal two-finger scroll must not activate a power-up")
+        return false
+    gestures.handle(_screen_drag(0, Vector2(360, 140)), true, false, 40080, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(460, 140)), true, false, 40100, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V74 diagonal two-finger scroll reversal must not attack")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(360, 140)), true, false, 40120, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 140)), true, false, 40140, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V74 diagonal two-finger release must not attack")
+        return false
+    # The lock is per gesture; fresh intentional upward swipes still work.
+    gestures.handle(_screen_touch(0, true, Vector2(400, 260)), true, false, 40200, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(400, 170)), true, false, 40220, 0, 800.0, 320.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V74 fresh upward swipe must still jump immediately")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 170)), true, false, 40240, 0, 800.0, 320.0)
+
+    # A new, intentional two-finger upward swipe still attacks immediately.
+    gestures.handle(_screen_touch(0, true, Vector2(360, 260)), true, false, 41000, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 260)), true, false, 41020, 0, 800.0, 320.0)
+    gestures.handle(_screen_drag(0, Vector2(360, 150)), true, false, 41040, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(460, 150)), true, false, 41060, 0, 800.0, 320.0)
+    if event_result.get("action", "") != "attack":
+        _fail("V74 a fresh deliberate two-finger upward swipe must still attack")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(360, 150)), true, false, 41080, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, false, Vector2(460, 150)), true, false, 41100, 0, 800.0, 320.0)
+
     # V71: A shield TAP is timed from the first finger down. Previously a
     # 520ms first-finger hold could still trigger Shield because the 420ms
     # timer started only when the second finger joined 170ms later.
@@ -1420,7 +1475,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V73") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V74") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1430,7 +1485,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V73") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V74") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1674,7 +1729,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V73") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V74") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
