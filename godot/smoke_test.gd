@@ -578,6 +578,57 @@ func _check_native_gestures() -> bool:
     gestures.handle(_screen_touch(0, false, Vector2(360, 110)), true, false, 19370, 0, 800.0, 320.0)
     gestures.handle(_screen_touch(1, false, Vector2(460, 110)), true, false, 19390, 0, 800.0, 320.0)
 
+    # V65: very close fingers can be a pinch on a phone. Their shared upward
+    # movement must not trigger Super Attack, either during drag or on release.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 20000, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(424, 300)), true, false, 20020, 0, 960.0)
+    gestures.handle(_screen_drag(0, Vector2(400, 160)), true, false, 20050, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(424, 160)), true, false, 20070, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V65 close-start two-finger upward drag spent attack energy")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 160)), true, false, 20100, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(424, 160)), true, false, 20120, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V65 close-start gesture attacked after release")
+        return false
+
+    # Some browsers omit drag frames. The release-only fallback needs the same guard.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 20200, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(420, 300)), true, false, 20220, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(400, 150)), true, false, 20280, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(420, 150)), true, false, 20300, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V65 release-only close-start gesture spent attack energy")
+        return false
+
+    # A close two-finger TAP remains a valid shield gesture.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 20400, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(420, 300)), true, false, 20420, 0, 960.0)
+    gestures.handle(_screen_touch(0, false, Vector2(400, 300)), true, false, 20460, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(420, 300)), true, false, 20480, 0, 960.0)
+    if event_result.get("action", "") != "shield":
+        _fail("V65 close-start shield tap should remain accessible")
+        return false
+
+    # A deliberate spaced upward swipe still attacks immediately.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 300)), true, false, 20500, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(480, 300)), true, false, 20520, 0, 960.0)
+    gestures.handle(_screen_drag(0, Vector2(400, 150)), true, false, 20550, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(480, 150)), true, false, 20570, 0, 960.0)
+    if event_result.get("action", "") != "attack":
+        _fail("V65 spaced two-finger upward swipe must still attack on drag")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(400, 150)), true, false, 20600, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(480, 150)), true, false, 20620, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V65 spaced swipe must not attack again on release")
+        return false
+
     if not gestures.handle(InputEventMouseMotion.new(), true, false, 10300, 0, 960.0).is_empty():
         _fail("V52 synthetic mouse movement must not become a touch gesture")
         return false
@@ -1087,7 +1138,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V64") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V65") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1097,7 +1148,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V64") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V65") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1321,7 +1372,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V64") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V65") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):

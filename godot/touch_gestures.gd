@@ -8,6 +8,9 @@ const TWO_FINGER_MS := 420
 # A late second finger is a new touch, not a deliberate simultaneous gesture.
 const TWO_FINGER_START_MS := 350
 const MAX_ATTACK_MS := 900
+# Fingers starting almost together can be a pinch/accidental touch, not a
+# deliberate two-finger upward attack. Keep shield taps available.
+const MIN_ATTACK_START_SPACING := 40.0
 
 var fingers: Dictionary = {}
 var blocked_fingers: Dictionary = {}
@@ -121,7 +124,7 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                 if single_mode != "" or moved_outside_tap or now_ms - int(fingers[primary_id]["time"]) > TWO_FINGER_START_MS:
                     cancelled = true
                 multi_moved = false
-                multi_attack_blocked = false
+                multi_attack_blocked = _attack_fingers_too_close()
                 multi_deltas.clear()
                 last_tap_ms = -10000
             return {"captured": true}
@@ -295,6 +298,17 @@ func _steer_target(horizontal: float, viewport_width: float) -> int:
     last_target_lane = target
     return target
 
+# A close two-finger start is ambiguous on small phone screens: a tiny pinch
+# can move both fingers upward without a measurable span change. Do not spend
+# Super Attack energy until the player starts a fresh, spaced gesture.
+func _attack_fingers_too_close() -> bool:
+    if multi_origins.size() != 2:
+        return false
+    var ids: Array = multi_origins.keys()
+    var first: Vector2 = multi_origins[ids[0]]
+    var second: Vector2 = multi_origins[ids[1]]
+    return first.distance_to(second) < MIN_ATTACK_START_SPACING
+
 # Compare changes along the original two-finger separation axis. This
 # avoids mistaking a slight difference in upward swipe timing for a pinch.
 func _pinch_changed_span() -> bool:
@@ -302,7 +316,7 @@ func _pinch_changed_span() -> bool:
         return false
     var ids: Array = multi_origins.keys()
     var original: Vector2 = multi_origins[ids[1]] - multi_origins[ids[0]]
-    if original.length() < 40.0:
+    if original.length() < MIN_ATTACK_START_SPACING:
         return false
     var current: Vector2 = multi_positions[ids[1]] - multi_positions[ids[0]]
     var span_change := absf((current - original).dot(original.normalized()))
