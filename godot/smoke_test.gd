@@ -1185,9 +1185,9 @@ func _run_checks() -> void:
         _fail("Three cinematic 3D skybridges are missing from Neon City")
         return
     var first_bridge := cinematic.get_node_or_null("Cinematic Skybridge 0") as Node3D
-    var arch := first_bridge.get_node_or_null("Sculpted Luminous Arch 0") as MeshInstance3D if first_bridge != null else null
+    var cinematic_arch := first_bridge.get_node_or_null("Sculpted Luminous Arch 0") as MeshInstance3D if first_bridge != null else null
     var floating_sign := first_bridge.get_node_or_null("Floating Holographic Road Sign") as Node3D if first_bridge != null else null
-    if arch == null or not (arch.mesh is ArrayMesh) or (arch.mesh as ArrayMesh).surface_get_array_len(0) < 1500:
+    if cinematic_arch == null or not (cinematic_arch.mesh is ArrayMesh) or (cinematic_arch.mesh as ArrayMesh).surface_get_array_len(0) < 1500:
         _fail("Sculpted luminous landscape bridge requires real curved mesh geometry")
         return
     if floating_sign == null or floating_sign.get_node_or_null("Translucent Hologram") == null:
@@ -1832,7 +1832,7 @@ func _run_checks() -> void:
     # V59: an iPhone in landscape is wider than 720px but still needs the
     # optional gesture-only mode. Simulate touch hardware in headless CI.
     game.call("_apply_mobile_layout", 844.0, 1, 390.0)
-    if not mobile_hud.text.contains("V80") or not mobile_hud.text.contains("\\n"):
+    if not mobile_hud.text.contains("V80") or not mobile_hud.text.contains("\n"):
         _fail("Landscape-first phone layout must use a compact two-line HUD")
         return
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
