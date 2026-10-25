@@ -538,6 +538,46 @@ func _check_native_gestures() -> bool:
     gestures.handle(_screen_touch(0, false, Vector2(360, 110)), true, false, 17480, 0, 800.0, 320.0)
     gestures.handle(_screen_touch(1, false, Vector2(460, 110)), true, false, 17500, 0, 800.0, 320.0)
 
+    # V62: A second finger added after a long one-finger hold is NOT a
+    # deliberate simultaneous gesture. It must not spend attack energy.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(360, 260)), true, false, 18000, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 260)), true, false, 18500, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(360, 110)), true, false, 18530, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V62 late second finger incorrectly activated an ability on first drag")
+        return false
+    event_result = gestures.handle(_screen_drag(1, Vector2(460, 110)), true, false, 18560, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V62 late second finger incorrectly triggered Super Attack")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(360, 110)), true, false, 18580, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 110)), true, false, 18600, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V62 late second finger triggered an attack on release")
+        return false
+
+    # The same delayed hold must not be interpreted as a two-finger Shield.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(360, 260)), true, false, 18700, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 260)), true, false, 19150, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(0, false, Vector2(360, 260)), true, false, 19170, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 260)), true, false, 19190, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V62 delayed second finger incorrectly triggered Shield")
+        return false
+
+    # A fresh, near-simultaneous two-finger swipe still attacks immediately.
+    gestures.handle(_screen_touch(0, true, Vector2(360, 260)), true, false, 19250, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 260)), true, false, 19290, 0, 800.0, 320.0)
+    gestures.handle(_screen_drag(0, Vector2(360, 110)), true, false, 19320, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(460, 110)), true, false, 19350, 0, 800.0, 320.0)
+    if event_result.get("action", "") != "attack":
+        _fail("V62 fresh two-finger swipe must still activate Super Attack")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(360, 110)), true, false, 19370, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, false, Vector2(460, 110)), true, false, 19390, 0, 800.0, 320.0)
+
     if not gestures.handle(InputEventMouseMotion.new(), true, false, 10300, 0, 960.0).is_empty():
         _fail("V52 synthetic mouse movement must not become a touch gesture")
         return false
