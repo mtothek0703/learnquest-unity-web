@@ -1087,7 +1087,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V62") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V63") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1097,7 +1097,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V62") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V63") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1244,6 +1244,33 @@ func _run_checks() -> void:
     if bool(game.get("touch_screen_mode")) or restore.visible or not controls.visible:
         _fail("V59 non-touch desktop must retain its visible controls")
         return
+    # V63: rotating an iPhone while a finger is held must invalidate its
+    # original coordinates; the stale drag/release must not move the rider.
+    game.call("_apply_mobile_layout", 390.0, 1)
+    game.set("jump_left", 0.0)
+    game.set("lane", 0)
+    game.call("_input", _screen_touch(0, true, Vector2(300, 260)))
+    var rotation_gestures = game.get("touch_steering")
+    if rotation_gestures.fingers.size() != 1:
+        _fail("V63 test setup failed to capture playfield touch")
+        return
+    game.call("_apply_mobile_layout", 844.0, 1)
+    if not rotation_gestures.fingers.is_empty():
+        _fail("V63 orientation change must clear in-flight touch state")
+        return
+    game.call("_input", _screen_drag(0, Vector2(300, 120)))
+    game.call("_input", _screen_touch(0, false, Vector2(300, 120)))
+    if float(game.get("jump_left")) > 0.0 or int(game.get("lane")) != 0:
+        _fail("V63 stale touch after rotation triggered gameplay movement")
+        return
+    # A fresh deliberate swipe must work immediately after the relayout.
+    game.call("_input", _screen_touch(0, true, Vector2(300, 260)))
+    game.call("_input", _screen_drag(0, Vector2(300, 120)))
+    if float(game.get("jump_left")) <= 0.0:
+        _fail("V63 rotation must not disable fresh touch gestures")
+        return
+    game.call("_input", _screen_touch(0, false, Vector2(300, 120)))
+    game.set("jump_left", 0.0)
     # Training/quiz must ignore all gestures and clear captured touch state.
     game.call("_begin_training")
     var quiz_origin := (game.get("quiz_box") as PanelContainer).get_global_rect().get_center()
@@ -1261,7 +1288,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V62") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V63") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
