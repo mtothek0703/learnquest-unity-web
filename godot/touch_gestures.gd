@@ -215,13 +215,15 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                 return {"captured": true}
             var result := {"captured": true}
             if multi_deltas.size() == 2:
+                # Shield also requires both fingers to lift together; a long
+                # staggered hold is not a deliberate two-finger tap.
                 if _pinch_changed_span():
                     multi_attack_blocked = true
                 var a: Vector2 = multi_deltas[0]
                 var b: Vector2 = multi_deltas[1]
                 if not multi_attack_blocked and now_ms - multi_first_ms <= MAX_ATTACK_MS and now_ms - multi_first_release_ms <= MAX_MULTI_RELEASE_GAP_MS and a.y < -SWIPE_UP and b.y < -SWIPE_UP and absf(a.x) < absf(a.y) and absf(b.x) < absf(b.y):
                     result["action"] = "attack"
-                elif multi_tap_allowed and not multi_moved and now_ms - multi_first_ms <= TWO_FINGER_MS and a.length() <= TAP_SLOP and b.length() <= TAP_SLOP:
+                elif multi_tap_allowed and not multi_moved and now_ms - multi_first_ms <= TWO_FINGER_MS and now_ms - multi_first_release_ms <= MAX_MULTI_RELEASE_GAP_MS and a.length() <= TAP_SLOP and b.length() <= TAP_SLOP:
                     result["action"] = "shield"
             _clear_active()
             return result
