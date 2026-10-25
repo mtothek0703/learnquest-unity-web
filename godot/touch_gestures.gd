@@ -162,6 +162,8 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                 single["lane"] = target
         elif single_mode == "jump":
             pass # Already fired on drag; do not jump twice on release.
+        elif single_mode == "ignore":
+            pass # Downward-first scroll stays inert even if released far above origin.
         elif delta.length() <= TAP_SLOP and duration <= 260 and not moved_outside_tap:
             # Check taps BEFORE direction: real fingers drift by a few pixels.
             if now_ms - last_tap_ms <= DOUBLE_TAP_MS and touch.position.distance_to(last_tap_position) <= 76.0:
