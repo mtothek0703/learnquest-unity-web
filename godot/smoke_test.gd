@@ -440,6 +440,55 @@ func _check_native_gestures() -> bool:
         return false
     gestures.handle(_screen_touch(1, false, Vector2(480, 260)), true, false, 14090, 0, 960.0)
 
+    # V60: a landscape phone is short: a deliberate 60px upward thumb swipe
+    # must jump immediately, while the same small movement on portrait must
+    # not create an accidental jump. Super Attack keeps its safer threshold.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 220)), true, false, 16000, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(402, 160)), true, false, 16030, 0, 800.0, 320.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V60 landscape upward swipe must jump before release")
+        return false
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(402, 160)), true, false, 16060, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V60 landscape jump repeated on finger release")
+        return false
+
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 400)), true, false, 16100, 0, 400.0, 800.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(402, 340)), true, false, 16130, 0, 400.0, 800.0)
+    if event_result.has("action"):
+        _fail("V60 portrait screen must keep the safer 72px jump threshold")
+        return false
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(402, 340)), true, false, 16160, 0, 400.0, 800.0)
+    if event_result.has("action"):
+        _fail("V60 portrait short release incorrectly triggered a jump")
+        return false
+
+    # Browsers may omit intermediate drag frames; release-only fallback works.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 220)), true, false, 16200, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(0, false, Vector2(400, 160)), true, false, 16240, 0, 800.0, 320.0)
+    if event_result.get("action", "") != "jump":
+        _fail("V60 landscape release-only swipe must still jump")
+        return false
+
+    # Very short or diagonal drags must not steal taps/scrolling as jumps.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 220)), true, false, 16300, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(402, 175)), true, false, 16330, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V60 landscape 45px drag must not jump")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(402, 175)), true, false, 16360, 0, 800.0, 320.0)
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(400, 220)), true, false, 16400, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(455, 160)), true, false, 16430, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V60 diagonal scrolling must not trigger jump")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(455, 160)), true, false, 16460, 0, 800.0, 320.0)
+
     if not gestures.handle(InputEventMouseMotion.new(), true, false, 10300, 0, 960.0).is_empty():
         _fail("V52 synthetic mouse movement must not become a touch gesture")
         return false
@@ -949,7 +998,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V59") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V60") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -959,7 +1008,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V59") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V60") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1123,7 +1172,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V59") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V60") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
