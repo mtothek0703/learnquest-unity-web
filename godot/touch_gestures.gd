@@ -7,6 +7,7 @@ const DOUBLE_TAP_MS := 340
 const TWO_FINGER_MS := 420
 # A late second finger is a new touch, not a deliberate simultaneous gesture.
 const TWO_FINGER_START_MS := 350
+# Count Super Attack from the FIRST finger down to prevent long staggered holds.
 const MAX_ATTACK_MS := 900
 # Fingers starting almost together can be a pinch/accidental touch, not a
 # deliberate two-finger upward attack. Keep shield taps available.
@@ -20,7 +21,6 @@ var last_target_lane := 0 # Stable lane while the finger hovers near a boundary.
 var last_tap_ms := -10000
 var last_tap_position := Vector2(-10000.0, -10000.0)
 var multi_active := false
-var multi_start_ms := 0
 # Shield taps must finish promptly from the FIRST finger down, not just
 # from the second finger's arrival (which can lag by 180 ms).
 var multi_first_ms := 0
@@ -122,7 +122,6 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                 moved_outside_tap = false
             else:
                 multi_active = true
-                multi_start_ms = now_ms
                 multi_first_ms = int(fingers[primary_id]["time"])
                 multi_tap_allowed = now_ms - multi_first_ms <= 180 and not moved_outside_tap
                 # A second finger after steering/scrolling is not a power-up.
@@ -169,7 +168,7 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                     multi_attack_blocked = true
                 var a: Vector2 = multi_deltas[0]
                 var b: Vector2 = multi_deltas[1]
-                if not multi_attack_blocked and now_ms - multi_start_ms <= MAX_ATTACK_MS and a.y < -SWIPE_UP and b.y < -SWIPE_UP and absf(a.x) < absf(a.y) and absf(b.x) < absf(b.y):
+                if not multi_attack_blocked and now_ms - multi_first_ms <= MAX_ATTACK_MS and a.y < -SWIPE_UP and b.y < -SWIPE_UP and absf(a.x) < absf(a.y) and absf(b.x) < absf(b.y):
                     result["action"] = "attack"
                 elif multi_tap_allowed and not multi_moved and now_ms - multi_first_ms <= TWO_FINGER_MS and a.length() <= TAP_SLOP and b.length() <= TAP_SLOP:
                     result["action"] = "shield"
@@ -233,7 +232,7 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
             # move so a normal staggered upward swipe is not misclassified.
             if fingers.size() == 2 and _both_fingers_moved() and _pinch_changed_span():
                 multi_attack_blocked = true
-            if not multi_attack_fired and not multi_attack_blocked and fingers.size() == 2 and now_ms - multi_start_ms <= MAX_ATTACK_MS:
+            if not multi_attack_fired and not multi_attack_blocked and fingers.size() == 2 and now_ms - multi_first_ms <= MAX_ATTACK_MS:
                 var ids: Array = fingers.keys()
                 var a: Vector2 = multi_positions[ids[0]] - fingers[ids[0]]["start"]
                 var b: Vector2 = multi_positions[ids[1]] - fingers[ids[1]]["start"]

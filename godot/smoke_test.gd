@@ -780,6 +780,68 @@ func _check_native_gestures() -> bool:
         _fail("V71 421ms first-finger hold must not trigger Shield")
         return false
 
+    # V72 regression: the attack deadline must include the FIRST finger's
+    # hold, not only time since the second finger arrived. Otherwise a long
+    # two-finger hold can spend Super Attack energy after 900ms overall.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(360, 300)), true, false, 30000, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 300)), true, false, 30150, 0, 800.0, 320.0)
+    gestures.handle(_screen_drag(0, Vector2(360, 150)), true, false, 30920, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(460, 150)), true, false, 30940, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V72 expired first-finger hold triggered Super Attack on drag")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(360, 150)), true, false, 30960, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 150)), true, false, 30980, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V72 expired two-finger hold triggered attack on release")
+        return false
+
+    # Browser may omit drag frames; release-only recognition has the same
+    # deadline, even if the second finger was pressed 150ms later.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(360, 300)), true, false, 31000, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 300)), true, false, 31150, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(0, false, Vector2(360, 150)), true, false, 31920, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 150)), true, false, 31940, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V72 release-only long hold incorrectly triggered Super Attack")
+        return false
+
+    # The 900ms boundary remains valid and a 901ms gesture is rejected.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(360, 300)), true, false, 32000, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 300)), true, false, 32150, 0, 800.0, 320.0)
+    gestures.handle(_screen_drag(0, Vector2(360, 150)), true, false, 32880, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(460, 150)), true, false, 32900, 0, 800.0, 320.0)
+    if event_result.get("action", "") != "attack":
+        _fail("V72 deliberate 900ms two-finger attack must still work")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(360, 150)), true, false, 32920, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, false, Vector2(460, 150)), true, false, 32940, 0, 800.0, 320.0)
+
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(360, 300)), true, false, 33000, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 300)), true, false, 33150, 0, 800.0, 320.0)
+    gestures.handle(_screen_drag(0, Vector2(360, 150)), true, false, 33880, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(460, 150)), true, false, 33901, 0, 800.0, 320.0)
+    if event_result.has("action"):
+        _fail("V72 901ms first-finger hold must not activate attack")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(360, 150)), true, false, 33920, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, false, Vector2(460, 150)), true, false, 33940, 0, 800.0, 320.0)
+
+    # The timeout must not poison the next quick intentional gesture.
+    gestures.handle(_screen_touch(0, true, Vector2(360, 300)), true, false, 34000, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 300)), true, false, 34020, 0, 800.0, 320.0)
+    gestures.handle(_screen_drag(0, Vector2(360, 150)), true, false, 34070, 0, 800.0, 320.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(460, 150)), true, false, 34090, 0, 800.0, 320.0)
+    if event_result.get("action", "") != "attack":
+        _fail("V72 a new quick two-finger swipe must attack immediately")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(360, 150)), true, false, 34110, 0, 800.0, 320.0)
+    gestures.handle(_screen_touch(1, false, Vector2(460, 150)), true, false, 34130, 0, 800.0, 320.0)
+
     if not gestures.handle(InputEventMouseMotion.new(), true, false, 10300, 0, 960.0).is_empty():
         _fail("V52 synthetic mouse movement must not become a touch gesture")
         return false
@@ -1319,7 +1381,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V71") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V72") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1329,7 +1391,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V71") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V72") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1573,7 +1635,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V71") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V72") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
