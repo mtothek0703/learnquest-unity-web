@@ -211,10 +211,10 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
             var travel: Vector2 = drag.position - fingers[drag.index]["start"]
             if travel.length() > TAP_SLOP:
                 multi_moved = true
-            # Lock the first deliberate scroll direction for the full touch.
+            # Lock the first deliberate scroll direction beyond tap jitter.
             # Reversing a two-finger downward scroll must not spend attack
             # energy when both fingers eventually pass the upward threshold.
-            if travel.y >= 48.0 and travel.y > absf(travel.x) * 1.2:
+            if travel.y > TAP_SLOP and travel.y > absf(travel.x) * 1.2:
                 multi_attack_blocked = true
             # Lock horizontal intent as soon as it exceeds tap jitter.
             # On landscape phones a 25-47px sideways-first pinch/scroll can
@@ -244,10 +244,10 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
         moved_outside_tap = true
         last_tap_ms = -10000
     if single_mode == "":
-        # A deliberate downward scroll locks this touch out of game actions.
+        # A downward movement beyond tap slop locks this touch out of game actions.
         # Without this, scrolling down and then reversing past the origin
         # could unexpectedly jump, especially on short landscape screens.
-        if delta.y >= maxf(36.0, jump_swipe * 0.65) and delta.y > absf(delta.x) * 1.2:
+        if delta.y > TAP_SLOP and delta.y > absf(delta.x) * 1.2:
             single_mode = "ignore"
         elif delta.y < -jump_swipe and absf(delta.y) > absf(delta.x) * 1.2:
             single_mode = "jump"
