@@ -18,9 +18,14 @@ const MAX_MULTI_RELEASE_GAP_MS := 180
 # Fingers starting almost together can be a pinch/accidental touch, not a
 # deliberate two-finger upward attack. Keep shield taps available.
 const MIN_ATTACK_START_SPACING := 40.0
+# Some mobile browsers drop the old release on app resume, then recycle its
+# pointer index. Accept a NEW press of that same index only after a grace
+# period and only when no other pointers remain quarantined.
+const FOCUS_REUSE_GRACE_MS := 600
 
 var fingers: Dictionary = {}
 var blocked_fingers: Dictionary = {}
+var focus_invalidated_ms := -1
 var primary_id := -1
 var start_lane := 0
 var last_target_lane := 0 # Stable lane while the finger hovers near a boundary.
@@ -67,6 +72,7 @@ func _clear_active() -> void:
 func reset() -> void:
     _clear_active()
     blocked_fingers.clear()
+    focus_invalidated_ms = -1
     cancelled = false
     last_tap_ms = -10000
 
@@ -78,7 +84,16 @@ func invalidate_layout() -> void:
         blocked_fingers[index] = true
     _clear_active()
     cancelled = not blocked_fingers.is_empty()
+    focus_invalidated_ms = -1
     last_tap_ms = -10000
+
+# Focus loss differs from an ordinary viewport resize: the browser may omit
+# release events entirely and later reuse the old touch index. A fresh press
+# with that index can safely recover after a short quarantine, but a second
+# finger with a different index cannot bypass an old held pointer.
+func invalidate_focus(now_ms: int) -> void:
+    invalidate_layout()
+    focus_invalidated_ms = now_ms
 
 func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, lane_now: int, viewport_width: float, viewport_height: float = 0.0) -> Dictionary:
     if not enabled:
@@ -109,8 +124,18 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                 multi_tap_allowed = false
             return {"captured": true} if was_playfield else {}
         if touch.pressed:
-            if fingers.has(touch.index) or blocked_fingers.has(touch.index):
+            if fingers.has(touch.index):
                 return {}
+            if blocked_fingers.has(touch.index):
+                # A genuine new press can reuse an index whose release was
+                # swallowed by iOS/Android during a focus interruption.
+                # Never unlock during the first 600 ms or while any other
+                # quarantined finger could still be physically held.
+                if focus_invalidated_ms < 0 or now_ms - focus_invalidated_ms < FOCUS_REUSE_GRACE_MS or blocked_fingers.size() != 1 or not fingers.is_empty():
+                    return {}
+                blocked_fingers.erase(touch.index)
+                focus_invalidated_ms = -1
+                cancelled = false
             # A UI touch, or a third finger, cancels the entire in-flight
             # gesture. Never let a remaining finger turn into a jump/ability.
             if blocked_start or not blocked_fingers.is_empty() or fingers.size() >= 2 or multi_active:
@@ -142,8 +167,10 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
             return {"captured": true}
         if blocked_fingers.has(touch.index):
             blocked_fingers.erase(touch.index)
-            if blocked_fingers.is_empty() and fingers.is_empty():
-                cancelled = false
+            if blocked_fingers.is_empty():
+                focus_invalidated_ms = -1
+                if fingers.is_empty():
+                    cancelled = false
             return {}
         if not fingers.has(touch.index):
             return {}
