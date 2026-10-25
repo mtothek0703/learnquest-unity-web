@@ -9,6 +9,9 @@ const TWO_FINGER_MS := 420
 const TWO_FINGER_START_MS := 350
 # Count Super Attack from the FIRST finger down to prevent long staggered holds.
 const MAX_ATTACK_MS := 900
+# Release-only fallback is for a coordinated two-finger swipe, not two
+# separate strokes after one finger has already left the screen.
+const MAX_MULTI_RELEASE_GAP_MS := 180
 # Fingers starting almost together can be a pinch/accidental touch, not a
 # deliberate two-finger upward attack. Keep shield taps available.
 const MIN_ATTACK_START_SPACING := 40.0
@@ -24,6 +27,7 @@ var multi_active := false
 # Shield taps must finish promptly from the FIRST finger down, not just
 # from the second finger's arrival (which can lag by 180 ms).
 var multi_first_ms := 0
+var multi_first_release_ms := -1
 var multi_tap_allowed := false
 # A shield tap must stay a tap for its entire path, not just at release.
 var multi_moved := false
@@ -45,6 +49,7 @@ func _clear_active() -> void:
     primary_id = -1
     multi_active = false
     multi_first_ms = 0
+    multi_first_release_ms = -1
     multi_tap_allowed = false
     multi_moved = false
     multi_deltas.clear()
@@ -157,6 +162,8 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                 if fingers.is_empty():
                     _clear_active()
                 return {"captured": true}
+            if multi_first_release_ms < 0:
+                multi_first_release_ms = now_ms
             multi_deltas.append(delta)
             if delta.length() > TAP_SLOP:
                 multi_moved = true
@@ -168,7 +175,7 @@ func handle(event: InputEvent, enabled: bool, blocked_start: bool, now_ms: int, 
                     multi_attack_blocked = true
                 var a: Vector2 = multi_deltas[0]
                 var b: Vector2 = multi_deltas[1]
-                if not multi_attack_blocked and now_ms - multi_first_ms <= MAX_ATTACK_MS and a.y < -SWIPE_UP and b.y < -SWIPE_UP and absf(a.x) < absf(a.y) and absf(b.x) < absf(b.y):
+                if not multi_attack_blocked and now_ms - multi_first_ms <= MAX_ATTACK_MS and now_ms - multi_first_release_ms <= MAX_MULTI_RELEASE_GAP_MS and a.y < -SWIPE_UP and b.y < -SWIPE_UP and absf(a.x) < absf(a.y) and absf(b.x) < absf(b.y):
                     result["action"] = "attack"
                 elif multi_tap_allowed and not multi_moved and now_ms - multi_first_ms <= TWO_FINGER_MS and a.length() <= TAP_SLOP and b.length() <= TAP_SLOP:
                     result["action"] = "shield"
