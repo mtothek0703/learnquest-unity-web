@@ -662,6 +662,38 @@ func _check_native_gestures() -> bool:
         _fail("V65 spaced swipe must not attack again on release")
         return false
 
+    # V68 regression: a 30px sideways-first two-finger gesture is scrolling,
+    # not an upward Super Attack. Previously the 48px intent lock missed it,
+    # and the later upward motion could consume energy on a real phone.
+    gestures.reset()
+    gestures.handle(_screen_touch(0, true, Vector2(360, 300)), true, false, 20700, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 300)), true, false, 20720, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(0, Vector2(390, 300)), true, false, 20740, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V68 initial sideways scroll unexpectedly triggered an ability")
+        return false
+    gestures.handle(_screen_drag(0, Vector2(390, 140)), true, false, 20760, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(460, 140)), true, false, 20780, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V68 sideways-first two-finger scroll became a Super Attack")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(390, 140)), true, false, 20800, 0, 960.0)
+    event_result = gestures.handle(_screen_touch(1, false, Vector2(460, 140)), true, false, 20820, 0, 960.0)
+    if event_result.has("action"):
+        _fail("V68 sideways-first scroll attacked on finger release")
+        return false
+    # The block belongs only to that touch sequence; a fresh intentional
+    # two-finger upward swipe must still fire before release.
+    gestures.handle(_screen_touch(0, true, Vector2(360, 300)), true, false, 20900, 0, 960.0)
+    gestures.handle(_screen_touch(1, true, Vector2(460, 300)), true, false, 20920, 0, 960.0)
+    gestures.handle(_screen_drag(0, Vector2(360, 140)), true, false, 20940, 0, 960.0)
+    event_result = gestures.handle(_screen_drag(1, Vector2(460, 140)), true, false, 20960, 0, 960.0)
+    if event_result.get("action", "") != "attack":
+        _fail("V68 fresh deliberate two-finger swipe must still attack immediately")
+        return false
+    gestures.handle(_screen_touch(0, false, Vector2(360, 140)), true, false, 20980, 0, 960.0)
+    gestures.handle(_screen_touch(1, false, Vector2(460, 140)), true, false, 21000, 0, 960.0)
+
     if not gestures.handle(InputEventMouseMotion.new(), true, false, 10300, 0, 960.0).is_empty():
         _fail("V52 synthetic mouse movement must not become a touch gesture")
         return false
