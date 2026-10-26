@@ -9,6 +9,7 @@ var aurora_ribbons: Array[MeshInstance3D] = []
 var jump_gates: Array[Node3D] = []
 var completed_gates := 0
 var missed_gates := 0
+var crystal_sentinels: Node3D
 
 func _ready() -> void:
     _build_glacier()
@@ -162,6 +163,12 @@ func _build_glacier() -> void:
         var heart := _instance(gate, "Jump gate energy heart", beacon, Vector3(0, 2.35, 0), gate_material)
         heart.scale = Vector3(0.18, 0.34, 0.18)
 
+    # V86: monumental sculpted ice crystals and animated aurora rings.
+    # Decorative only: no collision objects and no lane obstruction.
+    crystal_sentinels = preload("res://cinematic_glacier_sentinels.gd").new() as Node3D
+    crystal_sentinels.name = "Cinematic Aurora crystal sentinels"
+    add_child(crystal_sentinels)
+
 func reset_course() -> void:
     completed_gates = 0
     missed_gates = 0
@@ -196,6 +203,9 @@ func _process(delta: float) -> void:
         var silk := aurora_ribbons[index]
         silk.rotation.z = sin(elapsed * 0.32 + float(index) * 1.3) * 0.07
         silk.rotation.x = sin(elapsed * 0.23 + float(index)) * 0.035
+    if crystal_sentinels != null:
+        crystal_sentinels.set("running", running)
+        crystal_sentinels.set("travel_speed", travel_speed)
     if not running:
         return
     for cluster in moving_parts:
