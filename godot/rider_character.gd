@@ -122,6 +122,11 @@ func set_character_model(model: Node3D) -> void:
     var face := preload("res://rider_face.gd").new() as Node3D
     face.name = "ExpressiveFace"
     model.add_child(face)
+    # V102: replace floating cheek/nose primitives with one continuous, shaded
+    # facial surface skinned to the ORIGINAL head/neck bones. Eye blinks stay.
+    var skinned_face := preload("res://rider_skinned_face.gd").new() as Node3D
+    skinned_face.name = "SculptedSkinnedFace"
+    model.add_child(skinned_face)
     _add_hairstyle(model)
     # V35 volumetric hair shell and sculpted wind-reactive curls, layered
     # behind the established braid without replacing its working animation.
