@@ -52,3 +52,10 @@ Sichtkontrolle bei 16:9/19,5:9 und keine Messung der tatsächlichen FPS.
 3. Im echten Smartphone-Querformat (16:9 und 19,5:9) Bildrate, Berührungseingaben und freie HUD-/Kamerazone messen; V103 als Baseline verwenden. **Noch keine** bestätigten Geräte-FPS, Pixel- oder Clipping-Ergebnisse.
 
 Automatische Regression: `rider_skinned_hair_test.gd` prüft zusätzlich Volumen-Querschnitt, Tapering und das Verbergen starrer Duplikate, aber keine echten gerenderten Pixel.
+
+## V105 — geschlossener skinnierter 360°-Kopf (manuelle QA offen)
+1. V104/V105 bei identischer 16:9-/19,5:9-Querformatkamera vergleichen: Front, Profil, Dreiviertel und Verfolgerperspektive. Der neue Kopf muss echte Schläfen, Hinterkopf, Wangen und Halskontur statt einer schwebenden Gesichtsplatte zeigen.
+2. Augen, Blinzeln, Brauen, Lächeln und Nase sowie Haaransatz, Helmvisier, Ohren-/Schläfen- und Halsübergang bei Turbo/Mega Jump auf Clipping und Z-Fighting prüfen.
+3. Auf echtem iPhone FPS und Framezeiten je 60 Sekunden sowie Touch/HUD-Freiraum messen. Drei Vokabelaufgaben, volle Runde, vier Welten, Bosse und Power-ups durchspielen. Ohne Bilder/Messungen **keine** visuelle/FPS-Abnahme behaupten.
+
+Automatisch prüft `rider_closed_head_test.gd` 360°-Volumen, Augenhöhlen-/Nasenrelief, Kopf-/Nacken-Gewichte, das originale 13-Knochen-Rig und Kollisionsfreiheit. Keine Pixel-/Geräteprüfung.
