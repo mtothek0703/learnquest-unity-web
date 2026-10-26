@@ -1792,7 +1792,7 @@ func _run_checks() -> void:
         return
     rider.set("boosting", false)
     rider.set("lean", 0.0)
-    # V87: the imported rider must visibly tuck its knees and spread both arms
+    # V88: the imported rider must visibly tuck its knees and spread both arms
     # while airborne. Curved windstream meshes and landing shards are purely
     # visual, with no collision objects or input modifications.
     var aerial_fx := rider.get_node_or_null("Cinematic aerial choreography") as Node3D
@@ -1801,17 +1801,17 @@ func _run_checks() -> void:
     var shard := aerial_fx.get_node_or_null("Landing energy shard 0") as MeshInstance3D if aerial_fx != null else null
     var landing_flash := aerial_fx.get_node_or_null("Soft cinematic landing flash") as OmniLight3D if aerial_fx != null else null
     if left_air == null or right_air == null or shard == null or landing_flash == null:
-        _fail("V87 aerial ribbons, landing shards or cinematic flash are missing")
+        _fail("V88 aerial ribbons, landing shards or cinematic flash are missing")
         return
     if not (left_air.mesh is ArrayMesh) or (left_air.mesh as ArrayMesh).surface_get_array_len(0) < 150:
-        _fail("V87 windstream must be an original detailed curved 3D mesh")
+        _fail("V88 windstream must be an original detailed curved 3D mesh")
         return
     var aerial_mat := left_air.material_override as StandardMaterial3D
     if aerial_mat == null or not aerial_mat.vertex_color_use_as_albedo or aerial_mat.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA:
-        _fail("V87 aerial windstream requires translucent vertex-color shading")
+        _fail("V88 aerial windstream requires translucent vertex-color shading")
         return
     if aerial_fx.find_children("*", "CollisionObject3D", true, false).size() != 0:
-        _fail("V87 aerial effects must not introduce collision geometry")
+        _fail("V88 aerial effects must not introduce collision geometry")
         return
     var aerial_arm := installed_model.get_node("BalanceArm0") as Node3D
     var aerial_leg := installed_model.get_node("BalanceLeg0") as Node3D
@@ -1822,19 +1822,62 @@ func _run_checks() -> void:
     rider.call("_process", 0.24)
     aerial_fx.call("update_visuals", 0.24, 1.4, 0.0, false)
     if float(rider.get("aerial_pose")) < 0.5 or absf(aerial_arm.rotation.z - grounded_arm_z) < 0.08 or absf(aerial_leg.rotation.x - grounded_leg_x) < 0.08:
-        _fail("V87 airborne character must animate arms and legs distinctly")
+        _fail("V88 airborne character must animate arms and legs distinctly")
         return
     if not left_air.visible or not right_air.visible or float(aerial_fx.get("air_weight")) < 0.5:
-        _fail("V87 sculpted windstreams must unfurl during a real jump")
+        _fail("V88 sculpted windstreams must unfurl during a real jump")
         return
     rider.position.y = 0.0
     aerial_fx.call("update_visuals", 0.06, 0.0, 0.0, false)
     if not shard.visible or landing_flash.light_energy <= 0.0:
-        _fail("V87 landing must emit animated 3D shards and a short light flash")
+        _fail("V88 landing must emit animated 3D shards and a short light flash")
         return
     aerial_fx.call("update_visuals", 0.8, 0.0, 0.0, false)
     if shard.visible or left_air.visible or landing_flash.light_energy > 0.0:
-        _fail("V87 cinematic jump effects must disappear after landing")
+        _fail("V88 cinematic jump effects must disappear after landing")
+        return
+    # V88: projected board shadow and cinematic rim light remain anchored to
+    # the road while the rider jumps; turbo ribbons appear only during racing.
+    var rider_lighting := game.get_node_or_null("Cinematic rider lighting") as Node3D
+    var contact_shadow := rider_lighting.get_node_or_null("Soft projected hoverboard shadow") as MeshInstance3D if rider_lighting != null else null
+    var ground_glow := rider_lighting.get_node_or_null("Layered hoverboard ground glow") as MeshInstance3D if rider_lighting != null else null
+    var cinematic_rim := rider_lighting.get_node_or_null("Dynamic colored rider rim light") as OmniLight3D if rider_lighting != null else null
+    var left_speed := rider_lighting.get_node_or_null("Left cinematic ground speed ribbon") as MeshInstance3D if rider_lighting != null else null
+    var right_speed := rider_lighting.get_node_or_null("Right cinematic ground speed ribbon") as MeshInstance3D if rider_lighting != null else null
+    if contact_shadow == null or ground_glow == null or cinematic_rim == null or left_speed == null or right_speed == null:
+        _fail("V88 cinematic shadow, ground glow, rim lighting or turbo ribbons missing")
+        return
+    if not (contact_shadow.mesh is ArrayMesh) or (contact_shadow.mesh as ArrayMesh).surface_get_array_len(0) < 1000:
+        _fail("V88 contact shadow needs a detailed feathered 3D disc")
+        return
+    if not (ground_glow.mesh is ArrayMesh) or not (left_speed.mesh is ArrayMesh) or (left_speed.mesh as ArrayMesh).surface_get_array_len(0) < 150:
+        _fail("V88 glowing ground halo and curved speed ribbons must be original meshes")
+        return
+    var contact_material := contact_shadow.material_override as StandardMaterial3D
+    if contact_material == null or not contact_material.vertex_color_use_as_albedo or contact_material.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA:
+        _fail("V88 ground shadow requires soft translucent vertex shading")
+        return
+    if rider_lighting.find_children("*", "CollisionObject3D", true, false).size() != 0:
+        _fail("V88 cinematic lighting must not change rider collision or touch input")
+        return
+    rider_lighting.call("update_visuals", 0.1, Vector3(3.1, 0.0, 0.2), 0, 0.0, false, true)
+    var grounded_fade := contact_shadow.transparency
+    var city_tint := cinematic_rim.light_color
+    var idle_energy := cinematic_rim.light_energy
+    if absf(rider_lighting.position.x - 3.1) > 0.001 or absf(rider_lighting.position.y) > 0.001 or left_speed.visible:
+        _fail("V88 contact lighting must track the lane without unintended turbo ribbons")
+        return
+    rider_lighting.call("update_visuals", 0.1, Vector3(-3.1, 1.8, 0.2), 2, 1.8, false, true)
+    if contact_shadow.transparency <= grounded_fade or absf(rider_lighting.position.y) > 0.001 or cinematic_rim.light_color == city_tint:
+        _fail("V88 airborne shadow must fade and the four worlds must have distinct rim lighting")
+        return
+    rider_lighting.call("update_visuals", 0.1, Vector3(0.0, 0.0, 0.2), 2, 0.0, true, true)
+    if not left_speed.visible or not right_speed.visible or cinematic_rim.light_energy <= idle_energy or ground_glow.scale.x <= 1.0:
+        _fail("V88 Turbo must illuminate the rider and reveal ground speed ribbons")
+        return
+    rider_lighting.call("update_visuals", 0.1, Vector3(0.0, 0.0, 0.2), 2, 0.0, true, false)
+    if left_speed.visible or right_speed.visible or cinematic_rim.light_energy > idle_energy + 0.001:
+        _fail("V88 cinematic Turbo ribbons must disappear in quiz/menu states")
         return
     # Exercise the new replacement contract without requiring any paid model.
     var placeholder := Node3D.new()
@@ -1881,7 +1924,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V87") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V88") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1891,7 +1934,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V87") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V88") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -2030,7 +2073,7 @@ func _run_checks() -> void:
     # V59: an iPhone in landscape is wider than 720px but still needs the
     # optional gesture-only mode. Simulate touch hardware in headless CI.
     game.call("_apply_mobile_layout", 844.0, 1, 390.0)
-    if not mobile_hud.text.contains("V87") or not mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("V88") or not mobile_hud.text.contains("\n"):
         _fail("Landscape-first phone layout must use a compact two-line HUD")
         return
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
@@ -2138,7 +2181,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V87") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V88") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
