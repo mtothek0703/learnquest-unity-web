@@ -1243,6 +1243,49 @@ func _run_checks() -> void:
     if not is_equal_approx(train.position.z, paused_z):
         _fail("V81 trains must not move down the track during menus or quizzes")
         return
+    # V85: two shaded 3D sky creatures flap real curved wings and travel
+    # beside the road without intercepting touch input or creating collisions.
+    var mantas := game.get_node_or_null("LearnQuest Skyway world/Cinematic sky mantas") as Node3D
+    if mantas == null or mantas.get("creatures").size() != 2:
+        _fail("V85 Neon City needs two animated holographic sky mantas")
+        return
+    var manta := mantas.get_node_or_null("Sky manta 0") as Node3D
+    var manta_left_wing := manta.get_node_or_null("Left articulated wing") as Node3D if manta != null else null
+    var manta_right_wing := manta.get_node_or_null("Right articulated wing") as Node3D if manta != null else null
+    var manta_panel := manta_left_wing.get_node_or_null("Curved translucent wing membrane") as MeshInstance3D if manta_left_wing != null else null
+    var manta_rim := manta_left_wing.get_node_or_null("Luminous trailing wing edge") as MeshInstance3D if manta_left_wing != null else null
+    var manta_body := manta.get_node_or_null("Sculpted shaded manta body") as MeshInstance3D if manta != null else null
+    var manta_tail := manta.get_node_or_null("Articulated comet tail") as Node3D if manta != null else null
+    var manta_light := manta.get_node_or_null("Soft holographic manta light") as OmniLight3D if manta != null else null
+    if manta_panel == null or manta_rim == null or manta_body == null or manta_right_wing == null or manta_tail == null or manta_light == null:
+        _fail("V85 sky mantas require shaded bodies, articulated wings, tails and lights")
+        return
+    if not (manta_panel.mesh is ArrayMesh) or (manta_panel.mesh as ArrayMesh).surface_get_array_len(0) < 700:
+        _fail("V85 sky manta wing must have a detailed original curved mesh")
+        return
+    if not (manta_body.mesh is ArrayMesh) or (manta_body.mesh as ArrayMesh).surface_get_array_len(0) < 900:
+        _fail("V85 sky manta manta_body must be a sculpted 3D mesh")
+        return
+    var manta_mat := manta_panel.material_override as StandardMaterial3D
+    if manta_mat == null or manta_mat.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA or not manta_mat.vertex_color_use_as_albedo or manta_mat.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED:
+        _fail("V85 holographic wings need transparent, vertex-colored shaded surfaces")
+        return
+    if absf(manta.position.x) < 10.0 or manta.position.y < 7.0 or mantas.find_children("*", "CollisionObject3D", true, false).size() != 0:
+        _fail("V85 holograms must remain outside playable lanes without collisions")
+        return
+    var manta_z := manta.position.z
+    var wing_angle := manta_left_wing.rotation.z
+    mantas.set("running", true)
+    mantas.call("_process", 0.3)
+    if manta.position.z <= manta_z or absf(manta_left_wing.rotation.z - wing_angle) < 0.05 or absf(manta_tail.rotation.y) < 0.03:
+        _fail("V85 holographic mantas must travel and animate their wings and tails")
+        return
+    mantas.set("running", false)
+    var manta_paused_z := manta.position.z
+    mantas.call("_process", 0.3)
+    if not is_equal_approx(manta.position.z, manta_paused_z):
+        _fail("V85 holographic mantas must stop traveling during quizzes")
+        return
     if game.get("rider") == null:
         _fail("Animated hoverboard character is missing")
         return
@@ -1794,7 +1837,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V84") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V85") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1804,7 +1847,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V84") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V85") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1943,7 +1986,7 @@ func _run_checks() -> void:
     # V59: an iPhone in landscape is wider than 720px but still needs the
     # optional gesture-only mode. Simulate touch hardware in headless CI.
     game.call("_apply_mobile_layout", 844.0, 1, 390.0)
-    if not mobile_hud.text.contains("V84") or not mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("V85") or not mobile_hud.text.contains("\n"):
         _fail("Landscape-first phone layout must use a compact two-line HUD")
         return
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
@@ -2051,7 +2094,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V84") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V85") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
