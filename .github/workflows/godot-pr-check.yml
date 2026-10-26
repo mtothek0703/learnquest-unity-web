@@ -46,6 +46,8 @@ jobs:
           grep -Fq 'SKINNED HAIR TEST PASSED' /tmp/skinned-hair.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_closed_head_test.gd 2>&1 | tee /tmp/closed-head.log
           grep -Fq 'CLOSED HEAD TEST PASSED' /tmp/closed-head.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_skinned_upper_jacket_test.gd 2>&1 | tee /tmp/skinned-upper-jacket.log
+          grep -Fq 'SKINNED JACKET TEST PASSED' /tmp/skinned-upper-jacket.log
       - name: Validate web export before any main-branch deployment
         shell: bash
         run: |
@@ -72,5 +74,7 @@ jobs:
             /tmp/body-choreography.log
             /tmp/skinned-face.log
             /tmp/skinned-hair.log
+            /tmp/closed-head.log
+            /tmp/skinned-upper-jacket.log
             /tmp/web-export.log
           if-no-files-found: ignore
