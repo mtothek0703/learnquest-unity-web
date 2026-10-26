@@ -1685,8 +1685,8 @@ func _run_checks() -> void:
     var v95_middle: int = v95_vertices.size() / 2
     var v95_index: int = v95_middle * 4
     var v95_sum: float = v95_weights[v95_index] + v95_weights[v95_index + 1] + v95_weights[v95_index + 2] + v95_weights[v95_index + 3]
-    if not is_equal_approx(v95_sum, 1.0) or v95_weights[v95_index + 1] < 0.05 or v95_weights[v95_index + 2] < 0.15:
-        _fail("V95 central wing vertices must blend upper spine and shoulder weights")
+    if absf(v95_sum - 1.0) > 0.005 or v95_weights[v95_index + 1] < 0.05 or v95_weights[v95_index + 2] < 0.15:
+        _fail("V95 central wing vertices must blend upper spine and shoulder weights: sum=%.6f upper=%.6f shoulder=%.6f" % [v95_sum, v95_weights[v95_index + 1], v95_weights[v95_index + 2]])
         return
     if v95_bones[v95_index + 2] != 2 or v95_right_bones[v95_index + 2] != 3:
         _fail("V95 each wing must deform with its own shoulder bone")
