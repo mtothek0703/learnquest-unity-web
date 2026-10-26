@@ -10,6 +10,7 @@ var speed_streaks: Array[MeshInstance3D] = []
 var travel_speed := 14.0
 var cinematic_bridges: Node3D
 var cinematic_traffic: Node3D
+var cinematic_mantas: Node3D
 var rand := RandomNumberGenerator.new()
 
 func _ready() -> void:
@@ -33,6 +34,10 @@ func _ready() -> void:
     cinematic_traffic = traffic_script.new()
     cinematic_traffic.name = "Cinematic maglev traffic"
     add_child(cinematic_traffic)
+    # V85: two flapping, shaded holographic sky creatures frame the wide view.
+    cinematic_mantas = preload("res://cinematic_sky_mantas.gd").new() as Node3D
+    cinematic_mantas.name = "Cinematic sky mantas"
+    add_child(cinematic_mantas)
 
 func material(tint: Color, glow: bool = false) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -279,6 +284,8 @@ func _process(delta: float) -> void:
     cinematic_bridges.set("travel_speed", travel_speed)
     cinematic_traffic.set("running", running)
     cinematic_traffic.set("travel_speed", travel_speed)
+    cinematic_mantas.set("running", running)
+    cinematic_mantas.set("travel_speed", travel_speed)
     elapsed += delta
     if running:
         for streak in speed_streaks:
