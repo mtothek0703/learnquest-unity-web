@@ -1484,6 +1484,59 @@ func _run_checks() -> void:
     if v91_joint.rotation.x >= v91_bent_angle - 0.45:
         _fail("V91 elbows must relax again after landing and Turbo")
         return
+    # V92: the original boots must follow genuinely articulated knee hinges,
+    # while the shaded lower-leg geometry stays collision-free.
+    var v92_left := installed_model.get_node_or_null("BalanceLeg0/AnimatedKneeKinematics") as Node3D
+    var v92_right := installed_model.get_node_or_null("BalanceLeg1/AnimatedKneeKinematics") as Node3D
+    if v92_left == null or v92_right == null:
+        _fail("V92 both rider legs need independent articulated knees")
+        return
+    var v92_joint := v92_left.get_node_or_null("ArticulatedKnee") as Node3D
+    var v92_other_joint := v92_right.get_node_or_null("ArticulatedKnee") as Node3D
+    var v92_socket := v92_left.get_node_or_null("ArticulatedKnee/ShadedKneeSocket") as MeshInstance3D
+    var v92_armor := v92_left.get_node_or_null("ArticulatedKnee/SculptedShinArmor") as MeshInstance3D
+    var v92_trim := v92_left.get_node_or_null("ArticulatedKnee/LuminousKneeRings") as MeshInstance3D
+    var v92_boot := installed_model.get_node_or_null("BalanceLeg0/SculptedHoverBoot") as Node3D
+    if v92_joint == null or v92_other_joint == null or v92_socket == null or v92_armor == null or v92_trim == null or v92_boot == null:
+        _fail("V92 shaded knee sockets, curved shin armor, glowing rings or existing boot missing")
+        return
+    if v92_joint.get_node_or_null("LegacyShin") == null or v92_joint.get_node_or_null("LegacyAnkleBand") == null:
+        _fail("V92 original shin and ankle lights must follow the new knee hinge")
+        return
+    if not (v92_armor.mesh is ArrayMesh) or (v92_armor.mesh as ArrayMesh).surface_get_array_len(0) < 1600:
+        _fail("V92 knee armor must be a detailed curved 3D mesh")
+        return
+    var v92_fabric := v92_armor.material_override as StandardMaterial3D
+    var v92_neon := v92_trim.material_override as StandardMaterial3D
+    if v92_fabric == null or not v92_fabric.vertex_color_use_as_albedo or v92_fabric.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED:
+        _fail("V92 knee armor must use real shaded vertex colors")
+        return
+    if v92_neon == null or not v92_neon.emission_enabled:
+        _fail("V92 knee rings must glow")
+        return
+    if v92_left.find_children("*", "CollisionObject3D", true, false).size() != 0 or v92_right.find_children("*", "CollisionObject3D", true, false).size() != 0:
+        _fail("V92 articulated knees must not add collision objects")
+        return
+    var v92_rest_boot: Vector3 = v92_boot.position
+    rider.set("lean", 0.8)
+    rider.set("boosting", true)
+    rider.position.y = 1.4
+    v92_left.call("_process", 0.3)
+    v92_right.call("_process", 0.3)
+    var v92_bent: float = v92_joint.rotation.x
+    if v92_bent < 0.78 or absf(v92_joint.rotation.z - v92_other_joint.rotation.z) < 0.2:
+        _fail("V92 knees must tuck and counter-steer during Turbo jumps")
+        return
+    if v92_boot.position.distance_to(v92_rest_boot) < 0.06 or absf(v92_boot.rotation.x - v92_joint.rotation.x) > 0.001:
+        _fail("V92 sculpted boots must translate and rotate with the knee hinge")
+        return
+    rider.set("lean", 0.0)
+    rider.set("boosting", false)
+    rider.position.y = 0.0
+    v92_left.call("_process", 0.3)
+    if v92_joint.rotation.x > 0.2 or v92_boot.position.distance_to(v92_rest_boot) > 0.04:
+        _fail("V92 knees and boots must return to their grounded stance")
+        return
     # V84: a clearly visible, animated 3D silhouette in the landscape chase
     # camera, built without assets, collisions or changes to touch controls.
     var sails := installed_model.get_node_or_null("AnimatedKineticSails") as Node3D
@@ -2069,7 +2122,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V91") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V92") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -2079,7 +2132,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V91") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V92") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -2218,7 +2271,7 @@ func _run_checks() -> void:
     # V59: an iPhone in landscape is wider than 720px but still needs the
     # optional gesture-only mode. Simulate touch hardware in headless CI.
     game.call("_apply_mobile_layout", 844.0, 1, 390.0)
-    if not mobile_hud.text.contains("V91") or not mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("V92") or not mobile_hud.text.contains("\n"):
         _fail("Landscape-first phone layout must use a compact two-line HUD")
         return
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
@@ -2326,7 +2379,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V91") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V92") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
