@@ -1,5 +1,5 @@
 extends Node3D
-## Sprint 1 / V99: sculpted, smoothly weighted flight-suit silhouette.
+## Sprint 1 / V100: visible, smoothly weighted flight-suit silhouette.
 ## Five original curved meshes (back shell, both sleeves, both leg guards)
 ## and six luminous piping strips are bound to the SAME original-body
 ## Skeleton3D. No boxes, imported licenses, collisions or input changes.
@@ -22,8 +22,8 @@ func _ready() -> void:
     var armor := StandardMaterial3D.new()
     armor.albedo_color = Color.WHITE
     armor.vertex_color_use_as_albedo = true
-    armor.metallic = 0.47
-    armor.roughness = 0.36
+    armor.metallic = 0.56
+    armor.roughness = 0.31
     armor.cull_mode = BaseMaterial3D.CULL_DISABLED
     var piping := StandardMaterial3D.new()
     piping.albedo_color = Color.WHITE
@@ -56,14 +56,19 @@ func _ready() -> void:
 func _point(part: int, side: float, t: float, u: float, piping: bool) -> Vector3:
     var outward := 0.022 if piping else 0.0
     if part == 0:
-        # Curved rear jacket: shoulder taper, shaped waist and deep back
-        # contour, not a flat rectangular billboard.
+        # V100: the old jacket/backplate sat IN FRONT of V99's new GPU skin.
+        # A shaped outer shell now clears the imported body and jacket,
+        # while a central concave channel leaves the reactor unobstructed.
+        # The high shoulders taper into a defined waist in chase view.
         var y := 1.05 + 1.18 * t
-        var width := 0.38 + 0.16 * sin(PI * t * 0.90) + 0.02 * t
-        var angle := (u - 0.5) * 2.52
-        var depth := 0.47 + 0.09 * sin(PI * t) + outward
-        return Vector3(sin(angle) * width,
-            y, 0.065 + cos(angle) * depth + 0.035 * sin(t * TAU))
+        var across := 2.0 * u - 1.0
+        var shoulder := smoothstep(0.42, 0.92, t)
+        var width := 0.37 + 0.14 * sin(PI * t * 0.88) + 0.035 * shoulder
+        var contour := 1.0 - across * across
+        var central_channel := 0.055 * exp(-pow(across / 0.20, 2.0))
+        var depth := 0.80 + 0.13 * contour + 0.04 * sin(PI * t)
+        return Vector3(across * width, y,
+            depth - central_channel + 0.02 * absf(across) + outward)
     if part <= 2:
         # Elliptical, tapered sleeves bend from shoulder toward wrist.
         var angle := u * TAU
@@ -71,12 +76,12 @@ func _point(part: int, side: float, t: float, u: float, piping: bool) -> Vector3
         var radius := (0.185 - 0.045 * t) + outward
         return Vector3(side * shoulder + cos(angle) * radius,
             1.95 - 0.82 * t,
-            0.015 + 0.08 * t + sin(angle) * (radius * 1.10))
+            0.09 + 0.08 * t + sin(angle) * (radius * 1.10))
     var angle := u * TAU
     var radius := (0.235 - 0.063 * t) + outward
     return Vector3(side * (0.34 + 0.018 * t) + cos(angle) * radius,
         0.88 - 0.77 * t,
-        0.035 + sin(angle) * radius)
+        0.105 + sin(angle) * radius)
 
 func _influences(part: int, side: float, t: float) -> Dictionary:
     var bones: PackedInt32Array
