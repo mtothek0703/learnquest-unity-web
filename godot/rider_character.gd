@@ -124,6 +124,10 @@ func set_character_model(model: Node3D) -> void:
     var braid := preload("res://rider_braid.gd").new() as Node3D
     braid.name = "AnimatedBraidedPonytail"
     model.add_child(braid)
+    # V93: synchronized head, face and hair with a shaded cinematic helmet.
+    var head_rig := preload("res://rider_head_kinematics.gd").new() as Node3D
+    head_rig.name = "AnimatedHeadKinematics"
+    model.add_child(head_rig)
     _add_sculpted_jacket(model)
     # V38: shaped front jacket, layered chest armor and animated breathing.
     var torso := preload("res://rider_torso_detail.gd").new() as Node3D
