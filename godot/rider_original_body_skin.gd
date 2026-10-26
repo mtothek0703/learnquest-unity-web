@@ -15,6 +15,9 @@ var clock: float = 0.0
 func bind_original(model: Node3D) -> void:
     # Capture only original imported geometry, BEFORE any costume nodes exist.
     var original_meshes: Array[MeshInstance3D] = []
+    # Godot may import a one-node glTF with MeshInstance3D as scene root.
+    if model is MeshInstance3D and (model as MeshInstance3D).mesh != null:
+        original_meshes.append(model as MeshInstance3D)
     for node in model.find_children("*", "MeshInstance3D", true, false):
         var mesh_node := node as MeshInstance3D
         if mesh_node != null and mesh_node.mesh != null:
