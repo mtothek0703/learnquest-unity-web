@@ -1736,7 +1736,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V81") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V82") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1983,7 +1983,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V81") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V82") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -2367,6 +2367,45 @@ func _run_checks() -> void:
         return
     if arch == null or not (arch.mesh is ArrayMesh) or (arch.mesh as ArrayMesh).surface_get_array_len(0) < 600:
         _fail("Curved Star Harbor portal geometry missing")
+        return
+    # V82: landmark-scale orbital carriers are visible, shaded, animated and
+    # outside all three lanes; quiz pauses their course without affecting touch.
+    var carrier := harbor.get_node_or_null("Cinematic orbital carrier 0") as Node3D
+    var second_carrier := harbor.get_node_or_null("Cinematic orbital carrier 1") as Node3D
+    var carrier_hull := carrier.get_node_or_null("Armored carrier fuselage") as MeshInstance3D if carrier != null else null
+    var canopy := carrier.get_node_or_null("Panoramic command canopy") as MeshInstance3D if carrier != null else null
+    var gyro := carrier.get_node_or_null("Animated docking gyroscope 0") as Node3D if carrier != null else null
+    var torus := gyro.get_node_or_null("Sculpted rotating energy torus") as MeshInstance3D if gyro != null else null
+    var exhaust := carrier.get_node_or_null("Pulsing ion exhaust 0") as MeshInstance3D if carrier != null else null
+    var carrier_light := carrier.get_node_or_null("Carrier cinematic engine light") as OmniLight3D if carrier != null else null
+    if carrier == null or second_carrier == null or carrier_hull == null or not (carrier_hull.mesh is SphereMesh):
+        _fail("V82 Star Harbor must contain two shaded 3D orbital carrier hulls")
+        return
+    if canopy == null or not (canopy.material_override is StandardMaterial3D) or (canopy.material_override as StandardMaterial3D).transparency != BaseMaterial3D.TRANSPARENCY_ALPHA:
+        _fail("V82 orbital carrier panoramic canopy must have real translucent glass")
+        return
+    if gyro == null or torus == null or not (torus.mesh is TorusMesh) or exhaust == null or carrier_light == null:
+        _fail("V82 orbital carriers need gyroscopes, ion exhaust and cinematic lighting")
+        return
+    if absf(carrier.position.x) - 5.8 < 9.0 or carrier.position.y < 10.0 or absf(second_carrier.position.x) - 5.8 < 9.0:
+        _fail("V82 orbital carriers must remain clear of the rider and race lanes")
+        return
+    if carrier.find_children("*", "CollisionObject3D", true, false).size() != 0:
+        _fail("V82 scenic orbital carrier must not create player collisions")
+        return
+    var carrier_z := carrier.position.z
+    var gyro_rotation := gyro.rotation.y
+    var exhaust_scale := exhaust.scale.x
+    harbor.set("running", true)
+    harbor.call("_process", 0.31)
+    if carrier.position.z <= carrier_z or is_equal_approx(gyro.rotation.y, gyro_rotation) or is_equal_approx(exhaust.scale.x, exhaust_scale):
+        _fail("V82 orbital carrier flight, ring rotation or ion animation is broken")
+        return
+    harbor.set("running", false)
+    var paused_carrier_z := carrier.position.z
+    harbor.call("_process", 0.31)
+    if not is_equal_approx(carrier.position.z, paused_carrier_z):
+        _fail("V82 orbital carriers must stop moving through the course during quizzes")
         return
     game.call("_begin_training")
     for task_index in range(3):
