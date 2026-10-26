@@ -1211,7 +1211,7 @@ func _run_checks() -> void:
     var searchlight_beam := scanner.get_node_or_null("Left volumetric light shaft") as MeshInstance3D if scanner != null else null
     var beacon := scanner.get_node_or_null("Animated cinematic beacon light") as OmniLight3D if scanner != null else null
     var column := searchlight_tower.get_node_or_null("Faceted metallic tower") as MeshInstance3D if searchlight_tower != null else null
-    if column == null or not (column.mesh is CylinderMesh) or beam == null or beacon == null:
+    if column == null or not (column.mesh is CylinderMesh) or searchlight_beam == null or beacon == null:
         _fail("V89 shaded 3D tower, swept translucent beam or moving beacon missing")
         return
     if not (searchlight_beam.mesh is ArrayMesh) or (searchlight_beam.mesh as ArrayMesh).surface_get_array_len(0) < 1200:
