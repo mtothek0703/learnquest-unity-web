@@ -1,5 +1,5 @@
 extends SceneTree
-## V103: shared original-body GPU hair skin, authored scalp/locks/fringe,
+## V104: shared GPU hair skin, rounded tapered locks and retired rigid duplicates,
 ## retained reactive curls and facial readability; visual-only changes.
 func _initialize() -> void:
     call_deferred("_check")
@@ -82,6 +82,22 @@ func _check() -> void:
             blended_nape += 1
         if weights[i * 4] > 0.95:
             rooted_scalp += 1
+    if points.size() < 12500:
+        _fail("seven true 3D hair tubes need sufficient cross-section geometry")
+        return
+    # 16 scalp rows * 36 sides * 6 triangle vertices precede seven locks.
+    # First ring: angle 0, next angle 36 degrees, opposite angle 180.
+    var first_lock := 16 * 36 * 6
+    var right := points[first_lock]
+    var next_angle := points[first_lock + 5]
+    var opposite := points[first_lock + 5 * 6]
+    var near_tip := points[first_lock + 18 * 10 * 6]
+    if absf(right.z - next_angle.z) < 0.025 or absf(right.x - opposite.x) < 0.16:
+        _fail("swept locks must have real 3D circular thickness, not flat strips")
+        return
+    if absf(right.x - opposite.x) < absf(near_tip.x - points[first_lock + 18 * 10 * 6 + 5 * 6].x) + 0.07:
+        _fail("volumetric hair tubes must taper clearly toward their tips")
+        return
     if min_y > 2.20 or max_y < 3.10 or min_x > -0.43 or max_x < 0.43 or min_z > -0.40 or max_z < 0.75:
         _fail("hair must visibly cover scalp, side-swept locks and front fringe")
         return
@@ -99,6 +115,20 @@ func _check() -> void:
                 if part.visible:
                     _fail("rigid overlapping hair plates must be retired")
                     return
+    var rigid := model.get_node_or_null("RiderHair") as Node3D
+    if rigid == null:
+        _fail("original reactive hairstyle missing")
+        return
+    for index in range(5):
+        var tuft := rigid.get_node_or_null("SweptHair%d" % index) as MeshInstance3D
+        if tuft == null or tuft.visible:
+            _fail("old rigid swept tufts must not overlap the shared GPU hair")
+            return
+    for index in range(3):
+        var wind := rigid.get_node_or_null("WindHair%d" % index) as Node3D
+        if wind == null or not wind.visible:
+            _fail("reactive wind hair must remain visible")
+            return
     for name in ["LeftTempleCurl", "RightTempleCurl"]:
         var curl := old.get_node_or_null(name) as Node3D
         if curl == null or not curl.visible:
@@ -116,5 +146,5 @@ func _check() -> void:
     if before.distance_to(after) < 0.02:
         _fail("sculpted hair must deform with the real moving Head/Neck bones")
         return
-    print("SKINNED HAIR TEST PASSED: unified scalp, seven swept locks, face-safe bangs, original rig, preserved curls")
+    print("SKINNED HAIR TEST PASSED: 3D tapered skinned hair tubes, hidden rigid duplicates, shared rig, preserved reactive curls")
     quit(0)
