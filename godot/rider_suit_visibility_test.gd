@@ -67,15 +67,15 @@ func _check() -> void:
         if leg == null:
             _fail("animated leg missing")
             return
-        for name in ["LegacyShin", "LegacyAnkleBand"]:
-            var old := leg.get_node_or_null(name) as MeshInstance3D
+        for name in ["LegacyShin", "LegacyAnkleBand", "SculptedShinArmor"]:
+            var old := leg.get_node_or_null("AnimatedKneeKinematics/ArticulatedKnee/" + name) as MeshInstance3D
             if old == null:
                 _fail("expected legacy leg mesh missing: BalanceLeg%d/%s" % [i, name])
                 return
             if old.visible:
                 _fail("legacy leg mesh still visible: BalanceLeg%d/%s" % [i, name])
                 return
-        if leg.get_node_or_null("SculptedHoverBoot") == null or leg.get_node_or_null("AnimatedKneeKinematics") == null:
+        if leg.get_node_or_null("SculptedHoverBoot") == null or leg.get_node_or_null("AnimatedKneeKinematics/ArticulatedKnee/LuminousKneeRings") == null:
             _fail("sculpted boots and articulated knees must remain")
             return
     if suit.find_children("*", "CollisionObject3D", true, false).size() != 0:
