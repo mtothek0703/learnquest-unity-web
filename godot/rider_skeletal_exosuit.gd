@@ -12,6 +12,10 @@ var elapsed: float = 0.0
 func _ready() -> void:
     _build_skeleton()
     _build_exosuit()
+    # V95: soft-skinned, GPU-deformed aero membranes bridge torso and shoulders.
+    var membranes := preload("res://rider_skinned_membranes.gd").new() as Node3D
+    membranes.name = "SkinnedAeroMembranes"
+    add_child(membranes)
 
 func _build_skeleton() -> void:
     skeleton = Skeleton3D.new()
