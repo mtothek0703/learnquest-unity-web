@@ -1654,6 +1654,57 @@ func _run_checks() -> void:
     if v94_skeleton.get_bone_pose_rotation(2).get_angle() >= v94_left_open - 0.40:
         _fail("V94 shoulders must fold back after landing")
         return
+    # V95: real vertex-weighted skinning, not just rigid bone attachments.
+    # Check BOTH wings, bind poses, actual per-vertex weights, lit translucent
+    # materials, bright edges and absence of physics/collision changes.
+    var v95_left := v94_skeleton.get_node_or_null("LeftWeightedAeroMembrane") as MeshInstance3D
+    var v95_right := v94_skeleton.get_node_or_null("RightWeightedAeroMembrane") as MeshInstance3D
+    var v95_left_seam := v94_skeleton.get_node_or_null("LeftWeightedUpperSeam") as MeshInstance3D
+    var v95_right_seam := v94_skeleton.get_node_or_null("RightWeightedLowerSeam") as MeshInstance3D
+    if v95_left == null or v95_right == null or v95_left_seam == null or v95_right_seam == null:
+        _fail("V95 both skinned wings and luminous seams must be present")
+        return
+    if v95_left.skin == null or v95_right.skin == null or v95_left.skin.get_bind_count() != 5:
+        _fail("V95 meshes must share the complete five-bone skin")
+        return
+    if v95_left.skeleton != NodePath("..") or v95_right.skeleton != NodePath(".."):
+        _fail("V95 mesh instances must reference their actual parent Skeleton3D")
+        return
+    if not (v95_left.mesh is ArrayMesh) or not (v95_right.mesh is ArrayMesh):
+        _fail("V95 must use real weighted ArrayMesh surfaces")
+        return
+    var v95_arrays: Array = (v95_left.mesh as ArrayMesh).surface_get_arrays(0)
+    var v95_right_arrays: Array = (v95_right.mesh as ArrayMesh).surface_get_arrays(0)
+    var v95_vertices: PackedVector3Array = v95_arrays[Mesh.ARRAY_VERTEX]
+    var v95_bones: PackedInt32Array = v95_arrays[Mesh.ARRAY_BONES]
+    var v95_weights: PackedFloat32Array = v95_arrays[Mesh.ARRAY_WEIGHTS]
+    var v95_right_bones: PackedInt32Array = v95_right_arrays[Mesh.ARRAY_BONES]
+    if v95_vertices.size() < 1400 or v95_bones.size() != v95_vertices.size() * 4 or v95_weights.size() != v95_vertices.size() * 4:
+        _fail("V95 wings must contain dense four-weight skinned geometry")
+        return
+    var v95_middle: int = v95_vertices.size() / 2
+    var v95_index: int = v95_middle * 4
+    var v95_sum: float = v95_weights[v95_index] + v95_weights[v95_index + 1] + v95_weights[v95_index + 2] + v95_weights[v95_index + 3]
+    if absf(v95_sum - 1.0) > 0.005 or v95_weights[v95_index + 1] < 0.05 or v95_weights[v95_index + 2] < 0.15:
+        _fail("V95 central wing vertices must blend upper spine and shoulder weights: sum=%.6f upper=%.6f shoulder=%.6f" % [v95_sum, v95_weights[v95_index + 1], v95_weights[v95_index + 2]])
+        return
+    if v95_bones[v95_index + 2] != 2 or v95_right_bones[v95_index + 2] != 3:
+        _fail("V95 each wing must deform with its own shoulder bone")
+        return
+    if v95_vertices[v95_middle].x >= -0.30:
+        _fail("V95 weighted wings must leave the rider center unobstructed")
+        return
+    var v95_fabric := v95_left.material_override as StandardMaterial3D
+    var v95_neon := v95_left_seam.material_override as StandardMaterial3D
+    if v95_fabric == null or not v95_fabric.vertex_color_use_as_albedo or v95_fabric.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED or v95_fabric.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA:
+        _fail("V95 curved fabric must be lit, translucent and vertex-shaded")
+        return
+    if v95_neon == null or not v95_neon.emission_enabled or v95_neon.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA:
+        _fail("V95 weighted edge seams must emit translucent neon")
+        return
+    if v94_exosuit.find_children("*", "CollisionObject3D", true, false).size() != 0:
+        _fail("V95 visual skinning must not add collision objects")
+        return
     # V84: a clearly visible, animated 3D silhouette in the landscape chase
     # camera, built without assets, collisions or changes to touch controls.
     var sails := installed_model.get_node_or_null("AnimatedKineticSails") as Node3D
@@ -2239,7 +2290,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V94") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V95") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -2249,7 +2300,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V94") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V95") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -2388,7 +2439,7 @@ func _run_checks() -> void:
     # V59: an iPhone in landscape is wider than 720px but still needs the
     # optional gesture-only mode. Simulate touch hardware in headless CI.
     game.call("_apply_mobile_layout", 844.0, 1, 390.0)
-    if not mobile_hud.text.contains("V94") or not mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("V95") or not mobile_hud.text.contains("\n"):
         _fail("Landscape-first phone layout must use a compact two-line HUD")
         return
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
@@ -2496,7 +2547,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V94") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V95") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
