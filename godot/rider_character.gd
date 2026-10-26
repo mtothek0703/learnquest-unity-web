@@ -133,6 +133,11 @@ func set_character_model(model: Node3D) -> void:
     var volume := preload("res://rider_hair_volume.gd").new() as Node3D
     volume.name = "SculptedVolumetricHair"
     model.add_child(volume)
+    # V103: one continuous GPU-skinned scalp/lock/fringe silhouette follows
+    # the original Head/Neck bones, replacing the overlapping rigid hair plates.
+    var skinned_hair := preload("res://rider_skinned_hair.gd").new() as Node3D
+    skinned_hair.name = "SculptedSkinnedHair"
+    model.add_child(skinned_hair)
     # V39: four large, two-joint wind-reactive locks frame the original braid.
     var cascade := preload("res://rider_hair_cascade.gd").new() as Node3D
     cascade.name = "AnimatedWindHairCascade"
