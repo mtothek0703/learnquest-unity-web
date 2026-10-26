@@ -197,8 +197,14 @@ func _retire_occluding_legacy_shells(model: Node3D, suit: Node3D, harness: Node3
     # The old cylindrical shins and boxy ankle bands overlap the skinned
     # leg guards; keep the sculpted hover boots and animated knee joints.
     for leg in balance_legs:
-        for name in ["LegacyShin", "LegacyAnkleBand"]:
-            var old_part := leg.get_node_or_null(name) as MeshInstance3D
+        # V92 reparents these meshes under the articulated knee pivot.
+        # Keep the moving knee socket and neon rings, but retire the
+        # overlapping rigid shin shell, ankle box and second shin armor.
+        var knee := leg.get_node_or_null("AnimatedKneeKinematics/ArticulatedKnee") as Node3D
+        if knee == null:
+            continue
+        for name in ["LegacyShin", "LegacyAnkleBand", "SculptedShinArmor"]:
+            var old_part := knee.get_node_or_null(name) as MeshInstance3D
             if old_part != null:
                 old_part.visible = false
 
