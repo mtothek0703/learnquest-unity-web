@@ -45,3 +45,9 @@ Entwickle in **aufeinander aufbauenden Sprints**, nicht in isolierten Kleinstkor
 - Erfolg nur mit überprüftem Commit, Tests und URL melden.
 - Keine neuen Kosten oder unklaren Fremd-Asset-Lizenzen.
 - Bei mehreren gleichzeitig arbeitenden Prozessen zuerst den aktuellen Branch und die Release-Nummer prüfen, um Versionsüberschreibungen zu vermeiden.
+
+## Sprintprotokoll — 26.10.2026, V97 (PR #84, zunächst ungeprüft)
+- Sprint 1, Teilziel **Originalkörper-Skinning**: In der PR wurde der tatsächlich importierte glTF-Körper an ein neues 13-Knochen-Skelett mit vier normierten Gewichten je Vertex gebunden. Die bisherigen V94–V96-Zierpanzer-Rigs bleiben bestehen.
+- Separate Godot-Regression prüft Knochenhierarchie, Originalmesh-Oberflächen, normalisierte Gewichte, gewichtete Körperregionen und die Reaktion auf Lenken, Sprung und Turbo. PR- und Release-CI führen sie zusätzlich zum bisherigen Gameplay-Test aus.
+- **Abnahme erst nach grüner CI und erfolgreichem V97-Release.** Dies ist kein Abschluss von Sprint 1: Kopf-/Haar-/Kleidungs-Synchronisierung, visuelle Qualität, Clipping und echte iPhone-Querformat-FPS bleiben offen.
+- Als nächstes: visueller QA-Vergleich im Querformat und saubere gemeinsame Animation der Kopf-/Haar-/Kleidungsgeometrie. Touch-Gesten, Spielregeln und Alt-Releases bleiben unverändert.
