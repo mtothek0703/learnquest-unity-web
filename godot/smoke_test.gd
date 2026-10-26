@@ -1296,6 +1296,39 @@ func _run_checks() -> void:
     if fallback.visible:
         _fail("Fallback body must be hidden while imported 3D rider is active")
         return
+    # V84: a clearly visible, animated 3D silhouette in the landscape chase
+    # camera, built without assets, collisions or changes to touch controls.
+    var sails := installed_model.get_node_or_null("AnimatedKineticSails") as Node3D
+    var left_sail := sails.get_node_or_null("LeftSailPivot") as Node3D if sails != null else null
+    var right_sail := sails.get_node_or_null("RightSailPivot") as Node3D if sails != null else null
+    var membrane := left_sail.get_node_or_null("Feather0/CurvedEnergyMembrane") as MeshInstance3D if left_sail != null else null
+    var vein := left_sail.get_node_or_null("Feather0/LuminousCenterSpine") as MeshInstance3D if left_sail != null else null
+    if sails == null or left_sail == null or right_sail == null or membrane == null or vein == null:
+        _fail("V84 rider must have two sculpted three-feather energy sails")
+        return
+    if not (membrane.mesh is ArrayMesh) or (membrane.mesh as ArrayMesh).surface_get_array_len(0) < 600:
+        _fail("V84 wing membrane must use detailed curved 3D geometry")
+        return
+    var sail_material := membrane.material_override as StandardMaterial3D
+    if sail_material == null or not sail_material.vertex_color_use_as_albedo or sail_material.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA:
+        _fail("V84 energy sails must use translucent shaded vertex gradients")
+        return
+    if sails.get("feathers").size() != 6 or sails.find_children("*", "CollisionObject3D", true, false).size() != 0:
+        _fail("V84 six articulated feathers must not change player collisions")
+        return
+    var resting_angle := left_sail.rotation.z
+    rider.set("boosting", true)
+    sails.call("_process", 0.25)
+    var turbo_angle := left_sail.rotation.z
+    var boosted_span := (left_sail.get_node("Feather0") as Node3D).scale.x
+    if absf(turbo_angle - resting_angle) < 0.05 or boosted_span <= 1.0:
+        _fail("V84 Turbo must visibly unfold the animated wings")
+        return
+    rider.set("boosting", false)
+    sails.call("_process", 0.25)
+    if absf(left_sail.rotation.z) >= absf(turbo_angle) or (left_sail.get_node("Feather0") as Node3D).scale.x >= boosted_span:
+        _fail("V84 wings must fold back when Turbo ends")
+        return
     # V52: showcase the real detailed rider from the front, with original
     # animated curved geometry, without replacing the playable hoverboard.
     var gallery := game.get_node_or_null("Cinematic hero gallery") as Node3D
@@ -1761,7 +1794,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V83") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V84") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1771,7 +1804,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V83") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V84") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1910,7 +1943,7 @@ func _run_checks() -> void:
     # V59: an iPhone in landscape is wider than 720px but still needs the
     # optional gesture-only mode. Simulate touch hardware in headless CI.
     game.call("_apply_mobile_layout", 844.0, 1, 390.0)
-    if not mobile_hud.text.contains("V83") or not mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("V84") or not mobile_hud.text.contains("\n"):
         _fail("Landscape-first phone layout must use a compact two-line HUD")
         return
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
@@ -2018,7 +2051,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V83") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V84") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
