@@ -128,6 +128,10 @@ func set_character_model(model: Node3D) -> void:
     var wings := preload("res://rider_wings.gd").new() as Node3D
     wings.name = "AnimatedAeroWings"
     model.add_child(wings)
+    # V84: six articulated translucent energy sails frame the rider in landscape.
+    var kinetic_sails := preload("res://rider_kinetic_sails.gd").new() as Node3D
+    kinetic_sails.name = "AnimatedKineticSails"
+    model.add_child(kinetic_sails)
     # V36: large curved back armor, rotating energy reactor and articulated jets.
     var harness := preload("res://rider_aero_harness.gd").new() as Node3D
     harness.name = "AnimatedAeroHarness"
