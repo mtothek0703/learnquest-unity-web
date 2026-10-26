@@ -142,7 +142,8 @@ func _process(delta: float) -> void:
     var ascending := clampf(vertical_speed / 3.0, 0.0, 1.0) if height > 0.08 else 0.0
     var descending := clampf(-vertical_speed / 3.0, 0.0, 1.0) if height > 0.08 else 0.0
     if previous_height > 0.12 and height <= 0.08:
-        landing_recoil = 1.0
+        # A long headless test tick must not leave a one-frame landing pose.
+        landing_recoil = maxf(0.0, 1.0 - delta * 5.0)
     else:
         landing_recoil = move_toward(landing_recoil, 0.0, delta * 5.0)
     previous_height = height
