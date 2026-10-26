@@ -13,6 +13,8 @@ var skinned_meshes: Array[MeshInstance3D] = []
 var clock: float = 0.0
 
 func bind_original(model: Node3D) -> void:
+    # Process after the rider updates input, before head/costume followers.
+    process_priority = 10
     # Capture only original imported geometry, BEFORE any costume nodes exist.
     var original_meshes: Array[MeshInstance3D] = []
     # Godot may import a one-node glTF with MeshInstance3D as scene root.
@@ -135,7 +137,12 @@ func _process(delta: float) -> void:
     _rotate(1, Quaternion(Vector3.FORWARD, -steering * 0.13) * Quaternion(Vector3.RIGHT, jump * 0.13), blend)
     _rotate(2, Quaternion(Vector3.UP, -steering * 0.19) * Quaternion(Vector3.RIGHT, (0.17 if boost else 0.0) + jump * 0.17), blend)
     _rotate(3, Quaternion(Vector3.UP, steering * 0.11), blend)
-    _rotate(4, Quaternion(Vector3.UP, steering * 0.14) * Quaternion(Vector3.RIGHT, -jump * 0.10), blend)
+    # One authoritative head pose for the original skinned mesh AND facial,
+    # helmet and hair attachments. Prevent competing V93 and V97 head motion.
+    var gaze := -steering * 0.24 + sin(clock * 1.1) * 0.035
+    var nod := (0.16 if boost else -0.025) - jump * 0.19
+    var tilt := -steering * 0.15 + sin(clock * 1.8) * 0.018
+    _rotate(4, Quaternion(Vector3.UP, gaze) * Quaternion(Vector3.RIGHT, nod) * Quaternion(Vector3.FORWARD, tilt), blend)
     for side in [-1.0, 1.0]:
         var arm := 5 if side < 0.0 else 7
         var thigh := 9 if side < 0.0 else 11

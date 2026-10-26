@@ -1571,6 +1571,13 @@ func _run_checks() -> void:
     rider.set("lean", 0.9)
     rider.set("boosting", true)
     rider.position.y = 1.2
+    # V98: the real skinned Head bone now owns the pose. Exercise it before
+    # the helmet/face follower rather than calling the old independent pivot.
+    var v93_body_rig := installed_model.get_node_or_null("OriginalBodySkinRig") as Node3D
+    if v93_body_rig == null:
+        _fail("V98 original body skeleton is required for head choreography")
+        return
+    v93_body_rig.call("_process", 0.35)
     v93_head.call("_process", 0.35)
     var v93_turn: float = v93_pivot.rotation.y
     var v93_fin_open: float = absf(v93_fin.rotation.z)
@@ -1583,6 +1590,7 @@ func _run_checks() -> void:
     rider.set("lean", 0.0)
     rider.set("boosting", false)
     rider.position.y = 0.0
+    v93_body_rig.call("_process", 0.35)
     v93_head.call("_process", 0.35)
     if absf(v93_pivot.rotation.y) >= absf(v93_turn) or absf(v93_fin.rotation.z) >= v93_fin_open:
         _fail("V93 head and fins must relax after a jump and Turbo")

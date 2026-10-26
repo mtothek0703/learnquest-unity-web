@@ -53,3 +53,11 @@ Entwickle in **aufeinander aufbauenden Sprints**, nicht in isolierten Kleinstkor
 - [ ] **Sprint 1 insgesamt offen:** Modellierungsqualität, Synchronisierung von Kopf/Haaren/Kleidung, Clipping und reale iPhone-Querformat-FPS sind nicht abgenommen. Automatische Skinning-Tests sind kein Ersatz für die visuelle Prüfung.
 - Die Veröffentlichung bewahrte laut Actions-Protokoll 94 historische Versionsverzeichnisse und die bestehende Unity-Webseite.
 - Als nächstes: visueller QA-Vergleich im Querformat und saubere gemeinsame Animation der Kopf-/Haar-/Kleidungsgeometrie. Touch-Gesten, Spielregeln und Alt-Releases bleiben unverändert.
+
+## Sprintprotokoll — 26.10.2026, V98 (Implementierung zur CI-Prüfung)
+
+- Sprint 1, offener Teilbereich **Kopf-/Kostüm-Synchronisation**: V93-Kopfhelm, Gesicht und Haargruppen lesen jetzt die Pose des echten 13-Knochen-Originalkörper-Skeletts, statt unabhängig von dessen Kopf zu rotieren. Die bereits vorhandenen detaillierten Jacken-, Mantel-, Exosuit- und Umhanggruppen folgen einer gewichteten Brust-/Hüftpose. Eigene Haar-, Stoff- und Reaktoranimationen bleiben aktiv.
+- Ein eigenständiger Godot-Regressionstest prüft tatsächliche gemeinsame Kopf-, Gesichts- und Haartransformationen, sichtbare Brust-/Mantelbewegung, Pose-Reihenfolge, neutrale Rückkehr und Kollisionsfreiheit. PR- und Release-Workflows führen ihn zusätzlich zu V97-Skinning- und Gameplay-Tests aus.
+- [ ] **CI-/Release-Abnahme offen bis die neuen Runs bestanden und die unveränderliche `skyway-v98/`-URL geprüft sind.** Dieser Backlog-Eintrag dokumentiert die Implementierung, nicht eine vorweggenommene Veröffentlichung.
+- [ ] **Sprint 1 weiterhin offen:** ein erkennbar hochwertigerer vollständig geriggter Gesamtcharakter, nachgewiesene Clipping-Freiheit und iPhone-Querformat-FPS brauchen weitere Arbeit und visuelle/manuelle Prüfung.
+- Touchsteuerung, Spielregeln, historische Skyway-Versionen und Unity-Archiv wurden im Änderungssatz nicht bearbeitet.
