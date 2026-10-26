@@ -1537,6 +1537,56 @@ func _run_checks() -> void:
     if v92_joint.rotation.x > 0.2 or v92_boot.position.distance_to(v92_rest_boot) > 0.04:
         _fail("V92 knees and boots must return to their grounded stance")
         return
+    # V93: the face, hair and detailed helmet turn together at a real neck
+    # pivot, with Turbo-responsive fins and no collision or input changes.
+    var v93_head := installed_model.get_node_or_null("AnimatedHeadKinematics") as Node3D
+    var v93_pivot := v93_head.get_node_or_null("ArticulatedHeadPivot") as Node3D if v93_head != null else null
+    var v93_shell := v93_head.get_node_or_null("ArticulatedHeadPivot/FacetedCinematicHelmet") as MeshInstance3D if v93_head != null else null
+    var v93_seams := v93_head.get_node_or_null("ArticulatedHeadPivot/CurvedLuminousHelmetSeams") as MeshInstance3D if v93_head != null else null
+    var v93_visor := v93_head.get_node_or_null("ArticulatedHeadPivot/TranslucentCurvedVisor") as MeshInstance3D if v93_head != null else null
+    var v93_fin := v93_head.get_node_or_null("ArticulatedHeadPivot/LeftReactiveAeroFin") as Node3D if v93_head != null else null
+    var v93_other_fin := v93_head.get_node_or_null("ArticulatedHeadPivot/RightReactiveAeroFin") as Node3D if v93_head != null else null
+    var v93_face := installed_model.get_node_or_null("ExpressiveFace") as Node3D
+    if v93_pivot == null or v93_shell == null or v93_seams == null or v93_visor == null or v93_fin == null or v93_other_fin == null or v93_face == null:
+        _fail("V93 articulated head, shaded helmet, curved visor, neon seams or fins missing")
+        return
+    if not (v93_shell.mesh is ArrayMesh) or (v93_shell.mesh as ArrayMesh).surface_get_array_len(0) < 3000:
+        _fail("V93 helmet must be a high-detail original curved 3D mesh")
+        return
+    var v93_armor := v93_shell.material_override as StandardMaterial3D
+    var v93_glass := v93_visor.material_override as StandardMaterial3D
+    var v93_neon := v93_seams.material_override as StandardMaterial3D
+    if v93_armor == null or not v93_armor.vertex_color_use_as_albedo or v93_armor.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED:
+        _fail("V93 helmet must have lit, vertex-shaded metal")
+        return
+    if v93_glass == null or v93_glass.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA or not v93_glass.vertex_color_use_as_albedo:
+        _fail("V93 curved visor needs translucent vertex-colored glass")
+        return
+    if v93_neon == null or not v93_neon.emission_enabled:
+        _fail("V93 helmet seams must be luminous")
+        return
+    if v93_head.find_children("*", "CollisionObject3D", true, false).size() != 0:
+        _fail("V93 visual head rig must not change rider collisions")
+        return
+    rider.set("lean", 0.9)
+    rider.set("boosting", true)
+    rider.position.y = 1.2
+    v93_head.call("_process", 0.35)
+    var v93_turn: float = v93_pivot.rotation.y
+    var v93_fin_open: float = absf(v93_fin.rotation.z)
+    if absf(v93_turn) < 0.14 or v93_fin_open < 0.25 or absf(v93_fin.rotation.z - v93_other_fin.rotation.z) < 0.45:
+        _fail("V93 head must look into turns while both aero fins unfold in Turbo")
+        return
+    if v93_face.position.length() < 0.06 or absf(v93_face.rotation.y - v93_turn) > 0.02:
+        _fail("V93 existing expressive face must follow the articulated neck")
+        return
+    rider.set("lean", 0.0)
+    rider.set("boosting", false)
+    rider.position.y = 0.0
+    v93_head.call("_process", 0.35)
+    if absf(v93_pivot.rotation.y) >= absf(v93_turn) or absf(v93_fin.rotation.z) >= v93_fin_open:
+        _fail("V93 head and fins must relax after a jump and Turbo")
+        return
     # V84: a clearly visible, animated 3D silhouette in the landscape chase
     # camera, built without assets, collisions or changes to touch controls.
     var sails := installed_model.get_node_or_null("AnimatedKineticSails") as Node3D
@@ -2122,7 +2172,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V92") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V93") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -2132,7 +2182,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V92") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V93") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -2271,7 +2321,7 @@ func _run_checks() -> void:
     # V59: an iPhone in landscape is wider than 720px but still needs the
     # optional gesture-only mode. Simulate touch hardware in headless CI.
     game.call("_apply_mobile_layout", 844.0, 1, 390.0)
-    if not mobile_hud.text.contains("V92") or not mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("V93") or not mobile_hud.text.contains("\n"):
         _fail("Landscape-first phone layout must use a compact two-line HUD")
         return
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
@@ -2379,7 +2429,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V92") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V93") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
