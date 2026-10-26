@@ -158,7 +158,7 @@ func _process(delta: float) -> void:
         Quaternion(Vector3.RIGHT, -landing_recoil * 0.11 - boost_pose_weight * 0.045), blend)
     _rotate(1, Quaternion(Vector3.FORWARD, -steering * 0.16) *
         Quaternion(Vector3.RIGHT, jump * 0.12 - landing_recoil * 0.08), blend)
-    _rotate(2, Quaternion(Vector3.UP, -steering * 0.23 + rhythm * 0.018) *
+    _rotate(2, Quaternion(Vector3.UP, -steering * 0.23) *
         Quaternion(Vector3.FORWARD, -steering * 0.08) *
         Quaternion(Vector3.RIGHT, boost_pose_weight * 0.19 + jump * 0.17 - landing_recoil * 0.10), blend)
     _rotate(3, Quaternion(Vector3.UP, steering * 0.14) *
