@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V87"
+const VERSION_LABEL := "V88"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -234,6 +234,12 @@ func _create_world() -> void:
     marker.omni_range = 5.0
     rider.add_child(marker)
     marker.position = Vector3(0, 2, 0)
+    # V88: mobile-friendly projected contact shadow, colored rim light and
+    # Turbo speed ribbons; visual-only and independent of touch/physics.
+    var rider_lighting := preload("res://rider_cinematic_lighting.gd").new() as Node3D
+    rider_lighting.name = "Cinematic rider lighting"
+    rider_lighting.set("rider", rider)
+    add_child(rider_lighting)
     _create_powerup_effects()
     hero_gallery = preload("res://hero_gallery.gd").new() as Node3D
     hero_gallery.name = "Cinematic hero gallery"
