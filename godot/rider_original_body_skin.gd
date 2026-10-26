@@ -11,6 +11,10 @@ const BONE_NAMES := [
 var skeleton: Skeleton3D
 var skinned_meshes: Array[MeshInstance3D] = []
 var clock: float = 0.0
+# V101: phase-aware body motion; visual-only, no gameplay state changes.
+var previous_height: float = 0.0
+var landing_recoil: float = 0.0
+var boost_pose_weight: float = 0.0
 
 func bind_original(model: Node3D) -> void:
     # Process after the rider updates input, before head/costume followers.
@@ -126,32 +130,64 @@ func _process(delta: float) -> void:
     var rider := get_parent().get_parent() as Node3D
     if rider == null:
         return
+    # The existing gameplay controller owns the real jump and steering.
+    # Read its state; never write to the rider, touch interpreter or collider.
+    var step := maxf(delta, 0.0001)
     clock += delta
     var steering := clampf(float(rider.get("lean")), -1.0, 1.0)
     var boost := bool(rider.get("boosting"))
-    var jump := clampf(rider.position.y / 1.25, 0.0, 1.0)
+    var height := maxf(rider.position.y, 0.0)
+    var jump := clampf(height / 1.25, 0.0, 1.0)
+    var vertical_speed := clampf((height - previous_height) / step, -6.0, 6.0)
+    var ascending := clampf(vertical_speed / 3.0, 0.0, 1.0) if height > 0.08 else 0.0
+    var descending := clampf(-vertical_speed / 3.0, 0.0, 1.0) if height > 0.08 else 0.0
+    if previous_height > 0.12 and height <= 0.08:
+        landing_recoil = 1.0
+    else:
+        landing_recoil = move_toward(landing_recoil, 0.0, delta * 5.0)
+    previous_height = height
+    boost_pose_weight = move_toward(boost_pose_weight, 1.0 if boost else 0.0, delta * 7.0)
     var speed := 12.0 if boost else 5.0
     var rhythm := sin(clock * speed)
     var blend := minf(1.0, delta * 9.0)
-    _rotate(0, Quaternion(Vector3.FORWARD, -steering * 0.12), blend)
-    _rotate(1, Quaternion(Vector3.FORWARD, -steering * 0.13) * Quaternion(Vector3.RIGHT, jump * 0.13), blend)
-    _rotate(2, Quaternion(Vector3.UP, -steering * 0.19) * Quaternion(Vector3.RIGHT, (0.17 if boost else 0.0) + jump * 0.17), blend)
-    _rotate(3, Quaternion(Vector3.UP, steering * 0.11), blend)
-    # One authoritative head pose for the original skinned mesh AND facial,
-    # helmet and hair attachments. Prevent competing V93 and V97 head motion.
-    var gaze := -steering * 0.24 + sin(clock * 1.1) * 0.035
-    var nod := (0.16 if boost else -0.025) - jump * 0.19
-    var tilt := -steering * 0.15 + sin(clock * 1.8) * 0.018
-    _rotate(4, Quaternion(Vector3.UP, gaze) * Quaternion(Vector3.RIGHT, nod) * Quaternion(Vector3.FORWARD, tilt), blend)
+    # Board-sport silhouette: the hips counterbalance the chest; the head
+    # looks through the turn while shoulders follow with a softer twist.
+    # All 13 original bones still drive the GPU-skinned body and suit.
+    _rotate(0, Quaternion(Vector3.FORWARD, -steering * 0.14) *
+        Quaternion(Vector3.RIGHT, -landing_recoil * 0.11 - boost_pose_weight * 0.045), blend)
+    _rotate(1, Quaternion(Vector3.FORWARD, -steering * 0.16) *
+        Quaternion(Vector3.RIGHT, jump * 0.12 - landing_recoil * 0.08), blend)
+    _rotate(2, Quaternion(Vector3.UP, -steering * 0.23 + rhythm * 0.018) *
+        Quaternion(Vector3.FORWARD, -steering * 0.08) *
+        Quaternion(Vector3.RIGHT, boost_pose_weight * 0.19 + jump * 0.17 - landing_recoil * 0.10), blend)
+    _rotate(3, Quaternion(Vector3.UP, steering * 0.14) *
+        Quaternion(Vector3.RIGHT, -landing_recoil * 0.04), blend)
+    var gaze := -steering * 0.26 + sin(clock * 1.1) * 0.035
+    var nod := boost_pose_weight * 0.16 - 0.025 - jump * 0.19 + descending * 0.06
+    var tilt := -steering * 0.14 + sin(clock * 1.8) * 0.018
+    _rotate(4, Quaternion(Vector3.UP, gaze) *
+        Quaternion(Vector3.RIGHT, nod) * Quaternion(Vector3.FORWARD, tilt), blend)
+    # Asymmetric arms and legs provide a clear airborne silhouette. Ascent
+    # spreads the arms, descent pulls them in; landing compresses both knees.
     for side in [-1.0, 1.0]:
         var arm := 5 if side < 0.0 else 7
         var thigh := 9 if side < 0.0 else 11
-        _rotate(arm, Quaternion(Vector3.FORWARD, side * (0.13 + jump * 0.31) - steering * 0.09) *
-            Quaternion(Vector3.RIGHT, (0.21 if boost else 0.0) + rhythm * 0.045), blend)
-        _rotate(arm + 1, Quaternion(Vector3.RIGHT, -0.10 - jump * 0.42 - (0.21 if boost else 0.0)), blend)
-        _rotate(thigh, Quaternion(Vector3.RIGHT, jump * 0.32 + rhythm * 0.028) *
-            Quaternion(Vector3.FORWARD, side * steering * 0.08), blend)
-        _rotate(thigh + 1, Quaternion(Vector3.RIGHT, -jump * 0.55 - (0.10 if boost else 0.0)), blend)
+        var balance := steering * side
+        var arm_spread := side * (0.13 + jump * 0.29 + ascending * 0.13 - descending * 0.06)
+        _rotate(arm, Quaternion(Vector3.FORWARD, arm_spread - steering * 0.10) *
+            Quaternion(Vector3.RIGHT, boost_pose_weight * 0.24 +
+                rhythm * (0.038 + boost_pose_weight * 0.025) * side -
+                landing_recoil * 0.09), blend)
+        _rotate(arm + 1, Quaternion(Vector3.RIGHT,
+            -0.10 - jump * 0.39 - boost_pose_weight * 0.22 -
+            descending * 0.12 - absf(balance) * 0.07), blend)
+        _rotate(thigh, Quaternion(Vector3.RIGHT,
+            jump * (0.30 + 0.05 * side) + rhythm * 0.032 * side +
+            landing_recoil * 0.18) *
+            Quaternion(Vector3.FORWARD, balance * 0.10), blend)
+        _rotate(thigh + 1, Quaternion(Vector3.RIGHT,
+            -jump * (0.53 + 0.08 * side) -
+            boost_pose_weight * 0.11 - landing_recoil * 0.32), blend)
 
 func _rotate(index: int, target: Quaternion, blend: float) -> void:
     skeleton.set_bone_pose_rotation(index, skeleton.get_bone_pose_rotation(index).slerp(target, blend))
