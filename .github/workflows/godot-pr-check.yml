@@ -38,6 +38,8 @@ jobs:
           grep -Fq 'SCULPTED SUIT TEST PASSED' /tmp/sculpted-suit.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_suit_visibility_test.gd 2>&1 | tee /tmp/suit-visibility.log
           grep -Fq 'SUIT VISIBILITY TEST PASSED' /tmp/suit-visibility.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_body_choreography_test.gd 2>&1 | tee /tmp/body-choreography.log
+          grep -Fq 'BODY CHOREOGRAPHY TEST PASSED' /tmp/body-choreography.log
       - name: Validate web export before any main-branch deployment
         shell: bash
         run: |
@@ -61,5 +63,6 @@ jobs:
             /tmp/costume-skin-follow.log
             /tmp/sculpted-suit.log
             /tmp/suit-visibility.log
+            /tmp/body-choreography.log
             /tmp/web-export.log
           if-no-files-found: ignore
