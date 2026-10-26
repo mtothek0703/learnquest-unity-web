@@ -1392,7 +1392,7 @@ func _run_checks() -> void:
         _fail("V90 animated cloak must never alter collisions")
         return
     for cloak_side in ["LeftCloakRoot", "RightCloakRoot"]:
-        var cloak_path := cloak_side
+        var cloak_path: String = str(cloak_side)
         for segment in range(3):
             cloak_path += "/Joint%d" % segment
             var fabric_panel := cloak.get_node_or_null(cloak_path + "/FlowingFabric") as MeshInstance3D
