@@ -46,8 +46,10 @@ Entwickle in **aufeinander aufbauenden Sprints**, nicht in isolierten Kleinstkor
 - Keine neuen Kosten oder unklaren Fremd-Asset-Lizenzen.
 - Bei mehreren gleichzeitig arbeitenden Prozessen zuerst den aktuellen Branch und die Release-Nummer prüfen, um Versionsüberschreibungen zu vermeiden.
 
-## Sprintprotokoll — 26.10.2026, V97 (PR #84, zunächst ungeprüft)
+## Sprintprotokoll — 26.10.2026, V97 (PR #84, veröffentlicht und automatisiert geprüft)
 - Sprint 1, Teilziel **Originalkörper-Skinning**: In der PR wurde der tatsächlich importierte glTF-Körper an ein neues 13-Knochen-Skelett mit vier normierten Gewichten je Vertex gebunden. Die bisherigen V94–V96-Zierpanzer-Rigs bleiben bestehen.
 - Separate Godot-Regression prüft Knochenhierarchie, Originalmesh-Oberflächen, normalisierte Gewichte, gewichtete Körperregionen und die Reaktion auf Lenken, Sprung und Turbo. PR- und Release-CI führen sie zusätzlich zum bisherigen Gameplay-Test aus.
-- **Abnahme erst nach grüner CI und erfolgreichem V97-Release.** Dies ist kein Abschluss von Sprint 1: Kopf-/Haar-/Kleidungs-Synchronisierung, visuelle Qualität, Clipping und echte iPhone-Querformat-FPS bleiben offen.
+- [x] **Technisches Teilziel erreicht:** Original-glTF-Körpermesh ist an 13 echte Knochen und vier normalisierte Skin-Gewichte pro Vertex gebunden. GitHub Actions Godot-Test, Gameplay-Integration, Webexport und Veröffentlichung waren erfolgreich (Main `e1dd1f94a76fdbaf751713bcc4f9b1caa8a69be8`, Actions-Lauf `40348485601`, `skyway-v97/` mit HTTP 200 für fünf Dateien).
+- [ ] **Sprint 1 insgesamt offen:** Modellierungsqualität, Synchronisierung von Kopf/Haaren/Kleidung, Clipping und reale iPhone-Querformat-FPS sind nicht abgenommen. Automatische Skinning-Tests sind kein Ersatz für die visuelle Prüfung.
+- Die Veröffentlichung bewahrte laut Actions-Protokoll 94 historische Versionsverzeichnisse und die bestehende Unity-Webseite.
 - Als nächstes: visueller QA-Vergleich im Querformat und saubere gemeinsame Animation der Kopf-/Haar-/Kleidungsgeometrie. Touch-Gesten, Spielregeln und Alt-Releases bleiben unverändert.
