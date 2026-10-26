@@ -1250,23 +1250,23 @@ func _run_checks() -> void:
         _fail("V85 Neon City needs two animated holographic sky mantas")
         return
     var manta := mantas.get_node_or_null("Sky manta 0") as Node3D
-    var left_wing := manta.get_node_or_null("Left articulated wing") as Node3D if manta != null else null
-    var right_wing := manta.get_node_or_null("Right articulated wing") as Node3D if manta != null else null
-    var panel := left_wing.get_node_or_null("Curved translucent wing membrane") as MeshInstance3D if left_wing != null else null
-    var rim := left_wing.get_node_or_null("Luminous trailing wing edge") as MeshInstance3D if left_wing != null else null
-    var body := manta.get_node_or_null("Sculpted shaded manta body") as MeshInstance3D if manta != null else null
-    var tail := manta.get_node_or_null("Articulated comet tail") as Node3D if manta != null else null
+    var manta_left_wing := manta.get_node_or_null("Left articulated wing") as Node3D if manta != null else null
+    var manta_right_wing := manta.get_node_or_null("Right articulated wing") as Node3D if manta != null else null
+    var manta_panel := manta_left_wing.get_node_or_null("Curved translucent wing membrane") as MeshInstance3D if manta_left_wing != null else null
+    var manta_rim := manta_left_wing.get_node_or_null("Luminous trailing wing edge") as MeshInstance3D if manta_left_wing != null else null
+    var manta_body := manta.get_node_or_null("Sculpted shaded manta body") as MeshInstance3D if manta != null else null
+    var manta_tail := manta.get_node_or_null("Articulated comet tail") as Node3D if manta != null else null
     var manta_light := manta.get_node_or_null("Soft holographic manta light") as OmniLight3D if manta != null else null
-    if panel == null or rim == null or body == null or right_wing == null or tail == null or manta_light == null:
+    if manta_panel == null or manta_rim == null or manta_body == null or manta_right_wing == null or manta_tail == null or manta_light == null:
         _fail("V85 sky mantas require shaded bodies, articulated wings, tails and lights")
         return
-    if not (panel.mesh is ArrayMesh) or (panel.mesh as ArrayMesh).surface_get_array_len(0) < 700:
+    if not (manta_panel.mesh is ArrayMesh) or (manta_panel.mesh as ArrayMesh).surface_get_array_len(0) < 700:
         _fail("V85 sky manta wing must have a detailed original curved mesh")
         return
-    if not (body.mesh is ArrayMesh) or (body.mesh as ArrayMesh).surface_get_array_len(0) < 900:
-        _fail("V85 sky manta body must be a sculpted 3D mesh")
+    if not (manta_body.mesh is ArrayMesh) or (manta_body.mesh as ArrayMesh).surface_get_array_len(0) < 900:
+        _fail("V85 sky manta manta_body must be a sculpted 3D mesh")
         return
-    var manta_mat := panel.material_override as StandardMaterial3D
+    var manta_mat := manta_panel.material_override as StandardMaterial3D
     if manta_mat == null or manta_mat.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA or not manta_mat.vertex_color_use_as_albedo or manta_mat.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED:
         _fail("V85 holographic wings need transparent, vertex-colored shaded surfaces")
         return
@@ -1274,10 +1274,10 @@ func _run_checks() -> void:
         _fail("V85 holograms must remain outside playable lanes without collisions")
         return
     var manta_z := manta.position.z
-    var wing_angle := left_wing.rotation.z
+    var wing_angle := manta_left_wing.rotation.z
     mantas.set("running", true)
     mantas.call("_process", 0.3)
-    if manta.position.z <= manta_z or absf(left_wing.rotation.z - wing_angle) < 0.05 or absf(tail.rotation.y) < 0.03:
+    if manta.position.z <= manta_z or absf(manta_left_wing.rotation.z - wing_angle) < 0.05 or absf(manta_tail.rotation.y) < 0.03:
         _fail("V85 holographic mantas must travel and animate their wings and tails")
         return
     mantas.set("running", false)
