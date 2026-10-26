@@ -31,3 +31,9 @@ Sichtkontrolle bei 16:9/19,5:9 und keine Messung der tatsächlichen FPS.
 4. Auf echtem iPhone und Android im Querformat FPS, Kamerakomposition, Touch- und HUD-Freiraum messen. Drei Vokabeln, vier Welten und vier Power-ups weiterhin im Gameplay prüfen.
 
 **Automatische Regression:** `rider_body_choreography_test.gd` prüft Knochenrotationen, Aufstiegs-/Abstiegsphasen, Landekompression, Rückkehr zur Ruhe, gemeinsame Skin-Bindung und Kollisionsfreiheit. **Kein automatischer Test beweist tatsächliche Bildqualität, Clipping-Freiheit oder iPhone-FPS.**
+
+
+## V102 — kontinuierliche skinnierte Gesichtsoberfläche (manuelle Abnahme offen)
+1. V101/V102 im gleichen 16:9-Querformat-Menü vergleichen: eine zusammenhängende Wangen-/Kinn-/Nasenfläche ersetzt drei schwebende Kugeln. Augen, Blinzeln, Augenbrauen und Lächeln müssen davor erkennbar bleiben.
+2. In der Verfolgerkamera und bei Turbo/Mega Jump Kopf-/Halsübergang, Helmvisier, Haaransatz und Wangen auf Z-Fighting oder Durchdringungen prüfen. Auch beide Seitenansichten aufnehmen.
+3. Automatischer Test `rider_skinned_face_test.gd` kontrolliert Original-Skelettbindung, echte Kopf-/Halsverformung, gewichtete Geometrie, Normals/Vertexfarben, Erhalt der Augen und fehlende Kollisionen. **Kein** Pixel-/FPS-Nachweis; echtes iPhone-Querformat bleibt offen.
