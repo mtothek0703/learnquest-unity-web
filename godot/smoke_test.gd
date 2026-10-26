@@ -1587,6 +1587,73 @@ func _run_checks() -> void:
     if absf(v93_pivot.rotation.y) >= absf(v93_turn) or absf(v93_fin.rotation.z) >= v93_fin_open:
         _fail("V93 head and fins must relax after a jump and Turbo")
         return
+    # V94: an actual five-bone Skeleton3D must drive large, shaded armor
+    # attachments rather than moving a decorative parent Node3D.
+    var v94_exosuit := installed_model.get_node_or_null("AnimatedSkeletalExosuit") as Node3D
+    var v94_skeleton := v94_exosuit.get_node_or_null("FiveBoneExosuitSkeleton") as Skeleton3D if v94_exosuit != null else null
+    if v94_skeleton == null or v94_skeleton.get_bone_count() != 5:
+        _fail("V94 must install a real five-bone skeletal exosuit")
+        return
+    if v94_skeleton.get_bone_parent(2) != 1 or v94_skeleton.get_bone_parent(3) != 1:
+        _fail("V94 both shoulders must be children of the animated upper spine")
+        return
+    var v94_back_attachment := v94_skeleton.get_node_or_null("UpperSpineArmor") as BoneAttachment3D
+    var v94_left_attachment := v94_skeleton.get_node_or_null("LeftSkeletalShoulder") as BoneAttachment3D
+    var v94_right_attachment := v94_skeleton.get_node_or_null("RightSkeletalShoulder") as BoneAttachment3D
+    var v94_collar := v94_skeleton.get_node_or_null("AnimatedNeckCollar") as BoneAttachment3D
+    if v94_back_attachment == null or v94_left_attachment == null or v94_right_attachment == null or v94_collar == null:
+        _fail("V94 backplate, both aero-blades and collar must attach to bones")
+        return
+    if v94_back_attachment.bone_name != "UpperSpine" or v94_left_attachment.bone_name != "LeftShoulder" or v94_right_attachment.bone_name != "RightShoulder":
+        _fail("V94 armor attachments must follow the correct skeleton bones")
+        return
+    var v94_back := v94_back_attachment.get_node_or_null("SculptedArticulatedBackplate") as MeshInstance3D
+    var v94_left := v94_left_attachment.get_node_or_null("SweptMetalAeroBlade") as MeshInstance3D
+    var v94_right := v94_right_attachment.get_node_or_null("SweptMetalAeroBlade") as MeshInstance3D
+    var v94_reactor := v94_back_attachment.get_node_or_null("PulsingSpineReactor") as MeshInstance3D
+    var v94_seam := v94_left_attachment.get_node_or_null("CurvedNeonBladeSeam") as MeshInstance3D
+    if v94_back == null or v94_left == null or v94_right == null or v94_reactor == null or v94_seam == null:
+        _fail("V94 sculpted backplate, paired fins, reactor or neon details missing")
+        return
+    if not (v94_back.mesh is ArrayMesh) or (v94_back.mesh as ArrayMesh).surface_get_array_len(0) < 1800:
+        _fail("V94 back armor must have detailed curved 3D geometry")
+        return
+    if not (v94_left.mesh is ArrayMesh) or (v94_left.mesh as ArrayMesh).surface_get_array_len(0) < 1800:
+        _fail("V94 aero-blades must be shaped 3D surfaces")
+        return
+    var v94_metal := v94_back.material_override as StandardMaterial3D
+    var v94_glow := v94_seam.material_override as StandardMaterial3D
+    if v94_metal == null or not v94_metal.vertex_color_use_as_albedo or v94_metal.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED:
+        _fail("V94 armor must be vertex-colored and react to world lighting")
+        return
+    if v94_glow == null or not v94_glow.emission_enabled:
+        _fail("V94 curved blade seams must emit light")
+        return
+    if v94_exosuit.find_children("*", "CollisionObject3D", true, false).size() != 0:
+        _fail("V94 skeletal exosuit must not alter rider collisions")
+        return
+    rider.set("lean", 0.85)
+    rider.set("boosting", true)
+    rider.position.y = 1.25
+    v94_exosuit.call("_process", 0.3)
+    var v94_left_open: float = v94_skeleton.get_bone_pose_rotation(2).get_angle()
+    var v94_right_open: float = v94_skeleton.get_bone_pose_rotation(3).get_angle()
+    if v94_left_open < 0.65 or v94_right_open < 0.48:
+        _fail("V94 skeleton shoulders must visibly unfold during Turbo jumps")
+        return
+    if v94_skeleton.get_bone_pose_rotation(1).get_angle() < 0.18:
+        _fail("V94 upper spine must counter-rotate while steering")
+        return
+    if v94_reactor.scale.x < 1.02:
+        _fail("V94 reactor must pulse with the bone-driven motion")
+        return
+    rider.set("lean", 0.0)
+    rider.set("boosting", false)
+    rider.position.y = 0.0
+    v94_exosuit.call("_process", 0.3)
+    if v94_skeleton.get_bone_pose_rotation(2).get_angle() >= v94_left_open - 0.40:
+        _fail("V94 shoulders must fold back after landing")
+        return
     # V84: a clearly visible, animated 3D silhouette in the landscape chase
     # camera, built without assets, collisions or changes to touch controls.
     var sails := installed_model.get_node_or_null("AnimatedKineticSails") as Node3D
@@ -2172,7 +2239,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V93") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V94") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -2182,7 +2249,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V93") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V94") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -2321,7 +2388,7 @@ func _run_checks() -> void:
     # V59: an iPhone in landscape is wider than 720px but still needs the
     # optional gesture-only mode. Simulate touch hardware in headless CI.
     game.call("_apply_mobile_layout", 844.0, 1, 390.0)
-    if not mobile_hud.text.contains("V93") or not mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("V94") or not mobile_hud.text.contains("\n"):
         _fail("Landscape-first phone layout must use a compact two-line HUD")
         return
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
@@ -2429,7 +2496,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V93") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V94") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):

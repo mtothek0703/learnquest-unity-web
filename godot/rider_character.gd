@@ -133,6 +133,11 @@ func set_character_model(model: Node3D) -> void:
     var torso := preload("res://rider_torso_detail.gd").new() as Node3D
     torso.name = "AnimatedTailoredFlightJacket"
     model.add_child(torso)
+    # V94: a real five-bone Skeleton3D moves shaded exosuit armor and
+    # shoulder aero-blades, without skinning or replacing the imported hero.
+    var exosuit := preload("res://rider_skeletal_exosuit.gd").new() as Node3D
+    exosuit.name = "AnimatedSkeletalExosuit"
+    model.add_child(exosuit)
     var coat := preload("res://rider_coat.gd").new() as Node3D
     coat.name = "AnimatedSculptedCoat"
     model.add_child(coat)
