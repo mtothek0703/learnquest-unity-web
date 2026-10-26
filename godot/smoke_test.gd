@@ -1435,6 +1435,55 @@ func _run_checks() -> void:
         return
     rider.position.y = 0.0
     cloak.call("_process", 0.3)
+    # V91: each wrist now follows a genuine second arm joint instead of a
+    # single rigid shoulder rotation. Shaded 3D armor and glow are visual only.
+    var v91_left := installed_model.get_node_or_null("BalanceArm0/AnimatedElbowKinematics") as Node3D
+    var v91_right := installed_model.get_node_or_null("BalanceArm1/AnimatedElbowKinematics") as Node3D
+    if v91_left == null or v91_right == null:
+        _fail("V91 rider must have two articulated elbow rigs")
+        return
+    var v91_joint := v91_left.get_node_or_null("ArticulatedElbow") as Node3D
+    var v91_other_joint := v91_right.get_node_or_null("ArticulatedElbow") as Node3D
+    var v91_socket := v91_left.get_node_or_null("ShadedElbowSocket") as MeshInstance3D
+    var v91_armor := v91_left.get_node_or_null("ArticulatedElbow/CurvedForearmArmor") as MeshInstance3D
+    var v91_cuff := v91_left.get_node_or_null("ArticulatedElbow/LuminousElbowCuff") as MeshInstance3D
+    var v91_glove := installed_model.get_node_or_null("BalanceArm0/SculptedRiderGauntlet") as Node3D
+    if v91_joint == null or v91_other_joint == null or v91_socket == null or v91_armor == null or v91_cuff == null or v91_glove == null:
+        _fail("V91 shaded elbow socket, rotating armor or attached wrist is missing")
+        return
+    if not (v91_armor.mesh is ArrayMesh) or (v91_armor.mesh as ArrayMesh).surface_get_array_len(0) < 1200:
+        _fail("V91 elbow needs detailed curved 3D geometry, not a rigid box")
+        return
+    var v91_fabric := v91_armor.material_override as StandardMaterial3D
+    var v91_neon := v91_cuff.material_override as StandardMaterial3D
+    if v91_fabric == null or not v91_fabric.vertex_color_use_as_albedo or v91_fabric.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED:
+        _fail("V91 elbow armor must remain shaded and vertex-colored")
+        return
+    if v91_neon == null or not v91_neon.emission_enabled:
+        _fail("V91 wrist needs its luminous curved cuff")
+        return
+    if v91_left.find_children("*", "CollisionObject3D", true, false).size() != 0 or v91_right.find_children("*", "CollisionObject3D", true, false).size() != 0:
+        _fail("V91 animated elbows must never add collisions")
+        return
+    rider.set("lean", 0.8)
+    rider.set("boosting", true)
+    rider.position.y = 1.4
+    v91_left.call("_process", 0.3)
+    v91_right.call("_process", 0.3)
+    var v91_bent_angle: float = v91_joint.rotation.x
+    if v91_bent_angle < 0.9 or absf(v91_joint.rotation.z - v91_other_joint.rotation.z) < 0.10:
+        _fail("V91 arms must visibly bend and counter-steer during Turbo and jumps")
+        return
+    if absf(v91_glove.rotation.x - v91_joint.rotation.x) > 0.001:
+        _fail("V91 original detailed gauntlet must follow the moving elbow")
+        return
+    rider.set("lean", 0.0)
+    rider.set("boosting", false)
+    rider.position.y = 0.0
+    v91_left.call("_process", 0.3)
+    if v91_joint.rotation.x >= v91_bent_angle - 0.45:
+        _fail("V91 elbows must relax again after landing and Turbo")
+        return
     # V84: a clearly visible, animated 3D silhouette in the landscape chase
     # camera, built without assets, collisions or changes to touch controls.
     var sails := installed_model.get_node_or_null("AnimatedKineticSails") as Node3D
@@ -2020,7 +2069,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V90") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V91") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -2030,7 +2079,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V90") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V91") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -2169,7 +2218,7 @@ func _run_checks() -> void:
     # V59: an iPhone in landscape is wider than 720px but still needs the
     # optional gesture-only mode. Simulate touch hardware in headless CI.
     game.call("_apply_mobile_layout", 844.0, 1, 390.0)
-    if not mobile_hud.text.contains("V90") or not mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("V91") or not mobile_hud.text.contains("\n"):
         _fail("Landscape-first phone layout must use a compact two-line HUD")
         return
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
@@ -2277,7 +2326,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V90") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V91") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
