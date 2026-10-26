@@ -106,6 +106,10 @@ func _assemble() -> void:
         var trail := box(board, Vector3(side * 0.48, 0.16, 2.0), Vector3(0.07, 0.06, 0.48), trail_color, true)
         trail.name = "Animated boost contrail"
         energy_trails.append(trail)
+    # V83: cinematic curved ion wake frames the rider without obscuring the track.
+    var ion_wake := preload("res://cinematic_ion_wake.gd").new() as Node3D
+    ion_wake.name = "Cinematic ion wake"
+    board.add_child(ion_wake)
     # V12: prominent swept side wings, rear stabilisers and an illuminated
     # centre spine. These change the board outline even from the chase camera.
     for side in [-1.0, 1.0]:
