@@ -92,7 +92,7 @@ func _influences(p: Vector3) -> Dictionary:
     elif p.y > 1.27 and x > 0.43:
         var side := 5 if p.x < 0.0 else 7
         var arm := smoothstep(0.43, 0.72, x)
-        var elbow := smoothstep(0.64, 0.97, x) * smoothstep(2.12, 1.42, p.y)
+        var elbow := smoothstep(0.64, 0.97, x) * (1.0 - smoothstep(1.42, 2.12, p.y))
         ids = PackedInt32Array([side, side + 1, 2, 1])
         values = PackedFloat32Array([arm * (1.0 - elbow), arm * elbow, (1.0 - arm) * 0.85, (1.0 - arm) * 0.15])
     elif p.y < 1.14 and x > 0.15:
