@@ -174,10 +174,33 @@ func set_character_model(model: Node3D) -> void:
     var costume_follow := preload("res://rider_costume_skin_follow.gd").new() as Node3D
     costume_follow.name = "SkinnedCostumePoseFollower"
     model.add_child(costume_follow)
+    # V100: V99's new skinned shell was buried under two older, rigid back
+    # plates. Retire ONLY the occluding visual meshes when skinning succeeded.
+    # The reactor, animated coat, footwear, touch and physics remain intact.
+    _retire_occluding_legacy_shells(model, sculpted_suit, harness)
     # Keep the original animated board and lights, hide only its old body.
     var old_body := legacy_rider.get_node_or_null("Animated racer rig")
     if old_body != null:
         old_body.visible = false
+
+func _retire_occluding_legacy_shells(model: Node3D, suit: Node3D, harness: Node3D) -> void:
+    # The fallback path must remain intact for placeholder/non-skinned models.
+    var parts: Array = suit.get("suit_parts")
+    if parts.size() != 5:
+        return
+    var old_jacket := model.get_node_or_null("SculptedJacketBack") as MeshInstance3D
+    var old_emblem := model.get_node_or_null("NeonJacketEmblem") as MeshInstance3D
+    var old_harness_plate := harness.get_node_or_null("CurvedAeroBackplate") as MeshInstance3D
+    for shell in [old_jacket, old_emblem, old_harness_plate]:
+        if shell != null:
+            shell.visible = false
+    # The old cylindrical shins and boxy ankle bands overlap the skinned
+    # leg guards; keep the sculpted hover boots and animated knee joints.
+    for leg in balance_legs:
+        for name in ["LegacyShin", "LegacyAnkleBand"]:
+            var old_part := leg.get_node_or_null(name) as MeshInstance3D
+            if old_part != null:
+                old_part.visible = false
 
 func _add_animated_costume(model: Node3D) -> void:
     scarf_tails.clear()
