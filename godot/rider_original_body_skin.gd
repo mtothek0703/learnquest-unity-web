@@ -172,8 +172,8 @@ func _process(delta: float) -> void:
     for side in [-1.0, 1.0]:
         var arm := 5 if side < 0.0 else 7
         var thigh := 9 if side < 0.0 else 11
-        var balance := steering * side
-        var arm_spread := side * (0.13 + jump * 0.29 + ascending * 0.13 - descending * 0.06)
+        var balance: float = steering * float(side)
+        var arm_spread: float = float(side) * (0.13 + jump * 0.29 + ascending * 0.13 - descending * 0.06)
         _rotate(arm, Quaternion(Vector3.FORWARD, arm_spread - steering * 0.10) *
             Quaternion(Vector3.RIGHT, boost_pose_weight * 0.24 +
                 rhythm * (0.038 + boost_pose_weight * 0.025) * side -
