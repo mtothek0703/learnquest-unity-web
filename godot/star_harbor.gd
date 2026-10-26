@@ -7,6 +7,9 @@ var travel_speed := 14.0
 var elapsed := 0.0
 var moving_parts: Array[Node3D] = []
 var rotors: Array[Node3D] = []
+var carrier_hulls: Array[Node3D] = []
+var carrier_rings: Array[Node3D] = []
+var carrier_engines: Array[MeshInstance3D] = []
 
 func _ready() -> void:
     _build_harbor()
@@ -167,11 +170,101 @@ func _build_harbor() -> void:
         for side in [-1.0, 1.0]:
             var light := _instance(portal, "Harbor portal beacon", beacon, Vector3(side * 6.2, 0.5, 0), _material(Color("#ffe7a6"), true))
             light.scale = Vector3(0.3, 0.55, 0.3)
+    _build_carriers()
+
+
+# V82: enormous shaded orbital carriers frame Star Harbor in landscape.
+# Entirely procedural, mobile-friendly geometry; no downloaded assets.
+func _build_carriers() -> void:
+    var hull_material := _material(Color("#667da7"))
+    var wing_material := _material(Color("#354e7a"))
+    var neon_material := _material(Color("#5cf7f0"), true)
+    var pink_material := _material(Color("#ff83df"), true)
+    var glass_material := _material(Color(0.17, 0.83, 0.98, 0.66), true)
+    glass_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    glass_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+    var fuselage_mesh := SphereMesh.new()
+    fuselage_mesh.radius = 1.0
+    fuselage_mesh.height = 2.0
+    fuselage_mesh.radial_segments = 24
+    fuselage_mesh.rings = 12
+    var prow_mesh := CylinderMesh.new()
+    prow_mesh.top_radius = 0.10
+    prow_mesh.bottom_radius = 1.35
+    prow_mesh.height = 3.8
+    prow_mesh.radial_segments = 16
+    var wing_mesh := BoxMesh.new()
+    wing_mesh.size = Vector3(4.6, 0.30, 4.5)
+    var fin_mesh := BoxMesh.new()
+    fin_mesh.size = Vector3(0.20, 1.5, 2.6)
+    var ring_mesh := TorusMesh.new()
+    ring_mesh.inner_radius = 3.85
+    ring_mesh.outer_radius = 4.14
+    ring_mesh.rings = 48
+    ring_mesh.ring_segments = 12
+    var engine_mesh := CylinderMesh.new()
+    engine_mesh.top_radius = 0.45
+    engine_mesh.bottom_radius = 0.58
+    engine_mesh.height = 1.4
+    engine_mesh.radial_segments = 12
+    var flame_mesh := SphereMesh.new()
+    flame_mesh.radius = 0.42
+    flame_mesh.height = 0.84
+    flame_mesh.radial_segments = 12
+    flame_mesh.rings = 8
+    for index in range(2):
+        var side := -1.0 if index == 0 else 1.0
+        var carrier := Node3D.new()
+        carrier.name = "Cinematic orbital carrier %d" % index
+        carrier.position = Vector3(side * 17.5, 12.5, -35.0 - float(index) * 63.0)
+        add_child(carrier)
+        moving_parts.append(carrier)
+        carrier_hulls.append(carrier)
+        var hull := _instance(carrier, "Armored carrier fuselage", fuselage_mesh, Vector3.ZERO, hull_material)
+        hull.scale = Vector3(2.15, 1.30, 5.0)
+        var prow := _instance(carrier, "Sculpted command prow", prow_mesh, Vector3(0.0, 0.0, -5.7), hull_material)
+        prow.rotation.x = PI * 0.5
+        var cockpit := _instance(carrier, "Panoramic command canopy", fuselage_mesh, Vector3(0.0, 1.0, -2.2), glass_material)
+        cockpit.scale = Vector3(1.15, 0.52, 1.65)
+        for wing_side in [-1.0, 1.0]:
+            var wing := _instance(carrier, "Swept armor wing", wing_mesh, Vector3(wing_side * 3.5, -0.20, 0.15), wing_material)
+            wing.rotation.z = wing_side * 0.11
+            _instance(carrier, "Wing neon running light", fin_mesh, Vector3(wing_side * 5.45, 0.58, 0.0), neon_material if index == 0 else pink_material)
+        for ring_index in range(2):
+            var ring_pivot := Node3D.new()
+            ring_pivot.name = "Animated docking gyroscope %d" % ring_index
+            ring_pivot.position.z = 0.7 + float(ring_index) * 2.3
+            ring_pivot.rotation.x = PI * 0.5 + float(ring_index) * 0.23
+            carrier.add_child(ring_pivot)
+            carrier_rings.append(ring_pivot)
+            _instance(ring_pivot, "Sculpted rotating energy torus", ring_mesh, Vector3.ZERO, neon_material if ring_index == 0 else pink_material)
+        for engine_index in range(3):
+            var engine_x := float(engine_index - 1) * 1.45
+            var engine := _instance(carrier, "Shaded ion engine", engine_mesh, Vector3(engine_x, -0.48, 4.7), wing_material)
+            engine.rotation.x = PI * 0.5
+            var flame := _instance(carrier, "Pulsing ion exhaust %d" % engine_index, flame_mesh, Vector3(engine_x, -0.48, 5.65), neon_material if index == 0 else pink_material)
+            carrier_engines.append(flame)
+        var floodlight := OmniLight3D.new()
+        floodlight.name = "Carrier cinematic engine light"
+        floodlight.light_color = Color("#59fff0") if index == 0 else Color("#ff86dd")
+        floodlight.light_energy = 0.85
+        floodlight.omni_range = 8.0
+        floodlight.shadow_enabled = false
+        floodlight.position = Vector3(0.0, -0.4, 5.4)
+        carrier.add_child(floodlight)
 
 func _process(delta: float) -> void:
     elapsed += delta
     for index in range(rotors.size()):
         rotors[index].rotation.y += delta * (0.55 + float(index % 3) * 0.16)
+    for index in range(carrier_hulls.size()):
+        var carrier := carrier_hulls[index]
+        carrier.position.y = 12.5 + sin(elapsed * 1.1 + float(index) * 1.6) * 0.28
+        carrier.rotation.z = sin(elapsed * 0.42 + float(index)) * 0.025
+    for index in range(carrier_rings.size()):
+        carrier_rings[index].rotation.y += delta * (0.38 + float(index % 2) * 0.17)
+    for index in range(carrier_engines.size()):
+        carrier_engines[index].scale = Vector3.ONE * (0.72 + 0.24 * sin(elapsed * 7.0 + float(index)))
     if not running:
         return
     for prop in moving_parts:
