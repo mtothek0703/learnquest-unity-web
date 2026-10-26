@@ -59,3 +59,9 @@ Automatische Regression: `rider_skinned_hair_test.gd` prüft zusätzlich Volumen
 3. Auf echtem iPhone FPS und Framezeiten je 60 Sekunden sowie Touch/HUD-Freiraum messen. Drei Vokabelaufgaben, volle Runde, vier Welten, Bosse und Power-ups durchspielen. Ohne Bilder/Messungen **keine** visuelle/FPS-Abnahme behaupten.
 
 Automatisch prüft `rider_closed_head_test.gd` 360°-Volumen, Augenhöhlen-/Nasenrelief, Kopf-/Nacken-Gewichte, das originale 13-Knochen-Rig und Kollisionsfreiheit. Keine Pixel-/Geräteprüfung.
+
+## V106 — skinnierte Jacke, Schulter- und Halsübergänge (manuelle QA offen)
+1. V105 und V106 in **identischer 16:9- und 19,5:9-Querformatkamera** aufnehmen: vorn, Rücken, Profil, Dreiviertel sowie Verfolgeransicht. Die neue Jacke muss als ein durchgehender 360°-Körper mit geformten Schultern und asymmetrischer Kragenhöhe erkennbar sein, nicht als separate Boxen.
+2. Turbo, harte Links-/Rechtskurven, Mega Jump und Landung filmen. Speziell an Kinn/Kragen, Schulter/Ärmel, Rücken/Reaktor und Brustnaht auf sichtbare Durchdringungen oder unnatürliche Deformation achten. Kopf, Haare, Helm und Gesicht müssen frei bleiben.
+3. Im Smartphone-Querformat HUD-Überdeckung, Touch-Eingaben und FPS/Framezeiten mindestens 60 Sekunden prüfen; V105 bei identischem Gerät und Szene als Referenz. Drei Vokabelaufgaben, volle Runde, vier Welten, Bosse und vier Power-ups erhalten.
+4. Automatisch prüft `rider_skinned_upper_jacket_test.gd` echte Skelettgewichte, zusammenhängende Jackengeometrie, den neuen Kragen und das Verbergen starrer V38-Duplikate. **Keine** automatische Pixel-/FPS-Abnahme; echte Gerätetests bleiben offen.
