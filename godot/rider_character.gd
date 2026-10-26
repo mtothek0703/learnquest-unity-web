@@ -369,6 +369,7 @@ func _add_balance_legs(model: Node3D) -> void:
         var shape := CapsuleMesh.new()
         shape.radius = 0.17
         shape.height = 0.55
+        shin.name = "LegacyShin"
         shin.mesh = shape
         shin.material_override = boots
         shin.position = Vector3(0.0, -0.23, 0.02)
@@ -376,6 +377,7 @@ func _add_balance_legs(model: Node3D) -> void:
         var light_band := MeshInstance3D.new()
         var band := BoxMesh.new()
         band.size = Vector3(0.30, 0.07, 0.23)
+        light_band.name = "LegacyAnkleBand"
         light_band.mesh = band
         light_band.material_override = glow
         light_band.position = Vector3(0.0, -0.39, 0.18)
@@ -389,6 +391,12 @@ func _add_balance_legs(model: Node3D) -> void:
         var leg_armor := preload("res://rider_leg_armor.gd").new() as Node3D
         leg_armor.name = "SculptedRiderLeg"
         pivot.add_child(leg_armor)
+        # V92: the existing boot and shin now follow a second, articulated
+        # knee joint, with shaded geometry and luminous moving knee rings.
+        var knee := preload("res://rider_knee_kinematics.gd").new() as Node3D
+        knee.name = "AnimatedKneeKinematics"
+        knee.set("side_sign", direction)
+        pivot.add_child(knee)
         balance_legs.append(pivot)
 
 func _add_face_details(model: Node3D) -> void:
