@@ -1250,6 +1250,41 @@ func _run_checks() -> void:
     if rider == null or rider.get_node_or_null("LegacyRider/Floating hoverboard") == null:
         _fail("Rider scene must preserve the animated hoverboard")
         return
+    # V83: original curved ion ribbons and animated sparks improve the
+    # 16:9 chase view without touching input, hitboxes or race mechanics.
+    var wake := rider.get_node_or_null("LegacyRider/Floating hoverboard/Cinematic ion wake") as Node3D
+    var wake_left := wake.get_node_or_null("Ion wake left") as Node3D if wake != null else null
+    var wake_right := wake.get_node_or_null("Ion wake right") as Node3D if wake != null else null
+    var ribbon := wake_left.get_node_or_null("Translucent curved plasma") as MeshInstance3D if wake_left != null else null
+    var core := wake_left.get_node_or_null("Bright sculpted ion core") as MeshInstance3D if wake_left != null else null
+    var engine_light := wake.get_node_or_null("Pulsing cinematic engine light") as OmniLight3D if wake != null else null
+    if wake == null or wake_left == null or wake_right == null or ribbon == null or core == null or engine_light == null:
+        _fail("V83 hoverboard must have two animated ion wakes and a cinematic light")
+        return
+    if not (ribbon.mesh is ArrayMesh) or (ribbon.mesh as ArrayMesh).surface_get_array_len(0) < 180:
+        _fail("V83 ion wake needs a detailed original curved 3D mesh")
+        return
+    var ribbon_material := ribbon.material_override as StandardMaterial3D
+    if ribbon_material == null or ribbon_material.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA or not ribbon_material.vertex_color_use_as_albedo:
+        _fail("V83 ion ribbons need translucent vertex-colored gradients")
+        return
+    if wake.get("sparks").size() != 12 or wake.find_children("*", "CollisionObject3D", true, false).size() != 0:
+        _fail("V83 ion wake must contain twelve moving sparks and no collisions")
+        return
+    var left_spark := wake_left.get_node_or_null("Moving ion spark 0") as MeshInstance3D
+    var spark_z := left_spark.position.z
+    var wake_normal_length := wake_left.scale.z
+    var legacy_for_wake := rider.get_node("LegacyRider")
+    legacy_for_wake.set("boosting", true)
+    wake.call("_process", 0.24)
+    if wake_left.scale.z <= wake_normal_length or is_equal_approx(left_spark.position.z, spark_z) or engine_light.light_energy <= 0.65:
+        _fail("V83 Turbo must visibly extend the ion wakes, move sparks and brighten the light")
+        return
+    legacy_for_wake.set("boosting", false)
+    wake.call("_process", 0.24)
+    if wake_left.scale.z >= 0.95:
+        _fail("V83 ion wakes must shrink again after Turbo ends")
+        return
     var fallback := rider.get_node_or_null("LegacyRider/Animated racer rig") as Node3D
     if fallback == null:
         _fail("Legacy rider fallback must exist")
@@ -1726,7 +1761,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V82") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V83") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1736,7 +1771,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V82") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V83") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
