@@ -1705,6 +1705,67 @@ func _run_checks() -> void:
     if v94_exosuit.find_children("*", "CollisionObject3D", true, false).size() != 0:
         _fail("V95 visual skinning must not add collision objects")
         return
+    # V96: both torso halves must be genuinely skinned to the animated rig,
+    # not static geometry or bone-attached rigid panels. The large shaded
+    # armor and four luminous ribs per side remain visual-only.
+    var v96_left := v94_skeleton.get_node_or_null("LeftSkinnedTorsoShell") as MeshInstance3D
+    var v96_right := v94_skeleton.get_node_or_null("RightSkinnedTorsoShell") as MeshInstance3D
+    var v96_rib := v94_skeleton.get_node_or_null("LeftSkinnedInnerRib") as MeshInstance3D
+    var v96_outer := v94_skeleton.get_node_or_null("RightSkinnedOuterRib") as MeshInstance3D
+    var v96_waist := v94_skeleton.get_node_or_null("LeftSkinnedWaistBand") as MeshInstance3D
+    var v96_shoulder := v94_skeleton.get_node_or_null("RightSkinnedShoulderBand") as MeshInstance3D
+    if v96_left == null or v96_right == null or v96_rib == null or v96_outer == null or v96_waist == null or v96_shoulder == null:
+        _fail("V96 must install two flexible torso halves and four glowing ribs per side")
+        return
+    if v96_left.skin == null or v96_right.skin == null or v96_left.skin.get_bind_count() != 5 or v96_left.skeleton != NodePath("..") or v96_right.skeleton != NodePath(".."):
+        _fail("V96 torso armor must use the five-bone skin and its parent Skeleton3D")
+        return
+    if not (v96_left.mesh is ArrayMesh) or not (v96_right.mesh is ArrayMesh):
+        _fail("V96 torso must use skinned ArrayMesh surfaces")
+        return
+    var v96_arrays: Array = (v96_left.mesh as ArrayMesh).surface_get_arrays(0)
+    var v96_right_arrays: Array = (v96_right.mesh as ArrayMesh).surface_get_arrays(0)
+    var v96_vertices: PackedVector3Array = v96_arrays[Mesh.ARRAY_VERTEX]
+    var v96_weights: PackedFloat32Array = v96_arrays[Mesh.ARRAY_WEIGHTS]
+    var v96_bones: PackedInt32Array = v96_arrays[Mesh.ARRAY_BONES]
+    var v96_right_bones: PackedInt32Array = v96_right_arrays[Mesh.ARRAY_BONES]
+    if v96_vertices.size() < 1400 or v96_weights.size() != v96_vertices.size() * 4 or v96_bones.size() != v96_vertices.size() * 4:
+        _fail("V96 torso must have dense four-weight curved geometry")
+        return
+    # Sample the midpoint of both the horizontal and vertical subdivisions.
+    var v96_sample: int = (v96_vertices.size() / 2 + 36) * 4
+    var v96_total: float = v96_weights[v96_sample] + v96_weights[v96_sample + 1] + v96_weights[v96_sample + 2] + v96_weights[v96_sample + 3]
+    if absf(v96_total - 1.0) > 0.005 or v96_weights[v96_sample] < 0.15 or v96_weights[v96_sample + 1] < 0.25 or v96_weights[v96_sample + 2] < 0.025:
+        _fail("V96 torso must smoothly blend waist, chest and shoulder weights")
+        return
+    if v96_bones[v96_sample + 2] != 2 or v96_right_bones[v96_sample + 2] != 3:
+        _fail("V96 torso sides must deform with their own shoulders")
+        return
+    if v96_vertices[v96_sample / 4].x >= -0.16:
+        _fail("V96 torso panels must leave the central rider reactor visible")
+        return
+    var v96_armor := v96_left.material_override as StandardMaterial3D
+    var v96_neon := v96_rib.material_override as StandardMaterial3D
+    if v96_armor == null or not v96_armor.vertex_color_use_as_albedo or v96_armor.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED or v96_armor.metallic < 0.35:
+        _fail("V96 torso must have shaded metallic vertex-colored armor")
+        return
+    if v96_neon == null or not v96_neon.emission_enabled or not v96_neon.vertex_color_use_as_albedo:
+        _fail("V96 torso ribs must glow while following the weighted skin")
+        return
+    if v94_exosuit.find_children("*", "CollisionObject3D", true, false).size() != 0:
+        _fail("V96 flexible torso must not change collisions or touch controls")
+        return
+    rider.set("lean", -0.8)
+    rider.set("boosting", true)
+    rider.position.y = 0.9
+    v94_exosuit.call("_process", 0.3)
+    if v94_skeleton.get_bone_pose_rotation(0).get_angle() < 0.07 or v94_skeleton.get_bone_pose_rotation(1).get_angle() < 0.12:
+        _fail("V96 weighted torso must be driven by moving waist and chest bones")
+        return
+    rider.set("lean", 0.0)
+    rider.set("boosting", false)
+    rider.position.y = 0.0
+    v94_exosuit.call("_process", 0.3)
     # V84: a clearly visible, animated 3D silhouette in the landscape chase
     # camera, built without assets, collisions or changes to touch controls.
     var sails := installed_model.get_node_or_null("AnimatedKineticSails") as Node3D
@@ -2290,7 +2351,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V95") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V96") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -2300,7 +2361,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V95") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V96") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -2439,7 +2500,7 @@ func _run_checks() -> void:
     # V59: an iPhone in landscape is wider than 720px but still needs the
     # optional gesture-only mode. Simulate touch hardware in headless CI.
     game.call("_apply_mobile_layout", 844.0, 1, 390.0)
-    if not mobile_hud.text.contains("V95") or not mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("V96") or not mobile_hud.text.contains("\n"):
         _fail("Landscape-first phone layout must use a compact two-line HUD")
         return
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
@@ -2547,7 +2608,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V95") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V96") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
