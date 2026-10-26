@@ -32,6 +32,8 @@ jobs:
           grep -Fq 'LEARNQUEST SMOKE TEST PASSED' /tmp/gameplay.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_original_body_skin_test.gd 2>&1 | tee /tmp/original-body-skin.log
           grep -Fq 'ORIGINAL BODY SKIN TEST PASSED' /tmp/original-body-skin.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_costume_skin_follow_test.gd 2>&1 | tee /tmp/costume-skin-follow.log
+          grep -Fq 'COSTUME SKIN FOLLOW TEST PASSED' /tmp/costume-skin-follow.log
       - name: Validate web export before any main-branch deployment
         shell: bash
         run: |
@@ -52,5 +54,6 @@ jobs:
             /tmp/import.log
             /tmp/gameplay.log
             /tmp/original-body-skin.log
+            /tmp/costume-skin-follow.log
             /tmp/web-export.log
           if-no-files-found: ignore

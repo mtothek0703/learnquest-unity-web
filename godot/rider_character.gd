@@ -164,6 +164,11 @@ func set_character_model(model: Node3D) -> void:
     var harness := preload("res://rider_aero_harness.gd").new() as Node3D
     harness.name = "AnimatedAeroHarness"
     model.add_child(harness)
+    # V98: match the jacket, coat, exosuit and aero gear to the same V97
+    # skinned-body chest/hips pose. Preserve each accessory's own animation.
+    var costume_follow := preload("res://rider_costume_skin_follow.gd").new() as Node3D
+    costume_follow.name = "SkinnedCostumePoseFollower"
+    model.add_child(costume_follow)
     # Keep the original animated board and lights, hide only its old body.
     var old_body := legacy_rider.get_node_or_null("Animated racer rig")
     if old_body != null:

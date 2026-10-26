@@ -13,6 +13,8 @@ var rest_transforms: Array[Transform3D] = []
 var neon_material: StandardMaterial3D
 
 func _ready() -> void:
+    # Original body skin runs at priority 10; read its final bone pose at 20.
+    process_priority = 20
     head_pivot = Node3D.new()
     head_pivot.name = "ArticulatedHeadPivot"
     head_pivot.position = HEAD_CENTER
@@ -35,26 +37,31 @@ func _process(delta: float) -> void:
     if rider == null:
         return
     clock += delta
-    var steering := clampf(float(rider.get("lean")), -1.0, 1.0)
     var turbo := bool(rider.get("boosting"))
     var air := clampf(rider.position.y / 1.25, 0.0, 1.0)
     var weight := minf(1.0, delta * 7.0)
-    # A readable anticipation pose: look into corners, duck into Turbo,
-    # lift the chin when airborne. Gentle idle scanning adds life in menus.
-    var yaw := -0.26 * steering + sin(clock * 1.1) * 0.035
-    var pitch := (0.16 if turbo else -0.025) - 0.19 * air
-    var roll := -0.15 * steering + sin(clock * 1.8) * 0.018
-    head_pivot.rotation.y = lerpf(head_pivot.rotation.y, yaw, weight)
-    head_pivot.rotation.x = lerpf(head_pivot.rotation.x, pitch, weight)
-    head_pivot.rotation.z = lerpf(head_pivot.rotation.z, roll, weight)
-    var rotation_basis := Basis.from_euler(head_pivot.rotation)
+    # Follow the real V97 Head bone, including inherited hips/chest/neck pose.
+    # Independent V93 Euler rotations previously made the face/helmet/hair
+    # drift away from the skinned original head during hard turns and jumps.
+    var model := get_parent() as Node3D
+    var rig := model.get_node_or_null("OriginalBodySkinRig") as Node3D
+    var skeleton: Skeleton3D = null
+    if rig != null:
+        skeleton = rig.get_node_or_null("OriginalBodySkeleton13") as Skeleton3D
+    if skeleton == null:
+        return
+    var head_pose := skeleton.get_bone_global_pose(4)
+    var head_rest := skeleton.get_bone_global_rest(4)
+    var head_rotation := head_pose.basis.orthonormalized()
+    var head_shift := head_pose.origin - head_rest.origin
+    head_pivot.transform = Transform3D(head_rotation, HEAD_CENTER + head_shift)
     for index in range(tracked.size()):
         if not is_instance_valid(tracked[index]):
             continue
         var original: Transform3D = rest_transforms[index]
         tracked[index].transform = Transform3D(
-            rotation_basis * original.basis,
-            HEAD_CENTER + rotation_basis * (original.origin - HEAD_CENTER)
+            head_rotation * original.basis,
+            head_pivot.position + head_rotation * (original.origin - HEAD_CENTER)
         )
     for index in range(fins.size()):
         var side := -1.0 if index == 0 else 1.0
