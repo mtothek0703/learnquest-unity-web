@@ -37,3 +37,11 @@ Sichtkontrolle bei 16:9/19,5:9 und keine Messung der tatsächlichen FPS.
 1. V101/V102 im gleichen 16:9-Querformat-Menü vergleichen: eine zusammenhängende Wangen-/Kinn-/Nasenfläche ersetzt drei schwebende Kugeln. Augen, Blinzeln, Augenbrauen und Lächeln müssen davor erkennbar bleiben.
 2. In der Verfolgerkamera und bei Turbo/Mega Jump Kopf-/Halsübergang, Helmvisier, Haaransatz und Wangen auf Z-Fighting oder Durchdringungen prüfen. Auch beide Seitenansichten aufnehmen.
 3. Automatischer Test `rider_skinned_face_test.gd` kontrolliert Original-Skelettbindung, echte Kopf-/Halsverformung, gewichtete Geometrie, Normals/Vertexfarben, Erhalt der Augen und fehlende Kollisionen. **Kein** Pixel-/FPS-Nachweis; echtes iPhone-Querformat bleibt offen.
+
+## V103 — gemeinsame geskinte Haar-Silhouette (manuelle Abnahme offen)
+1. V102 und V103 bei **identischer** Kamera im Smartphone-Querformat (16:9 und 19,5:9) aufnehmen. Im Menü Front-, Profil- und Rückenansicht vergleichen: gewölbte Kopfhaut, sieben geschwungene Rückensträhnen und vier kurze Stirnsträhnen statt der alten starren, überlappenden Platten.
+2. Die Stirnsträhnen dürfen Augenbrauen, Augen und Blinzeln nicht verdecken. Auf Spalten zwischen Gesicht, Kopfhaut und Helmvisier sowie Z-Fighting bei Kopfrotation achten. Das bisherige Gesicht muss sichtbar bleiben.
+3. Turbo, Links-/Rechtskurven, Mega Jump und Landung filmen: der neue Haar-Mesh soll mit dem **originalen** Kopf-/Nacken-Rig verformen; die weiterhin animierten Schläfenlocken, Kaskadensträhnen und der Zopf dürfen nicht doppelt rotieren oder durch den Helm ragen.
+4. FPS und Framezeiten über 60 Sekunden auf echtem iPhone im Querformat erfassen, dazu Browser-Reload und alle vier Welten prüfen. Touch-Gesten und HUD dürfen sich nicht verändern. Ohne Gerätetest keine FPS- oder Clipping-Abnahme behaupten.
+
+**Automatische Regression:** `rider_skinned_hair_test.gd` prüft echte Skin-Gewichte, 13-Bone-Bindung, Geometrieumfang, Materialien, erhaltene Schläfenlocken, ausgeblendete Altplatten und Kollisionsfreiheit. Diese Prüfungen ersetzen **keinen** Vorher/Nachher-Bildvergleich.
