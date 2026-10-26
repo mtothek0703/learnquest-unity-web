@@ -102,6 +102,12 @@ func set_character_model(model: Node3D) -> void:
     model.scale = Vector3.ONE * model_scale
     model.position.y = model_vertical_offset
     active_animator = _find_animator(model)
+    # V97: GPU-skin the ORIGINAL glTF body (not just decorative armor).
+    # Install before costume generation so the imported mesh alone is weighted.
+    var body_skin := preload("res://rider_original_body_skin.gd").new() as Node3D
+    body_skin.name = "OriginalBodySkinRig"
+    model.add_child(body_skin)
+    body_skin.call("bind_original", model)
     # A visible breathing and balance motion works even for non-rigged glTF meshes.
     pose_pivot = model
     _add_animated_costume(model)
