@@ -45,3 +45,10 @@ Sichtkontrolle bei 16:9/19,5:9 und keine Messung der tatsächlichen FPS.
 4. FPS und Framezeiten über 60 Sekunden auf echtem iPhone im Querformat erfassen, dazu Browser-Reload und alle vier Welten prüfen. Touch-Gesten und HUD dürfen sich nicht verändern. Ohne Gerätetest keine FPS- oder Clipping-Abnahme behaupten.
 
 **Automatische Regression:** `rider_skinned_hair_test.gd` prüft echte Skin-Gewichte, 13-Bone-Bindung, Geometrieumfang, Materialien, erhaltene Schläfenlocken, ausgeblendete Altplatten und Kollisionsfreiheit. Diese Prüfungen ersetzen **keinen** Vorher/Nachher-Bildvergleich.
+
+## V104 — Volumetrische 3D-Haare statt flacher Streifen (noch manuell zu prüfen)
+1. V103 und V104 mit **gleicher 16:9-Querformat-Kamera** aus Rücken-, Profil- und Menüperspektive aufnehmen. Die sieben skinierten Strähnen sollen echte Rundung und eine deutlichere Tiefe besitzen, nicht mehr nur flache Bänder.
+2. Bei harter Kurve, Turbo und Mega Jump auf Durchdringungen von Kopfhaut, Helm, Visier und Nacken achten. Die fünf alten starren `SweptHair*`-Tufts dürfen die neue Silhouette nicht überdecken. Drei Windsträhnen, Schläfenlocken, Zopf und Kaskade müssen weiterhin reagieren.
+3. Im echten Smartphone-Querformat (16:9 und 19,5:9) Bildrate, Berührungseingaben und freie HUD-/Kamerazone messen; V103 als Baseline verwenden. **Noch keine** bestätigten Geräte-FPS, Pixel- oder Clipping-Ergebnisse.
+
+Automatische Regression: `rider_skinned_hair_test.gd` prüft zusätzlich Volumen-Querschnitt, Tapering und das Verbergen starrer Duplikate, aber keine echten gerenderten Pixel.
