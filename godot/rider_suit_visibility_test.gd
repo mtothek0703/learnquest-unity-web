@@ -69,8 +69,11 @@ func _check() -> void:
             return
         for name in ["LegacyShin", "LegacyAnkleBand"]:
             var old := leg.get_node_or_null(name) as MeshInstance3D
-            if old == null or old.visible:
-                _fail("duplicated rigid shin or ankle box still covers skinned leg")
+            if old == null:
+                _fail("expected legacy leg mesh missing: BalanceLeg%d/%s" % [i, name])
+                return
+            if old.visible:
+                _fail("legacy leg mesh still visible: BalanceLeg%d/%s" % [i, name])
                 return
         if leg.get_node_or_null("SculptedHoverBoot") == null or leg.get_node_or_null("AnimatedKneeKinematics") == null:
             _fail("sculpted boots and articulated knees must remain")
