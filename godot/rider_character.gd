@@ -108,6 +108,11 @@ func set_character_model(model: Node3D) -> void:
     body_skin.name = "OriginalBodySkinRig"
     model.add_child(body_skin)
     body_skin.call("bind_original", model)
+    # V99: a sculpted flight-suit shell, sleeves and leg guards are GPU-skinned
+    # by the SAME original body skeleton, without altering touch or physics.
+    var sculpted_suit := preload("res://rider_sculpted_skinned_suit.gd").new() as Node3D
+    sculpted_suit.name = "SculptedSkinnedFlightSuit"
+    model.add_child(sculpted_suit)
     # A visible breathing and balance motion works even for non-rigged glTF meshes.
     pose_pivot = model
     _add_animated_costume(model)
