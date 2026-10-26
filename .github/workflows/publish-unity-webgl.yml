@@ -130,6 +130,9 @@ jobs:
           echo "V102 continuous head/neck GPU skinning regression passed"
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_skinned_hair_test.gd 2>&1 | tee /tmp/godot-skinned-hair.log
           grep -Fq 'SKINNED HAIR TEST PASSED' /tmp/godot-skinned-hair.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_closed_head_test.gd 2>&1 | tee /tmp/godot-closed-head.log
+          grep -Fq 'CLOSED HEAD TEST PASSED' /tmp/godot-closed-head.log
+          echo 'V105 360-degree skinned head regression passed'
           echo "V104 volumetric hair geometry, duplicate-retirement and original skinning regression passed"
           # GitHub Pages deploys replace the whole website. Preserve the actual
           # published older builds instead of silently replacing their contents.
@@ -139,28 +142,28 @@ jobs:
           python - <<'PY'
           from urllib.error import HTTPError
           from urllib.request import Request, urlopen
-          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v104/index.html"
+          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v105/index.html"
           try:
               with urlopen(Request(url, headers={"Cache-Control": "no-cache"}), timeout=20):
-                  raise SystemExit("Skyway V104 already exists: refusing to overwrite an immutable release")
+                  raise SystemExit("Skyway V105 already exists: refusing to overwrite an immutable release")
           except HTTPError as error:
               if error.code != 404:
                   raise
-          print("Skyway V104 is not published yet; safe to create")
+          print("Skyway V105 is not published yet; safe to create")
           PY
           # Each release gets a fresh URL; historical folders are never rebuilt from newer exports.
-          mkdir -p _site/skyway-v104
-          cp -a _site/godot/. _site/skyway-v104/
-          echo "$GITHUB_SHA" > _site/skyway-v104/build.txt
+          mkdir -p _site/skyway-v105
+          cp -a _site/godot/. _site/skyway-v105/
+          echo "$GITHUB_SHA" > _site/skyway-v105/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
-          echo "Archived previous versions and prepared immutable Skyway V104"
+          echo "Archived previous versions and prepared immutable Skyway V105"
       - name: Check browser export integrity
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          root = Path("_site/skyway-v104")
+          root = Path("_site/skyway-v105")
           for name in ("index.html", "index.js", "index.wasm", "index.pck"):
               file = root / name
               if not file.is_file() or file.stat().st_size == 0:
@@ -187,6 +190,7 @@ jobs:
             /tmp/godot-body-choreography.log
             /tmp/godot-skinned-face.log
             /tmp/godot-skinned-hair.log
+            /tmp/godot-closed-head.log
           if-no-files-found: ignore
 
       - name: Check Pages configuration
@@ -234,7 +238,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request, urllib.error
-          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v104/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v105/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.js": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
