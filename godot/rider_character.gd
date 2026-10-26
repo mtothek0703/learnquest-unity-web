@@ -140,6 +140,11 @@ func set_character_model(model: Node3D) -> void:
     var kinetic_sails := preload("res://rider_kinetic_sails.gd").new() as Node3D
     kinetic_sails.name = "AnimatedKineticSails"
     model.add_child(kinetic_sails)
+    # V90: three articulated cloth joints on each side form a shaded flight cloak.
+    # Visual-only: the working touch controls, hoverboard and collisions stay intact.
+    var motion_cloak := preload("res://rider_motion_cloak.gd").new() as Node3D
+    motion_cloak.name = "AnimatedMotionCloak"
+    model.add_child(motion_cloak)
     # V36: large curved back armor, rotating energy reactor and articulated jets.
     var harness := preload("res://rider_aero_harness.gd").new() as Node3D
     harness.name = "AnimatedAeroHarness"

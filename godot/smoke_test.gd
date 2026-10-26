@@ -1380,6 +1380,61 @@ func _run_checks() -> void:
     if fallback.visible:
         _fail("Fallback body must be hidden while imported 3D rider is active")
         return
+    # V90: real jointed fabric motion, shaded original cloth and luminous
+    # seams must remain visible in the landscape chase view, without hitboxes.
+    var cloak := installed_model.get_node_or_null("AnimatedMotionCloak") as Node3D
+    var cloak_left := cloak.get_node_or_null("LeftCloakRoot") as Node3D if cloak != null else null
+    var cloak_right := cloak.get_node_or_null("RightCloakRoot") as Node3D if cloak != null else null
+    if cloak_left == null or cloak_right == null or cloak.get("cloak_joints").size() != 6:
+        _fail("V90 rider needs two three-joint animated flight cloak halves")
+        return
+    if cloak.find_children("*", "CollisionObject3D", true, false).size() != 0:
+        _fail("V90 animated cloak must never alter collisions")
+        return
+    for cloak_side in ["LeftCloakRoot", "RightCloakRoot"]:
+        var cloak_path: String = str(cloak_side)
+        for segment in range(3):
+            cloak_path += "/Joint%d" % segment
+            var fabric_panel := cloak.get_node_or_null(cloak_path + "/FlowingFabric") as MeshInstance3D
+            var outer_seam := cloak.get_node_or_null(cloak_path + "/LuminousOuterHem") as MeshInstance3D
+            var inner_seam := cloak.get_node_or_null(cloak_path + "/LuminousInnerSeam") as MeshInstance3D
+            if fabric_panel == null or outer_seam == null or inner_seam == null:
+                _fail("V90 articulated cloak fabric or light seams are missing")
+                return
+            if not (fabric_panel.mesh is ArrayMesh) or (fabric_panel.mesh as ArrayMesh).surface_get_array_len(0) < 480:
+                _fail("V90 cloth panels need detailed curved 3D surfaces")
+                return
+            var cloth_mat := fabric_panel.material_override as StandardMaterial3D
+            var hem_mat := outer_seam.material_override as StandardMaterial3D
+            if cloth_mat == null or not cloth_mat.vertex_color_use_as_albedo or cloth_mat.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED:
+                _fail("V90 cloak must retain lit vertex-shaded fabric")
+                return
+            if hem_mat == null or not hem_mat.emission_enabled or not hem_mat.vertex_color_use_as_albedo:
+                _fail("V90 cloak needs luminous gradient stitching")
+                return
+    rider.set("lean", 0.75)
+    rider.set("boosting", true)
+    cloak.call("_process", 0.3)
+    var cloak_turbo_angle: float = cloak_left.rotation.z
+    var cloak_first_joint := cloak_left.get_node("Joint0") as Node3D
+    var cloak_turbo_pitch: float = cloak_first_joint.rotation.x
+    if absf(cloak_turbo_angle) < 0.10 or absf(cloak_turbo_pitch) < 0.15:
+        _fail("V90 cloak must visibly open and billow under Turbo and steering")
+        return
+    rider.set("lean", 0.0)
+    rider.set("boosting", false)
+    cloak.call("_process", 0.3)
+    if absf(cloak_left.rotation.z) >= absf(cloak_turbo_angle) or absf(cloak_first_joint.rotation.x) >= absf(cloak_turbo_pitch):
+        _fail("V90 articulated cloak must settle when Turbo ends")
+        return
+    var cloak_ground_pitch: float = cloak_first_joint.rotation.x
+    rider.position.y = 1.4
+    cloak.call("_process", 0.3)
+    if absf(cloak_first_joint.rotation.x - cloak_ground_pitch) < 0.08:
+        _fail("V90 cloak must respond to a real airborne pose")
+        return
+    rider.position.y = 0.0
+    cloak.call("_process", 0.3)
     # V84: a clearly visible, animated 3D silhouette in the landscape chase
     # camera, built without assets, collisions or changes to touch controls.
     var sails := installed_model.get_node_or_null("AnimatedKineticSails") as Node3D
@@ -1965,7 +2020,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V89") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V90") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1975,7 +2030,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V89") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V90") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -2114,7 +2169,7 @@ func _run_checks() -> void:
     # V59: an iPhone in landscape is wider than 720px but still needs the
     # optional gesture-only mode. Simulate touch hardware in headless CI.
     game.call("_apply_mobile_layout", 844.0, 1, 390.0)
-    if not mobile_hud.text.contains("V89") or not mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("V90") or not mobile_hud.text.contains("\n"):
         _fail("Landscape-first phone layout must use a compact two-line HUD")
         return
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
@@ -2222,7 +2277,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V89") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V90") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
