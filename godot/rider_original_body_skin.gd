@@ -23,7 +23,8 @@ func bind_original(model: Node3D) -> void:
         if mesh_node != null and mesh_node.mesh != null:
             original_meshes.append(mesh_node)
     if original_meshes.is_empty():
-        push_error("V97: imported rider body has no mesh to skin")
+        # The gameplay tests and hero gallery also inject optional placeholder
+        # Node3D models. They have no imported body and must remain supported.
         return
     _make_skeleton()
     var shared_skin := skeleton.create_skin_from_rest_transforms()
