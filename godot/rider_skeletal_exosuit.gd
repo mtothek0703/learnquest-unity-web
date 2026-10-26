@@ -16,6 +16,10 @@ func _ready() -> void:
     var membranes := preload("res://rider_skinned_membranes.gd").new() as Node3D
     membranes.name = "SkinnedAeroMembranes"
     add_child(membranes)
+    # V96: shaded waist-to-shoulder armor genuinely bends across the same rig.
+    var torso := preload("res://rider_skinned_torso.gd").new() as Node3D
+    torso.name = "SkinnedFlexibleTorso"
+    add_child(torso)
 
 func _build_skeleton() -> void:
     skeleton = Skeleton3D.new()
