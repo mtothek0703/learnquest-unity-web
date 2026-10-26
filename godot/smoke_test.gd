@@ -1200,6 +1200,47 @@ func _run_checks() -> void:
         _fail("Cinematic skybridges do not scroll with the race")
         return
     cinematic.set("running", false)
+    # V89: giant shaded searchlight towers and translucent sweeping 3D shafts
+    # must frame the landscape without covering the rider or changing physics.
+    var searchlights := game.get_node_or_null("LearnQuest Skyway world/Cinematic neon searchlights") as Node3D
+    if searchlights == null or searchlights.get_child_count() != 3:
+        _fail("V89 Neon City needs three cinematic 3D searchlight towers")
+        return
+    var searchlight_tower := searchlights.get_node_or_null("Neon searchlight tower 0") as Node3D
+    var scanner := searchlight_tower.get_node_or_null("Sweeping twin holographic spotlights") as Node3D if searchlight_tower != null else null
+    var searchlight_beam := scanner.get_node_or_null("Left volumetric light shaft") as MeshInstance3D if scanner != null else null
+    var beacon := scanner.get_node_or_null("Animated cinematic beacon light") as OmniLight3D if scanner != null else null
+    var column := searchlight_tower.get_node_or_null("Faceted metallic tower") as MeshInstance3D if searchlight_tower != null else null
+    if column == null or not (column.mesh is CylinderMesh) or searchlight_beam == null or beacon == null:
+        _fail("V89 shaded 3D tower, swept translucent beam or moving beacon missing")
+        return
+    if not (searchlight_beam.mesh is ArrayMesh) or (searchlight_beam.mesh as ArrayMesh).surface_get_array_len(0) < 1200:
+        _fail("V89 light shafts need detailed curved 3D mesh geometry")
+        return
+    var beam_material := searchlight_beam.material_override as StandardMaterial3D
+    if beam_material == null or beam_material.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA or not beam_material.vertex_color_use_as_albedo:
+        _fail("V89 light shafts must blend transparent vertex-color gradients")
+        return
+    var beam_colors: PackedColorArray = (searchlight_beam.mesh as ArrayMesh).surface_get_arrays(0)[Mesh.ARRAY_COLOR]
+    if beam_colors.is_empty() or beam_colors[0].a >= 0.5 or beam_colors[beam_colors.size() / 2].a >= 0.5:
+        _fail("V89 light shafts must be translucent rather than blocking the playfield")
+        return
+    if absf(searchlight_tower.position.x) < 8.0 or searchlights.find_children("*", "CollisionObject3D", true, false).size() != 0:
+        _fail("V89 towers must stay outside race lanes and have no collisions")
+        return
+    var start_z := searchlight_tower.position.z
+    var start_yaw := scanner.rotation.y
+    searchlights.set("running", false)
+    searchlights.call("_process", 0.5)
+    if absf(searchlight_tower.position.z - start_z) > 0.001 or absf(scanner.rotation.y - start_yaw) > 0.001:
+        _fail("V89 searchlights must freeze during quiz and menu states")
+        return
+    searchlights.set("running", true)
+    searchlights.call("_process", 0.5)
+    if searchlight_tower.position.z <= start_z or absf(scanner.rotation.y - start_yaw) < 0.05:
+        _fail("V89 cinematic towers must scroll and sweep while racing")
+        return
+    searchlights.set("running", false)
     # V81: visible, independently animated 3D maglev convoys frame the
     # landscape playfield without adding collisions or changing gestures.
     var maglev := game.get_node_or_null("LearnQuest Skyway world/Cinematic maglev traffic") as Node3D
@@ -1924,7 +1965,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V88") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V89") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1934,7 +1975,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V88") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V89") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -2073,7 +2114,7 @@ func _run_checks() -> void:
     # V59: an iPhone in landscape is wider than 720px but still needs the
     # optional gesture-only mode. Simulate touch hardware in headless CI.
     game.call("_apply_mobile_layout", 844.0, 1, 390.0)
-    if not mobile_hud.text.contains("V88") or not mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("V89") or not mobile_hud.text.contains("\n"):
         _fail("Landscape-first phone layout must use a compact two-line HUD")
         return
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
@@ -2181,7 +2222,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V88") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V89") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
