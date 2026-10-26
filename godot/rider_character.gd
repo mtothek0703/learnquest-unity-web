@@ -283,6 +283,12 @@ func _add_balance_arms(model: Node3D) -> void:
         gauntlet.set("side_sign", direction)
         gauntlet.position = Vector3(direction * 0.10, -0.31, 0.0)
         pivot.add_child(gauntlet)
+        # V91: a second, independent elbow joint bends the sculpted gauntlet
+        # during Turbo, turns and jumps; the shoulder remains the first joint.
+        var elbow := preload("res://rider_elbow_kinematics.gd").new() as Node3D
+        elbow.name = "AnimatedElbowKinematics"
+        elbow.set("side_sign", direction)
+        pivot.add_child(elbow)
         balance_arms.append(pivot)
 
 func _shoulder_surface_point(u: float, v: float, direction: float) -> Vector3:
