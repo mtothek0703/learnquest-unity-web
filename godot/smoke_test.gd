@@ -1206,38 +1206,38 @@ func _run_checks() -> void:
     if searchlights == null or searchlights.get_child_count() != 3:
         _fail("V89 Neon City needs three cinematic 3D searchlight towers")
         return
-    var tower := searchlights.get_node_or_null("Neon searchlight tower 0") as Node3D
-    var scanner := tower.get_node_or_null("Sweeping twin holographic spotlights") as Node3D if tower != null else null
-    var beam := scanner.get_node_or_null("Left volumetric light shaft") as MeshInstance3D if scanner != null else null
+    var searchlight_tower := searchlights.get_node_or_null("Neon searchlight tower 0") as Node3D
+    var scanner := searchlight_tower.get_node_or_null("Sweeping twin holographic spotlights") as Node3D if searchlight_tower != null else null
+    var searchlight_beam := scanner.get_node_or_null("Left volumetric light shaft") as MeshInstance3D if scanner != null else null
     var beacon := scanner.get_node_or_null("Animated cinematic beacon light") as OmniLight3D if scanner != null else null
-    var column := tower.get_node_or_null("Faceted metallic tower") as MeshInstance3D if tower != null else null
+    var column := searchlight_tower.get_node_or_null("Faceted metallic tower") as MeshInstance3D if searchlight_tower != null else null
     if column == null or not (column.mesh is CylinderMesh) or beam == null or beacon == null:
         _fail("V89 shaded 3D tower, swept translucent beam or moving beacon missing")
         return
-    if not (beam.mesh is ArrayMesh) or (beam.mesh as ArrayMesh).surface_get_array_len(0) < 1200:
+    if not (searchlight_beam.mesh is ArrayMesh) or (searchlight_beam.mesh as ArrayMesh).surface_get_array_len(0) < 1200:
         _fail("V89 light shafts need detailed curved 3D mesh geometry")
         return
-    var beam_material := beam.material_override as StandardMaterial3D
+    var beam_material := searchlight_beam.material_override as StandardMaterial3D
     if beam_material == null or beam_material.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA or not beam_material.vertex_color_use_as_albedo:
         _fail("V89 light shafts must blend transparent vertex-color gradients")
         return
-    var beam_colors: PackedColorArray = (beam.mesh as ArrayMesh).surface_get_arrays(0)[Mesh.ARRAY_COLOR]
+    var beam_colors: PackedColorArray = (searchlight_beam.mesh as ArrayMesh).surface_get_arrays(0)[Mesh.ARRAY_COLOR]
     if beam_colors.is_empty() or beam_colors[0].a >= 0.5 or beam_colors[beam_colors.size() / 2].a >= 0.5:
         _fail("V89 light shafts must be translucent rather than blocking the playfield")
         return
-    if absf(tower.position.x) < 8.0 or searchlights.find_children("*", "CollisionObject3D", true, false).size() != 0:
+    if absf(searchlight_tower.position.x) < 8.0 or searchlights.find_children("*", "CollisionObject3D", true, false).size() != 0:
         _fail("V89 towers must stay outside race lanes and have no collisions")
         return
-    var start_z := tower.position.z
+    var start_z := searchlight_tower.position.z
     var start_yaw := scanner.rotation.y
     searchlights.set("running", false)
     searchlights.call("_process", 0.5)
-    if absf(tower.position.z - start_z) > 0.001 or absf(scanner.rotation.y - start_yaw) > 0.001:
+    if absf(searchlight_tower.position.z - start_z) > 0.001 or absf(scanner.rotation.y - start_yaw) > 0.001:
         _fail("V89 searchlights must freeze during quiz and menu states")
         return
     searchlights.set("running", true)
     searchlights.call("_process", 0.5)
-    if tower.position.z <= start_z or absf(scanner.rotation.y - start_yaw) < 0.05:
+    if searchlight_tower.position.z <= start_z or absf(scanner.rotation.y - start_yaw) < 0.05:
         _fail("V89 cinematic towers must scroll and sweep while racing")
         return
     searchlights.set("running", false)
