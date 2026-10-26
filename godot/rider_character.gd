@@ -10,6 +10,7 @@ extends Node3D
 var lean: float = 0.0
 var boosting: bool = false
 var animation_clock: float = 0.0
+var aerial_pose: float = 0.0
 var active_model: Node3D
 var active_animator: AnimationPlayer
 var pose_pivot: Node3D
@@ -20,6 +21,10 @@ var hair_strands: Array[Node3D] = []
 
 func _ready() -> void:
     _try_load_character_asset()
+    # Aerial windstreams and landing shards animate independently of the model.
+    var aerial := preload("res://rider_aerial_choreography.gd").new() as Node3D
+    aerial.name = "Cinematic aerial choreography"
+    add_child(aerial)
 
 func _try_load_character_asset() -> void:
     if not ResourceLoader.exists(character_asset_path):
@@ -41,8 +46,11 @@ func _process(delta: float) -> void:
         # world.gd drives the root's real jump arc. Animate the imported visual
         # separately, preserving the original physics and lane collision logic.
         var airborne := position.y > 0.12
+        # Blend the imported model into an actual airborne pose: arms open,
+        # knees tuck and the torso pitches forward, without changing physics.
+        aerial_pose = lerpf(aerial_pose, clampf(position.y / 1.25, 0.0, 1.0), minf(1.0, delta * 7.0))
         var desired_roll := -lean * 0.16
-        var desired_pitch := 0.10 if airborne else (-0.16 if boosting else 0.0)
+        var desired_pitch := (0.10 + aerial_pose * 0.24) if airborne else (-0.16 if boosting else 0.0)
         var desired_y := model_vertical_offset + (0.10 if airborne else 0.0)
         var pulse := sin(animation_clock * (13.0 if boosting else 5.0)) * (0.035 if boosting else 0.018)
         active_model.rotation.z = lerpf(active_model.rotation.z, desired_roll, minf(1.0, delta * 6.0))
@@ -61,15 +69,15 @@ func _process(delta: float) -> void:
                 var direction := -1.0 if i == 0 else 1.0
                 var balance := clampf(lean * 0.22 * direction, -0.32, 0.32)
                 var turbo_pose := -0.20 if boosting else 0.0
-                arm.rotation.x = lerpf(arm.rotation.x, turbo_pose + sin(animation_clock * 4.0 + float(i)) * 0.025, minf(1.0, delta * 8.0))
-                arm.rotation.z = lerpf(arm.rotation.z, balance, minf(1.0, delta * 8.0))
+                arm.rotation.x = lerpf(arm.rotation.x, turbo_pose + aerial_pose * 0.48 + sin(animation_clock * 4.0 + float(i)) * 0.025, minf(1.0, delta * 8.0))
+                arm.rotation.z = lerpf(arm.rotation.z, balance + direction * aerial_pose * 0.43, minf(1.0, delta * 8.0))
         for i in range(balance_legs.size()):
             var leg := balance_legs[i]
             if is_instance_valid(leg):
                 var direction := -1.0 if i == 0 else 1.0
-                var target := direction * lean * 0.11 + (0.12 if boosting else 0.0)
+                var target := direction * lean * 0.11 + (0.12 if boosting else 0.0) + aerial_pose * 0.42
                 leg.rotation.x = lerpf(leg.rotation.x, target, minf(1.0, delta * 7.0))
-                leg.rotation.z = lerpf(leg.rotation.z, -direction * absf(lean) * 0.10, minf(1.0, delta * 7.0))
+                leg.rotation.z = lerpf(leg.rotation.z, -direction * absf(lean) * 0.10 + direction * aerial_pose * 0.15, minf(1.0, delta * 7.0))
         # Soft wind response on the stylized ponytail. Stay in sync with steering
         # and turbo without depending on a skeletal animation asset.
         for i in range(hair_strands.size()):
@@ -606,6 +614,7 @@ func restore_fallback() -> void:
     balance_arms.clear()
     balance_legs.clear()
     hair_strands.clear()
+    aerial_pose = 0.0
     var old_body := legacy_rider.get_node_or_null("Animated racer rig")
     if old_body != null:
         old_body.visible = true

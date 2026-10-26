@@ -1792,6 +1792,50 @@ func _run_checks() -> void:
         return
     rider.set("boosting", false)
     rider.set("lean", 0.0)
+    # V87: the imported rider must visibly tuck its knees and spread both arms
+    # while airborne. Curved windstream meshes and landing shards are purely
+    # visual, with no collision objects or input modifications.
+    var aerial_fx := rider.get_node_or_null("Cinematic aerial choreography") as Node3D
+    var left_air := aerial_fx.get_node_or_null("Left sculpted aerial ribbon") as MeshInstance3D if aerial_fx != null else null
+    var right_air := aerial_fx.get_node_or_null("Right sculpted aerial ribbon") as MeshInstance3D if aerial_fx != null else null
+    var shard := aerial_fx.get_node_or_null("Landing energy shard 0") as MeshInstance3D if aerial_fx != null else null
+    var landing_flash := aerial_fx.get_node_or_null("Soft cinematic landing flash") as OmniLight3D if aerial_fx != null else null
+    if left_air == null or right_air == null or shard == null or landing_flash == null:
+        _fail("V87 aerial ribbons, landing shards or cinematic flash are missing")
+        return
+    if not (left_air.mesh is ArrayMesh) or (left_air.mesh as ArrayMesh).surface_get_array_len(0) < 150:
+        _fail("V87 windstream must be an original detailed curved 3D mesh")
+        return
+    var aerial_mat := left_air.material_override as StandardMaterial3D
+    if aerial_mat == null or not aerial_mat.vertex_color_use_as_albedo or aerial_mat.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA:
+        _fail("V87 aerial windstream requires translucent vertex-color shading")
+        return
+    if aerial_fx.find_children("*", "CollisionObject3D", true, false).size() != 0:
+        _fail("V87 aerial effects must not introduce collision geometry")
+        return
+    var aerial_arm := installed_model.get_node("BalanceArm0") as Node3D
+    var aerial_leg := installed_model.get_node("BalanceLeg0") as Node3D
+    rider.call("_process", 0.18)
+    var grounded_arm_z := aerial_arm.rotation.z
+    var grounded_leg_x := aerial_leg.rotation.x
+    rider.position.y = 1.4
+    rider.call("_process", 0.24)
+    aerial_fx.call("update_visuals", 0.24, 1.4, 0.0, false)
+    if float(rider.get("aerial_pose")) < 0.5 or absf(aerial_arm.rotation.z - grounded_arm_z) < 0.08 or absf(aerial_leg.rotation.x - grounded_leg_x) < 0.08:
+        _fail("V87 airborne character must animate arms and legs distinctly")
+        return
+    if not left_air.visible or not right_air.visible or float(aerial_fx.get("air_weight")) < 0.5:
+        _fail("V87 sculpted windstreams must unfurl during a real jump")
+        return
+    rider.position.y = 0.0
+    aerial_fx.call("update_visuals", 0.06, 0.0, 0.0, false)
+    if not shard.visible or landing_flash.light_energy <= 0.0:
+        _fail("V87 landing must emit animated 3D shards and a short light flash")
+        return
+    aerial_fx.call("update_visuals", 0.8, 0.0, 0.0, false)
+    if shard.visible or left_air.visible or landing_flash.light_energy > 0.0:
+        _fail("V87 cinematic jump effects must disappear after landing")
+        return
     # Exercise the new replacement contract without requiring any paid model.
     var placeholder := Node3D.new()
     rider.call("set_character_model", placeholder)
@@ -1837,7 +1881,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V86") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V87") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -1847,7 +1891,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V86") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V87") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -1986,7 +2030,7 @@ func _run_checks() -> void:
     # V59: an iPhone in landscape is wider than 720px but still needs the
     # optional gesture-only mode. Simulate touch hardware in headless CI.
     game.call("_apply_mobile_layout", 844.0, 1, 390.0)
-    if not mobile_hud.text.contains("V86") or not mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("V87") or not mobile_hud.text.contains("\n"):
         _fail("Landscape-first phone layout must use a compact two-line HUD")
         return
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
@@ -2094,7 +2138,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V86") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V87") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
