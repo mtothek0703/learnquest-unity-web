@@ -154,6 +154,11 @@ func set_character_model(model: Node3D) -> void:
     var torso := preload("res://rider_torso_detail.gd").new() as Node3D
     torso.name = "AnimatedTailoredFlightJacket"
     model.add_child(torso)
+    # V106: replace rigid V38 front jacket and collar with one continuous
+    # 360-degree GPU-skinned garment blending chest, neck and shoulder bones.
+    var upper_jacket := preload("res://rider_skinned_upper_jacket.gd").new() as Node3D
+    upper_jacket.name = "UnifiedSkinnedUpperJacket"
+    model.add_child(upper_jacket)
     # V94: a real five-bone Skeleton3D moves shaded exosuit armor and
     # shoulder aero-blades, without skinning or replacing the imported hero.
     var exosuit := preload("res://rider_skeletal_exosuit.gd").new() as Node3D
