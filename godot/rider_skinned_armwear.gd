@@ -91,7 +91,10 @@ func _point(t: float, u: float, side: float, kind: int) -> Vector3:
     var elbow := exp(-pow((t - 0.55) / 0.17, 2.0))
     # Close the upper ring into a smooth shoulder dome: the first PR render
     # revealed an open, oversized cup with the pink body still visible inside.
-    var shoulder_cap := smoothstep(0.0, 0.19, t)
+    # A hemispherical ease avoids the pointed cones seen in the second
+    # screenshot pass, while keeping the shoulder closed at its tip.
+    var cap_progress := clampf(t / 0.19, 0.0, 1.0)
+    var shoulder_cap := sqrt(maxf(0.0, 1.0 - pow(1.0 - cap_progress, 2.0)))
     var radius := (lerpf(0.300, 0.145, t) + 0.018 * shoulder) * shoulder_cap + 0.012
     # Subtle tailoring: shoulder fullness, tapered elbow and three soft folds.
     radius += (0.009 * sin(t * TAU * 3.0) + 0.006 * cos(angle * 3.0)) * elbow
@@ -103,14 +106,14 @@ func _point(t: float, u: float, side: float, kind: int) -> Vector3:
     # perpendicular to the actual sloping shoulder-to-wrist centerline.
     # The shoulder overlaps the continuous jacket, while the wrist terminates
     # at the existing articulated hand rather than beyond it.
-    var start := Vector3(side * 0.61, 2.29, -0.33)
+    var start := Vector3(side * 0.61, 2.22, -0.33)
     var finish := Vector3(side * 0.73, 1.33, -0.06)
     var center := start.lerp(finish, t)
     center.x += side * 0.018 * sin(t * PI)
     center.z += 0.024 * sin(t * PI)
     var tangent := Vector3(
         side * (0.12 + 0.018 * PI * cos(t * PI)),
-        -0.96,
+        -0.89,
         0.27 + 0.024 * PI * cos(t * PI)
     ).normalized()
     var radial_x := (Vector3.RIGHT - tangent * tangent.x).normalized()
