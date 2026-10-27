@@ -1,5 +1,5 @@
 extends Node3D
-## V107: organic two-joint flight-jacket sleeves on the ORIGINAL 13-bone
+## V107/V111: organic two-joint flight-jacket sleeves on the ORIGINAL 13-bone
 ## rider skeleton. Sculpted shoulder-to-cuff volume, elbow folds, reflective
 ## wrist rings and rear-facing luminous seams replace layered rigid capsules.
 ## Visual-only original procedural geometry; no touch, physics or assets.
@@ -89,17 +89,31 @@ func _point(t: float, u: float, side: float, kind: int) -> Vector3:
     var angle := TAU * u
     var shoulder := 1.0 - smoothstep(0.04, 0.34, t)
     var elbow := exp(-pow((t - 0.55) / 0.17, 2.0))
-    var radius := lerpf(0.205, 0.133, t) + 0.024 * shoulder
+    var radius := lerpf(0.310, 0.145, t) + 0.015 * shoulder
     # Subtle tailoring: shoulder fullness, tapered elbow and three soft folds.
     radius += (0.009 * sin(t * TAU * 3.0) + 0.006 * cos(angle * 3.0)) * elbow
     radius += 0.010 if kind == 2 else (0.012 if kind == 1 else 0.0)
-    var x := side * (0.54 + 0.34 * t)
-    var y := 2.055 - 0.735 * t
-    var z := 0.045 + 0.065 * t
-    return Vector3(
-        x + cos(angle) * radius,
-        y + 0.025 * sin(angle) * shoulder,
-        z + sin(angle) * radius * 1.08
+    # V111: the V110 real landscape frames exposed bright shoulder holes
+    # and sleeves ending away from the gauntlets. Previously the "circular"
+    # section lay in the X/Z plane: every vertex of each ring had nearly
+    # identical Y, so the shoulder had no upper volume. Construct the ring
+    # perpendicular to the actual sloping shoulder-to-wrist centerline.
+    # The shoulder overlaps the continuous jacket, while the wrist terminates
+    # at the existing articulated hand rather than beyond it.
+    var start := Vector3(side * 0.61, 2.15, -0.24)
+    var finish := Vector3(side * 0.73, 1.33, -0.06)
+    var center := start.lerp(finish, t)
+    center.x += side * 0.018 * sin(t * PI)
+    center.z += 0.024 * sin(t * PI)
+    var tangent := Vector3(
+        side * (0.12 + 0.018 * PI * cos(t * PI)),
+        -0.82,
+        0.18 + 0.024 * PI * cos(t * PI)
+    ).normalized()
+    var radial_x := (Vector3.RIGHT - tangent * tangent.x).normalized()
+    var radial_z := tangent.cross(radial_x).normalized()
+    return center + radius * (
+        radial_x * cos(angle) + radial_z * sin(angle) * 1.08
     )
 
 func _influences(t: float, side: float) -> Dictionary:
