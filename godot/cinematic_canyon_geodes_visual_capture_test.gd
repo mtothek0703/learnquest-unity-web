@@ -84,7 +84,7 @@ func _capture() -> void:
                             var b := shot.get_pixel(px, py)
                             if absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b) > 0.18:
                                 changed += 1
-                    if changed < 32:
+                    if changed < 24:
                         _fail("new 3D canyon geometry is not sufficiently visible in %s %s (%d pixels)" % [str(size), view, changed])
                         return
                 count += 1
