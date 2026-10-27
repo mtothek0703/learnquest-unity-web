@@ -141,11 +141,13 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
     var width := bounds.size.x
     var center_x := bounds.get_center().x
     var flare := smoothstep(0.08, 0.96, t)
-    var inner := width * (0.025 + 0.035 * t)
-    var outer := width * (0.14 + 0.30 * flare)
+    # Keep a clearly open center channel so the rider's boots and board are
+    # visible in chase view; each side reads as a swept flight fin, not a skirt.
+    var inner := width * (0.025 + 0.13 * t)
+    var outer := width * (0.14 + 0.31 * flare)
     var x := center_x + side * lerpf(inner, outer, u)
     var bow := sin(u * PI) * sin(t * PI)
-    var y := bounds.position.y + bounds.size.y * (0.72 - 0.43 * t + 0.020 * bow)
+    var y := bounds.position.y + bounds.size.y * (0.72 - 0.43 * t + 0.020 * bow + 0.035 * u * t)
     var rib := sin(u * PI * 5.0 + t * 2.5) * width * 0.012 * t
     var sweep := 0.045 + 0.12 * t + 0.42 * pow(t, 1.5) + 0.035 * bow
     var z := back + back_sign * (sweep + rib)
