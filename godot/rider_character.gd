@@ -169,6 +169,11 @@ func set_character_model(model: Node3D) -> void:
     var lower_body := preload("res://rider_skinned_lower_body.gd").new() as Node3D
     lower_body.name = "UnifiedSkinnedLowerBody"
     model.add_child(lower_body)
+    # V115: rounded GPU-skinned gloves bridge sleeve cuffs to existing
+    # animated fingers and replace only duplicated rigid gauntlet shells.
+    var gloves := preload("res://rider_skinned_gloves.gd").new() as Node3D
+    gloves.name = "UnifiedSkinnedGloves"
+    model.add_child(gloves)
     # V94: a real five-bone Skeleton3D moves shaded exosuit armor and
     # shoulder aero-blades, without skinning or replacing the imported hero.
     var exosuit := preload("res://rider_skeletal_exosuit.gd").new() as Node3D

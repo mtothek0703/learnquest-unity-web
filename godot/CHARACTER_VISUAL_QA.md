@@ -154,3 +154,8 @@ Vergleiche V112-Release und V113-PR bei exakt gleicher 1280×720-/1170×540-Verf
 - Inspect both hip-to-jacket seams, both knees from profile, trouser-to-boot cuffs and front silhouette. Reject any new floating mesh, clipping, missing boot or knee ring.
 - Confirm the new yoke and both trouser meshes are GPU-skinned to the original 13 bones; the old V99 leg guards and V92 rigid trousers are hidden only after successful replacement.
 - Real iPhone Safari/Android landscape FPS, touch controls and full three-vocabulary-question-to-complete-round playthrough remain MANUAL gates; 20 desktop Mesa PNGs are not mobile acceptance.
+
+## V115 skinned-glove/gauntlet visual QA
+- Inspect actual V114/V115 20-frame Mesa captures at identical 1280×720 and 1170×540 cameras. Check that formerly exposed light hand spheres become dark shaped palms that meet the skinned sleeve cuffs; four fingers, thumbs and glowing wrist displays remain visible and animated.
+- Specifically compare front idle/jump, profile idle/boost, and chase idle. Reject new missing hands, oversized glove spheres, floating displays, wrist gaps or new clipping. If any appear, correct geometry before merge.
+- Godot skin/pose tests and desktop renders do not replace actual iPhone Safari landscape touch/FPS or full three-vocabulary-task level playthrough.
