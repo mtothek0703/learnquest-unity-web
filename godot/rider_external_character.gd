@@ -11,6 +11,7 @@ var elapsed: float = 0.0
 var previous_height: float = 0.0
 var last_jump: float = 0.0
 var facial_acting: Node
+var flight_mantle: Node
 
 func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     rider = owner_rider
@@ -121,6 +122,8 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
         mantle_face_sign = float(fitted_headgear.get("face_sign"))
     if not bool(mantle.call("install", skinned_meshes, skeleton, mantle_face_sign)):
         push_warning("CC0 skinned split mantle unavailable; original suit remains")
+    else:
+        flight_mantle = mantle
     # Broader, luminous shoulder flight hardware is also genuinely weighted to
     # the imported shoulder/spine/pelvis joints. Cosmetic, no new collisions.
     var thrusters := preload("res://rider_external_skinned_thrusters.gd").new() as Node
@@ -198,6 +201,8 @@ func _process(delta: float) -> void:
             Quaternion(Vector3.RIGHT, 0.34 + crouch * 0.50 - last_jump * 0.45), blend)
         _pose(["foot_l" if side < 0 else "foot_r", prefix + "Foot"],
             Quaternion(Vector3.RIGHT, -0.13 - crouch * 0.12 + last_jump * 0.19), blend)
+    if flight_mantle != null:
+        flight_mantle.call("set_motion", steer, boost, last_jump)
     if facial_acting != null:
         facial_acting.call("animate", steer, turbo, last_jump, elapsed)
 
