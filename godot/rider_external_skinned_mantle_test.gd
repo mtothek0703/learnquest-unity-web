@@ -52,6 +52,14 @@ func _check() -> void:
             _fail("panel lacks four-weight skinning or UV wind surface")
             return
         var low_count := 0
+        var root_min := INF
+        var root_max := -INF
+        var hem_min := INF
+        var hem_max := -INF
+        var root_depth := 0.0
+        var hem_depth := 0.0
+        var root_samples := 0
+        var hem_samples := 0
         for i in range(vertices.size()):
             var total := 0.0
             for j in range(4):
@@ -66,8 +74,32 @@ func _check() -> void:
             if absf(total - 1.0) > 0.001:
                 _fail("GPU skin weights not normalized")
                 return
+            if uv[i].y < 0.05:
+                root_min = minf(root_min, vertices[i].x)
+                root_max = maxf(root_max, vertices[i].x)
+                root_depth += vertices[i].z
+                root_samples += 1
+            if uv[i].y > 0.95:
+                hem_min = minf(hem_min, vertices[i].x)
+                hem_max = maxf(hem_max, vertices[i].x)
+                hem_depth += vertices[i].z
+                hem_samples += 1
             if uv[i].y > 0.9:
                 low_count += 1
+        if root_samples < 10 or hem_samples < 10:
+            _fail("mantle must have sampled shoulder and wing-tip rows")
+            return
+        if hem_max - hem_min < (root_max - root_min) * 2.0:
+            _fail("split-wing hems must flare at least twice as wide as the shoulder roots")
+            return
+        var headgear := rig.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
+        if headgear == null:
+            _fail("original Head attachment missing")
+            return
+        var back_sign := -1.0 if float(headgear.get("face_sign")) > 0.0 else 1.0
+        if back_sign * (hem_depth / float(hem_samples) - root_depth / float(root_samples)) < 0.32:
+            _fail("wing hems must sweep behind the original skinned torso")
+            return
         if low_count < 50:
             _fail("missing broad trailing hem geometry")
             return
@@ -115,7 +147,21 @@ func _check() -> void:
     var before := rig.get_bone_pose_rotation(thigh)
     rider.set("boosting", true)
     rider.position.y = 0.85
+    rider.set("lean", 0.65)
     pose.call("_process", 0.35)
+    var motion_mat := (panels[0] as MeshInstance3D).material_override as ShaderMaterial
+    if motion_mat == null:
+        _fail("split-wing mantle needs its own animated PBR material")
+        return
+    if absf(float(motion_mat.get_shader_parameter("steer_amount")) - 0.65) > 0.01:
+        _fail("mantle wind must follow actual steering without changing controls")
+        return
+    if float(motion_mat.get_shader_parameter("boost_amount")) < 0.99:
+        _fail("mantle wind must react to real turbo state")
+        return
+    if float(motion_mat.get_shader_parameter("jump_amount")) < 0.10:
+        _fail("mantle wind must react to real jump height")
+        return
     if rig.get_bone_pose_rotation(thigh).angle_to(before) < 0.03:
         _fail("mantle lower joint must move during jump/boost")
         return
