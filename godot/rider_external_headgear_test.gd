@@ -49,6 +49,29 @@ func _check() -> void:
     if hair_region.size.x < head_region.size.x * 1.2 or hair_region.size.y < head_region.size.y * 0.9:
         _fail("rear hair is too narrow or short to read in smartphone chase view")
         return
+    # V124 facial reconstruction: all landmarks must follow the same curved
+    # face mesh. Fixed-Z features previously floated visibly in front view.
+    for side in [-1.0, 1.0]:
+        var suffix := str(side)
+        var eye := headwear.find_child("EyeWhite" + suffix, false, false) as MeshInstance3D
+        if eye == null:
+            _fail("missing sculpted face eye " + suffix)
+            return
+        var face_point: Vector3 = headwear.call("_face_front_point",
+            head_region.get_center(), head_region.size, eye.position.x, eye.position.y)
+        var offset := (eye.position.z - face_point.z) * float(headwear.get("face_sign"))
+        if offset < head_region.size.z * 0.005 or offset > head_region.size.z * 0.07:
+            _fail("eye must embed in continuous face surface, not float above it")
+            return
+        for landmark in ["UpperLid", "LowerLid", "CurvedBrow", "CheekAccent"]:
+            var feature := headwear.find_child(landmark + suffix, false, false) as MeshInstance3D
+            if feature == null or feature.mesh == null or feature.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() < 100:
+                _fail("missing substantial face-conforming " + landmark + suffix)
+                return
+    for landmark in ["SculptedNoseBridge", "LowerLipContour"]:
+        if headwear.find_child(landmark, false, false) == null:
+            _fail("sculpted nose/lip anatomy must not be a flat decal")
+            return
     var vertices := 0
     for item in meshes:
         var part := item as MeshInstance3D
