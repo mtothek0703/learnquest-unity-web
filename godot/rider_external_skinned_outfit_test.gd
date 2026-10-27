@@ -31,6 +31,15 @@ func _check() -> void:
     if garment.skeleton != source.skeleton or garment.get_parent() != source.get_parent():
         _fail("jacket must deform under the exact same original Skeleton3D")
         return
+    var material := garment.material_override as ShaderMaterial
+    if material == null or material.shader == null:
+        _fail("mobile PBR jacket shader not attached to the real skinned garment")
+        return
+    var shader_code := material.shader.code
+    for required in ["electric_pink", "cobalt", "weave", "EMISSION", "ROUGHNESS"]:
+        if not shader_code.contains(required):
+            _fail("missing coherent mobile flight-jacket material feature: " + required)
+            return
     var vertex_count := 0
     for surface in range(garment.mesh.get_surface_count()):
         var arrays: Array = garment.mesh.surface_get_arrays(surface)
