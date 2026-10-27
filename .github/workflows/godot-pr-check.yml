@@ -68,6 +68,8 @@ jobs:
           grep -Fq 'SKINNED GLOVE TEST PASSED' /tmp/skinned-gloves.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://hoverboard_sculpted_hull_test.gd 2>&1 | tee /tmp/sculpted-hoverboard.log
           grep -Fq 'SCULPTED HOVERBOARD TEST PASSED' /tmp/sculpted-hoverboard.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://powerup_vfx_test.gd 2>&1 | tee /tmp/powerup-vfx.log
+          grep -Fq 'POWERUP VFX TEST PASSED' /tmp/powerup-vfx.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_skinned_lower_body_test.gd 2>&1 | tee /tmp/skinned-lower-body.log
           grep -Fq 'SKINNED LOWER BODY TEST PASSED' /tmp/skinned-lower-body.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_aero_silhouette_test.gd 2>&1 | tee /tmp/aero-silhouette.log
@@ -98,6 +100,24 @@ jobs:
             --script res://rider_visual_capture_test.gd 2>&1 | tee /tmp/visual-capture.log
           grep -Fq 'VISUAL CAPTURE TEST PASSED' /tmp/visual-capture.log
           test "$(find /tmp/learnquest-visual-qa -name '*.png' | wc -l)" -eq 20
+      - name: Render all four power-up silhouettes for 16:9 QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-powerup-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_POWERUP_OUTPUT=/tmp/learnquest-powerup-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://powerup_visual_capture_test.gd 2>&1 | tee /tmp/powerup-visual.log
+          grep -Fq 'POWERUP VISUAL QA PASSED' /tmp/powerup-visual.log
+          test "$(find /tmp/learnquest-powerup-qa -name '*.png' | wc -l)" -eq 8
+      - name: Upload power-up comparison frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-powerup-frames
+          path: /tmp/learnquest-powerup-qa/*.png
+          if-no-files-found: ignore
       - name: Upload rendered visual QA frames
         if: always()
         uses: actions/upload-artifact@v4
@@ -131,5 +151,7 @@ jobs:
             /tmp/shoulder-seam.log
             /tmp/sail-silhouette.log
             /tmp/sculpted-hoverboard.log
+            /tmp/powerup-vfx.log
+            /tmp/powerup-visual.log
             /tmp/aero-silhouette.log
           if-no-files-found: ignore
