@@ -72,7 +72,11 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     # The helmet/hair are attached to the ORIGINAL imported Head bone, with
     # dimensions sampled from head-weighted vertices; the skinned face stays.
     var headgear := preload("res://rider_external_headgear.gd").new() as BoneAttachment3D
-    if not bool(headgear.call("install", skeleton, skinned_meshes)):
+    if bool(headgear.call("install", skeleton, skinned_meshes)):
+        # Restore a readable stylized face/head silhouette at mobile chase scale.
+        # The imported original head/65-bone rig remain untouched underneath.
+        headgear.scale = Vector3.ONE * 1.34
+    else:
         headgear.queue_free()
         push_warning("CC0 hero headwear could not fit imported Head bone")
     # Build a real four-weighted, curved flight jacket from the original
@@ -100,6 +104,13 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
         mantle_face_sign = float(fitted_headgear.get("face_sign"))
     if not bool(mantle.call("install", skinned_meshes, skeleton, mantle_face_sign)):
         push_warning("CC0 skinned split mantle unavailable; original suit remains")
+    # Broader, luminous shoulder flight hardware is also genuinely weighted to
+    # the imported shoulder/spine/pelvis joints. Cosmetic, no new collisions.
+    var thrusters := preload("res://rider_external_skinned_thrusters.gd").new() as Node
+    thrusters.name = "ExternalSkinnedShoulderThrusters"
+    character.add_child(thrusters)
+    if not bool(thrusters.call("install", skinned_meshes, skeleton, mantle_face_sign)):
+        push_warning("CC0 weighted shoulder thrusters unavailable; original rider remains")
     # Deliberately do not modify bone rest positions, imported inverse bind
     # matrices or the imported Skin: those are the asset's real authoring data.
     set_process(true)
