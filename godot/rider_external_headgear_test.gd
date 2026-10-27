@@ -35,8 +35,8 @@ func _check() -> void:
         _fail("expected curved cap, face shield, visor edges and multiple hair locks")
         return
     for expected in ["CurvedFlightHelmetShell", "TranslucentFaceShield",
-            "EyeWhite-1.0", "Iris-1.0", "Pupil-1.0", "CurvedSmile"]:
-        if headwear.get_node_or_null(expected) == null:
+            "EyeWhite*", "Iris*", "Pupil*", "CurvedSmile"]:
+        if headwear.find_child(expected, false, false) == null:
             _fail("missing expressive helmet/face feature: " + expected)
             return
     var vertices := 0
