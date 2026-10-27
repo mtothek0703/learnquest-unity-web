@@ -104,7 +104,9 @@ func _assemble() -> void:
         old_flat_chassis.visible = false
         old_flat_grip.visible = false
     for side in [-1.0, 1.0]:
-        box(board, Vector3(side * 0.72, 0.33, 0), Vector3(0.14, 0.12, 2.42), cyan, true)
+        var old_straight_rail := box(board, Vector3(side * 0.72, 0.33, 0), Vector3(0.14, 0.12, 2.42), cyan, true)
+        if bool(sculpted_board.get("built")):
+            old_straight_rail.visible = false
         box(board, Vector3(side * 0.51, 0.18, 1.0), Vector3(0.30, 0.2, 0.28), bright, true)
         var flame := ball(board, Vector3(side * 0.51, 0.18, 1.28), Vector3(0.17, 0.17, 0.5), cyan, true)
         flames.append(flame)
@@ -126,11 +128,15 @@ func _assemble() -> void:
         wing.size = Vector3(0.76, 0.14, 1.45)
         var wing_mesh := piece(board, wing, Vector3(side * 0.98, 0.27, 0.19), Vector3.ONE, suit)
         wing_mesh.rotation_degrees.y = side * 14.0
+        if bool(sculpted_board.get("built")):
+            wing_mesh.visible = false
         var fin := PrismMesh.new()
         fin.size = Vector3(0.18, 0.63, 0.81)
         var stabilizer := piece(board, fin, Vector3(side * 0.87, 0.56, 1.03), Vector3.ONE, navy)
         stabilizer.rotation_degrees.z = side * 15.0
-        box(board, Vector3(side * 1.01, 0.43, 0.28), Vector3(0.11, 0.06, 1.02), cyan, true)
+        var old_wing_light := box(board, Vector3(side * 1.01, 0.43, 0.28), Vector3(0.11, 0.06, 1.02), cyan, true)
+        if bool(sculpted_board.get("built")):
+            old_wing_light.visible = false
         ball(board, Vector3(side * 1.05, 0.38, -0.40), Vector3(0.15, 0.12, 0.22), bright, true)
     box(board, Vector3(0, 0.46, -0.30), Vector3(0.12, 0.07, 1.6), yellow, true)
 
@@ -153,7 +159,9 @@ func _assemble() -> void:
     prow.rotation_degrees.y = 180
     for side in [-1.0, 1.0]:
         thruster(board, Vector3(side * 0.48, 0.17, 1.18), 0.27, navy)
-        box(board, Vector3(side * 0.92, 0.37, -0.35), Vector3(0.35, 0.08, 1.30), bright, true)
+        var old_outer_panel := box(board, Vector3(side * 0.92, 0.37, -0.35), Vector3(0.35, 0.08, 1.30), bright, true)
+        if bool(sculpted_board.get("built")):
+            old_outer_panel.visible = false
         ball(board, Vector3(side * 0.48, 0.17, 1.62), Vector3(0.20, 0.22, 0.34), cyan, true)
         box(board, Vector3(side * 0.37, 0.43, -0.28), Vector3(0.21, 0.06, 1.32), yellow, true)
 
