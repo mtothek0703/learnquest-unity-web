@@ -47,11 +47,18 @@ func install(rig: Skeleton3D, body_meshes: Array[MeshInstance3D]) -> bool:
                 lower = lower.min(point)
                 upper = upper.max(point)
                 count += 1
-    if count < 35:
-        return false
     var span := upper - lower
-    if span.x < 0.08 or span.y < 0.08 or span.z < 0.08 or span.length() > 4.0:
-        return false
+    if count < 35 or span.x < 0.08 or span.y < 0.08 or span.z < 0.08 or span.length() > 4.0:
+        # Some glTF exporters bind head vertices through a neck/face joint,
+        # not directly through Head. Recover from the uppermost 18% of the
+        # actual weighted body geometry; never invent a fixed-size head.
+        var fallback := _bounds_from_upper_body(rig, body_meshes, inverse_rest)
+        if fallback.size.x < 0.08 or fallback.size.y < 0.08 or fallback.size.z < 0.08:
+            push_warning("CC0 head bounds invalid: direct=%d span=%s fallback=%s" % [count, span, fallback.size])
+            return false
+        lower = fallback.position
+        upper = fallback.end
+        span = fallback.size
     head_bounds = AABB(lower, span)
     face_sign = 1.0 if has_eyes and eye_position.z > head_bounds.get_center().z else -1.0
     bone_name = "Head"
@@ -59,6 +66,43 @@ func install(rig: Skeleton3D, body_meshes: Array[MeshInstance3D]) -> bool:
     name = "ExternalHeroHeadgear"
     _build_headwear()
     return generated_meshes.size() >= 9
+
+func _bounds_from_upper_body(rig: Skeleton3D, meshes: Array[MeshInstance3D], inverse_rest: Transform3D) -> AABB:
+    var bottom := INF
+    var top := -INF
+    var body_center_x := 0.0
+    var count := 0
+    for body in meshes:
+        for surface in range(body.mesh.get_surface_count()):
+            var vertices: PackedVector3Array = body.mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX]
+            for vertex in vertices:
+                var point := rig.to_local(body.to_global(vertex))
+                bottom = minf(bottom, point.y)
+                top = maxf(top, point.y)
+                body_center_x += point.x
+                count += 1
+    if count < 100 or top - bottom < 0.5:
+        return AABB()
+    body_center_x /= float(count)
+    var cutoff := bottom + (top - bottom) * 0.80
+    var max_offset := (top - bottom) * 0.20
+    var lower := Vector3(INF, INF, INF)
+    var upper := Vector3(-INF, -INF, -INF)
+    var selected := 0
+    for body in meshes:
+        for surface in range(body.mesh.get_surface_count()):
+            var vertices: PackedVector3Array = body.mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX]
+            for vertex in vertices:
+                var point := rig.to_local(body.to_global(vertex))
+                if point.y < cutoff or absf(point.x - body_center_x) > max_offset:
+                    continue
+                var local := inverse_rest * point
+                lower = lower.min(local)
+                upper = upper.max(local)
+                selected += 1
+    if selected < 30:
+        return AABB()
+    return AABB(lower, upper - lower)
 
 func _material(color: Color, metallic: float = 0.0, roughness: float = 0.5, transparent: bool = false) -> StandardMaterial3D:
     var mat := StandardMaterial3D.new()
