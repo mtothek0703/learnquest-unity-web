@@ -29,6 +29,12 @@ func _ready() -> void:
     facial_surface.material_override = material
     add_child(facial_surface)
     facial_surface.skeleton = facial_surface.get_path_to(skeleton)
+    # The old glTF contains three opaque head/crown/visor surfaces in front
+    # of this skinned head. Retire them only after the replacement has a valid
+    # mesh, skin and the original skeleton, preserving the rest of the body.
+    if facial_surface.mesh != null and facial_surface.skin != null and \
+            facial_surface.skin.get_bind_count() == 13:
+        rig.call("retire_legacy_head_surfaces")
     # Old nose and cheek spheres pierced the continuous facial surface.
     # Retire them only when the real skin has been successfully attached.
     var expressions := model.get_node_or_null("ExpressiveFace") as Node3D
