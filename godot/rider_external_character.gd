@@ -89,6 +89,17 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     character.add_child(lower)
     if not bool(lower.call("install", skinned_meshes)):
         push_warning("CC0 weighted lower garments unavailable; original legs remain")
+    # Broad split flight-mantle panels inherit four real bone weights each,
+    # adding a readable chase silhouette without rigid props or collisions.
+    var mantle := preload("res://rider_external_skinned_mantle.gd").new() as Node
+    mantle.name = "ExternalSkinnedFlightMantle"
+    character.add_child(mantle)
+    var mantle_face_sign := -1.0
+    var fitted_headgear := skeleton.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
+    if fitted_headgear != null:
+        mantle_face_sign = float(fitted_headgear.get("face_sign"))
+    if not bool(mantle.call("install", skinned_meshes, skeleton, mantle_face_sign)):
+        push_warning("CC0 skinned split mantle unavailable; original suit remains")
     # Deliberately do not modify bone rest positions, imported inverse bind
     # matrices or the imported Skin: those are the asset's real authoring data.
     set_process(true)
