@@ -80,8 +80,8 @@ func _torso_back(mesh: Mesh, bounds: AABB, back_sign: float) -> float:
 func _panel(bounds: AABB, back: float, back_sign: float, side: float, binds: PackedInt32Array) -> ArrayMesh:
     var tool := SurfaceTool.new()
     tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-    const ROWS := 20
-    const COLUMNS := 12
+    const ROWS = 20
+    const COLUMNS = 12
     for row in range(ROWS):
         for column in range(COLUMNS):
             var u0 := float(column) / float(COLUMNS)
