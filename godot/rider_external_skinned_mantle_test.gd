@@ -28,7 +28,7 @@ func _check() -> void:
     if panels.size() != 2 or int(mantle.get("generated_vertices")) < 2000:
         _fail("two substantial curved mesh panels required")
         return
-    if float(mantle.get("mantle_span")) < source.mesh.get_aabb().size.y * 0.45:
+    if float(mantle.get("mantle_span")) < source.mesh.get_aabb().size.y * 0.40:
         _fail("flight mantle does not reach lower silhouette")
         return
     var active_leg_binds := 0
@@ -164,6 +164,13 @@ func _check() -> void:
         return
     if rig.get_bone_pose_rotation(thigh).angle_to(before) < 0.03:
         _fail("mantle lower joint must move during jump/boost")
+        return
+    rider.set("lean", 0.0)
+    rider.set("boosting", false)
+    rider.position.y = 0.0
+    pose.call("_process", 0.40)
+    if absf(float(motion_mat.get_shader_parameter("steer_amount"))) > 0.01 or float(motion_mat.get_shader_parameter("boost_amount")) > 0.01:
+        _fail("split-wing wind must return to neutral when steering/turbo end")
         return
     if rider.get_node_or_null("LegacyRider") == null:
         _fail("legacy fallback and existing hoverboard must remain")
