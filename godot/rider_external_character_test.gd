@@ -80,8 +80,8 @@ func _check() -> void:
                     low = minf(low, point.y)
                     high = maxf(high, point.y)
     var scaled_height := (high - low) * imported.scale.y
-    if absf(scaled_height - 2.62) > 0.035:
-        _fail("original skinned character must keep the compact mobile hoverboard proportion")
+    if absf(scaled_height - 2.72) > 0.035:
+        _fail("original skinned character must keep the readable mobile hoverboard proportion")
         return
     var front_sign := float(headwear.get("face_sign"))
     var expected_facing := PI if front_sign > 0.0 else 0.0
