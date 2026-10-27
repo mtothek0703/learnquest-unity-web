@@ -38,6 +38,8 @@ jobs:
           grep -Fq 'QUATERNIUS RIG TEST PASSED' /tmp/quaternius-rig.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_headgear_test.gd 2>&1 | tee /tmp/quaternius-headgear.log
           grep -Fq 'EXTERNAL HEADGEAR TEST PASSED' /tmp/quaternius-headgear.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_outfit_test.gd 2>&1 | tee /tmp/quaternius-outfit.log
+          grep -Fq 'EXTERNAL SKINNED OUTFIT TEST PASSED' /tmp/quaternius-outfit.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_costume_skin_follow_test.gd 2>&1 | tee /tmp/costume-skin-follow.log
           grep -Fq 'COSTUME SKIN FOLLOW TEST PASSED' /tmp/costume-skin-follow.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_sculpted_skinned_suit_test.gd 2>&1 | tee /tmp/sculpted-suit.log
@@ -280,6 +282,7 @@ jobs:
             /tmp/original-body-skin.log
             /tmp/quaternius-rig.log
             /tmp/quaternius-headgear.log
+            /tmp/quaternius-outfit.log
             /tmp/quaternius-visual.log
             /tmp/costume-skin-follow.log
             /tmp/sculpted-suit.log
