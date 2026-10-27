@@ -53,7 +53,9 @@ func _capture() -> void:
         _fail("both comparable rider models must be available")
         return
     var pose := rider.get_node_or_null("ExternalHeroPose") as Node
-    var rig := pose.get("skeleton") as Skeleton3D if pose != null else null
+    var rig: Skeleton3D = null
+    if pose != null:
+        rig = pose.get("skeleton") as Skeleton3D
     if rig == null or rig.get_node_or_null("ExternalHeroHeadgear") == null:
         _fail("real Head-bone helmet/hair must appear in V124 comparison frames")
         return
