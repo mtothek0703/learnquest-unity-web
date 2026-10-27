@@ -244,13 +244,18 @@ func _build_headwear() -> void:
         var flow: Array[Vector3] = []
         for segment in range(17):
             var t := float(segment) / 16.0
-            var sway := sin(t * PI * 1.5 + float(strand) * 0.48) * 0.09
+            # The former nine straight rear locks collapsed into a vertical
+            # curtain in the real chase render. Fan them out across the
+            # shoulders with a three-dimensional S-curve and tapered ends.
+            # They still follow the original Head bone, with no simulation.
+            var flare := 1.08 + 1.28 * sin(t * PI * 0.82) + 0.20 * t
+            var sway := sin(t * PI * 1.5 + float(strand) * 0.48) * 0.15
             flow.append(Vector3(
-                c.x + across * radius_x * (1.16 + 0.32 * t) + sway * radius_x * t,
-                crown_y + cap_height * 0.58 - s.y * (0.12 + 1.44 * t),
-                c.z - face_sign * radius_z * (1.35 + 0.38 * t + 0.09 * sin(t * PI))))
+                c.x + across * radius_x * flare + sway * radius_x * t,
+                crown_y + cap_height * 0.58 - s.y * (0.12 + 1.30 * t),
+                c.z - face_sign * radius_z * (1.40 + 0.44 * t + 0.12 * sin(t * PI))))
         _mesh("WindSweptBackLock%d" % strand,
-            _tube(flow, s.x * (0.067 if strand % 2 == 0 else 0.054), 7),
+            _tapered_hair_lock(flow, s.x * (0.086 if strand % 2 == 0 else 0.070), 9),
             highlight if strand % 3 == 0 else hair_mat)
     # One coherent, tapered hairline frames the face while the back curtain
     # gains a real inner/outer volume. These follow the imported Head joint.
