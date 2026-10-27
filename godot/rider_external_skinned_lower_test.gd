@@ -58,8 +58,14 @@ func _check() -> void:
                         return
                     var weight := weights[i * 4 + j]
                     total += weight
-                    var name := rig.get_bone_name(source.skin.get_bind_bone(index)).to_lower()
-                    if weight > 0.05 and ("thigh" in name or "calf" in name or "foot" in name):
+                    # Imported glTF Skin bindings are frequently name-based;
+                    # get_bind_bone() may legitimately return -1 for these.
+                    # Resolve names before reading the Skeleton3D by index.
+                    var bound_name := source.skin.get_bind_name(index).to_lower()
+                    var bound_id := source.skin.get_bind_bone(index)
+                    if bound_name.is_empty() and bound_id >= 0 and bound_id < rig.get_bone_count():
+                        bound_name = rig.get_bone_name(bound_id).to_lower()
+                    if weight > 0.05 and ("thigh" in bound_name or "calf" in bound_name or "foot" in bound_name or "shin" in bound_name):
                         leg_influences += 1
                 if absf(total - 1.0) > 0.04:
                     _fail(property_name + " weights no longer normalized")
