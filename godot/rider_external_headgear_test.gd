@@ -49,24 +49,29 @@ func _check() -> void:
     if hair_region.size.x < head_region.size.x * 1.2 or hair_region.size.y < head_region.size.y * 0.9:
         _fail("rear hair is too narrow or short to read in smartphone chase view")
         return
-    # V124 facial reconstruction: all landmarks must follow the same curved
-    # face mesh. Fixed-Z features previously floated visibly in front view.
-    for side in [-1.0, 1.0]:
-        var suffix := str(side)
-        var eye := headwear.find_child("EyeWhite" + suffix, false, false) as MeshInstance3D
-        if eye == null:
-            _fail("missing sculpted face eye " + suffix)
-            return
+    # V124 facial reconstruction: test the actual two eyes by mesh identity,
+    # not float-to-string suffixes (Godot may format -1 as -1 or -1.0).
+    var eyes := headwear.find_children("EyeWhite*", "MeshInstance3D", false, false)
+    if eyes.size() != 2:
+        _fail("expected two face-conforming eyes, found %d" % eyes.size())
+        return
+    for node in eyes:
+        var eye := node as MeshInstance3D
         var face_point: Vector3 = headwear.call("_face_front_point",
             head_region.get_center(), head_region.size, eye.position.x, eye.position.y)
         var offset := (eye.position.z - face_point.z) * float(headwear.get("face_sign"))
         if offset < head_region.size.z * 0.005 or offset > head_region.size.z * 0.07:
             _fail("eye must embed in continuous face surface, not float above it")
             return
-        for landmark in ["UpperLid", "LowerLid", "CurvedBrow", "CheekAccent"]:
-            var feature := headwear.find_child(landmark + suffix, false, false) as MeshInstance3D
-            if feature == null or feature.mesh == null or feature.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() < 100:
-                _fail("missing substantial face-conforming " + landmark + suffix)
+    for landmark in ["UpperLid", "LowerLid", "CurvedBrow", "CheekAccent"]:
+        var features := headwear.find_children(landmark + "*", "MeshInstance3D", false, false)
+        if features.size() != 2:
+            _fail("expected bilateral face-conforming " + landmark)
+            return
+        for node in features:
+            var feature := node as MeshInstance3D
+            if feature.mesh == null or feature.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() < 100:
+                _fail("missing substantial face-conforming " + landmark)
                 return
     for landmark in ["SculptedNoseBridge", "LowerLipContour"]:
         if headwear.find_child(landmark, false, false) == null:
