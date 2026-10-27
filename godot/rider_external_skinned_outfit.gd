@@ -20,7 +20,7 @@ func install(source_meshes: Array[MeshInstance3D]) -> bool:
         garment.skin = body.skin
         garment.skeleton = body.skeleton
         garment.transform = body.transform
-        garment.material_override = _jacket_material()
+        garment.material_override = _jacket_material(body.mesh.get_aabb())
         body.get_parent().add_child(garment)
         return true
     return false
@@ -60,9 +60,10 @@ func _extract_jacket(body: MeshInstance3D) -> ArrayMesh:
                 continue
             for vertex_id in [a, b, c]:
                 var normal := normals[vertex_id].normalized()
-                var normalized_y := (verts[vertex_id].y - bottom) / height
-                # Shaped chest panels and shoulder bulge, no giant rigid boxes.
-                var thickness := 0.020 + 0.014 * sin(clampf((normalized_y - 0.42) / 0.36, 0.0, 1.0) * PI)
+                # Whole-torso silhouette pass: shaped chest, tapered waist and
+                # anatomically broad shoulders follow the ORIGINAL skin weights.
+                # No separate rigid chest boxes, collisions or bone edits.
+                var displacement := _tailored_offset(verts[vertex_id], normal, bounds)
                 output.set_normal(normal)
                 output.set_bones(PackedInt32Array([
                     bones[vertex_id * 4], bones[vertex_id * 4 + 1],
@@ -70,7 +71,7 @@ func _extract_jacket(body: MeshInstance3D) -> ArrayMesh:
                 output.set_weights(PackedFloat32Array([
                     weights[vertex_id * 4], weights[vertex_id * 4 + 1],
                     weights[vertex_id * 4 + 2], weights[vertex_id * 4 + 3]]))
-                output.add_vertex(verts[vertex_id] + normal * thickness)
+                output.add_vertex(verts[vertex_id] + displacement)
                 accepted += 1
     if accepted < 300:
         return null
@@ -81,7 +82,24 @@ func _is_jacket_vertex(point: Vector3, bottom: float, height: float) -> bool:
     var y := (point.y - bottom) / height
     return y >= 0.43 and y <= 0.78
 
-func _jacket_material() -> ShaderMaterial:
+func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
+    # Normalized proportions use the actual imported CC0 mesh, not guessed
+    # world-space units. The silhouette is fuller at chest/shoulder and
+    # deliberately narrower at the waist, without breaking 4-weight skinning.
+    var y: float = (point.y - bounds.position.y) / bounds.size.y
+    var lateral: float = (point.x - bounds.get_center().x) / bounds.size.x
+    var chest: float = exp(-pow((y - 0.635) / 0.105, 2.0)) * (1.0 - smoothstep(0.23, 0.43, absf(lateral)))
+    var shoulder: float = exp(-pow((y - 0.735) / 0.075, 2.0)) * smoothstep(0.065, 0.30, absf(lateral))
+    var waist: float = exp(-pow((y - 0.465) / 0.055, 2.0))
+    var depth: float = 0.022 + 0.064 * chest + 0.054 * shoulder + 0.009 * waist
+    var spread: float = 0.042 * shoulder
+    return normal * depth + Vector3(signf(lateral) * spread, 0.012 * shoulder, 0.0)
+
+func _jacket_material(bounds: AABB) -> ShaderMaterial:
     var material := ShaderMaterial.new()
     material.shader = preload("res://rider_external_jacket.gdshader")
+    material.set_shader_parameter("rest_bottom", bounds.position.y)
+    material.set_shader_parameter("rest_height", bounds.size.y)
+    material.set_shader_parameter("rest_center_x", bounds.get_center().x)
+    material.set_shader_parameter("rest_width", bounds.size.x)
     return material
