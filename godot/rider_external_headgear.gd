@@ -250,24 +250,99 @@ func _build_headwear() -> void:
         _mesh("WindSweptBackLock%d" % strand,
             _tube(flow, s.x * (0.067 if strand % 2 == 0 else 0.054), 7),
             highlight if strand % 3 == 0 else hair_mat)
+    # One coherent, tapered hairline frames the face while the back curtain
+    # gains a real inner/outer volume. These follow the imported Head joint.
+    var fringe_mat := _material(Color(0.64, 0.33, 0.85), 0.06, 0.44)
+    for strand in range(6):
+        var across := (float(strand) - 2.5) / 2.5
+        var root := Vector3(c.x + across * radius_x * 0.70,
+            crown_y + cap_height * 0.72, c.z + face_sign * radius_z * 0.06)
+        var tip := Vector3(c.x + across * radius_x * 0.90 + radius_x * 0.09,
+            head_bounds.position.y + s.y * (0.80 + 0.035 * absf(across)),
+            c.z + face_sign * radius_z * (0.83 - 0.12 * absf(across)))
+        var control := Vector3(c.x + across * radius_x * 1.02,
+            crown_y + cap_height * 0.95, c.z + face_sign * radius_z * 0.86)
+        var curve: Array[Vector3] = []
+        for segment in range(13):
+            var t := float(segment) / 12.0
+            curve.append(root * pow(1.0 - t, 2.0) + control * (2.0 * t * (1.0 - t)) + tip * t * t)
+        _mesh("SculptedTaperedFringe%d" % strand,
+            _tapered_hair_lock(curve, s.x * 0.10, 9),
+            fringe_mat if strand % 2 == 0 else hair_mat)
     _build_expression(c, s)
+
+func _tapered_hair_lock(points: Array[Vector3], radius: float, sides: int) -> ArrayMesh:
+    var surface := SurfaceTool.new()
+    surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+    for segment in range(points.size() - 1):
+        for step in range(sides):
+            var angle0 := TAU * float(step) / float(sides)
+            var angle1 := TAU * float(step + 1) / float(sides)
+            var corners: Array[Vector3] = []
+            for ring in [segment, segment + 1]:
+                var t := float(ring) / float(points.size() - 1)
+                var tangent := (points[mini(ring + 1, points.size() - 1)] -
+                    points[maxi(ring - 1, 0)]).normalized()
+                var axis := Vector3.UP.cross(tangent).normalized()
+                if axis.length_squared() < 0.01:
+                    axis = Vector3.RIGHT
+                var normal := tangent.cross(axis).normalized()
+                var taper := maxf(0.08, sin(PI * (0.08 + t * 0.85)))
+                var ring_radius := radius * taper
+                corners.append(points[ring] + (axis * cos(angle0) + normal * sin(angle0)) * ring_radius)
+                corners.append(points[ring] + (axis * cos(angle1) + normal * sin(angle1)) * ring_radius)
+            _quad(surface, corners[0], corners[2], corners[3], corners[1])
+    surface.generate_normals()
+    return surface.commit()
 
 func _back_hair_surface(c: Vector3, s: Vector3, crown_y: float, cap_height: float,
         radius_x: float, radius_z: float) -> ArrayMesh:
+    # Closed, double-sided sculpted hair volume, not a single flat card.
+    # The inner shell avoids a paper-thin silhouette in chase/side views.
     var surface := SurfaceTool.new()
     surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-    for row in range(14):
-        var t0 := float(row) / 14.0
-        var t1 := float(row + 1) / 14.0
-        for column in range(24):
-            var u0 := float(column) / 24.0
-            var u1 := float(column + 1) / 24.0
-            _quad(surface, _back_hair_point(c, s, crown_y, cap_height, radius_x, radius_z, t0, u0),
-                _back_hair_point(c, s, crown_y, cap_height, radius_x, radius_z, t1, u0),
-                _back_hair_point(c, s, crown_y, cap_height, radius_x, radius_z, t1, u1),
-                _back_hair_point(c, s, crown_y, cap_height, radius_x, radius_z, t0, u1))
+    var rows := 14
+    var columns := 24
+    for row in range(rows):
+        var t0 := float(row) / float(rows)
+        var t1 := float(row + 1) / float(rows)
+        for column in range(columns):
+            var u0 := float(column) / float(columns)
+            var u1 := float(column + 1) / float(columns)
+            for outer in [true, false]:
+                var a := _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t0, u0, outer)
+                var b := _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t1, u0, outer)
+                var d := _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t0, u1, outer)
+                var e := _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t1, u1, outer)
+                if outer:
+                    _quad(surface, a, b, e, d)
+                else:
+                    _quad(surface, d, e, b, a)
+        for u in [0.0, 1.0]:
+            _quad(surface,
+                _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t0, u, true),
+                _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t1, u, true),
+                _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t1, u, false),
+                _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t0, u, false))
+    for t in [0.0, 1.0]:
+        for column in range(columns):
+            var u0 := float(column) / float(columns)
+            var u1 := float(column + 1) / float(columns)
+            _quad(surface,
+                _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t, u0, true),
+                _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t, u1, true),
+                _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t, u1, false),
+                _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t, u0, false))
     surface.generate_normals()
     return surface.commit()
+
+func _back_hair_volume_point(c: Vector3, s: Vector3, crown_y: float, cap_height: float,
+        radius_x: float, radius_z: float, t: float, u: float, outer: bool) -> Vector3:
+    var point := _back_hair_point(c, s, crown_y, cap_height, radius_x, radius_z, t, u)
+    var thickness := s.z * (0.14 + 0.045 * sin(PI * t))
+    point.z += -face_sign * thickness * (0.65 if outer else -0.35)
+    point.x += (u - 0.5) * s.x * (0.09 if outer else -0.025)
+    return point
 
 func _back_hair_point(c: Vector3, s: Vector3, crown_y: float, cap_height: float,
         radius_x: float, radius_z: float, t: float, u: float) -> Vector3:
