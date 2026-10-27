@@ -54,6 +54,8 @@ func _check() -> void:
             return
         var upper_hits := 0
         var lower_hits := 0
+        var panel_hits := 0
+        var elbow_hits := 0
         for surface in range(sleeve.mesh.get_surface_count()):
             var arrays: Array = sleeve.mesh.surface_get_arrays(surface)
             var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
@@ -80,9 +82,34 @@ func _check() -> void:
                 if absf(total - 1.0) > 0.04:
                     _fail("original four skin weights no longer normalized")
                     return
+                if colors[i].b > 0.48:
+                    panel_hits += 1
+                if colors[i].r > 0.32 and colors[i].r < 0.66:
+                    elbow_hits += 1
+        if panel_hits < 60 or elbow_hits < 25:
+            _fail("modeled shoulder/forearm panels or articulated elbow bellows missing")
+            return
         if upper_hits < 30 or lower_hits < 30:
             _fail("sleeve lacks genuinely articulated shoulder/elbow geometry")
             return
+    # Check actual rest-space sculpt instead of accepting a color-only change.
+    # Shoulder armor must be materially thicker than a flat 2-cm skin copy;
+    # wrist and elbow profiles must remain distinct for readable articulation.
+    var sample_bounds := AABB(Vector3(-0.5, 0.0, -0.5), Vector3(1.0, 2.0, 1.0))
+    var shoulder_shape: Vector3 = controller.call("_sculpt_offset",
+        Vector3(0.45, 1.5, 0.0), Vector3.RIGHT, sample_bounds, Vector2(1.0, 0.96))
+    var elbow_shape: Vector3 = controller.call("_sculpt_offset",
+        Vector3(0.45, 1.3, 0.0), Vector3.RIGHT, sample_bounds, Vector2(0.99, 0.48))
+    var wrist_shape: Vector3 = controller.call("_sculpt_offset",
+        Vector3(0.45, 1.0, 0.0), Vector3.RIGHT, sample_bounds, Vector2(0.20, 0.02))
+    if shoulder_shape.x < 0.12 or elbow_shape.x < 0.06 or wrist_shape.x > 0.07:
+        _fail("sleeves must have substantial shoulder volume, elbow shaping and a wrist taper")
+        return
+    var shoulder_panel: float = controller.call("_armor_panel", Vector2(1.0, 0.96))
+    var elbow_panel: float = controller.call("_armor_panel", Vector2(1.0, 0.48))
+    if shoulder_panel < 0.80 or elbow_panel < 0.55:
+        _fail("original-skin armor panel zones are missing")
+        return
     if hero.find_children("*", "CollisionObject3D", true, false).size() != 0:
         _fail("visual sleeve redesign must not add collisions")
         return
@@ -97,5 +124,5 @@ func _check() -> void:
     if rider.get_node_or_null("LegacyRider") == null:
         _fail("the proven touch/hoverboard fallback was removed")
         return
-    print("EXTERNAL SKINNED SLEEVES TEST PASSED: %d+%d original-skin vertices, two articulated elbows" % [left_count, right_count])
+    print("EXTERNAL SKINNED SLEEVES TEST PASSED: %d+%d original-skin vertices, two sculpted articulated shoulder/elbow/forearm armor zones" % [left_count, right_count])
     quit(0)
