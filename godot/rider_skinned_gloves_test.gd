@@ -109,6 +109,9 @@ func _check() -> void:
             if child is MeshInstance3D and child.mesh is SphereMesh and child.visible:
                 _fail("old spherical glove still visible")
                 return
+    if int(rig.get("retired_hand_surfaces")) != 2:
+        _fail("two original pale glTF hands must be retired after successful glove skin")
+        return
     if gloves.find_children("*", "CollisionObject3D", true, false).size() > 0:
         _fail("gloves must not change touch or physics")
         return
