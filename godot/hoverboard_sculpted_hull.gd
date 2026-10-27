@@ -9,6 +9,7 @@ var chassis: MeshInstance3D
 var grip: MeshInstance3D
 var keel: MeshInstance3D
 var rails: Array[MeshInstance3D] = []
+var swept_wings: Array[MeshInstance3D] = []
 var rail_material: StandardMaterial3D
 
 func _ready() -> void:
@@ -38,9 +39,11 @@ func _ready() -> void:
         var rail := _attach("PortEdgeLight" if side < 0.0 else "StarboardEdgeLight",
             _make_rail(side), rail_material)
         rails.append(rail)
-    built = chassis != null and grip != null and keel != null and rails.size() == 2
+        swept_wings.append(_attach("PortSculptedAeroWing" if side < 0.0 else "StarboardSculptedAeroWing",
+            _make_wing(side), shell_material))
+    built = chassis != null and grip != null and keel != null and rails.size() == 2 and swept_wings.size() == 2
     if built:
-        for part in [chassis, grip, keel] + rails:
+        for part in [chassis, grip, keel] + rails + swept_wings:
             if part.mesh == null or part.mesh.get_surface_count() == 0:
                 built = false
 
@@ -181,5 +184,37 @@ func _make_rail(side: float) -> ArrayMesh:
             _rail_point(side, b, 0.016), _rail_point(side, a, -0.016),
             _rail_point(side, b, 0.016), _rail_point(side, a, 0.016)]:
             tool.add_vertex(point)
+    tool.generate_normals()
+    return tool.commit()
+
+func _wing_point(side: float, t: float, angle: float) -> Vector3:
+    # Sculpted swept aerofoil, not a rotated primitive prism. Broad shoulders
+    # near the middle and a curled rear edge are visible from the chase camera.
+    var swell := sin(PI * t)
+    var z := lerpf(-1.05, 0.97, t)
+    var inner := 0.69 + 0.07 * swell
+    var outer := 1.08 + 0.39 * swell + 0.10 * t
+    var center := (inner + outer) * 0.5
+    var radius := (outer - inner) * 0.5
+    var curl := 0.12 * smoothstep(0.70, 1.0, t)
+    return Vector3(side * (center + radius * cos(angle)),
+        0.315 + curl + (0.045 + 0.035 * swell) * sin(angle), z)
+
+func _make_wing(side: float) -> ArrayMesh:
+    var tool := SurfaceTool.new()
+    tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+    for i in range(24):
+        var a := float(i) / 24.0
+        var b := float(i + 1) / 24.0
+        for j in range(12):
+            var u := TAU * float(j) / 12.0
+            var v := TAU * float(j + 1) / 12.0
+            for sample in [Vector2(a, u), Vector2(b, u), Vector2(b, v),
+                Vector2(a, u), Vector2(b, v), Vector2(a, v)]:
+                var point := _wing_point(side, sample.x, sample.y)
+                var highlight := maxf(0.0, sin(sample.y))
+                tool.set_color(Color("#283456").lerp(Color("#9b63c9"),
+                    0.26 + 0.48 * highlight + 0.12 * sin(PI * sample.x)))
+                tool.add_vertex(point)
     tool.generate_normals()
     return tool.commit()
