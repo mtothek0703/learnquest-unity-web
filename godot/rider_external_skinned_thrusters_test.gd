@@ -25,7 +25,7 @@ func _check() -> void:
         _fail("original 65-bone source or skinned shoulder controller missing")
         return
     var headwear := rig.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
-    if headwear == null or float(headwear.get("visual_scale")) < 1.30 or float(headwear.get("visual_scale")) > 1.40:
+    if headwear == null or float(headwear.get("visual_scale")) < 1.50 or float(headwear.get("visual_scale")) > 1.62:
         _fail("mobile-readable larger face assembly missing")
         return
     var shells: Array = controller.get("nacelles")
@@ -58,7 +58,7 @@ func _check() -> void:
         if absf(pod_bounds.get_center().x - source_bounds.get_center().x) > source_bounds.size.x * 0.34:
             _fail("shoulder nacelle is detached from the actual torso")
             return
-        if pod_bounds.size.x > source_bounds.size.x * 0.30:
+        if pod_bounds.size.x > source_bounds.size.x * 0.23:
             _fail("shoulder nacelle is oversized for a mobile character")
             return
         var mat := mesh.material_override as StandardMaterial3D
