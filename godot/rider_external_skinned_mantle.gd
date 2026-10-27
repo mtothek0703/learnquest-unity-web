@@ -82,7 +82,7 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: f
         body.get_parent().add_child(shoulder_yoke)
         yoke_vertices = yoke_mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
         panels = created
-        mantle_span = bounds.size.y * 0.49
+        mantle_span = bounds.size.y * 0.43
         return true
     return false
 
