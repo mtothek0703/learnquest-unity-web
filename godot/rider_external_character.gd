@@ -82,6 +82,13 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     character.add_child(outfit)
     if not bool(outfit.call("install", skinned_meshes)):
         push_warning("CC0 skinned jacket shell unavailable; original body remains")
+    # Weighted trousers and boots use the same original four-influence
+    # skinning as the body; unlike rigid props, knees/ankles follow the rig.
+    var lower := preload("res://rider_external_skinned_lower.gd").new() as Node
+    lower.name = "ExternalSkinnedLowerSuit"
+    character.add_child(lower)
+    if not bool(lower.call("install", skinned_meshes)):
+        push_warning("CC0 weighted lower garments unavailable; original legs remain")
     # Deliberately do not modify bone rest positions, imported inverse bind
     # matrices or the imported Skin: those are the asset's real authoring data.
     set_process(true)
