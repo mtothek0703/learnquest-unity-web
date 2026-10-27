@@ -57,9 +57,13 @@ func _check() -> void:
         return
     for node in eyes:
         var eye := node as MeshInstance3D
+        # Undo the visual-only stylization transform before checking the
+        # original face/eye projection in imported Head-local coordinates.
+        var factor := float(headwear.get("visual_scale"))
+        var local_eye := head_region.get_center() + (eye.position - head_region.get_center()) / factor
         var face_point: Vector3 = headwear.call("_face_front_point",
-            head_region.get_center(), head_region.size, eye.position.x, eye.position.y)
-        var offset := (eye.position.z - face_point.z) * float(headwear.get("face_sign"))
+            head_region.get_center(), head_region.size, local_eye.x, local_eye.y)
+        var offset := (local_eye.z - face_point.z) * float(headwear.get("face_sign"))
         if offset < head_region.size.z * 0.005 or offset > head_region.size.z * 0.07:
             _fail("eye must embed in continuous face surface, not float above it")
             return
