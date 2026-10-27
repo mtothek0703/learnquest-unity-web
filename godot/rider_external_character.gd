@@ -69,6 +69,12 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
                 eyes.albedo_color = Color(0.92, 0.96, 1.0)
                 eyes.roughness = 0.3
                 mesh.material_override = eyes
+    # The helmet/hair are attached to the ORIGINAL imported Head bone, with
+    # dimensions sampled from head-weighted vertices; the skinned face stays.
+    var headgear := preload("res://rider_external_headgear.gd").new() as BoneAttachment3D
+    if not bool(headgear.call("install", skeleton, skinned_meshes)):
+        headgear.queue_free()
+        push_warning("CC0 hero headwear could not fit imported Head bone")
     # Deliberately do not modify bone rest positions, imported inverse bind
     # matrices or the imported Skin: those are the asset's real authoring data.
     set_process(true)
