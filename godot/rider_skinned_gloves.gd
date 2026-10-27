@@ -113,7 +113,7 @@ func _emit(tool: SurfaceTool, side: float, t: float, u: float, stitch: bool) -> 
 func _build(side: float, stitch: bool) -> ArrayMesh:
     var tool := SurfaceTool.new()
     tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-    var rows := 3 if stitch else ROWS
+    var rows := 12 if stitch else ROWS
     var columns := 2 if stitch else SIDES
     for row in range(rows):
         var t0 := float(row) / float(rows)
