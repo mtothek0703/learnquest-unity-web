@@ -34,7 +34,7 @@ func _check() -> void:
     if meshes.size() < 10:
         _fail("expected curved cap, face shield, visor edges and multiple hair locks")
         return
-    for expected in ["CurvedFlightHelmetShell", "TranslucentFaceShield",
+    for expected in ["CurvedFlightHelmetShell", "TranslucentFaceShield", "SculptedContinuousFace",
             "EyeWhite*", "Iris*", "Pupil*", "CurvedSmile"]:
         if headwear.find_child(expected, false, false) == null:
             _fail("missing expressive helmet/face feature: " + expected)
