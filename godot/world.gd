@@ -14,6 +14,7 @@ const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-G
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
 const HARBOR_BONUS_TARGET := 4
 const GLACIER_BONUS_TARGET := 3
+const CANYON_ROUTE_TARGET := 3
 const SHIELD_COST := 30
 const MEGA_JUMP_COST := 30
 const ATTACK_COST := 45
@@ -515,6 +516,24 @@ func _change_world() -> void:
     world_button.text = "WELT: %s" % WORLD_NAMES[world_choice]
     _refresh_hud()
 
+func _update_canyon_routes() -> void:
+    if world_choice != 1 or phase != "race" or not started or quiz_active:
+        return
+    var result: Dictionary = canyon_zone.call("check_route_choices", rider.position.x)
+    if result.is_empty():
+        return
+    if bool(result.get("missed", false)):
+        info_label.text = "KRISTALL-ABZWEIGUNG VERPASST! NAECHSTE WAEHLEN"
+    else:
+        xp += int(result.get("xp", 0))
+        power = mini(100, power + int(result.get("energy", 0)))
+        if str(result.get("choice", "")) == "energy":
+            info_label.text = "ENERGIE-PFAD! +20 ENERGIE, +15 XP"
+        else:
+            info_label.text = "XP-PFAD! +40 XP"
+    feedback_time = 1.6
+    _refresh_hud()
+
 func _update_glacier_mission() -> void:
     if world_choice != 3 or phase != "race" or not started:
         return
@@ -637,6 +656,7 @@ func _reset_run() -> void:
     guardian_hp = GUARDIAN_HEALTH
     harbor_crystals = 0
     glacier_zone.call("reset_course")
+    canyon_zone.call("reset_routes")
     guardian_active = false
     guardian_defeated = false
     guardian_attack_timer = 0.0
@@ -850,12 +870,14 @@ func _finish_run() -> void:
     if completed:
         rounds_finished += 1
         round_number += 1
-        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 1 and guardian_defeated else 0) + (1 if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET else 0) + (1 if world_choice == 2 and orbit_defeated else 0) + (1 if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET else 0) + (1 if world_choice == 3 and frost_defeated else 0)
+        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 1 and guardian_defeated else 0) + (1 if world_choice == 1 and int(canyon_zone.get("completed_routes")) >= CANYON_ROUTE_TARGET else 0) + (1 if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET else 0) + (1 if world_choice == 2 and orbit_defeated else 0) + (1 if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET else 0) + (1 if world_choice == 3 and frost_defeated else 0)
         total_stars += stars_earned
         total_reward_xp += xp
         reward_label.text = "+%d STERNE  |  +%d XP\nGESAMT: %d STERNE" % [stars_earned, xp, total_stars]
         if world_choice == 1 and guardian_defeated:
             reward_label.text += "\nKRISTALL-WÄCHTER BESIEGT: +1 BONUSSTERN!"
+        if world_choice == 1 and int(canyon_zone.get("completed_routes")) >= CANYON_ROUTE_TARGET:
+            reward_label.text += "\nKRISTALL-PFAD-MISSION: +1 BONUSSTERN!"
         if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET:
             reward_label.text += "\nHAFEN-MISSION ERFÜLLT: +1 BONUSSTERN!"
         if world_choice == 2 and orbit_defeated:
@@ -1314,6 +1336,8 @@ func _refresh_hud() -> void:
             hud.text = "SKYWAY %s   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [VERSION_LABEL, lives, xp, power, combo, int(distance)]
         if phase == "race":
             hud.text += "\n%s  RUNDE %d  ZIEL %dm  SCHILD %ds  BOOST %ds" % [WORLD_NAMES[world_choice], round_number, int(mission_target), ceili(shield_left), ceili(turbo_left)]
+            if world_choice == 1:
+                hud.text += "\nKRISTALL-PFADE %d/%d  LINKS: ENERGIE  RECHTS: XP" % [mini(int(canyon_zone.get("completed_routes")), CANYON_ROUTE_TARGET), CANYON_ROUTE_TARGET]
             if guardian_active and world_choice == 1:
                 hud.text += "\nKRISTALL-WÄCHTER %d/%d  %s" % [guardian_hp, GUARDIAN_HEALTH, "LASER!" if guardian_warning_left > 0.0 else "ANGRIFF LADEN"]
             if world_choice == 2:
@@ -1424,6 +1448,7 @@ func _process(delta: float) -> void:
     rider.rotation.z = lerpf(rider.rotation.z, (float(lane) * 3.1 - rider.position.x) * -0.14, delta * 5)
     rider.rotation.y = sin(distance * 0.03) * 0.035
     _update_run_items(delta)
+    _update_canyon_routes()
     _update_glacier_mission()
     _update_camera(delta)
     if not started:
