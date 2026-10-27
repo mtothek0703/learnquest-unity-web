@@ -75,6 +75,13 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     if not bool(headgear.call("install", skeleton, skinned_meshes)):
         headgear.queue_free()
         push_warning("CC0 hero headwear could not fit imported Head bone")
+    # Build a real four-weighted, curved flight jacket from the original
+    # humanoid triangles. It shares the imported Skin and skeleton.
+    var outfit := preload("res://rider_external_skinned_outfit.gd").new() as Node
+    outfit.name = "ExternalSkinnedFlightSuit"
+    character.add_child(outfit)
+    if not bool(outfit.call("install", skinned_meshes)):
+        push_warning("CC0 skinned jacket shell unavailable; original body remains")
     # Deliberately do not modify bone rest positions, imported inverse bind
     # matrices or the imported Skin: those are the asset's real authoring data.
     set_process(true)
