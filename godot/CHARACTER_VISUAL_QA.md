@@ -75,11 +75,11 @@ Automatisch prüft `rider_closed_head_test.gd` 360°-Volumen, Augenhöhlen-/Nase
 
 ## V108 — echte gerenderte QA-Bilder statt nur Geometrie-Assertions
 
-Die Godot-CI erzeugt jetzt mit **OpenGL/Mesa unter Xvfb** 18 echte PNGs:
+Die Godot-CI erzeugt jetzt mit **OpenGL/Mesa unter Xvfb** 20 echte PNGs (18 Standardansichten und 2 Diagnoseansichten):
 1280×720 (16:9) und 1170×540 (19,5:9), jeweils Front, Profil und
 Verfolgerperspektive sowie Idle, Lenkung+Turbo und Sprung. Das Skript
 `godot/rider_visual_capture_test.gd` prüft die Bildabmessungen und verwirft
-leere oder nahezu einfarbige Bilder. Die Frames werden in GitHub Actions als
+leere oder nahezu einfarbige Bilder. Die zwei zusätzlichen Nahaufnahmen isolieren Helm und skinnierte Gesichtsfläche. Die Frames werden in GitHub Actions als
 `learnquest-landscape-character-frames` (PR) bzw.
 `learnquest-v108-landscape-character-frames` (Release) archiviert.
 
@@ -102,3 +102,16 @@ LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_VISUAL_OUTPUT=/tmp/learnquest-visual-qa \
 **Nicht** `--headless` für diese Pixelprüfung verwenden: der Dummy-Renderer
 kann keine verlässlichen Bilder liefern. Die echten iPhone-/Android-Tests,
 60-Sekunden-FPS-Messungen und Browser-Touchprüfungen bleiben separat offen.
+
+**Tatsächlicher V107/V108-Bildbefund:** Die erste gerenderte QA-Serie zeigte,
+dass die bisherige neue skinnierte Gesichtsfläche **überhaupt nicht sichtbar**
+war. In der isolierten Nahaufnahme erschienen zunächst nur Augen und Lächeln.
+Ursache: Die 13 Skeleton3D-Bone-Pose-Translationen waren beim Erzeugen null,
+während die Skin-Bind-Matrizen reale Restpositionen (Kopf ca. Y=2,67) erwarteten.
+Die GPU verschob die Meshes dadurch nach unten. V108 initialisiert nun alle
+Pose-Translationen aus den authored Rest-Offsets; Kopf-/Kostüm-Follower
+verwenden dieselben Bind-Referenzpositionen. Zusätzlich werden drei
+überdeckende ursprüngliche glTF-Kopfoberflächen **erst nach** erfolgreicher
+neuer Kopf-Skinbindung entfernt. Die neue Serie zeigt eine tatsächlich
+sichtbare organische Kopfoberfläche, skinnierte Jacke und Arme.
+Die Bildserie ist ein **Desktop-Mesa-Rendervergleich**, kein iPhone-Test.
