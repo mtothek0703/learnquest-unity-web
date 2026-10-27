@@ -370,11 +370,18 @@ func _build_expression(c: Vector3, s: Vector3) -> void:
     # The facial features must follow the ACTUAL sculpted head surface.
     # The previous fixed front plane left eyes/brows/smile visibly floating
     # in the front render; calculate each landmark from the same face mesh.
-    _mesh("SculptedContinuousFace", _face_surface(c, s),
-        _material(Color(0.87, 0.57, 0.46), 0.0, 0.67))
+    # Paint warm cheeks, cool eye sockets and a readable jaw directly on the
+    # continuous sculpted head. Vertex colors avoid extra draw calls/textures.
+    var face_material := _material(Color.WHITE, 0.0, 0.71)
+    face_material.vertex_color_use_as_albedo = true
+    _mesh("SculptedContinuousFace", _face_surface(c, s), face_material)
     var white := _material(Color(0.96, 0.98, 1.0), 0.0, 0.25)
     var iris := _material(Color(0.10, 0.70, 0.91), 0.04, 0.24)
     var pupil := _material(Color(0.025, 0.038, 0.11), 0.0, 0.22)
+    var eye_glint := _material(Color(0.96, 0.98, 1.0), 0.0, 0.16)
+    eye_glint.emission_enabled = true
+    eye_glint.emission = Color(0.30, 0.52, 0.70)
+    eye_glint.emission_energy_multiplier = 0.45
     var ink := _material(Color(0.14, 0.075, 0.22), 0.0, 0.76)
     var lid_mat := _material(Color(0.30, 0.14, 0.28), 0.0, 0.66)
     var blush := _material(Color(0.77, 0.36, 0.43), 0.0, 0.79)
@@ -391,6 +398,14 @@ func _build_expression(c: Vector3, s: Vector3) -> void:
         _ellipsoid("Pupil%s" % str(side),
             base + Vector3(0.0, 0.0, face_sign * s.z * 0.094),
             Vector3(s.x * 0.026, s.y * 0.035, s.z * 0.014), pupil)
+        # Two small highlights are embedded in each iris, not floating props.
+        # They remain visible in the 1280x720 and 1170x540 front cameras.
+        _ellipsoid("IrisCatchlight%s_Main" % str(side),
+            base + Vector3(-s.x * 0.012, s.y * 0.016, face_sign * s.z * 0.109),
+            Vector3(s.x * 0.012, s.y * 0.016, s.z * 0.007), eye_glint)
+        _ellipsoid("IrisCatchlight%s_Small" % str(side),
+            base + Vector3(s.x * 0.015, -s.y * 0.013, face_sign * s.z * 0.108),
+            Vector3(s.x * 0.006, s.y * 0.008, s.z * 0.005), eye_glint)
         var upper_lid: Array[Vector3] = []
         var lower_lid: Array[Vector3] = []
         var brow: Array[Vector3] = []
@@ -449,18 +464,36 @@ func _face_front_point(c: Vector3, s: Vector3, x: float, y: float) -> Vector3:
     return _face_point(c, s, angle / TAU, v)
 
 func _face_surface(c: Vector3, s: Vector3) -> ArrayMesh:
+    # One continuous, vertex-painted face: cheek warmth, brow shadows and
+    # chin shading share the SAME curved mesh, without decals or extra passes.
     var surface := SurfaceTool.new()
     surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-    for row in range(18):
-        var v0 := float(row) / 18.0
-        var v1 := float(row + 1) / 18.0
-        for column in range(32):
-            var u0 := float(column) / 32.0
-            var u1 := float(column + 1) / 32.0
-            _quad(surface, _face_point(c, s, u0, v0), _face_point(c, s, u0, v1),
-                _face_point(c, s, u1, v1), _face_point(c, s, u1, v0))
+    for row in range(24):
+        var v0 := float(row) / 24.0
+        var v1 := float(row + 1) / 24.0
+        for column in range(40):
+            var u0 := float(column) / 40.0
+            var u1 := float(column + 1) / 40.0
+            for uv in [Vector2(u0, v0), Vector2(u0, v1), Vector2(u1, v1),
+                    Vector2(u0, v0), Vector2(u1, v1), Vector2(u1, v0)]:
+                surface.set_color(_face_color(c, s, uv.x, uv.y))
+                surface.add_vertex(_face_point(c, s, uv.x, uv.y))
     surface.generate_normals()
     return surface.commit()
+
+func _face_color(c: Vector3, s: Vector3, u: float, v: float) -> Color:
+    var longitude := u * TAU
+    var frontness := maxf(0.0, face_sign * sin(longitude))
+    var lateral := absf(cos(longitude) * sin(v * PI))
+    var cheek := exp(-pow((lateral - 0.48) / 0.22, 2.0)) * exp(-pow((v - 0.58) / 0.14, 2.0))
+    var eye_shadow := exp(-pow((lateral - 0.42) / 0.24, 2.0)) * exp(-pow((v - 0.40) / 0.085, 2.0))
+    var chin_shadow := smoothstep(0.72, 0.94, v)
+    var skin := Color(0.91, 0.64, 0.53)
+    skin = skin.lerp(Color(0.98, 0.75, 0.60), 0.22 * frontness)
+    skin = skin.lerp(Color(0.88, 0.37, 0.45), cheek * frontness * 0.34)
+    skin = skin.lerp(Color(0.45, 0.29, 0.42), eye_shadow * frontness * 0.21)
+    skin = skin.lerp(Color(0.48, 0.30, 0.40), chin_shadow * 0.20)
+    return skin
 
 func _face_point(c: Vector3, s: Vector3, u: float, v: float) -> Vector3:
     var latitude := v * PI
@@ -469,12 +502,17 @@ func _face_point(c: Vector3, s: Vector3, u: float, v: float) -> Vector3:
     var jaw := 0.75 + 0.25 * smoothstep(0.12, 0.67, 1.0 - v)
     var x := cos(longitude) * silhouette * s.x * 0.49 * jaw
     var z := sin(longitude) * silhouette * s.z * 0.52
-    # Subtle cheeks and a soft nose ridge, sculpted in the same continuous mesh.
+    # Sculpt the actual facial surface as a coherent 3D shape. The face-front
+    # inverse projection uses the SAME x/jaw mapping, keeping eyes/lids seated.
     var frontness := maxf(0.0, face_sign * sin(longitude))
     var nose := exp(-pow(x / maxf(0.01, s.x * 0.12), 2.0)) * exp(-pow((v - 0.52) / 0.13, 2.0))
     var cheek := exp(-pow((absf(x) - s.x * 0.27) / maxf(0.01, s.x * 0.16), 2.0)) * exp(-pow((v - 0.56) / 0.18, 2.0))
     var eye_socket := exp(-pow((absf(x) - s.x * 0.22) / maxf(0.01, s.x * 0.13), 2.0)) * exp(-pow((v - 0.43) / 0.11, 2.0))
-    z += face_sign * frontness * s.z * (nose * 0.18 + cheek * 0.075 - eye_socket * 0.035)
+    var brow := exp(-pow((v - 0.34) / 0.075, 2.0)) * exp(-pow((absf(x) - s.x * 0.19) / maxf(0.01, s.x * 0.25), 2.0))
+    var lips := exp(-pow((v - 0.70) / 0.055, 2.0)) * exp(-pow(x / maxf(0.01, s.x * 0.24), 2.0))
+    var chin := exp(-pow((v - 0.79) / 0.10, 2.0)) * exp(-pow(x / maxf(0.01, s.x * 0.27), 2.0))
+    z += face_sign * frontness * s.z * (nose * 0.24 + cheek * 0.09 -
+        eye_socket * 0.06 + brow * 0.055 + lips * 0.045 + chin * 0.065)
     return Vector3(c.x + x, c.y + cos(latitude) * s.y * 0.54, c.z + z)
 
 func _ellipsoid(name_text: String, center: Vector3, radii: Vector3, mat: Material) -> void:
