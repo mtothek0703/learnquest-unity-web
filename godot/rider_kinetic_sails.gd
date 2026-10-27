@@ -7,21 +7,35 @@ const COLUMNS := 6
 const FEATHERS_PER_SIDE := 3
 
 var elapsed: float = 0.0
+# V112: idle chase view must not be obscured by six translucent sails.
+# Keep every original sail and animation, deploying them for boost/jumps.
+var deployment: float = 0.0
 var sail_roots: Array[Node3D] = []
 var feathers: Array[Node3D] = []
 var light_materials: Array[StandardMaterial3D] = []
 
 func _ready() -> void:
     _build_sails()
+    for sail in sail_roots:
+        sail.visible = false
+        sail.scale = Vector3.ONE * 0.12
 
 func _process(delta: float) -> void:
     elapsed += delta
     var rider := get_parent().get_parent() as Node3D
     var lean := float(rider.get("lean")) if rider != null else 0.0
     var turbo := bool(rider.get("boosting")) if rider != null else false
+    var airborne := rider != null and rider.position.y > 0.18
+    var active := turbo or airborne
+    deployment = move_toward(deployment, 1.0 if active else 0.0, delta * (3.4 if active else 2.6))
+    var eased := smoothstep(0.0, 1.0, deployment)
     for i in range(sail_roots.size()):
         var side := -1.0 if i == 0 else 1.0
         var root := sail_roots[i]
+        # Fully fold the duplicate idle wings; expand smoothly only during
+        # an actual power-up or jump. This also avoids idle alpha overdraw.
+        root.visible = deployment > 0.015
+        root.scale = Vector3.ONE * lerpf(0.12, 1.0, eased)
         # Counter-steer the two wings and spread them during Turbo.
         var spread := 0.12 if turbo else -0.025
         root.rotation.z = lerpf(root.rotation.z, side * spread - lean * 0.08, minf(1.0, delta * 7.0))

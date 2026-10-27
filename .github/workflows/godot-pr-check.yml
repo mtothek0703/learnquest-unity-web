@@ -62,6 +62,8 @@ jobs:
           grep -Fq 'VOLUMETRIC FRINGE TEST PASSED' /tmp/volumetric-fringe.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_shoulder_seam_test.gd 2>&1 | tee /tmp/shoulder-seam.log
           grep -Fq 'SHOULDER SEAM TEST PASSED' /tmp/shoulder-seam.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_sail_silhouette_test.gd 2>&1 | tee /tmp/sail-silhouette.log
+          grep -Fq 'SAIL SILHOUETTE TEST PASSED' /tmp/sail-silhouette.log
       - name: Validate web export before any main-branch deployment
         shell: bash
         run: |
@@ -119,4 +121,5 @@ jobs:
             /tmp/head-collar-silhouette.log
             /tmp/volumetric-fringe.log
             /tmp/shoulder-seam.log
+            /tmp/sail-silhouette.log
           if-no-files-found: ignore
