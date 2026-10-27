@@ -260,23 +260,71 @@ func _build_headwear() -> void:
     # One coherent, tapered hairline frames the face while the back curtain
     # gains a real inner/outer volume. These follow the imported Head joint.
     var fringe_mat := _material(Color(0.64, 0.33, 0.85), 0.06, 0.44)
+    # The previous six thick round tubes looked like beads above the forehead
+    # in real 16:9 captures. Sculpt broad, flattened 3D swept bangs instead:
+    # curved from the helmet crown to the upper forehead with a tapered tip.
     for strand in range(6):
         var across := (float(strand) - 2.5) / 2.5
-        var root := Vector3(c.x + across * radius_x * 0.70,
-            crown_y + cap_height * 0.72, c.z + face_sign * radius_z * 0.06)
-        var tip := Vector3(c.x + across * radius_x * 0.90 + radius_x * 0.09,
-            head_bounds.position.y + s.y * (0.80 + 0.035 * absf(across)),
-            c.z + face_sign * radius_z * (0.83 - 0.12 * absf(across)))
-        var control := Vector3(c.x + across * radius_x * 1.02,
-            crown_y + cap_height * 0.95, c.z + face_sign * radius_z * 0.86)
-        var curve: Array[Vector3] = []
-        for segment in range(13):
-            var t := float(segment) / 12.0
-            curve.append(root * pow(1.0 - t, 2.0) + control * (2.0 * t * (1.0 - t)) + tip * t * t)
+        var root := Vector3(c.x + across * radius_x * 0.69,
+            crown_y + cap_height * 0.25, c.z + face_sign * radius_z * 0.38)
+        var tip := Vector3(c.x + across * radius_x * 0.88 + radius_x * 0.06,
+            head_bounds.position.y + s.y * (0.72 + 0.025 * absf(across)),
+            c.z + face_sign * radius_z * (0.94 - 0.09 * absf(across)))
+        var control := Vector3(c.x + across * radius_x * 0.94,
+            crown_y + cap_height * 0.57, c.z + face_sign * radius_z * 0.91)
         _mesh("SculptedTaperedFringe%d" % strand,
-            _tapered_hair_lock(curve, s.x * 0.10, 9),
+            _sculpted_fringe_ribbon(root, control, tip, s.x * 0.20, s.z * 0.035),
             fringe_mat if strand % 2 == 0 else hair_mat)
     _build_expression(c, s)
+
+func _sculpted_fringe_ribbon(root: Vector3, control: Vector3, tip: Vector3,
+        width: float, thickness: float) -> ArrayMesh:
+    # A closed, curved, tapered volumetric hair ribbon. Broad faces catch light
+    # like sculpted hair, rather than six circular pipe cross-sections.
+    var surface := SurfaceTool.new()
+    surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+    var segments := 22
+    var strips := 5
+    for segment in range(segments):
+        var t0 := float(segment) / float(segments)
+        var t1 := float(segment + 1) / float(segments)
+        for strip in range(strips):
+            var u0 := float(strip) / float(strips)
+            var u1 := float(strip + 1) / float(strips)
+            for outer in [true, false]:
+                var a := _fringe_ribbon_point(root, control, tip, width, thickness, t0, u0, outer)
+                var b := _fringe_ribbon_point(root, control, tip, width, thickness, t1, u0, outer)
+                var d := _fringe_ribbon_point(root, control, tip, width, thickness, t0, u1, outer)
+                var e := _fringe_ribbon_point(root, control, tip, width, thickness, t1, u1, outer)
+                if outer:
+                    _quad(surface, a, b, e, d)
+                else:
+                    _quad(surface, d, e, b, a)
+        for u in [0.0, 1.0]:
+            _quad(surface,
+                _fringe_ribbon_point(root, control, tip, width, thickness, t0, u, true),
+                _fringe_ribbon_point(root, control, tip, width, thickness, t1, u, true),
+                _fringe_ribbon_point(root, control, tip, width, thickness, t1, u, false),
+                _fringe_ribbon_point(root, control, tip, width, thickness, t0, u, false))
+    for t in [0.0, 1.0]:
+        for strip in range(strips):
+            var u0 := float(strip) / float(strips)
+            var u1 := float(strip + 1) / float(strips)
+            _quad(surface,
+                _fringe_ribbon_point(root, control, tip, width, thickness, t, u0, true),
+                _fringe_ribbon_point(root, control, tip, width, thickness, t, u1, true),
+                _fringe_ribbon_point(root, control, tip, width, thickness, t, u1, false),
+                _fringe_ribbon_point(root, control, tip, width, thickness, t, u0, false))
+    surface.generate_normals()
+    return surface.commit()
+
+func _fringe_ribbon_point(root: Vector3, control: Vector3, tip: Vector3,
+        width: float, thickness: float, t: float, u: float, outer: bool) -> Vector3:
+    var center := root * pow(1.0 - t, 2.0) + control * (2.0 * t * (1.0 - t)) + tip * t * t
+    var taper := maxf(0.07, sin(PI * (0.08 + 0.84 * t)))
+    var across := (u - 0.5) * width * taper
+    return center + Vector3(across, 0.012 * width * sin(PI * u) * sin(PI * t),
+        face_sign * thickness * (0.60 if outer else -0.40))
 
 func _tapered_hair_lock(points: Array[Vector3], radius: float, sides: int) -> ArrayMesh:
     var surface := SurfaceTool.new()
