@@ -56,7 +56,7 @@ func _capture() -> void:
             "shield":
                 effect.mesh = factory.shield_mesh()
                 effect.position.y = 1.35
-                effect.material_override = factory.effect_material(Color("#28bdf7"), 0.36)
+                effect.material_override = factory.effect_material(Color("#28bdf7"), 0.86)
             "mega_jump":
                 effect.mesh = factory.jump_mesh()
                 effect.position.y = 0.20
