@@ -5,7 +5,7 @@ extends Node3D
 ## No imported assets, particles, collisions or changes to gameplay/input.
 
 const WELL_COUNT := 4
-const WELL_SPACING := 38.0
+const WELL_SPACING := 26.0
 const LOOP_LENGTH := WELL_COUNT * WELL_SPACING
 
 var running := false
@@ -25,7 +25,7 @@ func _glow_material(tint: Color) -> StandardMaterial3D:
     material.cull_mode = BaseMaterial3D.CULL_DISABLED
     material.emission_enabled = true
     material.emission = tint
-    material.emission_energy_multiplier = 1.10
+    material.emission_energy_multiplier = 1.45
     return material
 
 func _vertex(tool: SurfaceTool, point: Vector3, tint: Color) -> void:
@@ -41,14 +41,14 @@ func _shaft_mesh(tint: Color) -> ArrayMesh:
         for side in range(16):
             var a0 := TAU * float(side) / 16.0
             var a1 := TAU * float(side + 1) / 16.0
-            var r0 := lerpf(2.0, 0.34, t0)
-            var r1 := lerpf(2.0, 0.34, t1)
-            var p00 := Vector3(cos(a0) * r0, 0.35 + t0 * 11.4, sin(a0) * r0)
-            var p01 := Vector3(cos(a1) * r0, 0.35 + t0 * 11.4, sin(a1) * r0)
-            var p10 := Vector3(cos(a0) * r1, 0.35 + t1 * 11.4, sin(a0) * r1)
-            var p11 := Vector3(cos(a1) * r1, 0.35 + t1 * 11.4, sin(a1) * r1)
-            var low := Color(tint.r, tint.g, tint.b, 0.42 * pow(sin(PI * t0), 1.3))
-            var high := Color(tint.r, tint.g, tint.b, 0.42 * pow(sin(PI * t1), 1.3))
+            var r0 := lerpf(3.35, 0.48, t0)
+            var r1 := lerpf(3.35, 0.48, t1)
+            var p00 := Vector3(cos(a0) * r0, 0.35 + t0 * 15.0, sin(a0) * r0)
+            var p01 := Vector3(cos(a1) * r0, 0.35 + t0 * 15.0, sin(a1) * r0)
+            var p10 := Vector3(cos(a0) * r1, 0.35 + t1 * 15.0, sin(a0) * r1)
+            var p11 := Vector3(cos(a1) * r1, 0.35 + t1 * 15.0, sin(a1) * r1)
+            var low := Color(tint.r, tint.g, tint.b, 0.72 * pow(sin(PI * t0), 1.3))
+            var high := Color(tint.r, tint.g, tint.b, 0.72 * pow(sin(PI * t1), 1.3))
             _vertex(tool, p00, low)
             _vertex(tool, p10, high)
             _vertex(tool, p01, low)
@@ -67,14 +67,14 @@ func _pool_mesh(tint: Color) -> ArrayMesh:
         for side in range(24):
             var a0 := TAU * float(side) / 24.0
             var a1 := TAU * float(side + 1) / 24.0
-            var r0 := 2.65 * t0
-            var r1 := 2.65 * t1
+            var r0 := 3.75 * t0
+            var r1 := 3.75 * t1
             var p00 := Vector3(cos(a0) * r0, 0.06, sin(a0) * r0)
             var p01 := Vector3(cos(a1) * r0, 0.06, sin(a1) * r0)
             var p10 := Vector3(cos(a0) * r1, 0.06, sin(a0) * r1)
             var p11 := Vector3(cos(a1) * r1, 0.06, sin(a1) * r1)
-            var low := Color(tint.r, tint.g, tint.b, 0.65 * pow(1.0 - t0, 1.8))
-            var high := Color(tint.r, tint.g, tint.b, 0.65 * pow(1.0 - t1, 1.8))
+            var low := Color(tint.r, tint.g, tint.b, 0.76 * pow(1.0 - t0, 1.8))
+            var high := Color(tint.r, tint.g, tint.b, 0.76 * pow(1.0 - t1, 1.8))
             _vertex(tool, p00, low)
             _vertex(tool, p01, low)
             _vertex(tool, p10, high)
@@ -91,7 +91,7 @@ func _ready() -> void:
         var glow := _glow_material(tint)
         var well := Node3D.new()
         well.name = "Atmospheric light well %d" % index
-        well.position = Vector3(side * 8.6, 0.0, -18.0 - float(index) * WELL_SPACING)
+        well.position = Vector3(side * 9.9, 0.0, -14.0 - float(index) * WELL_SPACING)
         add_child(well)
         wells.append(well)
         var shaft := MeshInstance3D.new()
@@ -122,7 +122,7 @@ func _ready() -> void:
         lens_material.emission = tint
         lens_material.emission_energy_multiplier = 1.65
         lens.material_override = lens_material
-        lens.position.y = 11.7
+        lens.position.y = 15.3
         well.add_child(lens)
         var lamp := OmniLight3D.new()
         lamp.name = "Shadow-free district accent lamp"
