@@ -11,6 +11,7 @@ const BONE_NAMES := [
 var skeleton: Skeleton3D
 var skinned_meshes: Array[MeshInstance3D] = []
 var retired_head_surfaces: int = 0
+var retired_hand_surfaces: int = 0
 var clock: float = 0.0
 # V101: phase-aware body motion; visual-only, no gameplay state changes.
 var previous_height: float = 0.0
@@ -115,6 +116,55 @@ func _is_original_head_surface(arrays: Array) -> bool:
     # Navy crown (2.42–3.00), Cyan visor strip (2.24–2.66).
     # Torso, arms, pants and boots all end at y <= 2.17.
     return lowest > 1.85 and highest > 2.55
+
+# V115: two original pale hand surfaces occlude the newly GPU-skinned
+# gloves. The bundled glTF has a shared POSITION accessor; classify by
+# referenced triangle vertices, not by all accessor vertices. Preserve every
+# imported torso, arm, leg, boot and head surface and the existing skin.
+func retire_legacy_hand_surfaces() -> void:
+    if skeleton == null or skeleton.get_bone_count() != 13 or retired_hand_surfaces > 0:
+        return
+    for source in skinned_meshes:
+        var old := source.mesh as ArrayMesh
+        if old == null:
+            continue
+        var kept := ArrayMesh.new()
+        var removed := 0
+        for surface_index in range(old.get_surface_count()):
+            var arrays: Array = old.surface_get_arrays(surface_index)
+            if _is_original_hand_surface(arrays):
+                removed += 1
+                continue
+            kept.add_surface_from_arrays(old.surface_get_primitive_type(surface_index), arrays)
+            kept.surface_set_material(kept.get_surface_count() - 1,
+                old.surface_get_material(surface_index))
+        if removed > 0 and kept.get_surface_count() > 0:
+            source.mesh = kept
+            retired_hand_surfaces += removed
+
+func _is_original_hand_surface(arrays: Array) -> bool:
+    var points: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+    var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+    if points.is_empty():
+        return false
+    var minimum := Vector3(INF, INF, INF)
+    var maximum := Vector3(-INF, -INF, -INF)
+    if indices.is_empty():
+        for point in points:
+            minimum = minimum.min(point)
+            maximum = maximum.max(point)
+    else:
+        for index in indices:
+            if index < 0 or index >= points.size():
+                return false
+            minimum = minimum.min(points[index])
+            maximum = maximum.max(points[index])
+    # Only bundled original glTF skin hands: left/right x +/-0.52..0.86,
+    # y 0.91..1.37, z -0.32..0.04. Exclude jacket arms, pants and boots.
+    var on_side := (maximum.x < -0.49 and minimum.x > -0.95) or (
+        minimum.x > 0.49 and maximum.x < 0.95)
+    return on_side and minimum.y < 1.05 and maximum.y > 1.30 and (
+        maximum.y < 1.55 and minimum.z < -0.25 and maximum.z < 0.12)
 
 func _make_skeleton() -> void:
     skeleton = Skeleton3D.new()
