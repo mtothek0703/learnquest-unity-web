@@ -81,7 +81,7 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://rider_visual_capture_test.gd 2>&1 | tee /tmp/visual-capture.log
           grep -Fq 'VISUAL CAPTURE TEST PASSED' /tmp/visual-capture.log
-          test "$(find /tmp/learnquest-visual-qa -name '*.png' | wc -l)" -eq 18
+          test "$(find /tmp/learnquest-visual-qa -name '*.png' | wc -l)" -eq 20
       - name: Upload rendered visual QA frames
         if: always()
         uses: actions/upload-artifact@v4
