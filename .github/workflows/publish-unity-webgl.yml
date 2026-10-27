@@ -179,6 +179,13 @@ jobs:
             --script res://rider_visual_capture_test.gd 2>&1 | tee /tmp/godot-visual-capture.log
           grep -Fq 'VISUAL CAPTURE TEST PASSED' /tmp/godot-visual-capture.log
           test "$(find /tmp/learnquest-visual-qa -name '*.png' | wc -l)" -eq 20
+          mkdir -p /tmp/learnquest-powerup-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_POWERUP_OUTPUT=/tmp/learnquest-powerup-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://powerup_visual_capture_test.gd 2>&1 | tee /tmp/godot-powerup-visual.log
+          grep -Fq 'POWERUP VISUAL QA PASSED' /tmp/godot-powerup-visual.log
+          test "$(find /tmp/learnquest-powerup-qa -name '*.png' | wc -l)" -eq 8
           python .github/scripts/preserve_legacy_pages.py
           # Never overwrite previously published versions.
           # Every future release must deliberately use a new URL.
@@ -247,6 +254,7 @@ jobs:
             /tmp/godot-skinned-gloves.log
             /tmp/godot-sculpted-hoverboard.log
             /tmp/godot-powerup-vfx.log
+            /tmp/godot-powerup-visual.log
           if-no-files-found: ignore
 
       - name: Upload actual rendered landscape QA images
@@ -255,6 +263,14 @@ jobs:
         with:
           name: learnquest-v117-landscape-character-frames
           path: /tmp/learnquest-visual-qa/*.png
+          if-no-files-found: ignore
+
+      - name: Upload power-up V117 visual QA images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v117-powerup-frames
+          path: /tmp/learnquest-powerup-qa/*.png
           if-no-files-found: ignore
 
       - name: Check Pages configuration
