@@ -235,8 +235,10 @@ func _build_headwear() -> void:
     # The old V124 trial had a nearly bald head in chase camera, even though
     # the front showed swept bangs. Curved back-hair geometry remains cosmetic
     # and follows the real Head bone through this BoneAttachment3D.
+    # Dark underlayer gives the bright sculpted locks readable depth in chase view.
+    var underhair := _material(Color(0.19, 0.085, 0.35), 0.05, 0.68)
     _mesh("SculptedBackHairCurtain", _back_hair_surface(c, s, crown_y, cap_height, radius_x, radius_z),
-        hair_mat)
+        underhair)
     for strand in range(9):
         var across := (float(strand) - 4.0) / 4.0
         var flow: Array[Vector3] = []
@@ -246,7 +248,7 @@ func _build_headwear() -> void:
             flow.append(Vector3(
                 c.x + across * radius_x * (1.16 + 0.32 * t) + sway * radius_x * t,
                 crown_y + cap_height * 0.58 - s.y * (0.12 + 1.44 * t),
-                c.z - face_sign * radius_z * (0.64 + 0.40 * t + 0.08 * sin(t * PI))))
+                c.z - face_sign * radius_z * (1.35 + 0.38 * t + 0.09 * sin(t * PI))))
         _mesh("WindSweptBackLock%d" % strand,
             _tube(flow, s.x * (0.067 if strand % 2 == 0 else 0.054), 7),
             highlight if strand % 3 == 0 else hair_mat)
@@ -346,14 +348,18 @@ func _back_hair_volume_point(c: Vector3, s: Vector3, crown_y: float, cap_height:
 
 func _back_hair_point(c: Vector3, s: Vector3, crown_y: float, cap_height: float,
         radius_x: float, radius_z: float, t: float, u: float) -> Vector3:
+    # Sculpted silhouette: broad at shoulder, tapered toward the ends and
+    # split into softly scalloped locks. Avoid a rectangular purple hair slab.
     var angle := (u - 0.5) * PI
     var edge := sin(angle)
-    var fall := 1.62 - 0.10 * t
+    var width_profile := 1.12 + 0.55 * sin(PI * t) - 0.24 * t
+    var strand_wave := 0.07 * sin(7.0 * angle + 2.5 * t) * sin(PI * t)
+    var hem := 0.13 * pow(t, 5.0) * (0.5 + 0.5 * cos(7.0 * angle))
     return Vector3(
-        c.x + edge * radius_x * fall,
-        crown_y + cap_height * 0.20 - s.y * (0.22 + 1.28 * t) +
-            s.y * 0.045 * sin(angle * 3.0) * sin(t * PI),
-        c.z - face_sign * cos(angle) * radius_z * (0.99 + 0.20 * t))
+        c.x + (edge * width_profile + strand_wave) * radius_x,
+        crown_y + cap_height * 0.20 - s.y * (0.20 + 1.23 * t - hem),
+        c.z - face_sign * cos(angle) * radius_z *
+            (0.97 + 0.23 * t + 0.07 * sin(5.0 * angle) * sin(PI * t)))
 
 func _build_expression(c: Vector3, s: Vector3) -> void:
     # The facial features must follow the ACTUAL sculpted head surface.
