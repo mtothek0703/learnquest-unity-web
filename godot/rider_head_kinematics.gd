@@ -11,6 +11,7 @@ var fins: Array[Node3D] = []
 var tracked: Array[Node3D] = []
 var rest_transforms: Array[Transform3D] = []
 var neon_material: StandardMaterial3D
+var head_bind_origin := Vector3.ZERO
 
 func _ready() -> void:
     # Original body skin runs at priority 10; read its final bone pose at 20.
@@ -50,10 +51,12 @@ func _process(delta: float) -> void:
         skeleton = rig.get_node_or_null("OriginalBodySkeleton13") as Skeleton3D
     if skeleton == null:
         return
+    if head_bind_origin == Vector3.ZERO:
+        head_bind_origin = skeleton.create_skin_from_rest_transforms().get_bind_pose(4).affine_inverse().origin
     var head_pose := skeleton.get_bone_global_pose(4)
-    var head_rest := skeleton.get_bone_global_rest(4)
     var head_rotation := head_pose.basis.orthonormalized()
-    var head_shift := head_pose.origin - head_rest.origin
+    # Rest is the inverse of the GPU skin bind, not a zero pose translation.
+    var head_shift := head_pose.origin - head_bind_origin
     head_pivot.transform = Transform3D(head_rotation, HEAD_CENTER + head_shift)
     for index in range(tracked.size()):
         if not is_instance_valid(tracked[index]):
