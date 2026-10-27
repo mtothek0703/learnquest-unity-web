@@ -551,7 +551,7 @@ func _create_powerup_effects() -> void:
     shield_visual = MeshInstance3D.new()
     shield_visual.name = "Active energy shield"
     shield_visual.mesh = effect_factory.shield_mesh()
-    shield_visual.material_override = effect_factory.effect_material(Color(0.05, 0.30, 0.53), 0.30)
+    shield_visual.material_override = effect_factory.effect_material(Color(0.14, 0.75, 0.98), 0.86)
     shield_visual.position.y = 1.35
     rider.add_child(shield_visual)
     shield_visual.visible = false
