@@ -92,8 +92,17 @@ func _assemble() -> void:
     board = Node3D.new()
     board.name = "Floating hoverboard"
     add_child(board)
-    box(board, Vector3(0, 0.25, 0), Vector3(1.55, 0.18, 2.65), navy)
-    box(board, Vector3(0, 0.37, -0.04), Vector3(0.83, 0.06, 1.88), suit)
+    # V116: replace the two flat central deck boxes with a single sculpted
+    # closed 360-degree hull, contoured grip, underside keel and curved rails.
+    # The board, jets, bobbing, touch controls and physics remain unchanged.
+    var old_flat_chassis := box(board, Vector3(0, 0.25, 0), Vector3(1.55, 0.18, 2.65), navy)
+    var old_flat_grip := box(board, Vector3(0, 0.37, -0.04), Vector3(0.83, 0.06, 1.88), suit)
+    var sculpted_board := preload("res://hoverboard_sculpted_hull.gd").new() as Node3D
+    sculpted_board.name = "SculptedHoverboardChassis"
+    board.add_child(sculpted_board)
+    if bool(sculpted_board.get("built")):
+        old_flat_chassis.visible = false
+        old_flat_grip.visible = false
     for side in [-1.0, 1.0]:
         box(board, Vector3(side * 0.72, 0.33, 0), Vector3(0.14, 0.12, 2.42), cyan, true)
         box(board, Vector3(side * 0.51, 0.18, 1.0), Vector3(0.30, 0.2, 0.28), bright, true)
