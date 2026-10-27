@@ -157,7 +157,7 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://rider_visual_capture_test.gd 2>&1 | tee /tmp/godot-visual-capture.log
           grep -Fq 'VISUAL CAPTURE TEST PASSED' /tmp/godot-visual-capture.log
-          test "$(find /tmp/learnquest-visual-qa -name '*.png' | wc -l)" -eq 18
+          test "$(find /tmp/learnquest-visual-qa -name '*.png' | wc -l)" -eq 20
           python .github/scripts/preserve_legacy_pages.py
           # Never overwrite previously published versions.
           # Every future release must deliberately use a new URL.
