@@ -154,7 +154,12 @@ func fit_to_board() -> bool:
     var factor := 2.78 / height
     character.scale = Vector3.ONE * factor
     character.position.y = 0.08 - lowest * factor
-    # The CC0 source faces the opposite way from LearnQuest: face the menu
-    # camera (-Z), while the chase camera (+Z) sees the back.
-    character.rotation.y = PI
+    # Determine the *actual* imported face direction from the weighted Head
+    # and eye geometry instead of assuming every CC0 GLB faces +Z.
+    # Menu/front camera is -Z; chase camera is +Z.
+    var headwear := skeleton.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
+    var forward_sign := -1.0
+    if headwear != null:
+        forward_sign = float(headwear.get("face_sign"))
+    character.rotation.y = PI if forward_sign > 0.0 else 0.0
     return true
