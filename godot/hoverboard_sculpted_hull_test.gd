@@ -21,7 +21,8 @@ func _check() -> void:
         _fail("new sculpted board did not initialize")
         return
     for name in ["ContinuousAerodynamicChassis", "ContouredTractionDeck",
-        "UndersideKeel", "PortEdgeLight", "StarboardEdgeLight"]:
+        "UndersideKeel", "PortEdgeLight", "StarboardEdgeLight",
+        "PortSculptedAeroWing", "StarboardSculptedAeroWing"]:
         var part := sculpt.get_node_or_null(name) as MeshInstance3D
         if part == null or part.mesh == null or not part.visible:
             _fail("missing visible board part: " + name)
@@ -63,6 +64,23 @@ func _check() -> void:
     if old_boxes != 2:
         _fail("expected both original central deck boxes to be retired")
         return
+    for side in [-1.0, 1.0]:
+        var inner: Vector3 = sculpt.call("_wing_point", side, 0.52, PI)
+        var outer: Vector3 = sculpt.call("_wing_point", side, 0.52, 0.0)
+        if absf(outer.x - inner.x) < 0.5 or absf(outer.x) < 1.35:
+            _fail("swept wing does not provide a distinct wider 3D silhouette")
+            return
+    var retired_prisms := 0
+    for child in board.get_children():
+        if child is MeshInstance3D and child.mesh is PrismMesh:
+            if absf(child.position.x) > 0.90 and absf(child.position.z - 0.19) < 0.02:
+                retired_prisms += 1
+                if child.visible:
+                    _fail("flat legacy wing prism still occludes the sculpted wing")
+                    return
+    if retired_prisms != 2:
+        _fail("both old wing prisms must remain archived but hidden")
+        return
     if sculpt.find_children("*", "CollisionObject3D", true, false).size() > 0:
         _fail("visual board must not change collisions or touch input")
         return
@@ -81,5 +99,5 @@ func _check() -> void:
     if rider.get_node_or_null("ImportedRider/OriginalBodySkinRig/OriginalBodySkeleton13") == null:
         _fail("original 13-bone skinned character must remain")
         return
-    print("SCULPTED HOVERBOARD TEST PASSED: 360-degree tapered hull, contoured deck, dynamic rails, original hover/lean and untouched collisions")
+    print("SCULPTED HOVERBOARD TEST PASSED: 360-degree tapered hull, swept wings, contoured deck, dynamic rails, original hover/lean and untouched collisions")
     quit(0)
