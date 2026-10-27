@@ -17,6 +17,7 @@ func _check() -> void:
     await process_frame
     for bone_node in raw.find_children("*", "Skeleton3D", true, false):
         var bone_rig := bone_node as Skeleton3D
+        print("V124 DIAG names=", Array(bone_rig.get_bone_count()).map(func(i): return bone_rig.get_bone_name(i)).slice(0, 24))
         print("V124 DIAG skeleton=", bone_rig.name, " bones=", bone_rig.get_bone_count(),
             " Hips=", bone_rig.find_bone("Hips"), " Head=", bone_rig.find_bone("Head"))
     for mesh_node in raw.find_children("*", "MeshInstance3D", true, false):
