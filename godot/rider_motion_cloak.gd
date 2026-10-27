@@ -8,12 +8,16 @@ const COLUMNS := 6
 const JOINTS_PER_SIDE := 3
 
 var elapsed: float = 0.0
+# V113: narrow the cloak at cruise without deleting its articulated fabric.
+var cloak_width: float = 0.52
 var cloak_roots: Array[Node3D] = []
 var cloak_joints: Array[Node3D] = []
 var edge_materials: Array[StandardMaterial3D] = []
 
 func _ready() -> void:
     _build_cloak()
+    for cloak in cloak_roots:
+        cloak.scale.x = cloak_width
 
 func _process(delta: float) -> void:
     elapsed += delta
@@ -21,9 +25,12 @@ func _process(delta: float) -> void:
     var steering := float(rider.get("lean")) if rider != null else 0.0
     var turbo := bool(rider.get("boosting")) if rider != null else false
     var airborne := clampf(rider.position.y / 1.4, 0.0, 1.0) if rider != null else 0.0
+    var target_width := 1.0 if turbo else (0.86 if airborne > 0.12 else 0.52)
+    cloak_width = move_toward(cloak_width, target_width, delta * (2.8 if turbo or airborne > 0.12 else 2.1))
     for i in range(cloak_roots.size()):
         var side := -1.0 if i == 0 else 1.0
         var root := cloak_roots[i]
+        root.scale.x = cloak_width
         # Keep the middle of the silhouette open, even in a hard turn.
         root.rotation.z = lerpf(root.rotation.z, side * (0.14 if turbo else 0.03) - steering * 0.12, minf(1.0, delta * 7.0))
         root.rotation.y = lerpf(root.rotation.y, side * (0.16 if turbo else 0.02) - steering * 0.07, minf(1.0, delta * 6.0))
