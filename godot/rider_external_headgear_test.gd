@@ -34,6 +34,11 @@ func _check() -> void:
     if meshes.size() < 10:
         _fail("expected curved cap, face shield, visor edges and multiple hair locks")
         return
+    for expected in ["CurvedFlightHelmetShell", "TranslucentFaceShield",
+            "EyeWhite-1.0", "Iris-1.0", "Pupil-1.0", "CurvedSmile"]:
+        if headwear.get_node_or_null(expected) == null:
+            _fail("missing expressive helmet/face feature: " + expected)
+            return
     var vertices := 0
     for item in meshes:
         var part := item as MeshInstance3D
