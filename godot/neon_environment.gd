@@ -13,6 +13,7 @@ var cinematic_traffic: Node3D
 var cinematic_mantas: Node3D
 var cinematic_searchlights: Node3D
 var cinematic_districts: Node3D
+var cinematic_lightfields: Node3D
 var rand := RandomNumberGenerator.new()
 
 func _ready() -> void:
@@ -48,6 +49,10 @@ func _ready() -> void:
     cinematic_districts = preload("res://cinematic_city_districts.gd").new() as Node3D
     cinematic_districts.name = "Cinematic facade districts"
     add_child(cinematic_districts)
+    # V119: mobile-budget cyan/magenta ambient light wells and radial ground glow.
+    cinematic_lightfields = preload("res://cinematic_city_lightfields.gd").new() as Node3D
+    cinematic_lightfields.name = "Cinematic atmospheric lightfields"
+    add_child(cinematic_lightfields)
 
 func material(tint: Color, glow: bool = false) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -300,6 +305,8 @@ func _process(delta: float) -> void:
     cinematic_searchlights.set("travel_speed", travel_speed)
     cinematic_districts.set("running", running)
     cinematic_districts.set("travel_speed", travel_speed)
+    cinematic_lightfields.set("running", running)
+    cinematic_lightfields.set("travel_speed", travel_speed)
     elapsed += delta
     if running:
         for streak in speed_streaks:
