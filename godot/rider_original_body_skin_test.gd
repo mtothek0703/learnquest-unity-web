@@ -37,7 +37,6 @@ func _check() -> void:
     var vertex_count := 0
     var weighted_arms := 0
     var weighted_legs := 0
-    var weighted_head := 0
     var multi_bone := 0
     for source in skinned:
         var instance := source as MeshInstance3D
@@ -72,8 +71,6 @@ func _check() -> void:
                     total += weight
                     if weight > 0.05:
                         nonzero += 1
-                        if bone_id == 4:
-                            weighted_head += 1
                         if bone_id >= 5 and bone_id <= 8:
                             weighted_arms += 1
                         if bone_id >= 9 and bone_id <= 12:
@@ -83,8 +80,31 @@ func _check() -> void:
                     return
                 if nonzero >= 2:
                     multi_bone += 1
-    if vertex_count < 2000 or weighted_head < 30 or weighted_arms < 30 or weighted_legs < 30 or multi_bone < 100:
-        _fail("original head, arms, legs and smooth multi-bone transitions must be truly skinned")
+    if vertex_count < 2000 or weighted_arms < 30 or weighted_legs < 30 or multi_bone < 100:
+        _fail("original torso, arms, legs and smooth multi-bone transitions must be truly skinned")
+        return
+    # V108: the original glTF head was opaque and hid the newer skinned face.
+    # The torso/limbs remain original; the 360-degree head is a real replacement
+    # bound to the SAME original 13-bone rig, not a static visual mask.
+    if int(rig.get("retired_head_surfaces")) < 3:
+        _fail("three occluding original glTF head surfaces must be retired")
+        return
+    var face := model.get_node_or_null("SculptedSkinnedFace/ContinuousSkinnedFace") as MeshInstance3D
+    if face == null or face.skin == null or face.skin.get_bind_count() != 13:
+        _fail("replacement head must be truly GPU-skinned to original skeleton")
+        return
+    if face.get_node_or_null(face.skeleton) != skeleton:
+        _fail("replacement head references wrong original skeleton")
+        return
+    var head_arrays: Array = face.mesh.surface_get_arrays(0)
+    var head_bones: PackedInt32Array = head_arrays[Mesh.ARRAY_BONES]
+    var head_weights: PackedFloat32Array = head_arrays[Mesh.ARRAY_WEIGHTS]
+    var new_head_weighted := 0
+    for i in range(head_bones.size()):
+        if head_bones[i] == 4 and head_weights[i] > 0.5:
+            new_head_weighted += 1
+    if new_head_weighted < 100:
+        _fail("replacement head must retain substantial real head-bone skinning")
         return
     if rig.find_children("*", "CollisionObject3D", true, false).size() > 0:
         _fail("the new visual skeleton must not alter gameplay collisions")
@@ -107,5 +127,5 @@ func _check() -> void:
     if skeleton.get_bone_pose_rotation(10).get_angle() >= active_knee.get_angle():
         _fail("original-body knee must relax after landing")
         return
-    print("ORIGINAL BODY SKIN TEST PASSED: 13 bones, original glTF surfaces, four normalized GPU weights, live full-body poses")
+    print("ORIGINAL BODY SKIN TEST PASSED: 13 bones, original glTF torso/limbs plus replacement skinned head, four normalized GPU weights, live full-body poses")
     quit(0)
