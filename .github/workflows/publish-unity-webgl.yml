@@ -164,6 +164,8 @@ jobs:
           grep -Fq 'CITY LIGHTFIELDS TEST PASSED' /tmp/godot-city-lightfields.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://cinematic_canyon_geodes_test.gd 2>&1 | tee /tmp/godot-canyon-geodes.log
           grep -Fq 'CANYON GEODES TEST PASSED' /tmp/godot-canyon-geodes.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://canyon_route_choices_test.gd 2>&1 | tee /tmp/godot-canyon-routes.log
+          grep -Fq 'CANYON ROUTES TEST PASSED' /tmp/godot-canyon-routes.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_skinned_lower_body_test.gd 2>&1 | tee /tmp/godot-skinned-lower-body.log
           grep -Fq 'SKINNED LOWER BODY TEST PASSED' /tmp/godot-skinned-lower-body.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_aero_silhouette_test.gd 2>&1 | tee /tmp/godot-aero-silhouette.log
@@ -213,34 +215,41 @@ jobs:
             --script res://cinematic_canyon_geodes_visual_capture_test.gd 2>&1 | tee /tmp/godot-canyon-geodes-visual.log
           grep -Fq 'CANYON GEODES VISUAL QA PASSED' /tmp/godot-canyon-geodes-visual.log
           test "$(find /tmp/learnquest-canyon-qa -name '*.png' | wc -l)" -eq 8
+          mkdir -p /tmp/learnquest-routes-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_ROUTES_OUTPUT=/tmp/learnquest-routes-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://canyon_route_choices_visual_capture_test.gd 2>&1 | tee /tmp/godot-canyon-routes-visual.log
+          grep -Fq 'CANYON ROUTES VISUAL QA PASSED' /tmp/godot-canyon-routes-visual.log
+          test "$(find /tmp/learnquest-routes-qa -name '*.png' | wc -l)" -eq 8
           python .github/scripts/preserve_legacy_pages.py
           # Never overwrite previously published versions.
           # Every future release must deliberately use a new URL.
           python - <<'PY'
           from urllib.error import HTTPError
           from urllib.request import Request, urlopen
-          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v120/index.html"
+          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v121/index.html"
           try:
               with urlopen(Request(url, headers={"Cache-Control": "no-cache"}), timeout=20):
-                  raise SystemExit("Skyway V120 already exists: refusing to overwrite an immutable release")
+                  raise SystemExit("Skyway V121 already exists: refusing to overwrite an immutable release")
           except HTTPError as error:
               if error.code != 404:
                   raise
-          print("Skyway V120 is not published yet; safe to create")
+          print("Skyway V121 is not published yet; safe to create")
           PY
           # Each release gets a fresh URL; historical folders are never rebuilt from newer exports.
-          mkdir -p _site/skyway-v120
-          cp -a _site/godot/. _site/skyway-v120/
-          echo "$GITHUB_SHA" > _site/skyway-v120/build.txt
+          mkdir -p _site/skyway-v121
+          cp -a _site/godot/. _site/skyway-v121/
+          echo "$GITHUB_SHA" > _site/skyway-v121/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
-          echo "Archived previous versions and prepared immutable Skyway V117"
+          echo "Archived previous versions and prepared immutable Skyway V121"
       - name: Check browser export integrity
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          root = Path("_site/skyway-v120")
+          root = Path("_site/skyway-v121")
           for name in ("index.html", "index.js", "index.wasm", "index.pck"):
               file = root / name
               if not file.is_file() or file.stat().st_size == 0:
@@ -287,6 +296,8 @@ jobs:
             /tmp/godot-city-lightfields.log
             /tmp/godot-city-lightfields-visual.log
             /tmp/godot-canyon-geodes.log
+            /tmp/godot-canyon-routes.log
+            /tmp/godot-canyon-routes-visual.log
             /tmp/godot-canyon-geodes-visual.log
           if-no-files-found: ignore
 
@@ -304,6 +315,13 @@ jobs:
         with:
           name: learnquest-v119-lightfields-before-after
           path: /tmp/learnquest-lightfields-qa/*.png
+          if-no-files-found: error
+      - name: Upload V121 Canyon route-choice before-after frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v121-canyon-routes-before-after
+          path: /tmp/learnquest-routes-qa/*.png
           if-no-files-found: error
       - name: Upload V120 Canyon geode comparison frames
         if: always()
@@ -372,7 +390,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request, urllib.error
-          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v120/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v121/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.js": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
