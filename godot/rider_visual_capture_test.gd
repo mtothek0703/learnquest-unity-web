@@ -161,6 +161,21 @@ func _capture() -> void:
         _fail("cannot save skinned-face-only diagnostic")
         return
     if not _has_visible_subject(face_only):
+        var skinned_face := model.get_node_or_null("SculptedSkinnedFace/ContinuousSkinnedFace") as MeshInstance3D
+        if skinned_face != null:
+            var bone_rig := model.get_node_or_null("OriginalBodySkinRig/OriginalBodySkeleton13") as Skeleton3D
+            var verts: PackedVector3Array = skinned_face.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+            var ids: PackedInt32Array = skinned_face.mesh.surface_get_arrays(0)[Mesh.ARRAY_BONES]
+            var weights: PackedFloat32Array = skinned_face.mesh.surface_get_arrays(0)[Mesh.ARRAY_WEIGHTS]
+            var sample := Vector3.ZERO
+            for slot in range(4):
+                var bone := ids[slot]
+                sample += (bone_rig.get_bone_global_pose(bone) * skinned_face.skin.get_bind_pose(bone) * verts[0]) * weights[slot]
+            print("FACE DIAGNOSTIC visible=", skinned_face.is_visible_in_tree(),
+                " aabb=", skinned_face.mesh.get_aabb(), " sample=", sample,
+                " world=", skinned_face.global_transform,
+                " bone4=", bone_rig.get_bone_global_pose(4),
+                " bind4=", skinned_face.skin.get_bind_pose(4))
         _fail("skinned face is invisible even with old mesh and helmet removed")
         return
     print("VISUAL CAPTURE TEST PASSED: 20 nonblank rendered PNGs, including 18 landscape gameplay views and 2 head-occlusion diagnostics")
