@@ -67,8 +67,8 @@ static func shield_mesh() -> ArrayMesh:
 static func _jump_point(progress: float, side: float, strand: int) -> Vector3:
     # Two corkscrewing energy trails rise around the rider on a Mega Jump.
     var angle: float = progress * TAU * 2.4 + float(strand) * PI
-    var radius: float = 0.79 + 0.12 * sin(progress * TAU * 3.0)
-    return Vector3(cos(angle) * (radius + side * 0.085), progress * 2.35, sin(angle) * (radius + side * 0.085))
+    var radius: float = 1.35 + 0.16 * sin(progress * TAU * 3.0)
+    return Vector3(cos(angle) * (radius + side * 0.16), progress * 3.10, sin(angle) * (radius + side * 0.16))
 
 static func jump_mesh() -> ArrayMesh:
     var tool := SurfaceTool.new()
@@ -78,7 +78,7 @@ static func jump_mesh() -> ArrayMesh:
         for step in range(STEPS):
             var t0: float = float(step) / float(STEPS)
             var t1: float = float(step + 1) / float(STEPS)
-            var bright := Color(1.0, 0.93, 0.27, 0.92) if strand == 0 else Color(0.33, 0.96, 1.0, 0.92)
+            var bright := Color(1.0, 0.93, 0.27, 1.0) if strand == 0 else Color(0.33, 0.96, 1.0, 1.0)
             var tip := Color(1.0, 0.36, 0.83, 0.55) if strand == 0 else Color(0.43, 0.45, 1.0, 0.55)
             _quad(tool, _jump_point(t0, -1.0, strand), _jump_point(t1, -1.0, strand), _jump_point(t1, 1.0, strand), _jump_point(t0, 1.0, strand), bright, tip)
     # V117: outer windshear ribbons give the mega-jump a layered 3D
