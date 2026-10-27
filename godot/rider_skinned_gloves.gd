@@ -56,6 +56,9 @@ func _ready() -> void:
                 var old := gauntlet.get_node_or_null(name) as MeshInstance3D
                 if old != null:
                     old.visible = false
+    # Retire the TWO imported pale glTF hands only after both replacement
+    # palms are successfully skinned. Otherwise they occlude the new gloves.
+    rig.call("retire_legacy_hand_surfaces")
 
 func _attach(part_name: String, mesh: ArrayMesh, material: Material, skin: Skin) -> MeshInstance3D:
     if mesh == null or mesh.get_surface_count() != 1:
