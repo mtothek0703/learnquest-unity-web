@@ -39,6 +39,19 @@ func _check() -> void:
         if garment.get_child_count() > 0 or garment.get_node_or_null("CollisionShape3D") != null:
             _fail(property_name + " must be cosmetic only")
             return
+        var material := garment.material_override as ShaderMaterial
+        if material == null or material.shader == null:
+            _fail(property_name + " lacks the real skinned lower-body PBR shader")
+            return
+        var shader_code := material.shader.code
+        for required in ["cobalt", "magenta", "EMISSION", "ROUGHNESS", "boot_mode"]:
+            if not shader_code.contains(required):
+                _fail(property_name + " missing cohesive hover-suit material: " + required)
+                return
+        var mode := float(material.get_shader_parameter("boot_mode"))
+        if absf(mode - (1.0 if property_name == "boots" else 0.0)) > 0.001:
+            _fail(property_name + " uses wrong trouser/boot shader mode")
+            return
         var count := 0
         var leg_influences := 0
         for surface in range(garment.mesh.get_surface_count()):
