@@ -11,30 +11,6 @@ func _check() -> void:
     if not ResourceLoader.exists("res://models/quaternius_hero.glb"):
         _fail("verified CC0 GLB not installed before Godot import")
         return
-    var raw_scene := load("res://models/quaternius_hero.glb") as PackedScene
-    var raw := raw_scene.instantiate() as Node3D
-    root.add_child(raw)
-    await process_frame
-    for bone_node in raw.find_children("*", "Skeleton3D", true, false):
-        var bone_rig := bone_node as Skeleton3D
-        var sample_names: Array[String] = []
-        for index in range(mini(24, bone_rig.get_bone_count())):
-            sample_names.append(bone_rig.get_bone_name(index))
-        print("V124 DIAG names=", sample_names)
-        print("V124 DIAG skeleton=", bone_rig.name, " bones=", bone_rig.get_bone_count(),
-            " Hips=", bone_rig.find_bone("Hips"), " Head=", bone_rig.find_bone("Head"))
-    for mesh_node in raw.find_children("*", "MeshInstance3D", true, false):
-        var mesh_instance := mesh_node as MeshInstance3D
-        var vertices := 0
-        var slots := 0
-        if mesh_instance.mesh != null and mesh_instance.mesh.get_surface_count() > 0:
-            var a: Array = mesh_instance.mesh.surface_get_arrays(0)
-            vertices = (a[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
-            slots = (a[Mesh.ARRAY_WEIGHTS] as PackedFloat32Array).size()
-        print("V124 DIAG mesh=", mesh_instance.name, " skin=", mesh_instance.skin != null,
-            " path=", mesh_instance.skeleton, " resolved=", mesh_instance.get_node_or_null(mesh_instance.skeleton),
-            " vertices=", vertices, " slots=", slots)
-    raw.queue_free()
     var rider := preload("res://rider_character.tscn").instantiate() as Node3D
     rider.set("prefer_cc0_rigged_hero", true)
     root.add_child(rider)
@@ -85,6 +61,21 @@ func _check() -> void:
         return
     if rider.get_node_or_null("LegacyRider") == null:
         _fail("the existing hoverboard / touch visual controller disappeared")
+        return
+    if absf(imported.rotation.y - PI) > 0.01:
+        _fail("new character faces backwards relative to menu and chase cameras")
+        return
+    var suit_mesh := imported.find_child("SuperHero_Male", true, false) as MeshInstance3D
+    if suit_mesh == null or not (suit_mesh.material_override is ShaderMaterial):
+        _fail("real skinned body must have original procedural flight-suit material")
+        return
+    var left_arm := rig.find_bone("upperarm_l")
+    if left_arm < 0:
+        _fail("missing original humanoid left upper arm")
+        return
+    adapter.call("_process", 0.20)
+    if rig.get_bone_pose_rotation(left_arm).get_angle() < 0.60:
+        _fail("hoverboard idle must lower the source T-pose arms")
         return
     var head_id := rig.find_bone("Head")
     var head_before := rig.get_bone_pose_rotation(head_id)

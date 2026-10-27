@@ -50,6 +50,25 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
             return false
     for i in range(skeleton.get_bone_count()):
         rest_rotations[i] = skeleton.get_bone_pose_rotation(i)
+    # Recolor the EXISTING skinned body, not an unrigged duplicate shell.
+    # Lightweight procedural materials preserve original mesh + skin data.
+    var suit_shader := load("res://rider_quaternius_suit.gdshader") as Shader
+    if suit_shader != null:
+        for mesh in skinned_meshes:
+            if String(mesh.name).contains("SuperHero"):
+                var suit := ShaderMaterial.new()
+                suit.shader = suit_shader
+                mesh.material_override = suit
+            elif String(mesh.name).to_lower().contains("eyebrow"):
+                var brow := StandardMaterial3D.new()
+                brow.albedo_color = Color(0.085, 0.07, 0.18)
+                brow.roughness = 0.7
+                mesh.material_override = brow
+            elif String(mesh.name).to_lower().contains("eyes"):
+                var eyes := StandardMaterial3D.new()
+                eyes.albedo_color = Color(0.92, 0.96, 1.0)
+                eyes.roughness = 0.3
+                mesh.material_override = eyes
     # Deliberately do not modify bone rest positions, imported inverse bind
     # matrices or the imported Skin: those are the asset's real authoring data.
     set_process(true)
@@ -98,16 +117,16 @@ func _process(delta: float) -> void:
     for side in [-1, 1]:
         var prefix := "Left" if side < 0 else "Right"
         var sign_side := float(side)
-        var spread := sign_side * (0.16 + last_jump * (0.32 if ascending else 0.22))
+        var spread := -sign_side * (1.05 - last_jump * (0.38 if ascending else 0.25))
         _pose(["upperarm_l" if side < 0 else "upperarm_r", prefix + "UpperArm", prefix + "Arm"],
             Quaternion(Vector3.FORWARD, spread - steer * 0.11) *
             Quaternion(Vector3.RIGHT, -boost * 0.25), blend)
         _pose(["lowerarm_l" if side < 0 else "lowerarm_r", prefix + "LowerArm", prefix + "ForeArm", prefix + "Forearm"],
             Quaternion(Vector3.RIGHT, -0.22 - last_jump * 0.38), blend)
         _pose(["thigh_l" if side < 0 else "thigh_r", prefix + "UpperLeg", prefix + "UpLeg", prefix + "Thigh"],
-            Quaternion(Vector3.RIGHT, last_jump * 0.28 + boost * 0.09), blend)
+            Quaternion(Vector3.RIGHT, -0.12 + last_jump * 0.28 + boost * 0.09), blend)
         _pose(["calf_l" if side < 0 else "calf_r", prefix + "LowerLeg", prefix + "Leg", prefix + "Shin"],
-            Quaternion(Vector3.RIGHT, -last_jump * 0.49), blend)
+            Quaternion(Vector3.RIGHT, 0.26 - last_jump * 0.49), blend)
 
 func fit_to_board() -> bool:
     # Normalize different glTF unit conventions without touching the Skin.
@@ -129,4 +148,7 @@ func fit_to_board() -> bool:
     var factor := 2.78 / height
     character.scale = Vector3.ONE * factor
     character.position.y = 0.08 - lowest * factor
+    # The CC0 source faces the opposite way from LearnQuest: face the menu
+    # camera (-Z), while the chase camera (+Z) sees the back.
+    character.rotation.y = PI
     return true
