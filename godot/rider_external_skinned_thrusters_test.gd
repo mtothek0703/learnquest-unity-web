@@ -25,7 +25,7 @@ func _check() -> void:
         _fail("original 65-bone source or skinned shoulder controller missing")
         return
     var headwear := rig.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
-    if headwear == null or headwear.scale.x < 1.30 or headwear.scale.x > 1.40:
+    if headwear == null or float(headwear.get("visual_scale")) < 1.30 or float(headwear.get("visual_scale")) > 1.40:
         _fail("mobile-readable larger face assembly missing")
         return
     var shells: Array = controller.get("nacelles")
