@@ -129,8 +129,8 @@ func _build_headwear() -> void:
     var s := head_bounds.size
     var radius_x := s.x * 0.56
     var radius_z := s.z * 0.57
-    var crown_y := head_bounds.position.y + s.y * 0.65
-    var cap_height := s.y * 0.40
+    var crown_y := head_bounds.position.y + s.y * 0.85
+    var cap_height := s.y * 0.21
     var cap := SurfaceTool.new()
     cap.begin(Mesh.PRIMITIVE_TRIANGLES)
     for row in range(10):
@@ -178,7 +178,7 @@ func _build_headwear() -> void:
         var start := Vector3(c.x + across * radius_x * 0.46, crown_y + cap_height * 0.94,
             c.z - face_sign * radius_z * 0.18)
         var end := Vector3(c.x + across * radius_x * 0.85,
-            crown_y - s.y * (0.07 + 0.05 * absf(across)),
+            crown_y - s.y * (0.025 + 0.035 * absf(across)),
             c.z + face_sign * radius_z * 1.05)
         var mid := Vector3(c.x + across * radius_x * 0.72,
             crown_y + cap_height * 0.52, c.z + face_sign * radius_z * 0.66)
@@ -197,6 +197,56 @@ func _build_headwear() -> void:
                 c.z + face_sign * radius_z * (0.05 + 0.25 * t)))
         _mesh("SideHairSweep%s" % ("L" if side < 0.0 else "R"),
             _tube(arc, s.x * 0.065, 7), hair_mat)
+    _build_expression(c, s)
+
+func _build_expression(c: Vector3, s: Vector3) -> void:
+    # Readable eye/eyebrow/smile landmarks sit on the ORIGINAL weighted face.
+    # These are tiny head-bone accessories, not a rigid replacement head.
+    var white := _material(Color(0.95, 0.97, 1.0), 0.0, 0.26)
+    var iris := _material(Color(0.10, 0.66, 0.91), 0.04, 0.23)
+    var pupil := _material(Color(0.035, 0.055, 0.14), 0.0, 0.22)
+    var ink := _material(Color(0.16, 0.07, 0.27), 0.0, 0.75)
+    var front := c.z + face_sign * s.z * 0.56
+    var eye_y := head_bounds.position.y + s.y * 0.55
+    for side in [-1.0, 1.0]:
+        var eye_x := c.x + side * s.x * 0.22
+        _ellipsoid("EyeWhite%s" % str(side), Vector3(eye_x, eye_y, front),
+            Vector3(s.x * 0.105, s.y * 0.082, s.z * 0.060), white)
+        _ellipsoid("Iris%s" % str(side),
+            Vector3(eye_x, eye_y, front + face_sign * s.z * 0.060),
+            Vector3(s.x * 0.055, s.y * 0.060, s.z * 0.024), iris)
+        _ellipsoid("Pupil%s" % str(side),
+            Vector3(eye_x, eye_y, front + face_sign * s.z * 0.084),
+            Vector3(s.x * 0.026, s.y * 0.034, s.z * 0.014), pupil)
+        var brow: Array[Vector3] = []
+        for i in range(9):
+            var t := float(i) / 8.0
+            brow.append(Vector3(eye_x + (t - 0.5) * s.x * 0.22,
+                eye_y + s.y * (0.16 + 0.025 * sin(t * PI)),
+                front + face_sign * s.z * 0.018))
+        _mesh("CurvedBrow%s" % str(side), _tube(brow, s.x * 0.016, 6), ink)
+    var smile: Array[Vector3] = []
+    for i in range(15):
+        var t := float(i) / 14.0
+        smile.append(Vector3(c.x + (t - 0.5) * s.x * 0.37,
+            head_bounds.position.y + s.y * (0.30 + 0.055 * pow(2.0 * t - 1.0, 2.0)),
+            front + face_sign * s.z * 0.028))
+    _mesh("CurvedSmile", _tube(smile, s.x * 0.014, 6), ink)
+
+func _ellipsoid(name_text: String, center: Vector3, radii: Vector3, mat: Material) -> void:
+    var shape := SphereMesh.new()
+    shape.radius = 1.0
+    shape.height = 2.0
+    shape.radial_segments = 16
+    shape.rings = 8
+    var part := MeshInstance3D.new()
+    part.name = name_text
+    part.mesh = shape
+    part.material_override = mat
+    part.position = center
+    part.scale = radii
+    add_child(part)
+    generated_meshes.append(part)
 
 func _cap_point(c: Vector3, rx: float, rz: float, base: float, height: float, elevation: float, azimuth: float) -> Vector3:
     return Vector3(c.x + rx * sin(elevation) * cos(azimuth),
@@ -205,7 +255,7 @@ func _cap_point(c: Vector3, rx: float, rz: float, base: float, height: float, el
 
 func _visor_point(c: Vector3, s: Vector3, angle: float, v: float) -> Vector3:
     return Vector3(c.x + sin(angle) * s.x * 0.51,
-        head_bounds.position.y + s.y * (0.48 + (1.0 - v) * 0.20),
+        head_bounds.position.y + s.y * (0.77 + (1.0 - v) * 0.12),
         c.z + face_sign * (cos(angle) * s.z * 0.57 + s.z * 0.04))
 
 func _quad(surface: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3) -> void:
