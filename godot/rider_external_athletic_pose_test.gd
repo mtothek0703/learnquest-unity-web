@@ -33,7 +33,7 @@ func _check() -> void:
     var neutral_thigh := rig.get_bone_pose_rotation(thigh_id)
     var neutral_calf := rig.get_bone_pose_rotation(calf_id)
     var neutral_elbow := rig.get_bone_pose_rotation(elbow_id)
-    if neutral_thigh.get_angle() < 0.24 or neutral_calf.get_angle() < 0.35 or
+    if neutral_thigh.get_angle() < 0.24 or neutral_calf.get_angle() < 0.35 or \
             neutral_elbow.get_angle() < 0.30:
         _fail("idle stance must be athletic, with bent knees and elbows")
         return
@@ -41,7 +41,7 @@ func _check() -> void:
     rider.set("boosting", true)
     rider.position.y = 0.90
     adapter.call("_process", 0.25)
-    if rig.get_bone_pose_rotation(pelvis_id).angle_to(neutral_pelvis) < 0.10 or
+    if rig.get_bone_pose_rotation(pelvis_id).angle_to(neutral_pelvis) < 0.10 or \
             rig.get_bone_pose_rotation(calf_id).angle_to(neutral_calf) < 0.07:
         _fail("turn/boost/jump must alter real hip and knee balance")
         return
@@ -49,7 +49,7 @@ func _check() -> void:
     rider.set("boosting", false)
     rider.position.y = 0.0
     adapter.call("_process", 0.60)
-    if rig.get_bone_pose_rotation(thigh_id).angle_to(neutral_thigh) > 0.035 or
+    if rig.get_bone_pose_rotation(thigh_id).angle_to(neutral_thigh) > 0.035 or \
             rig.get_bone_pose_rotation(calf_id).angle_to(neutral_calf) > 0.035:
         _fail("surf stance must settle to the same stable neutral knee pose")
         return
