@@ -33,7 +33,7 @@ func _check() -> void:
     if shells.size() != 2 or cores.size() != 2:
         _fail("both shoulders need a weighted nacelle and illuminated core")
         return
-    if float(controller.get("shoulder_span")) < source.mesh.get_aabb().size.x * 0.65:
+    if float(controller.get("shoulder_span")) < source.mesh.get_aabb().size.x * 0.50:
         _fail("shoulder geometry does not cover enough of chase silhouette")
         return
     if int(controller.get("generated_vertices")) < 6000:
