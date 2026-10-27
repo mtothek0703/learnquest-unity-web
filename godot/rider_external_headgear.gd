@@ -209,7 +209,7 @@ func _build_expression(c: Vector3, s: Vector3) -> void:
     var front := c.z + face_sign * s.z * 0.56
     var eye_y := head_bounds.position.y + s.y * 0.55
     for side in [-1.0, 1.0]:
-        var eye_x := c.x + side * s.x * 0.22
+        var eye_x: float = c.x + float(side) * s.x * 0.22
         _ellipsoid("EyeWhite%s" % str(side), Vector3(eye_x, eye_y, front),
             Vector3(s.x * 0.105, s.y * 0.082, s.z * 0.060), white)
         _ellipsoid("Iris%s" % str(side),
