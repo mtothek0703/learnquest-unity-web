@@ -19,6 +19,8 @@ func install(rig: Skeleton3D, body_meshes: Array[MeshInstance3D]) -> bool:
     var lower := Vector3(INF, INF, INF)
     var upper := Vector3(-INF, -INF, -INF)
     var count := 0
+    # glTF often stores named Skin binds with get_bind_bone() == -1.
+    # Resolve imported bind names against the real Skeleton3D once per mesh.
     var eye_position := Vector3.ZERO
     var has_eyes := false
     for body in body_meshes:
@@ -27,6 +29,10 @@ func install(rig: Skeleton3D, body_meshes: Array[MeshInstance3D]) -> bool:
         if String(body.name).to_lower().contains("eyes"):
             eye_position = inverse_rest * rig.to_local(body.to_global(body.get_aabb().get_center()))
             has_eyes = true
+        var head_bind_ids: Dictionary = {}
+        for bind_index in range(body.skin.get_bind_count()):
+            if _bind_targets_head(body.skin, bind_index, head_id, rig):
+                head_bind_ids[bind_index] = true
         for surface in range(body.mesh.get_surface_count()):
             var arrays: Array = body.mesh.surface_get_arrays(surface)
             var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
@@ -39,7 +45,7 @@ func install(rig: Skeleton3D, body_meshes: Array[MeshInstance3D]) -> bool:
                 for influence in range(4):
                     var skin_index := bones[vertex_id * 4 + influence]
                     if skin_index >= 0 and skin_index < body.skin.get_bind_count():
-                        if body.skin.get_bind_bone(skin_index) == head_id:
+                        if head_bind_ids.has(skin_index):
                             head_weight += weights[vertex_id * 4 + influence]
                 if head_weight < 0.45:
                     continue
@@ -66,6 +72,15 @@ func install(rig: Skeleton3D, body_meshes: Array[MeshInstance3D]) -> bool:
     name = "ExternalHeroHeadgear"
     _build_headwear()
     return generated_meshes.size() >= 9
+
+func _bind_targets_head(skin: Skin, bind_index: int, head_id: int, rig: Skeleton3D) -> bool:
+    if bind_index < 0 or bind_index >= skin.get_bind_count():
+        return false
+    var bound_bone := skin.get_bind_bone(bind_index)
+    if bound_bone >= 0:
+        return bound_bone == head_id
+    var bound_name := String(skin.get_bind_name(bind_index))
+    return not bound_name.is_empty() and rig.find_bone(bound_name) == head_id
 
 func _bounds_from_upper_body(rig: Skeleton3D, meshes: Array[MeshInstance3D], inverse_rest: Transform3D) -> AABB:
     var bottom := INF
