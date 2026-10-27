@@ -44,6 +44,34 @@ func _check() -> void:
     if back_hair == null or back_hair.mesh == null or back_hair.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() < 1000:
         _fail("chase camera must have substantial curved back-hair geometry")
         return
+    # A genuine closed 3D rear volume plus six shaped face-framing locks,
+    # rather than more floating rigid panels, must survive the mobile rig fit.
+    var sculpted_fringe := headwear.find_children("SculptedTaperedFringe*", "MeshInstance3D", false, false)
+    if sculpted_fringe.size() != 6:
+        _fail("the cohesive forehead hairstyle must contain six tapered locks")
+        return
+    for item in sculpted_fringe:
+        var lock := item as MeshInstance3D
+        if lock.mesh == null or lock.mesh.get_surface_count() != 1:
+            _fail("a face-framing lock has no modeled surface")
+            return
+        var arrays: Array = lock.mesh.surface_get_arrays(0)
+        var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+        var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+        if vertices.size() < 500 or normals.size() != vertices.size():
+            _fail("fringe must be tapered 3D geometry with real normals")
+            return
+        if lock.mesh.get_aabb().size.y < headwear.get("head_bounds").size.y * 0.15:
+            _fail("fringe has lost its curved crown-to-forehead sweep")
+            return
+    var rear_arrays: Array = back_hair.mesh.surface_get_arrays(0)
+    var rear_vertices: PackedVector3Array = rear_arrays[Mesh.ARRAY_VERTEX]
+    if rear_vertices.size() < 4000:
+        _fail("rear hair must have two modeled shell layers and closed edges")
+        return
+    if back_hair.mesh.get_aabb().size.z < headwear.get("head_bounds").size.z * 0.22:
+        _fail("rear hair collapsed into a paper-thin plane")
+        return
     var head_region := headwear.get("head_bounds") as AABB
     var hair_region := back_hair.mesh.get_aabb()
     if hair_region.size.x < head_region.size.x * 1.2 or hair_region.size.y < head_region.size.y * 0.9:
