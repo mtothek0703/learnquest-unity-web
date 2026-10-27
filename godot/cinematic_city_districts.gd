@@ -58,8 +58,8 @@ func _emit(tool: SurfaceTool, point: Vector3, tint: Color) -> void:
 func _shell_mesh(height: float, style: int) -> ArrayMesh:
     var tool := SurfaceTool.new()
     tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-    var base := [Color("#1b3654"), Color("#352e64"), Color("#263a61")][style]
-    var top := [Color("#6584b3"), Color("#9a649b"), Color("#58a3a8")][style]
+    var base: Color = [Color("#1b3654"), Color("#352e64"), Color("#263a61")][style]
+    var top: Color = [Color("#6584b3"), Color("#9a649b"), Color("#58a3a8")][style]
     for ring in range(16):
         var t0 := float(ring) / 16.0
         var t1 := float(ring + 1) / 16.0
@@ -77,7 +77,7 @@ func _shell_mesh(height: float, style: int) -> ArrayMesh:
             _emit(tool, c, high)
             _emit(tool, d, high)
     var roof := _profile(1.0, style)
-    var crown_color := top.lightened(0.10)
+    var crown_color: Color = top.lightened(0.10)
     for triangle in [[0, 1, 2], [0, 2, 3]]:
         for index in triangle:
             _emit(tool, _corner(index, 1.0, height, style), crown_color)
