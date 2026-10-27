@@ -62,8 +62,14 @@ func _check() -> void:
     if rider.get_node_or_null("LegacyRider") == null:
         _fail("the existing hoverboard / touch visual controller disappeared")
         return
-    if absf(imported.rotation.y - PI) > 0.01:
-        _fail("new character faces backwards relative to menu and chase cameras")
+    var headwear := rig.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
+    if headwear == null:
+        _fail("real Head bone must carry the new curved headgear")
+        return
+    var front_sign := float(headwear.get("face_sign"))
+    var expected_facing := PI if front_sign > 0.0 else 0.0
+    if absf(imported.rotation.y - expected_facing) > 0.01:
+        _fail("new character must face menu camera using imported eye geometry")
         return
     var suit_mesh := imported.find_child("SuperHero_Male", true, false) as MeshInstance3D
     if suit_mesh == null or not (suit_mesh.material_override is ShaderMaterial):
