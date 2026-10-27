@@ -77,6 +77,35 @@ func _check() -> void:
     if hair_region.size.x < head_region.size.x * 1.2 or hair_region.size.y < head_region.size.y * 0.9:
         _fail("rear hair is too narrow or short to read in smartphone chase view")
         return
+    # Real render QA found the first volume was an opaque rectangular slab
+    # hiding the nine existing hair locks. Enforce a tapered width profile,
+    # dark underlayer and exposed bright lock geometry in chase view.
+    var center := head_region.get_center()
+    var rx := head_region.size.x * 0.56
+    var rz := head_region.size.z * 0.57
+    var crown := head_region.position.y + head_region.size.y * 0.85
+    var cap_height := head_region.size.y * 0.21
+    var root_edge: Vector3 = headwear.call("_back_hair_point", center, head_region.size,
+        crown, cap_height, rx, rz, 0.0, 1.0)
+    var shoulder_edge: Vector3 = headwear.call("_back_hair_point", center, head_region.size,
+        crown, cap_height, rx, rz, 0.5, 1.0)
+    var tip_edge: Vector3 = headwear.call("_back_hair_point", center, head_region.size,
+        crown, cap_height, rx, rz, 1.0, 1.0)
+    if absf(shoulder_edge.x - center.x) < absf(root_edge.x - center.x) * 1.20 or \
+            absf(shoulder_edge.x - center.x) < absf(tip_edge.x - center.x) * 1.35:
+        _fail("rear hair must have a sculpted shoulder flare and tapered tips")
+        return
+    var visible_lock := headwear.get_node_or_null("WindSweptBackLock4") as MeshInstance3D
+    var underhair := back_hair.material_override as StandardMaterial3D
+    var bright_hair := visible_lock.material_override as StandardMaterial3D if visible_lock != null else null
+    if underhair == null or bright_hair == null or \
+            bright_hair.albedo_color.get_luminance() <= underhair.albedo_color.get_luminance() * 1.5:
+        _fail("sculpted back locks must visibly contrast against the dark underhair")
+        return
+    var lock_depth := (visible_lock.mesh.get_aabb().get_center().z - center.z) * -float(headwear.get("face_sign"))
+    if lock_depth < head_region.size.z * 0.55:
+        _fail("back hair locks are buried under the sculpted volume")
+        return
     # V124 facial reconstruction: test the actual two eyes by mesh identity,
     # not float-to-string suffixes (Godot may format -1 as -1 or -1.0).
     var eyes := headwear.find_children("EyeWhite*", "MeshInstance3D", false, false)
