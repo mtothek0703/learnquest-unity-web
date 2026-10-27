@@ -74,8 +74,8 @@ func _build_pod(bounds: AABB, back: float, side: float, spine: int,
         pelvis: int, arm: int, core: bool) -> ArrayMesh:
     var tool := SurfaceTool.new()
     tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-    const ROWS := 18
-    const SEGMENTS := 16
+    const ROWS = 18
+    const SEGMENTS = 16
     for row in range(ROWS):
         var t0 := float(row) / float(ROWS)
         var t1 := float(row + 1) / float(ROWS)
