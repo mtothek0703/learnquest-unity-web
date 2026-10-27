@@ -104,7 +104,7 @@ func _check() -> void:
         if thumb == null or thumb.position.z > -0.20:
             _fail("original thumb must remain in front of the glove")
             return
-        var fingertip: Vector3 = gloves.call("_point", side, 1.0, 0.25)
+        var fingertip: Vector3 = gloves.call("_point", side, 1.0, 0.75)
         if fingertip.y > 1.12 or fingertip.z > -0.15:
             _fail("glove ends above the fingers or hides behind the original hand")
             return
