@@ -51,18 +51,18 @@ func _capture() -> void:
         _fail("route forks are missing from the actual Canyon scene")
         return
     var junctions: Array = routes.get("junctions")
-    junctions[0].position.z = -22.0
-    junctions[1].position.z = -46.0
+    junctions[0].position.z = -10.0
+    junctions[1].position.z = -38.0
     var captures := 0
     for size in SIZES:
         viewport.size = size
         for view in VIEWS:
             if view == "chase":
                 camera.position = Vector3(0.0, 5.2, 14.0)
-                camera.look_at(Vector3(0.0, 2.4, -30.0), Vector3.UP)
+                camera.look_at(Vector3(0.0, 2.4, -17.0), Vector3.UP)
             else:
                 camera.position = Vector3(6.0, 8.2, 14.0)
-                camera.look_at(Vector3(0.0, 2.7, -30.0), Vector3.UP)
+                camera.look_at(Vector3(0.0, 2.7, -17.0), Vector3.UP)
             var baseline: Image
             for state in ["before", "after"]:
                 routes.visible = state == "after"
