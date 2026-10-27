@@ -143,6 +143,13 @@ func _make_skeleton() -> void:
         if parents[i] >= 0:
             skeleton.set_bone_parent(i, parents[i])
         skeleton.set_bone_rest(i, Transform3D(Basis.IDENTITY, offsets[i]))
+        # Critical V108 visual fix: a new Skeleton3D starts with IDENTITY
+        # pose translations, NOT its authored bone-rest translations.
+        # Without this, global poses stay at (0,0,0), inverse bind matrices
+        # shift the GPU-skinned head/jacket/hair below the board, and only
+        # the old rigid decorative face remains visible. Initialize each
+        # local pose to the same rest offset before animating rotations.
+        skeleton.set_bone_pose_position(i, offsets[i])
 
 func _influences(p: Vector3) -> Dictionary:
     # Four weights for every vertex. Smooth transitions at waist, shoulder,
