@@ -41,4 +41,9 @@ void fragment() {
     ROUGHNESS = 0.58 - shoulder * 0.17;
     EMISSION = vec3(0.04, 0.53, 0.85) * (zipper * 0.48 + piping * 0.52)
         + vec3(0.60, 0.06, 0.35) * chevron * 0.32;
+    // Single-pass, camera-relative contour lift for readable skinned limbs
+    // in mobile landscape. No outline shell, light, texture or extra draw call.
+    float silhouette_rim = pow(1.0 - abs(dot(normalize(NORMAL), normalize(VIEW))), 2.6);
+    ALBEDO = min(ALBEDO * (1.0 + silhouette_rim * 0.18), vec3(1.0));
+    EMISSION += vec3(0.10, 0.36, 0.58) * silhouette_rim * 0.20;
 }

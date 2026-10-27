@@ -33,4 +33,9 @@ void fragment() {
     METALLIC = 0.15;
     ROUGHNESS = 0.56;
     EMISSION = vec3(0.045, 0.57, 0.90) * max(edge * 0.86, hem * 0.74);
+    // Single-pass, camera-relative contour lift for readable skinned limbs
+    // in mobile landscape. No outline shell, light, texture or extra draw call.
+    float silhouette_rim = pow(1.0 - abs(dot(normalize(NORMAL), normalize(VIEW))), 2.6);
+    ALBEDO = min(ALBEDO * (1.0 + silhouette_rim * 0.18), vec3(1.0));
+    EMISSION += vec3(0.14, 0.35, 0.61) * silhouette_rim * 0.18;
 }

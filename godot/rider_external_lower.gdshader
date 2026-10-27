@@ -39,4 +39,9 @@ void fragment() {
     float stripe = exp(-pow((x - 0.28) * 28.0, 2.0)) * thigh;
     EMISSION = vec3(0.03, 0.54, 0.88) * (edge * 0.30 + stripe * 0.23)
         + magenta * knee * outside * 0.12;
+    // Single-pass, camera-relative contour lift for readable skinned limbs
+    // in mobile landscape. No outline shell, light, texture or extra draw call.
+    float silhouette_rim = pow(1.0 - abs(dot(normalize(NORMAL), normalize(VIEW))), 2.6);
+    ALBEDO = min(ALBEDO * (1.0 + silhouette_rim * 0.18), vec3(1.0));
+    EMISSION += vec3(0.10, 0.32, 0.58) * silhouette_rim * 0.16;
 }

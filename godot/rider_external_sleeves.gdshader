@@ -33,4 +33,9 @@ void fragment() {
     float edge = smoothstep(0.34, 0.52, panel_mask) *
         (1.0 - smoothstep(0.65, 0.84, panel_mask));
     EMISSION = vec3(0.035, 0.58, 0.90) * (edge * 0.37 + joint * 0.10);
+    // Single-pass, camera-relative contour lift for readable skinned limbs
+    // in mobile landscape. No outline shell, light, texture or extra draw call.
+    float silhouette_rim = pow(1.0 - abs(dot(normalize(NORMAL), normalize(VIEW))), 2.6);
+    ALBEDO = min(ALBEDO * (1.0 + silhouette_rim * 0.18), vec3(1.0));
+    EMISSION += vec3(0.24, 0.19, 0.51) * silhouette_rim * 0.20;
 }
