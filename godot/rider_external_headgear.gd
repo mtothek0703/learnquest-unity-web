@@ -7,6 +7,25 @@ extends BoneAttachment3D
 var head_bounds: AABB
 var face_sign: float = -1.0
 var generated_meshes: Array[MeshInstance3D] = []
+var visual_scale: float = 1.0
+
+func set_visual_scale(factor: float) -> void:
+    # BoneAttachment3D follows the imported Head and may overwrite its own
+    # transform. Scale the actual visual meshes around the sampled head center
+    # instead, preserving the original 65-bone Skin and stable Head binding.
+    if factor < 1.0 or factor > 1.6 or absf(visual_scale - 1.0) > 0.001:
+        return
+    var center := head_bounds.get_center()
+    for part in generated_meshes:
+        if part.mesh is ArrayMesh:
+            # Procedural surfaces store their points in Head-local coordinates.
+            part.position = center * (1.0 - factor)
+            part.scale = Vector3.ONE * factor
+        else:
+            # Eye ellipsoids store their center in the node transform.
+            part.position = center + (part.position - center) * factor
+            part.scale *= factor
+    visual_scale = factor
 
 func install(rig: Skeleton3D, body_meshes: Array[MeshInstance3D]) -> bool:
     if rig == null:
