@@ -44,13 +44,17 @@ func _check() -> void:
             if points.size() < 900 or normals.size() != points.size() or colors.size() != points.size():
                 _fail("missing volumetric gradient geometry")
                 return
-            var has_alpha_gradient := false
+            var min_alpha := 1.0
+            var max_alpha := 0.0
             for tint in colors:
-                if tint.a < 0.05:
-                    has_alpha_gradient = true
-                    break
-            if not has_alpha_gradient:
-                _fail("lightfield must fade rather than use opaque planes")
+                min_alpha = minf(min_alpha, tint.a)
+                max_alpha = maxf(max_alpha, tint.a)
+            if min_alpha > 0.05 or max_alpha < 0.25:
+                _fail("lightfield must have transparent edges and a luminous center")
+                return
+            var material := instance.material_override as StandardMaterial3D
+            if material == null or material.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA:
+                _fail("lightfield gradient requires actual alpha blending")
                 return
         if well.get_node_or_null("Suspended luminous lens") == null:
             _fail("readable suspended emitter is missing")
@@ -60,6 +64,10 @@ func _check() -> void:
             _fail("mobile lighting budget or shadow rule violated")
             return
         tinted[str(lamp.light_color)] = true
+        var shaft_material := (shafts[index] as MeshInstance3D).material_override as StandardMaterial3D
+        if shaft_material == null or not shaft_material.emission_enabled or shaft_material.emission.distance_to(lamp.light_color) > 0.02:
+            _fail("shaft glow must match its cyan or magenta district lamp")
+            return
     if tinted.size() != 2:
         _fail("cyan and magenta accents must remain distinct")
         return
