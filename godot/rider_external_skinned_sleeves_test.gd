@@ -37,7 +37,7 @@ func _check() -> void:
         return
     for index in range(2):
         var sleeve := sleeves[index] as MeshInstance3D
-        if sleeve == null or sleeve.mesh == null or sleeve.skin != original.skin or
+        if sleeve == null or sleeve.mesh == null or sleeve.skin != original.skin or \
                 sleeve.skeleton != original.skeleton or sleeve.get_parent() != original.get_parent():
             _fail("sleeves must reuse the exact original Skin, skeleton and parent")
             return
@@ -60,7 +60,7 @@ func _check() -> void:
             var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
             var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
             var colors: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
-            if verts.size() < 150 or bones.size() != verts.size() * 4 or
+            if verts.size() < 150 or bones.size() != verts.size() * 4 or \
                     weights.size() != verts.size() * 4 or colors.size() != verts.size():
                 _fail("sleeves must have full four-weight skinning and original influence zones")
                 return

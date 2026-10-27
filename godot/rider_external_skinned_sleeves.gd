@@ -83,7 +83,7 @@ func _sculpt_arm(body: MeshInstance3D, upper: int, lower: int, hand: int) -> Arr
         var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
         var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
         var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
-        if points.is_empty() or normals.size() != points.size() or
+        if points.is_empty() or normals.size() != points.size() or \
                 bones.size() < points.size() * 4 or weights.size() < points.size() * 4:
             continue
         var triangle_count := int(indices.size() / 3) if not indices.is_empty() else int(points.size() / 3)
