@@ -25,7 +25,7 @@ func _glow_material() -> StandardMaterial3D:
     material.cull_mode = BaseMaterial3D.CULL_DISABLED
     material.emission_enabled = true
     material.emission = Color("#5e8fca")
-    material.emission_energy_multiplier = 0.70
+    material.emission_energy_multiplier = 1.10
     return material
 
 func _vertex(tool: SurfaceTool, point: Vector3, tint: Color) -> void:
@@ -47,8 +47,8 @@ func _shaft_mesh(tint: Color) -> ArrayMesh:
             var p01 := Vector3(cos(a1) * r0, 0.35 + t0 * 11.4, sin(a1) * r0)
             var p10 := Vector3(cos(a0) * r1, 0.35 + t1 * 11.4, sin(a0) * r1)
             var p11 := Vector3(cos(a1) * r1, 0.35 + t1 * 11.4, sin(a1) * r1)
-            var low := Color(tint.r, tint.g, tint.b, 0.10 * sin(PI * (0.12 + t0 * 0.78)))
-            var high := Color(tint.r, tint.g, tint.b, 0.10 * sin(PI * (0.12 + t1 * 0.78)))
+            var low := Color(tint.r, tint.g, tint.b, 0.42 * sin(PI * (0.12 + t0 * 0.78)))
+            var high := Color(tint.r, tint.g, tint.b, 0.42 * sin(PI * (0.12 + t1 * 0.78)))
             _vertex(tool, p00, low)
             _vertex(tool, p10, high)
             _vertex(tool, p01, low)
@@ -73,8 +73,8 @@ func _pool_mesh(tint: Color) -> ArrayMesh:
             var p01 := Vector3(cos(a1) * r0, 0.06, sin(a1) * r0)
             var p10 := Vector3(cos(a0) * r1, 0.06, sin(a0) * r1)
             var p11 := Vector3(cos(a1) * r1, 0.06, sin(a1) * r1)
-            var low := Color(tint.r, tint.g, tint.b, 0.28 * pow(1.0 - t0, 1.8))
-            var high := Color(tint.r, tint.g, tint.b, 0.28 * pow(1.0 - t1, 1.8))
+            var low := Color(tint.r, tint.g, tint.b, 0.65 * pow(1.0 - t0, 1.8))
+            var high := Color(tint.r, tint.g, tint.b, 0.65 * pow(1.0 - t1, 1.8))
             _vertex(tool, p00, low)
             _vertex(tool, p01, low)
             _vertex(tool, p10, high)
@@ -91,7 +91,7 @@ func _ready() -> void:
         var tint := Color("#5ff4ef") if index % 2 == 0 else Color("#ff85d3")
         var well := Node3D.new()
         well.name = "Atmospheric light well %d" % index
-        well.position = Vector3(side * 11.8, 0.0, -18.0 - float(index) * WELL_SPACING)
+        well.position = Vector3(side * 8.6, 0.0, -18.0 - float(index) * WELL_SPACING)
         add_child(well)
         wells.append(well)
         var shaft := MeshInstance3D.new()
@@ -106,12 +106,30 @@ func _ready() -> void:
         pool.material_override = glow
         well.add_child(pool)
         pools.append(pool)
+        # A visible suspended emitter makes the new shaft readable in chase view.
+        var lens := MeshInstance3D.new()
+        lens.name = "Suspended luminous lens"
+        var orb := SphereMesh.new()
+        orb.radius = 0.56
+        orb.height = 1.12
+        orb.radial_segments = 16
+        orb.rings = 8
+        lens.mesh = orb
+        var lens_material := StandardMaterial3D.new()
+        lens_material.albedo_color = tint
+        lens_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+        lens_material.emission_enabled = true
+        lens_material.emission = tint
+        lens_material.emission_energy_multiplier = 1.65
+        lens.material_override = lens_material
+        lens.position.y = 11.7
+        well.add_child(lens)
         var lamp := OmniLight3D.new()
         lamp.name = "Shadow-free district accent lamp"
         lamp.position.y = 3.7
         lamp.light_color = tint
-        lamp.light_energy = 0.90
-        lamp.omni_range = 7.5
+        lamp.light_energy = 1.25
+        lamp.omni_range = 9.0
         lamp.shadow_enabled = false
         well.add_child(lamp)
         lamps.append(lamp)
@@ -125,4 +143,4 @@ func _process(delta: float) -> void:
         well.position.z += travel_speed * delta
         if well.position.z > 19.0:
             well.position.z -= LOOP_LENGTH
-        lamps[index].light_energy = 0.90 + 0.13 * sin(elapsed * 1.2 + float(index))
+        lamps[index].light_energy = 1.25 + 0.13 * sin(elapsed * 1.2 + float(index))
