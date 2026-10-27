@@ -73,6 +73,9 @@ func _check() -> void:
         _fail("rear hair collapsed into a paper-thin plane")
         return
     var head_region := headwear.get("head_bounds") as AABB
+    if float(headwear.get("visual_scale")) < 1.85:
+        _fail("expressive face/head must remain readable at mobile landscape chase distance")
+        return
     var hair_region := back_hair.mesh.get_aabb()
     if hair_region.size.x < head_region.size.x * 1.2 or hair_region.size.y < head_region.size.y * 0.9:
         _fail("rear hair is too narrow or short to read in smartphone chase view")
