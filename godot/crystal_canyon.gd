@@ -8,9 +8,13 @@ var travel_speed := 14.0
 var elapsed := 0.0
 var moving_parts: Array[Node3D] = []
 var crystal_pivots: Array[Node3D] = []
+var cinematic_geodes: Node3D
 
 func _ready() -> void:
     _build_canyon()
+    cinematic_geodes = preload("res://cinematic_canyon_geodes.gd").new() as Node3D
+    cinematic_geodes.name = "Cinematic floating geode reefs"
+    add_child(cinematic_geodes)
 
 func _material(color: Color, glow: bool = false) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -153,6 +157,9 @@ func _build_canyon() -> void:
 
 func _process(delta: float) -> void:
     elapsed += delta
+    if cinematic_geodes != null:
+        cinematic_geodes.set("running", running)
+        cinematic_geodes.set("travel_speed", travel_speed)
     if not running:
         return
     for prop in moving_parts:
