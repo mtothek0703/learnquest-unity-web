@@ -40,6 +40,28 @@ func _check() -> void:
         if not shader_code.contains(required):
             _fail("missing coherent mobile flight-jacket material feature: " + required)
             return
+    # New full-torso sculpt must create a genuinely differentiated silhouette,
+    # not just recolor the original narrow body or attach rigid shoulder boxes.
+    var imported_bounds := source.mesh.get_aabb()
+    if absf(float(material.get_shader_parameter("rest_height")) - imported_bounds.size.y) > 0.001 or \
+            absf(float(material.get_shader_parameter("rest_width")) - imported_bounds.size.x) > 0.001:
+        _fail("jacket color panels must be fitted to the actual CC0 rest bounds")
+        return
+    var test_bounds := AABB(Vector3(-0.7, 0.0, -0.35), Vector3(1.4, 3.0, 0.7))
+    var forward := Vector3(0.0, 0.0, 1.0)
+    var chest: Vector3 = outfit.call("_tailored_offset", Vector3(0.10, 1.905, 0.3), forward, test_bounds)
+    var waist: Vector3 = outfit.call("_tailored_offset", Vector3(0.10, 1.395, 0.3), forward, test_bounds)
+    var shoulder: Vector3 = outfit.call("_tailored_offset", Vector3(0.30, 2.205, 0.3), forward, test_bounds)
+    var opposite: Vector3 = outfit.call("_tailored_offset", Vector3(-0.30, 2.205, 0.3), forward, test_bounds)
+    if chest.z < waist.z + 0.025 or shoulder.z < waist.z + 0.025:
+        _fail("new skinned torso must have sculpted chest/shoulder volume and a tapered waist")
+        return
+    if shoulder.x < 0.01 or opposite.x > -0.01 or absf(shoulder.x + opposite.x) > 0.002:
+        _fail("weighted shoulder expansion must be balanced on both sides")
+        return
+    if garment.mesh.get_aabb().size.x < imported_bounds.size.x * 0.28:
+        _fail("tailored jacket silhouette collapsed")
+        return
     var vertex_count := 0
     for surface in range(garment.mesh.get_surface_count()):
         var arrays: Array = garment.mesh.surface_get_arrays(surface)
