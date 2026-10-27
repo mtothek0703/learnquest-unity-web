@@ -58,12 +58,32 @@ func _check() -> void:
         var arrays: Array = lock.mesh.surface_get_arrays(0)
         var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
         var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
-        if vertices.size() < 500 or normals.size() != vertices.size():
-            _fail("fringe must be tapered 3D geometry with real normals")
+        if vertices.size() < 1000 or normals.size() != vertices.size():
+            _fail("fringe must be a closed, sculpted 3D ribbon with real normals")
+            return
+        var fitted_bounds := headwear.get("head_bounds") as AABB
+        if lock.mesh.get_aabb().position.y > fitted_bounds.position.y + fitted_bounds.size.y * 0.78:
+            _fail("fringe tips must reach the upper forehead, not form beads above it")
             return
         if lock.mesh.get_aabb().size.y < headwear.get("head_bounds").size.y * 0.15:
             _fail("fringe has lost its curved crown-to-forehead sweep")
             return
+    # Regress the actual sculpt profile: a wide, thin, enclosed hair lock
+    # must replace the former round pipe at the crown.
+    var sample_root := Vector3(0.0, 1.0, 0.0)
+    var sample_control := Vector3(0.0, 1.08, 0.25)
+    var sample_tip := Vector3(0.0, 0.72, 0.45)
+    var left: Vector3 = headwear.call("_fringe_ribbon_point",
+        sample_root, sample_control, sample_tip, 0.20, 0.025, 0.5, 0.0, true)
+    var right: Vector3 = headwear.call("_fringe_ribbon_point",
+        sample_root, sample_control, sample_tip, 0.20, 0.025, 0.5, 1.0, true)
+    var rear: Vector3 = headwear.call("_fringe_ribbon_point",
+        sample_root, sample_control, sample_tip, 0.20, 0.025, 0.5, 0.5, false)
+    var front: Vector3 = headwear.call("_fringe_ribbon_point",
+        sample_root, sample_control, sample_tip, 0.20, 0.025, 0.5, 0.5, true)
+    if absf(right.x - left.x) < absf(front.z - rear.z) * 3.0:
+        _fail("forehead locks must be broad curved ribbons, not round hair rollers")
+        return
     var rear_arrays: Array = back_hair.mesh.surface_get_arrays(0)
     var rear_vertices: PackedVector3Array = rear_arrays[Mesh.ARRAY_VERTEX]
     if rear_vertices.size() < 4000:
