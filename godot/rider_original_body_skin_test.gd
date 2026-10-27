@@ -37,7 +37,7 @@ func _check() -> void:
         var rest_origin := skeleton.get_bone_global_rest(bone_id).origin
         var pose_origin := skeleton.get_bone_global_pose(bone_id).origin
         if pose_origin.distance_to(rest_origin) > 0.22:
-            _fail("bone %d must retain its authored rest translation during GPU skinning" % bone_id)
+            _fail("bone %d pose=%s rest=%s must retain authored translation" % [bone_id, str(pose_origin), str(rest_origin)])
             return
     if skeleton.get_bone_global_pose(4).origin.y < 2.40:
         _fail("the real skinned head must not be shifted beneath the hoverboard")
