@@ -140,6 +140,9 @@ jobs:
           grep -Fq 'SKINNED ARMWEAR TEST PASSED' /tmp/godot-skinned-armwear.log
           echo 'V107 organic original-skeleton sleeves and cuffs regression passed'
           echo "V104 volumetric hair geometry, duplicate-retirement and original skinning regression passed"
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_legacy_head_retirement_test.gd 2>&1 | tee /tmp/godot-head-replacement.log
+          grep -Fq 'HEAD REPLACEMENT TEST PASSED' /tmp/godot-head-replacement.log
+          echo 'V108 old glTF head occlusion regression passed'
           # GitHub Pages deploys replace the whole website. Preserve the actual
           # published older builds instead of silently replacing their contents.
           # Sprint 1 visual QA: produce real GPU-rendered, landscape screenshots.
@@ -213,6 +216,7 @@ jobs:
             /tmp/godot-skinned-upper-jacket.log
             /tmp/godot-skinned-armwear.log
             /tmp/godot-visual-capture.log
+            /tmp/godot-head-replacement.log
           if-no-files-found: ignore
 
       - name: Upload actual rendered landscape QA images
