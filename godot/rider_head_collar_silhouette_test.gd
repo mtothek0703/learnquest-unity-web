@@ -68,6 +68,21 @@ func _check() -> void:
     if eyes == null or eyes.get_node_or_null("LeftEye") == null or eyes.get_node_or_null("RightEye") == null:
         _fail("expressive eyes must survive")
         return
+    # The first V109 render exposed a regression: the new rounded chin
+    # covered the old unskinned smile. Keep its curved tube in front of the
+    # actual GPU-skinned face, not merely present in the scene tree.
+    var smile := eyes.get_node_or_null("CurvedSmile") as MeshInstance3D
+    if smile == null or not smile.visible or smile.mesh == null:
+        _fail("the animated facial smile disappeared")
+        return
+    var smile_points: PackedVector3Array = smile.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+    var closest := INF
+    for vertex in smile_points:
+        closest = minf(closest, vertex.z)
+    var face_at_mouth: Vector3 = head.call("_point", (2.19 - 1.98) / 1.10, 0.5)
+    if closest > face_at_mouth.z - 0.025:
+        _fail("the new chin occludes the curved smile")
+        return
     if model.find_children("*", "CollisionObject3D", true, false).size() != 0:
         _fail("visual refinement must not change gameplay collisions")
         return

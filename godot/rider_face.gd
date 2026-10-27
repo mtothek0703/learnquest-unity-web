@@ -123,11 +123,13 @@ func _build_face() -> void:
         _sphere("HeadsetLight%d" % i, self, Vector3(side * 0.55, 2.43, 0.035), 0.115, 0.14, headset_glow)
     _sphere("SculptedNose", self, Vector3(0.0, 2.34, -0.48), 0.066, 0.105, skin)
     _tube("CurvedSmile", self, PackedVector3Array([
-        Vector3(-0.17, 2.235, -0.430),
-        Vector3(-0.11, 2.205, -0.446),
-        Vector3(-0.05, 2.193, -0.454),
-        Vector3(0.0, 2.19, -0.457),
-        Vector3(0.05, 2.193, -0.454),
-        Vector3(0.11, 2.205, -0.446),
-        Vector3(0.17, 2.235, -0.430)
+        # V109: the fuller skinned chin sits in front of the former smile.
+        # Follow its curved front surface rather than burying the expression.
+        Vector3(-0.17, 2.235, -0.510),
+        Vector3(-0.11, 2.205, -0.540),
+        Vector3(-0.05, 2.193, -0.555),
+        Vector3(0.0, 2.19, -0.560),
+        Vector3(0.05, 2.193, -0.555),
+        Vector3(0.11, 2.205, -0.540),
+        Vector3(0.17, 2.235, -0.510)
     ]), 0.014, outline)

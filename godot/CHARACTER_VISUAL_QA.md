@@ -123,3 +123,5 @@ Die Bildserie ist ein **Desktop-Mesa-Rendervergleich**, kein iPhone-Test.
 2. Sichtbefund V108: In `diagnostic_front_face_only.png` läuft die Kopfkontur spitz zu; die normale Frontansicht zeigt einen zu hohen, dominierenden Brust-/Kragenabschluss. V109 soll eine rundere Schädelkontur und einen freien unteren Gesichts-/Halsbereich zeigen, ohne die hintere Kragenkontur zu verlieren.
 3. Besonders auf Haaransatz, Helm, Kinn, Nacken, Ärmel-/Handschuhübergänge und Z-Fighting achten. Technische `rider_head_collar_silhouette_test.gd`-Assertions allein beweisen keine visuelle Clipping-Freiheit.
 4. Echte iPhone-FPS, 60-Sekunden-Frametimes und Touchsteuerung im Querformat bleiben eine separate manuelle Prüfung. Keine Geräteabnahme aus Desktop-Mesa-Frames ableiten.
+
+**V109 Erstvergleich (PR #96):** Der abgerundete Kopf und niedrigere Kragen sind in den 16:9-PNGs erkennbar. Das zunächst verdeckte Lächeln ist eine echte Bild-Regression; nach der Smile-Tiefenkorrektur muss `diagnostic_front_face_only.png` das Lächeln wieder zeigen. Kein Release vor dieser Nachprüfung.
