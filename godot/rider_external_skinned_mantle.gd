@@ -8,6 +8,16 @@ var mantle_span: float = 0.0
 var shoulder_yoke: MeshInstance3D
 var yoke_vertices: int = 0
 
+# Visual-only wind response; real bone skinning still owns the base pose.
+func set_motion(steer: float, boost: float, jump: float) -> void:
+    for panel in panels:
+        var material := panel.material_override as ShaderMaterial
+        if material == null:
+            continue
+        material.set_shader_parameter("steer_amount", clampf(steer, -1.0, 1.0))
+        material.set_shader_parameter("boost_amount", clampf(boost, 0.0, 1.0))
+        material.set_shader_parameter("jump_amount", clampf(jump, 0.0, 1.0))
+
 func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: float) -> bool:
     if rig == null:
         return false
@@ -44,6 +54,7 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: f
             var material := ShaderMaterial.new()
             material.shader = preload("res://rider_external_mantle.gdshader")
             material.set_shader_parameter("side", float(side))
+            material.set_shader_parameter("wind_back_sign", back_sign)
             instance.material_override = material
             body.get_parent().add_child(instance)
             created.append(instance)
@@ -123,16 +134,21 @@ func _panel(bounds: AABB, back: float, back_sign: float, side: float, binds: Pac
 
 func _vertex(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
         side: float, u: float, t: float, binds: PackedInt32Array) -> void:
-    # Shoulder-rooted split silhouette: the panels flare and sweep rearward
-    # as they reach the lower body, but stay anchored to real spine/pelvis skin.
+    # A continuous aerodynamic split-wing silhouette instead of two narrow
+    # hanging strips. The upper seam remains close to the real skinned spine,
+    # while each broad hem flares sideways AND sweeps behind the rider's legs.
+    # All dimensions derive from the imported CC0 body bounds.
     var width := bounds.size.x
     var center_x := bounds.get_center().x
-    var inner := width * (0.018 + 0.035 * t)
-    var outer := width * (0.135 + 0.12 * t)
+    var flare := smoothstep(0.08, 0.96, t)
+    var inner := width * (0.025 + 0.035 * t)
+    var outer := width * (0.14 + 0.30 * flare)
     var x := center_x + side * lerpf(inner, outer, u)
-    var y := bounds.position.y + bounds.size.y * (0.72 - 0.49 * t)
-    var fold := sin(u * PI * 3.0 + t * 3.5) * width * 0.013 * t
-    var z := back + back_sign * (0.026 + 0.36 * t * t + 0.035 * sin(u * PI)) + fold
+    var bow := sin(u * PI) * sin(t * PI)
+    var y := bounds.position.y + bounds.size.y * (0.72 - 0.43 * t + 0.020 * bow)
+    var rib := sin(u * PI * 5.0 + t * 2.5) * width * 0.012 * t
+    var sweep := 0.045 + 0.12 * t + 0.42 * pow(t, 1.5) + 0.035 * bow
+    var z := back + back_sign * (sweep + rib)
     # All four weights are present and normalized. Upper rows follow the spine;
     # lower rows inherit pelvis and the corresponding leg for real deformation.
     var spine_weight := 0.72 * (1.0 - t) * (1.0 - t)
