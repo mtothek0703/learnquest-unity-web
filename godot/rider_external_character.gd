@@ -77,7 +77,7 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     if bool(headgear.call("install", skeleton, skinned_meshes)):
         # Restore a readable stylized face/head silhouette at mobile chase scale.
         # The imported original head/65-bone rig remain untouched underneath.
-        headgear.call("set_visual_scale", 1.90)
+        headgear.call("set_visual_scale", 2.30)
         # Animate existing eye/lid/brow/lip meshes on the same real Head bone.
         # This remains purely visual and does not alter the imported Skin.
         var acting := preload("res://rider_external_expression.gd").new() as Node
@@ -223,7 +223,7 @@ func fit_to_board() -> bool:
     var height := highest - lowest
     if height < 0.1 or height > 100.0:
         return false
-    var factor := 2.62 / height
+    var factor := 2.72 / height
     character.scale = Vector3.ONE * factor
     character.position.y = 0.08 - lowest * factor
     # Determine the *actual* imported face direction from the weighted Head
