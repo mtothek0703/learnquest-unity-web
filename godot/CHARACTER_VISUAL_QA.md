@@ -140,6 +140,11 @@ V111 changes the existing GPU-skinned sleeve's centerline and perpendicular cros
 
 
 ## V112 — lesbare Verfolgerfigur bei Turbo-/Sprung-Energiesegeln (vor Veröffentlichung prüfen)
-1. V111 und V112 bei **identischer** 1280×720- und 1560×720-Kamera sowie derselben Idle-/Boost-/Jump-Pose aus den CI-Render-PNGs vergleichen. Die sechs halbtransparenten Segel dürfen die Figur im Idle nicht mehr verdecken; beide separaten Aero-Wings, Umhang und Reaktor müssen erhalten bleiben.
+1. V111 und V112 bei **identischer** 1280×720- und 1170×540-Kamera sowie derselben Idle-/Boost-/Jump-Pose aus den CI-Render-PNGs vergleichen. Die sechs halbtransparenten Segel dürfen die Figur im Idle nicht mehr verdecken; beide separaten Aero-Wings, Umhang und Reaktor müssen erhalten bleiben.
 2. In Turbo und Sprung müssen alle sechs Segel wieder sichtbar sein, ohne harte geometrische Schnitte oder die animierten Handschuhe, den Kopf oder das Hoverboard zu überdecken. Nach der Landung müssen sie weich einklappen. Profil-/Verfolgerbild besonders auf die weiterhin offenen rosa Unterarm-/Rückenflächen prüfen.
 3. `rider_sail_silhouette_test.gd` prüft Deployment, vorhandene Meshes, 13-Bone-Rig und Kollisionsfreiheit; **keine** tatsächliche Pixelqualität oder iPhone-FPS. 60-Sekunden-FPS, Touch und vollständige Vokabelrunde auf echtem Smartphone im Querformat bleiben manuell offen.
+
+
+## V113 — faltbare Aerofoils und schmalerer Flugumhang (visuelle Freigabe offen)
+
+Vergleiche V112-Release und V113-PR bei exakt gleicher 1280×720-/1170×540-Verfolgerkamera. In Idle müssen die **vier** bisher seitlich sichtbaren starren Aerofoil-Flächen eingeklappt sein; der **sechsgelenkige** Umhang bleibt vorhanden, aber schmaler. Turbo und Sprung entfalten beide Flügel und den Umhang wieder, Landung führt ohne Sprung in der Silhouette zum ruhigen Zustand zurück. Prüfe besonders die Schulter-/Handschuh- und Kopf-/Haarübergänge sowie verbliebene starre Rückenplatten. Der neue `rider_aero_silhouette_test.gd` prüft nur die Transformations-/Kollisionsinvarianten; das 20-PNG-Renderartefakt muss vor Merge tatsächlich angesehen werden. Keine Behauptung eines High-End-Gesamtcharakters oder realer iPhone-FPS allein aus Mesa-Frames.
