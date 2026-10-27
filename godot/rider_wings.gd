@@ -5,18 +5,30 @@ extends Node3D
 var wings: Array[Node3D] = []
 var lights: Array[StandardMaterial3D] = []
 var clock: float = 0.0
+# V113: keep the original curved aerofoils but stow them at cruising speed.
+# Boost and jump unfold both winglets; only visual transforms change.
+var deployment: float = 0.0
 
 func _ready() -> void:
     _build_wings()
+    for wing in wings:
+        wing.visible = false
+        wing.scale = Vector3.ONE * 0.12
 
 func _process(delta: float) -> void:
     clock += delta
     var rider := get_parent().get_parent() as Node3D
     var lean := float(rider.get("lean")) if rider != null else 0.0
     var turbo := bool(rider.get("boosting")) if rider != null else false
+    var airborne := rider != null and rider.position.y > 0.18
+    var active := turbo or airborne
+    deployment = move_toward(deployment, 1.0 if active else 0.0, delta * (3.5 if active else 2.6))
+    var opened := smoothstep(0.0, 1.0, deployment)
     for i in range(wings.size()):
         var side := -1.0 if i == 0 else 1.0
         var wing := wings[i]
+        wing.visible = deployment > 0.015
+        wing.scale = Vector3.ONE * lerpf(0.12, 1.0, opened)
         var spread := 0.27 if turbo else 0.07
         wing.rotation.z = lerpf(wing.rotation.z, side * spread - lean * 0.12 + sin(clock * 2.8 + float(i)) * 0.025, minf(1.0, delta * 7.0))
         wing.rotation.x = lerpf(wing.rotation.x, (-0.18 if turbo else -0.03) + sin(clock * 3.7 + float(i)) * 0.025, minf(1.0, delta * 6.0))

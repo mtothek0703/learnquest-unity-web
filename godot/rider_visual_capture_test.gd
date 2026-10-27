@@ -46,6 +46,13 @@ func _apply_pose(rider: Node3D, pose: String) -> void:
     var sails := model.get_node_or_null("AnimatedKineticSails") as Node3D
     if sails != null:
         sails.call("_process", 0.60)
+    # V113: settle the remaining rigid aerofoils and cloth width for each pose.
+    var wings := model.get_node_or_null("AnimatedAeroWings") as Node3D
+    if wings != null:
+        wings.call("_process", 0.60)
+    var cloak := model.get_node_or_null("AnimatedMotionCloak") as Node3D
+    if cloak != null:
+        cloak.call("_process", 0.60)
 
 func _has_visible_subject(image: Image) -> bool:
     if image == null or image.is_empty():
