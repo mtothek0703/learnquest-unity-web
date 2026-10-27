@@ -33,8 +33,8 @@ func _check() -> void:
     if shells.size() != 2 or cores.size() != 2:
         _fail("both shoulders need a weighted nacelle and illuminated core")
         return
-    if float(controller.get("shoulder_span")) < source.mesh.get_aabb().size.x * 1.2:
-        _fail("shoulder geometry does not expand chase silhouette")
+    if float(controller.get("shoulder_span")) < source.mesh.get_aabb().size.x * 0.65:
+        _fail("shoulder geometry does not cover enough of chase silhouette")
         return
     if int(controller.get("generated_vertices")) < 6000:
         _fail("shoulder modules lack substantial actual 3D geometry")
@@ -50,6 +50,16 @@ func _check() -> void:
             return
         if mesh.get_child_count() != 0:
             _fail("shoulder hardware must remain geometry only")
+            return
+        # The first visual pass produced giant floating purple pods. They
+        # must now overlap the actual upper torso rather than hang far away.
+        var source_bounds := source.mesh.get_aabb()
+        var pod_bounds := mesh.mesh.get_aabb()
+        if absf(pod_bounds.get_center().x - source_bounds.get_center().x) > source_bounds.size.x * 0.34:
+            _fail("shoulder nacelle is detached from the actual torso")
+            return
+        if pod_bounds.size.x > source_bounds.size.x * 0.30:
+            _fail("shoulder nacelle is oversized for a mobile character")
             return
         var mat := mesh.material_override as StandardMaterial3D
         if mat == null or not mat.emission_enabled:
