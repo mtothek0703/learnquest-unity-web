@@ -82,9 +82,14 @@ func _point(t: float, u: float, kind: int) -> Vector3:
     var depth := 0.55 + 0.13 * shoulders - 0.22 * collar
     # The collar rises behind the head but forms a lowered V at the face.
     # Rounded shoulders meet the skinned sleeves without rigid box joints.
+    # V109: actual rendered V108 frames exposed an over-tall front collar
+    # covering the lower face. Tailor a low, continuous front V-neck while
+    # retaining the high protective back and side collar. Linear taper
+    # prevents foldover/degenerate triangles at the front rim.
+    var front_neck_drop := 0.43 * pow(front, 1.6)
     var point := Vector3(
         sin(angle) * width,
-        1.11 + 1.28 * t - 0.19 * front * collar,
+        1.11 + (1.28 - front_neck_drop) * t,
         cos(angle) * depth - 0.018 * front * (1.0 - absf(sin(angle)))
     )
     if kind == 1:
@@ -125,8 +130,12 @@ func _emit(tool: SurfaceTool, t: float, u: float, kind: int) -> void:
     tool.set_bones(influence["bones"])
     tool.set_weights(influence["weights"])
     var angle := TAU * u
-    var shade := Color("#15213d").lerp(Color("#55509b"), 0.22 + 0.58 * t)
-    shade = shade.lerp(Color("#428aaf"), 0.18 * (1.0 - absf(sin(angle))))
+    var shade := Color("#15213d").lerp(Color("#596b9e"), 0.20 + 0.60 * t)
+    # V109: broader shoulder fabric highlights and a darker inset front
+    # provide readable volume instead of one flat bright-blue chest slab.
+    shade = shade.lerp(Color("#7abac9"),
+        0.24 * pow(absf(sin(angle)), 2.0) * smoothstep(0.40, 0.94, t))
+    shade = shade.lerp(Color("#263c62"), 0.23 * pow(maxf(0.0, -cos(angle)), 4.0))
     # Fabric shading across shoulder curvature, distinct from neon piping.
     shade = shade.lightened(0.10 * pow(maxf(0.0, cos(angle - 0.65)), 3.0))
     if kind != 0:

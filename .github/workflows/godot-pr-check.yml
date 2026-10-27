@@ -56,6 +56,8 @@ jobs:
           set -euo pipefail
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_legacy_head_retirement_test.gd 2>&1 | tee /tmp/head-replacement.log
           grep -Fq 'HEAD REPLACEMENT TEST PASSED' /tmp/head-replacement.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_head_collar_silhouette_test.gd 2>&1 | tee /tmp/head-collar-silhouette.log
+          grep -Fq 'HEAD/COLLAR SILHOUETTE TEST PASSED' /tmp/head-collar-silhouette.log
       - name: Validate web export before any main-branch deployment
         shell: bash
         run: |
@@ -110,4 +112,5 @@ jobs:
             /tmp/web-export.log
             /tmp/visual-capture.log
             /tmp/head-replacement.log
+            /tmp/head-collar-silhouette.log
           if-no-files-found: ignore
