@@ -76,15 +76,15 @@ func _capture() -> void:
                     baseline = shot
                 else:
                     var changed := 0
-                    for y in range(36):
-                        for x in range(64):
-                            var px := int(float(size.x - 1) * float(x) / 63.0)
-                            var py := int(float(size.y - 1) * float(y) / 35.0)
+                    for y in range(54):
+                        for x in range(96):
+                            var px := int(float(size.x - 1) * float(x) / 95.0)
+                            var py := int(float(size.y - 1) * float(y) / 53.0)
                             var a := baseline.get_pixel(px, py)
                             var b := shot.get_pixel(px, py)
                             if absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b) > 0.18:
                                 changed += 1
-                    if changed < 24:
+                    if changed < 42:
                         _fail("new 3D canyon geometry is not sufficiently visible in %s %s (%d pixels)" % [str(size), view, changed])
                         return
                 count += 1
