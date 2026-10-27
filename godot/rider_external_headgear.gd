@@ -327,28 +327,58 @@ func _fringe_ribbon_point(root: Vector3, control: Vector3, tip: Vector3,
         face_sign * thickness * (0.60 if outer else -0.40))
 
 func _tapered_hair_lock(points: Array[Vector3], radius: float, sides: int) -> ArrayMesh:
+    # Sculpted, CLOSED hair ribbons replace the nine round pipe-like rear
+    # strands that made the chase silhouette resemble a wire cage.
+    # Each lock has broad curved faces, tapered ends and real thickness;
+    # it remains a cosmetic part of the imported Head BoneAttachment3D.
     var surface := SurfaceTool.new()
     surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+    var strips := maxi(4, sides - 3)
     for segment in range(points.size() - 1):
-        for step in range(sides):
-            var angle0 := TAU * float(step) / float(sides)
-            var angle1 := TAU * float(step + 1) / float(sides)
-            var corners: Array[Vector3] = []
-            for ring in [segment, segment + 1]:
-                var t := float(ring) / float(points.size() - 1)
-                var tangent := (points[mini(ring + 1, points.size() - 1)] -
-                    points[maxi(ring - 1, 0)]).normalized()
-                var axis := Vector3.UP.cross(tangent).normalized()
-                if axis.length_squared() < 0.01:
-                    axis = Vector3.RIGHT
-                var normal := tangent.cross(axis).normalized()
-                var taper := maxf(0.08, sin(PI * (0.08 + t * 0.85)))
-                var ring_radius := radius * taper
-                corners.append(points[ring] + (axis * cos(angle0) + normal * sin(angle0)) * ring_radius)
-                corners.append(points[ring] + (axis * cos(angle1) + normal * sin(angle1)) * ring_radius)
-            _quad(surface, corners[0], corners[2], corners[3], corners[1])
+        var t0 := float(segment) / float(points.size() - 1)
+        var t1 := float(segment + 1) / float(points.size() - 1)
+        for strip in range(strips):
+            var u0 := float(strip) / float(strips)
+            var u1 := float(strip + 1) / float(strips)
+            for outer in [true, false]:
+                var a := _back_lock_point(points, radius, t0, u0, outer)
+                var b := _back_lock_point(points, radius, t1, u0, outer)
+                var c := _back_lock_point(points, radius, t1, u1, outer)
+                var d := _back_lock_point(points, radius, t0, u1, outer)
+                if outer:
+                    _quad(surface, a, b, c, d)
+                else:
+                    _quad(surface, d, c, b, a)
+        for u in [0.0, 1.0]:
+            _quad(surface,
+                _back_lock_point(points, radius, t0, u, true),
+                _back_lock_point(points, radius, t1, u, true),
+                _back_lock_point(points, radius, t1, u, false),
+                _back_lock_point(points, radius, t0, u, false))
+    for t in [0.0, 1.0]:
+        for strip in range(strips):
+            var u0 := float(strip) / float(strips)
+            var u1 := float(strip + 1) / float(strips)
+            _quad(surface,
+                _back_lock_point(points, radius, t, u0, true),
+                _back_lock_point(points, radius, t, u1, true),
+                _back_lock_point(points, radius, t, u1, false),
+                _back_lock_point(points, radius, t, u0, false))
     surface.generate_normals()
     return surface.commit()
+
+func _back_lock_point(points: Array[Vector3], radius: float, t: float,
+        u: float, outer: bool) -> Vector3:
+    var scaled := clampf(t, 0.0, 1.0) * float(points.size() - 1)
+    var index := mini(int(floor(scaled)), points.size() - 2)
+    var alpha := scaled - float(index)
+    var center := points[index].lerp(points[index + 1], alpha)
+    var taper := maxf(0.09, sin(PI * (0.09 + 0.82 * t)))
+    var broad := (u - 0.5) * radius * 2.65 * taper
+    var groove := sin(u * PI) * sin(t * PI) * radius * 0.14
+    var depth := radius * 0.30 * taper
+    return center + Vector3(broad, groove,
+        -face_sign * depth * (0.75 if outer else -0.50))
 
 func _back_hair_surface(c: Vector3, s: Vector3, crown_y: float, cap_height: float,
         radius_x: float, radius_z: float) -> ArrayMesh:

@@ -44,6 +44,36 @@ func _check() -> void:
     if back_hair == null or back_hair.mesh == null or back_hair.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() < 1000:
         _fail("chase camera must have substantial curved back-hair geometry")
         return
+    # Nine substantial closed ribbons must replace round pipe-like rear locks.
+    # Their broad faces should be much wider than their thickness at midspan.
+    var rear_locks := headwear.find_children("WindSweptBackLock*", "MeshInstance3D", false, false)
+    if rear_locks.size() != 9:
+        _fail("nine Head-attached rear sculpted locks must remain")
+        return
+    for item in rear_locks:
+        var lock := item as MeshInstance3D
+        if lock.mesh == null or lock.mesh.get_surface_count() != 1:
+            _fail("rear hair ribbon has no renderable closed mesh")
+            return
+        var arrays: Array = lock.mesh.surface_get_arrays(0)
+        var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+        var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+        if vertices.size() < 950 or normals.size() != vertices.size():
+            _fail("rear locks must have closed sculpted ribbon geometry and normals")
+            return
+    var sample_flow: Array[Vector3] = [
+        Vector3(0.0, 1.0, 0.0), Vector3(0.0, 0.5, 0.02), Vector3(0.0, 0.0, 0.05)]
+    var sample_left: Vector3 = headwear.call("_back_lock_point",
+        sample_flow, 0.20, 0.5, 0.0, true)
+    var sample_right: Vector3 = headwear.call("_back_lock_point",
+        sample_flow, 0.20, 0.5, 1.0, true)
+    var sample_inner: Vector3 = headwear.call("_back_lock_point",
+        sample_flow, 0.20, 0.5, 0.5, false)
+    var sample_outer: Vector3 = headwear.call("_back_lock_point",
+        sample_flow, 0.20, 0.5, 0.5, true)
+    if absf(sample_right.x - sample_left.x) < absf(sample_outer.z - sample_inner.z) * 3.0:
+        _fail("rear hair must form broad ribbons, not cylindrical pipes")
+        return
     # A genuine closed 3D rear volume plus six shaped face-framing locks,
     # rather than more floating rigid panels, must survive the mobile rig fit.
     var sculpted_fringe := headwear.find_children("SculptedTaperedFringe*", "MeshInstance3D", false, false)
