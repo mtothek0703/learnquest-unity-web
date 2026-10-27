@@ -167,7 +167,7 @@ func _ready() -> void:
     for index in range(BUILDING_COUNT):
         var side := -1.0 if index % 2 == 0 else 1.0
         var style := index % 3
-        var height := 15.0 + float((index * 7) % 14)
+        var height := 15.0 + float((index * 5) % 14)
         var tower := Node3D.new()
         tower.name = "Architectural district tower %02d" % index
         tower.position = Vector3(side * (14.3 + float(index % 3) * 1.4), 0.0, -16.0 - float(index) * SPACING)
