@@ -13,6 +13,7 @@ const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
 const HARBOR_BONUS_TARGET := 4
+const HARBOR_RELAY_TARGET := 3
 const GLACIER_BONUS_TARGET := 3
 const CANYON_ROUTE_TARGET := 3
 const SHIELD_COST := 30
@@ -534,6 +535,21 @@ func _update_canyon_routes() -> void:
     feedback_time = 1.6
     _refresh_hud()
 
+func _update_harbor_cargo_relay() -> void:
+    if world_choice != 2 or phase != "race" or not started or quiz_active:
+        return
+    var delivery: Dictionary = harbor_zone.call("check_cargo_delivery", rider.position.x)
+    if delivery.is_empty():
+        return
+    if bool(delivery.get("delivered", false)):
+        xp += int(delivery.get("xp", 0))
+        power = mini(100, power + int(delivery.get("energy", 0)))
+        info_label.text = "HAFEN-FRACHT GELIEFERT! +30 XP, +12 ENERGIE"
+    else:
+        info_label.text = "FRACHTTOR VERPASST! NAECHSTEN DOCK ANFLIEGEN"
+    feedback_time = 1.6
+    _refresh_hud()
+
 func _update_glacier_mission() -> void:
     if world_choice != 3 or phase != "race" or not started:
         return
@@ -655,6 +671,7 @@ func _reset_run() -> void:
     mega_jump_active = false
     guardian_hp = GUARDIAN_HEALTH
     harbor_crystals = 0
+    harbor_zone.call("reset_cargo_relay")
     glacier_zone.call("reset_course")
     canyon_zone.call("reset_routes")
     guardian_active = false
@@ -870,7 +887,7 @@ func _finish_run() -> void:
     if completed:
         rounds_finished += 1
         round_number += 1
-        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 1 and guardian_defeated else 0) + (1 if world_choice == 1 and int(canyon_zone.get("completed_routes")) >= CANYON_ROUTE_TARGET else 0) + (1 if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET else 0) + (1 if world_choice == 2 and orbit_defeated else 0) + (1 if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET else 0) + (1 if world_choice == 3 and frost_defeated else 0)
+        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 1 and guardian_defeated else 0) + (1 if world_choice == 1 and int(canyon_zone.get("completed_routes")) >= CANYON_ROUTE_TARGET else 0) + (1 if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET else 0) + (1 if world_choice == 2 and orbit_defeated else 0) + (1 if world_choice == 2 and int(harbor_zone.call("get_cargo_deliveries")) >= HARBOR_RELAY_TARGET else 0) + (1 if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET else 0) + (1 if world_choice == 3 and frost_defeated else 0)
         total_stars += stars_earned
         total_reward_xp += xp
         reward_label.text = "+%d STERNE  |  +%d XP\nGESAMT: %d STERNE" % [stars_earned, xp, total_stars]
@@ -882,6 +899,8 @@ func _finish_run() -> void:
             reward_label.text += "\nHAFEN-MISSION ERFÜLLT: +1 BONUSSTERN!"
         if world_choice == 2 and orbit_defeated:
             reward_label.text += "\nORBIT-WÄCHTER BESIEGT: +1 BONUSSTERN!"
+        if world_choice == 2 and int(harbor_zone.call("get_cargo_deliveries")) >= HARBOR_RELAY_TARGET:
+            reward_label.text += "\nHAFEN-FRACHTRELAIS: +1 BONUSSTERN!"
         if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET:
             reward_label.text += "\nAURORA-SPRUNG-MISSION: +1 BONUSSTERN!"
         if world_choice == 3 and frost_defeated:
@@ -1342,6 +1361,7 @@ func _refresh_hud() -> void:
                 hud.text += "\nKRISTALL-WÄCHTER %d/%d  %s" % [guardian_hp, GUARDIAN_HEALTH, "LASER!" if guardian_warning_left > 0.0 else "ANGRIFF LADEN"]
             if world_choice == 2:
                 hud.text += "\nHAFEN-MISSION: %d/%d ENERGIEKRISTALLE" % [mini(harbor_crystals, HARBOR_BONUS_TARGET), HARBOR_BONUS_TARGET]
+                hud.text += "\nFRACHT-RELAIS %d/%d  LEUCHTENDES DOCK ANSTEUERN" % [mini(int(harbor_zone.call("get_cargo_deliveries")), HARBOR_RELAY_TARGET), HARBOR_RELAY_TARGET]
                 if orbit_active:
                     hud.text += "\nORBIT-WÄCHTER %d/%d  %s" % [orbit_hp, ORBIT_HEALTH, "PLASMA!" if orbit_warning_left > 0.0 else "ATTACKE LADEN"]
             if world_choice == 3:
@@ -1449,6 +1469,7 @@ func _process(delta: float) -> void:
     rider.rotation.y = sin(distance * 0.03) * 0.035
     _update_run_items(delta)
     _update_canyon_routes()
+    _update_harbor_cargo_relay()
     _update_glacier_mission()
     _update_camera(delta)
     if not started:
