@@ -71,6 +71,36 @@ func _check() -> void:
         if low_count < 50:
             _fail("missing broad trailing hem geometry")
             return
+    # The sculpted shoulder bridge is also a true weighted source-body
+    # surface, not a rigid armor primitive hovering over the torso.
+    var yoke := mantle.get("shoulder_yoke") as MeshInstance3D
+    if yoke == null or yoke.mesh == null or yoke.skin != source.skin:
+        _fail("weighted shoulder yoke missing original imported Skin")
+        return
+    if yoke.skeleton != source.skeleton or yoke.get_parent() != source.get_parent():
+        _fail("shoulder yoke must follow the same original Skeleton3D")
+        return
+    var yoke_arrays: Array = yoke.mesh.surface_get_arrays(0)
+    var yoke_points: PackedVector3Array = yoke_arrays[Mesh.ARRAY_VERTEX]
+    var yoke_weights: PackedFloat32Array = yoke_arrays[Mesh.ARRAY_WEIGHTS]
+    var yoke_bones: PackedInt32Array = yoke_arrays[Mesh.ARRAY_BONES]
+    if yoke_points.size() < 120 or yoke_weights.size() != yoke_points.size() * 4 or yoke_bones.size() != yoke_points.size() * 4:
+        _fail("shoulder bridge must contain substantial four-weight sculpted geometry")
+        return
+    for i in range(yoke_points.size()):
+        var total := 0.0
+        for j in range(4):
+            var index := yoke_bones[i * 4 + j]
+            if index < 0 or index >= source.skin.get_bind_count():
+                _fail("shoulder yoke contains invalid source Skin index")
+                return
+            total += yoke_weights[i * 4 + j]
+        if absf(total - 1.0) > 0.04:
+            _fail("shoulder yoke has unnormalized source weights")
+            return
+    if not (yoke.material_override is ShaderMaterial) or yoke.get_child_count() > 0:
+        _fail("shoulder bridge must remain a PBR cosmetic surface only")
+        return
     if active_leg_binds < 100:
         _fail("trailing mantle must actually deform with leg bones")
         return
@@ -92,5 +122,5 @@ func _check() -> void:
     if rider.get_node_or_null("LegacyRider") == null:
         _fail("legacy fallback and existing hoverboard must remain")
         return
-    print("EXTERNAL SKINNED MANTLE TEST PASSED: %d genuine weighted textile vertices on two 65-bone flight panels" % int(mantle.get("generated_vertices")))
+    print("EXTERNAL SKINNED MANTLE TEST PASSED: %d genuine weighted textile vertices on two 65-bone flight panels plus weighted shoulder yoke" % int(mantle.get("generated_vertices")))
     quit(0)
