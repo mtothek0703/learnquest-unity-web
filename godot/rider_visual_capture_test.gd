@@ -41,6 +41,11 @@ func _apply_pose(rider: Node3D, pose: String) -> void:
     var head := model.get_node_or_null("AnimatedHeadKinematics") as Node3D
     if head != null:
         head.call("_process", 0.35)
+    # Settle V112 folding/deployment before capturing each deterministic pose.
+    # Four rendered frames alone are too short to show the full boost sails.
+    var sails := model.get_node_or_null("AnimatedKineticSails") as Node3D
+    if sails != null:
+        sails.call("_process", 0.60)
 
 func _has_visible_subject(image: Image) -> bool:
     if image == null or image.is_empty():
