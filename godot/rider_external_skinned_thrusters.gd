@@ -1,5 +1,5 @@
 extends Node
-## V124 visual-readability pass: broad, genuinely GPU-skinned shoulder thrusters.
+## V124 visual-readability pass: compact, body-connected GPU-skinned shoulder thrusters.
 ## All surfaces share the imported CC0 Skin and Skeleton3D. No collision shapes,
 ## touch changes, gameplay rewards, physics, external assets or historic edits.
 var nacelles: Array[MeshInstance3D] = []
@@ -40,7 +40,7 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: f
             cores.append(_attach(body, core, label + "SkinnedThrusterCore", true))
             generated_vertices += shell.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
             generated_vertices += core.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
-        shoulder_span = bounds.size.x * 1.32
+        shoulder_span = bounds.size.x * 0.76
         return nacelles.size() == 2 and cores.size() == 2
     return false
 
@@ -95,14 +95,14 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, side: float,
         spine: int, pelvis: int, arm: int, core: bool, t: float, angle: float) -> void:
     var width := bounds.size.x
     var height := bounds.size.y
-    var shoulder_x := bounds.get_center().x + side * width * 0.48
-    var upper_y := bounds.position.y + height * 0.745
+    var shoulder_x := bounds.get_center().x + side * width * 0.26
+    var upper_y := bounds.position.y + height * 0.72
     var taper := 0.73 + 0.27 * sin(PI * t)
-    var radius_x := width * (0.135 if core else 0.185) * taper
-    var radius_z := width * (0.105 if core else 0.150) * taper
-    var y := upper_y - height * (0.205 if core else 0.245) * t
+    var radius_x := width * (0.095 if core else 0.12) * taper
+    var radius_z := width * (0.065 if core else 0.085) * taper
+    var y := upper_y - height * (0.135 if core else 0.165) * t
     var x := shoulder_x + cos(angle) * radius_x
-    var z := back + rear_sign * (width * (0.22 if core else 0.16) +
+    var z := back + rear_sign * (width * (0.065 if core else 0.035) +
         sin(angle) * radius_z + height * 0.042 * t)
     # The shoulder joint controls the outside of the nacelle, while the
     # spine/pelvis stabilise its inside and base. Four source-Skin slots,
@@ -126,10 +126,10 @@ func _attach(body: MeshInstance3D, mesh: ArrayMesh, label: String, core: bool) -
     material.cull_mode = BaseMaterial3D.CULL_DISABLED
     material.metallic = 0.38 if core else 0.24
     material.roughness = 0.28 if core else 0.44
-    material.albedo_color = Color(0.12, 0.88, 1.0) if core else Color(0.67, 0.27, 0.93)
+    material.albedo_color = Color(0.10, 0.80, 0.96) if core else Color(0.29, 0.14, 0.62)
     material.emission_enabled = true
-    material.emission = Color(0.08, 0.74, 1.0) if core else Color(0.33, 0.08, 0.49)
-    material.emission_energy_multiplier = 2.2 if core else 0.75
+    material.emission = Color(0.05, 0.63, 0.92) if core else Color(0.13, 0.035, 0.24)
+    material.emission_energy_multiplier = 1.8 if core else 0.55
     instance.material_override = material
     body.get_parent().add_child(instance)
     return instance
