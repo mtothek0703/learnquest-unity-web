@@ -40,7 +40,9 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: f
             cores.append(_attach(body, core, label + "SkinnedThrusterCore", true))
             generated_vertices += shell.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
             generated_vertices += core.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
-        shoulder_span = bounds.size.x * 0.76
+        var left_bounds: AABB = nacelles[0].mesh.get_aabb()
+        var right_bounds: AABB = nacelles[1].mesh.get_aabb()
+        shoulder_span = maxf(left_bounds.end.x, right_bounds.end.x) - minf(left_bounds.position.x, right_bounds.position.x)
         return nacelles.size() == 2 and cores.size() == 2
     return false
 
