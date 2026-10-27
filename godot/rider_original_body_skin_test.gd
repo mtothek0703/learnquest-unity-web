@@ -30,6 +30,18 @@ func _check() -> void:
         if skeleton.find_bone(name) < 0:
             _fail("missing real original-body bone: " + name)
             return
+    # Geometry-only tests previously missed a critical runtime bug:
+    # inverse bind poses shifted the entire skinned character below the
+    # board because all bone pose translations remained at the origin.
+    for bone_id in [0, 2, 4, 6, 10, 12]:
+        var rest_origin := skeleton.get_bone_global_rest(bone_id).origin
+        var pose_origin := skeleton.get_bone_global_pose(bone_id).origin
+        if pose_origin.distance_to(rest_origin) > 0.22:
+            _fail("bone %d must retain its authored rest translation during GPU skinning" % bone_id)
+            return
+    if skeleton.get_bone_global_pose(4).origin.y < 2.40:
+        _fail("the real skinned head must not be shifted beneath the hoverboard")
+        return
     var skinned: Array = rig.get("skinned_meshes")
     if skinned.is_empty():
         _fail("original imported mesh was not skinned")
