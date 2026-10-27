@@ -71,3 +71,47 @@ Automatisch prüft `rider_closed_head_test.gd` 360°-Volumen, Augenhöhlen-/Nase
 2. Links-/Rechtskurven, Turbo, Mega Jump, Landung und Idle je mindestens 10 Sekunden filmen. Schulter/Brust-Übergänge, Ellbogen, Gauntlet-Ansatz und Leuchtnaht auf Z-Fighting, Mesh-Clipping und Versatz prüfen. Der alte starre Oberarm/Schulterpanzer darf nicht sichtbar sein; Finger, Handschuhe und Ellbogengelenke müssen weiterhin animieren.
 3. Touch-Zonen, HUD-Freiraum, vollständige drei Vokabelaufgaben, ununterbrochene Levelrunde, vier Welten, Bosse und Power-ups kontrollieren. Auf echtem iPhone im Querformat 60 Sekunden FPS/Framezeiten erfassen und V106 bei identischer Szene vergleichen.
 4. Automatisierte `rider_skinned_armwear_test.gd`-Checks prüfen 13-Bone-Skinning, Volumen, Falten-/Bündchengeometrie, Deformation und ausgeblendete Überlagerungen, **nicht** gerenderte Pixel, realen FPS oder Clipping-Freiheit. Diese Abnahme bleibt offen.
+
+
+## V108 — echte gerenderte QA-Bilder statt nur Geometrie-Assertions
+
+Die Godot-CI erzeugt jetzt mit **OpenGL/Mesa unter Xvfb** 20 echte PNGs (18 Standardansichten und 2 Diagnoseansichten):
+1280×720 (16:9) und 1170×540 (19,5:9), jeweils Front, Profil und
+Verfolgerperspektive sowie Idle, Lenkung+Turbo und Sprung. Das Skript
+`godot/rider_visual_capture_test.gd` prüft die Bildabmessungen und verwirft
+leere oder nahezu einfarbige Bilder. Die zwei zusätzlichen Nahaufnahmen isolieren Helm und skinnierte Gesichtsfläche. Die Frames werden in GitHub Actions als
+`learnquest-landscape-character-frames` (PR) bzw.
+`learnquest-v108-landscape-character-frames` (Release) archiviert.
+
+**Bildabnahme bleibt eine menschliche Aufgabe:** Die PNGs der gleichen
+Perspektive/Posen aus zwei Versionen nebeneinander öffnen und konkret Kopf-/
+Helm-/Haar-Clipping, Kragen, Achseln, Ellbogen, Gauntlets, Rücken und
+Hoverboard-Komposition prüfen. Ein nichtleeres PNG beweist weder, dass die
+Geometrie schön oder clippingfrei ist, noch die FPS auf einem iPhone.
+
+Lokal (Linux mit Xvfb und Godot 4.4.1, im Repository-Hauptverzeichnis):
+
+```bash
+mkdir -p /tmp/learnquest-visual-qa
+LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_VISUAL_OUTPUT=/tmp/learnquest-visual-qa \
+  xvfb-run -a -s '-screen 0 1600x900x24' \
+  godot --path godot --rendering-driver opengl3 \
+  --script res://rider_visual_capture_test.gd
+```
+
+**Nicht** `--headless` für diese Pixelprüfung verwenden: der Dummy-Renderer
+kann keine verlässlichen Bilder liefern. Die echten iPhone-/Android-Tests,
+60-Sekunden-FPS-Messungen und Browser-Touchprüfungen bleiben separat offen.
+
+**Tatsächlicher V107/V108-Bildbefund:** Die erste gerenderte QA-Serie zeigte,
+dass die bisherige neue skinnierte Gesichtsfläche **überhaupt nicht sichtbar**
+war. In der isolierten Nahaufnahme erschienen zunächst nur Augen und Lächeln.
+Ursache: Die 13 Skeleton3D-Bone-Pose-Translationen waren beim Erzeugen null,
+während die Skin-Bind-Matrizen reale Restpositionen (Kopf ca. Y=2,67) erwarteten.
+Die GPU verschob die Meshes dadurch nach unten. V108 initialisiert nun alle
+Pose-Translationen aus den authored Rest-Offsets; Kopf-/Kostüm-Follower
+verwenden dieselben Bind-Referenzpositionen. Zusätzlich werden drei
+überdeckende ursprüngliche glTF-Kopfoberflächen **erst nach** erfolgreicher
+neuer Kopf-Skinbindung entfernt. Die neue Serie zeigt eine tatsächlich
+sichtbare organische Kopfoberfläche, skinnierte Jacke und Arme.
+Die Bildserie ist ein **Desktop-Mesa-Rendervergleich**, kein iPhone-Test.

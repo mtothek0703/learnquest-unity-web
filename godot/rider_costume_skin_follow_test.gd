@@ -49,7 +49,7 @@ func _check() -> void:
     follower.call("_process", 0.35)
     var posed_head := skeleton.get_bone_global_pose(4)
     var head_basis := posed_head.basis.orthonormalized()
-    var shift := posed_head.origin - skeleton.get_bone_global_rest(4).origin
+    var shift := posed_head.origin - skeleton.create_skin_from_rest_transforms().get_bind_pose(4).affine_inverse().origin
     var anchor := Vector3(0.0, 2.42, 0.01) + shift
     if head_pivot.basis.get_rotation_quaternion().angle_to(head_basis.get_rotation_quaternion()) > 0.002:
         _fail("helmet does not follow the skinned Head bone")

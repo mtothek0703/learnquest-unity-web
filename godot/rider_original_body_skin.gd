@@ -10,6 +10,7 @@ const BONE_NAMES := [
 ]
 var skeleton: Skeleton3D
 var skinned_meshes: Array[MeshInstance3D] = []
+var retired_head_surfaces: int = 0
 var clock: float = 0.0
 # V101: phase-aware body motion; visual-only, no gameplay state changes.
 var previous_height: float = 0.0
@@ -61,6 +62,60 @@ func bind_original(model: Node3D) -> void:
         source.skeleton = source.get_path_to(skeleton)
         skinned_meshes.append(source)
 
+# V108: the glTF still contains a rigid-looking original head, dark helmet cap
+# and bright face strip. Those THREE surfaces occlude the newer 360-degree
+# skinned head even though its skinning tests pass. Retire only these surfaces
+# AFTER the replacement head has been created successfully. Keep every other
+# original glTF body surface and its real 13-bone GPU skin.
+func retire_legacy_head_surfaces() -> void:
+    if skeleton == null or skeleton.get_bone_count() != 13:
+        return
+    if retired_head_surfaces > 0:
+        return
+    for source in skinned_meshes:
+        var old := source.mesh as ArrayMesh
+        if old == null:
+            continue
+        var kept := ArrayMesh.new()
+        var removed := 0
+        for surface_index in range(old.get_surface_count()):
+            var arrays: Array = old.surface_get_arrays(surface_index)
+            if _is_original_head_surface(arrays):
+                removed += 1
+                continue
+            kept.add_surface_from_arrays(old.surface_get_primitive_type(surface_index), arrays)
+            kept.surface_set_material(kept.get_surface_count() - 1,
+                old.surface_get_material(surface_index))
+        # Never erase a standalone body mesh or leave an empty render object.
+        if removed > 0 and kept.get_surface_count() > 0:
+            source.mesh = kept
+            retired_head_surfaces += removed
+
+func _is_original_head_surface(arrays: Array) -> bool:
+    var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+    var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+    if vertices.is_empty():
+        return false
+    var lowest := INF
+    var highest := -INF
+    # glTF primitives may share a POSITION accessor with the entire body.
+    # Only referenced vertices count; scanning the whole array would
+    # incorrectly classify every primitive as a head surface.
+    if indices.is_empty():
+        for point in vertices:
+            lowest = minf(lowest, point.y)
+            highest = maxf(highest, point.y)
+    else:
+        for index in indices:
+            if index < 0 or index >= vertices.size():
+                return false
+            lowest = minf(lowest, vertices[index].y)
+            highest = maxf(highest, vertices[index].y)
+    # Current bundled CC0/procedural glTF: Skin head (1.90–2.92),
+    # Navy crown (2.42–3.00), Cyan visor strip (2.24–2.66).
+    # Torso, arms, pants and boots all end at y <= 2.17.
+    return lowest > 1.85 and highest > 2.55
+
 func _make_skeleton() -> void:
     skeleton = Skeleton3D.new()
     skeleton.name = "OriginalBodySkeleton13"
@@ -88,6 +143,13 @@ func _make_skeleton() -> void:
         if parents[i] >= 0:
             skeleton.set_bone_parent(i, parents[i])
         skeleton.set_bone_rest(i, Transform3D(Basis.IDENTITY, offsets[i]))
+        # Critical V108 visual fix: a new Skeleton3D starts with IDENTITY
+        # pose translations, NOT its authored bone-rest translations.
+        # Without this, global poses stay at (0,0,0), inverse bind matrices
+        # shift the GPU-skinned head/jacket/hair below the board, and only
+        # the old rigid decorative face remains visible. Initialize each
+        # local pose to the same rest offset before animating rotations.
+        skeleton.set_bone_pose_position(i, offsets[i])
 
 func _influences(p: Vector3) -> Dictionary:
     # Four weights for every vertex. Smooth transitions at waist, shoulder,

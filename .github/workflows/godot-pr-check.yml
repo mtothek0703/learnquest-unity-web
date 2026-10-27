@@ -50,6 +50,12 @@ jobs:
           grep -Fq 'SKINNED JACKET TEST PASSED' /tmp/skinned-upper-jacket.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_skinned_armwear_test.gd 2>&1 | tee /tmp/skinned-armwear.log
           grep -Fq 'SKINNED ARMWEAR TEST PASSED' /tmp/skinned-armwear.log
+      - name: Verify the new skinned head is actually visible over original glTF
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_legacy_head_retirement_test.gd 2>&1 | tee /tmp/head-replacement.log
+          grep -Fq 'HEAD REPLACEMENT TEST PASSED' /tmp/head-replacement.log
       - name: Validate web export before any main-branch deployment
         shell: bash
         run: |
@@ -61,6 +67,28 @@ jobs:
           mkdir -p /tmp/learnquest-web
           /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --export-release Web /tmp/learnquest-web/index.html 2>&1 | tee /tmp/web-export.log
           for name in index.html index.js index.wasm index.pck; do test -s "/tmp/learnquest-web/$name"; done
+      - name: Render actual character QA images in two smartphone landscape ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v xvfb-run >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq xvfb libgl1-mesa-dri
+          fi
+          mkdir -p /tmp/learnquest-visual-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_VISUAL_OUTPUT=/tmp/learnquest-visual-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_visual_capture_test.gd 2>&1 | tee /tmp/visual-capture.log
+          grep -Fq 'VISUAL CAPTURE TEST PASSED' /tmp/visual-capture.log
+          test "$(find /tmp/learnquest-visual-qa -name '*.png' | wc -l)" -eq 20
+      - name: Upload rendered visual QA frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-landscape-character-frames
+          path: /tmp/learnquest-visual-qa/*.png
+          if-no-files-found: ignore
       - name: Save test logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -80,4 +108,6 @@ jobs:
             /tmp/skinned-upper-jacket.log
             /tmp/skinned-armwear.log
             /tmp/web-export.log
+            /tmp/visual-capture.log
+            /tmp/head-replacement.log
           if-no-files-found: ignore
