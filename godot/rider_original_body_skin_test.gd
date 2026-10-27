@@ -93,8 +93,12 @@ func _check() -> void:
                     return
                 if nonzero >= 2:
                     multi_bone += 1
-    if vertex_count < 2000 or weighted_arms < 30 or weighted_legs < 30 or multi_bone < 100:
-        _fail("original torso, arms, legs and smooth multi-bone transitions must be truly skinned")
+    # V115 retires exactly two original glTF hand primitives only AFTER
+    # real skinned replacement gloves exist. Count the remaining torso,
+    # upper arms, legs and boots rather than requiring obsolete hand vertices.
+    if vertex_count < 1500 or weighted_arms < 30 or weighted_legs < 30 or multi_bone < 100:
+        _fail("original torso/arms/legs must remain skinned: vertices=%d arms=%d legs=%d multi=%d" % [
+            vertex_count, weighted_arms, weighted_legs, multi_bone])
         return
     # V108: the original glTF head was opaque and hid the newer skinned face.
     # The torso/limbs remain original; the 360-degree head is a real replacement
