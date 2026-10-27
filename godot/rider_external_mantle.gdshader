@@ -15,10 +15,10 @@ void fragment() {
     float hem = smoothstep(0.94, 0.995, cloth_uv.y);
     float ribs = pow(0.5 + 0.5 * cos(cloth_uv.x * 25.1327), 4.0);
     float fold = 0.5 + 0.5 * sin(cloth_uv.x * 16.0 + cloth_uv.y * 5.0);
-    vec3 midnight = vec3(0.035, 0.055, 0.15);
-    vec3 violet = vec3(0.18, 0.10, 0.38);
-    vec3 cloth = mix(midnight, violet, 0.28 + 0.52 * fold);
-    cloth += vec3(0.055, 0.065, 0.12) * ribs * 0.22;
+    vec3 midnight = vec3(0.075, 0.10, 0.25);
+    vec3 violet = vec3(0.38, 0.21, 0.65);
+    vec3 cloth = mix(midnight, violet, 0.38 + 0.53 * fold);
+    cloth += vec3(0.09, 0.11, 0.19) * ribs * 0.24;
     ALBEDO = cloth;
     METALLIC = 0.13;
     ROUGHNESS = 0.63;
