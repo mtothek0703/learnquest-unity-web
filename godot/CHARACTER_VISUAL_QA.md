@@ -115,3 +115,11 @@ verwenden dieselben Bind-Referenzpositionen. Zusätzlich werden drei
 neuer Kopf-Skinbindung entfernt. Die neue Serie zeigt eine tatsächlich
 sichtbare organische Kopfoberfläche, skinnierte Jacke und Arme.
 Die Bildserie ist ein **Desktop-Mesa-Rendervergleich**, kein iPhone-Test.
+
+
+## V109 — gerenderter Schädel-/Kragenvergleich
+
+1. Das V108-Actions-Artefakt `learnquest-v108-landscape-character-frames` enthält 20 echte Mesa-PNGs. Vergleiche V109 mit V108 bei identischen 1280×720- und 1170×540-Kameras, Front/Profil/Verfolger, Idle/Steer+Boost/Jump.
+2. Sichtbefund V108: In `diagnostic_front_face_only.png` läuft die Kopfkontur spitz zu; die normale Frontansicht zeigt einen zu hohen, dominierenden Brust-/Kragenabschluss. V109 soll eine rundere Schädelkontur und einen freien unteren Gesichts-/Halsbereich zeigen, ohne die hintere Kragenkontur zu verlieren.
+3. Besonders auf Haaransatz, Helm, Kinn, Nacken, Ärmel-/Handschuhübergänge und Z-Fighting achten. Technische `rider_head_collar_silhouette_test.gd`-Assertions allein beweisen keine visuelle Clipping-Freiheit.
+4. Echte iPhone-FPS, 60-Sekunden-Frametimes und Touchsteuerung im Querformat bleiben eine separate manuelle Prüfung. Keine Geräteabnahme aus Desktop-Mesa-Frames ableiten.

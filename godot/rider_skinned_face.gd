@@ -49,7 +49,11 @@ func _point(t: float, u: float) -> Vector3:
     # Rounded head, back, temples, chin and neck in ONE deforming surface.
     var y := lerpf(1.98, 3.08, t)
     var angle := TAU * u
-    var profile := pow(maxf(0.0, sin(t * PI)), 0.55)
+    # V109: superelliptic cranial dome keeps volume above the temples.
+    # The old sin(t*PI)^0.55 profile collapsed into a pointed egg-shaped
+    # crown in actual V108 16:9 renders. This remains one closed GPU skin.
+    var dome_height := (y - 2.53) / 0.55
+    var profile := sqrt(maxf(0.0, 1.0 - pow(absf(dome_height), 4.0)))
     var neck := 1.0 - smoothstep(0.0, 0.14, t)
     var width := 0.47 * profile + 0.20 * neck
     var depth := 0.46 * profile + 0.17 * neck
