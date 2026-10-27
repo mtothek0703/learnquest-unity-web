@@ -93,6 +93,12 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     character.add_child(lower)
     if not bool(lower.call("install", skinned_meshes)):
         push_warning("CC0 weighted lower garments unavailable; original legs remain")
+    # Real sculpted sleeve triangles preserve imported four-weight elbow bends.
+    var sleeves := preload("res://rider_external_skinned_sleeves.gd").new() as Node
+    sleeves.name = "ExternalSkinnedFlightSleeves"
+    character.add_child(sleeves)
+    if not bool(sleeves.call("install", skinned_meshes, skeleton)):
+        push_warning("CC0 weighted sleeves unavailable; original arms remain")
     # Broad split flight-mantle panels inherit four real bone weights each,
     # adding a readable chase silhouette without rigid props or collisions.
     var mantle := preload("res://rider_external_skinned_mantle.gd").new() as Node

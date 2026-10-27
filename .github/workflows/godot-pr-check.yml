@@ -40,6 +40,8 @@ jobs:
           grep -Fq 'EXTERNAL HEADGEAR TEST PASSED' /tmp/quaternius-headgear.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_outfit_test.gd 2>&1 | tee /tmp/quaternius-outfit.log
           grep -Fq 'EXTERNAL SKINNED OUTFIT TEST PASSED' /tmp/quaternius-outfit.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_sleeves_test.gd 2>&1 | tee /tmp/quaternius-sleeves.log
+          grep -Fq 'EXTERNAL SKINNED SLEEVES TEST PASSED' /tmp/quaternius-sleeves.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_lower_test.gd 2>&1 | tee /tmp/quaternius-lower.log
           grep -Fq 'EXTERNAL SKINNED LOWER TEST PASSED' /tmp/quaternius-lower.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_mantle_test.gd 2>&1 | tee /tmp/quaternius-mantle.log
