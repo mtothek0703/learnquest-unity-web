@@ -159,6 +159,11 @@ func set_character_model(model: Node3D) -> void:
     var upper_jacket := preload("res://rider_skinned_upper_jacket.gd").new() as Node3D
     upper_jacket.name = "UnifiedSkinnedUpperJacket"
     model.add_child(upper_jacket)
+    # V107: a continuous pair of tailored, elbow-deforming sleeves and cuffs
+    # follows the same original skeleton; retire overlapping rigid arm shells.
+    var armwear := preload("res://rider_skinned_armwear.gd").new() as Node3D
+    armwear.name = "OrganicSkinnedArmwear"
+    model.add_child(armwear)
     # V94: a real five-bone Skeleton3D moves shaded exosuit armor and
     # shoulder aero-blades, without skinning or replacing the imported hero.
     var exosuit := preload("res://rider_skeletal_exosuit.gd").new() as Node3D
