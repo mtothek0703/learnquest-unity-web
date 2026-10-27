@@ -84,8 +84,10 @@ func _check() -> void:
             _fail("glove palm cross-section is not rounded 3D geometry")
             return
         var sleeve_center := Vector3(side * 0.73, 1.33, -0.06)
-        var glove_center := Vector3(side * 0.71, 1.34, -0.06)
-        if sleeve_center.distance_to(glove_center) > 0.09:
+        var glove_a: Vector3 = gloves.call("_point", side, 0.34, 0.0)
+        var glove_b: Vector3 = gloves.call("_point", side, 0.34, 0.5)
+        var glove_center := (glove_a + glove_b) * 0.5
+        if sleeve_center.distance_to(glove_center) > 0.12:
             _fail("skinned palm does not bridge the cuff")
             return
         var arm := model.get_node_or_null("BalanceArm%d" % index) as Node3D
@@ -94,11 +96,17 @@ func _check() -> void:
             _fail("existing animated wrist display missing")
             return
         for finger in range(4):
-            if gauntlet.get_node_or_null("ArticulatedFinger%d" % finger) == null:
-                _fail("existing articulated fingers must remain")
+            var finger_pivot := gauntlet.get_node_or_null("ArticulatedFinger%d" % finger) as Node3D
+            if finger_pivot == null or finger_pivot.position.z > -0.20:
+                _fail("animated fingers must remain and project in front of the glove")
                 return
-        if gauntlet.get_node_or_null("SculptedThumb") == null:
-            _fail("original thumb must remain")
+        var thumb := gauntlet.get_node_or_null("SculptedThumb") as MeshInstance3D
+        if thumb == null or thumb.position.z > -0.20:
+            _fail("original thumb must remain in front of the glove")
+            return
+        var fingertip: Vector3 = gloves.call("_point", side, 1.0, 0.25)
+        if fingertip.y > 1.12 or fingertip.z > -0.15:
+            _fail("glove ends above the fingers or hides behind the original hand")
             return
         for name in ["SculptedForearmShell", "LuminousGauntletSeams", "LayeredKnuckleGuard"]:
             var old := gauntlet.get_node_or_null(name) as MeshInstance3D
