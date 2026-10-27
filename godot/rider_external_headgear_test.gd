@@ -57,6 +57,17 @@ func _check() -> void:
         _fail("cosmetic headwear must never alter gameplay collisions")
         return
     var head_id := rig.find_bone("Head")
+    # Regression for the real glTF failure mode: named Skin binds have
+    # get_bind_bone() == -1, but must still resolve to imported Head.
+    var named_skin := Skin.new()
+    named_skin.add_named_bind("Head", Transform3D.IDENTITY)
+    named_skin.add_named_bind("pelvis", Transform3D.IDENTITY)
+    if not bool(headwear.call("_bind_targets_head", named_skin, 0, head_id, rig)):
+        _fail("named glTF Head bind was not resolved to the original skeleton")
+        return
+    if bool(headwear.call("_bind_targets_head", named_skin, 1, head_id, rig)):
+        _fail("non-head named bind incorrectly selected as Head")
+        return
     var initial := rig.get_bone_pose_rotation(head_id)
     rider.set("lean", 0.85)
     rider.set("boosting", true)
