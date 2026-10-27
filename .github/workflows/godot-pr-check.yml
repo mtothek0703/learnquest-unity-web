@@ -152,6 +152,24 @@ jobs:
             --script res://cinematic_canyon_geodes_visual_capture_test.gd 2>&1 | tee /tmp/canyon-geodes-visual.log
           grep -Fq 'CANYON GEODES VISUAL QA PASSED' /tmp/canyon-geodes-visual.log
           test "$(find /tmp/learnquest-canyon-qa -name '*.png' | wc -l)" -eq 8
+      - name: Render V121 playable route portals in both smartphone landscape ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-routes-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_ROUTES_OUTPUT=/tmp/learnquest-routes-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://canyon_route_choices_visual_capture_test.gd 2>&1 | tee /tmp/canyon-routes-visual.log
+          grep -Fq 'CANYON ROUTES VISUAL QA PASSED' /tmp/canyon-routes-visual.log
+          test "$(find /tmp/learnquest-routes-qa -name '*.png' | wc -l)" -eq 8
+      - name: Upload V121 playable route comparison frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v121-canyon-routes-before-after
+          path: /tmp/learnquest-routes-qa/*.png
+          if-no-files-found: error
       - name: Upload V120 Canyon geode comparison frames
         if: always()
         uses: actions/upload-artifact@v4
@@ -221,6 +239,7 @@ jobs:
             /tmp/city-lightfields-visual.log
             /tmp/canyon-geodes.log
             /tmp/canyon-routes.log
+            /tmp/canyon-routes-visual.log
             /tmp/canyon-geodes-visual.log
             /tmp/aero-silhouette.log
           if-no-files-found: ignore
