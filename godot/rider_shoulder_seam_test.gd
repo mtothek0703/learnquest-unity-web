@@ -46,8 +46,15 @@ func _check() -> void:
         var max_z := -INF
         var inner_x := INF
         var outer_x := -INF
+        # The uppermost ring closes to a small cap, rather than exposing
+        # a giant hollow cylinder (caught in the first real V111 PNGs).
+        var tip_a: Vector3 = garment.call("_point", 0.0, 0.0, side, 0)
+        var tip_b: Vector3 = garment.call("_point", 0.0, 0.5, side, 0)
+        if tip_a.distance_to(tip_b) > 0.06:
+            _fail("shoulder tip is an open cup rather than a rounded cap")
+            return
         for step in range(24):
-            var p: Vector3 = garment.call("_point", 0.0, float(step) / 24.0, side, 0)
+            var p: Vector3 = garment.call("_point", 0.17, float(step) / 24.0, side, 0)
             min_y = minf(min_y, p.y)
             max_y = maxf(max_y, p.y)
             min_z = minf(min_z, p.z)
