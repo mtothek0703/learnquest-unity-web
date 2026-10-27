@@ -5,6 +5,8 @@ extends Node
 var panels: Array[MeshInstance3D] = []
 var generated_vertices: int = 0
 var mantle_span: float = 0.0
+var shoulder_yoke: MeshInstance3D
+var yoke_vertices: int = 0
 
 func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: float) -> bool:
     if rig == null:
@@ -46,6 +48,28 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: f
             body.get_parent().add_child(instance)
             created.append(instance)
             generated_vertices += mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
+        # The same four-weight body triangles form a curved shoulder yoke,
+        # visibly bridging the narrow imported torso and the flowing mantle.
+        var yoke_mesh := _sculpt_yoke(body)
+        if yoke_mesh == null:
+            for item in created:
+                item.queue_free()
+            return false
+        shoulder_yoke = MeshInstance3D.new()
+        shoulder_yoke.name = "WeightedSculptedShoulderYoke"
+        shoulder_yoke.mesh = yoke_mesh
+        shoulder_yoke.skin = body.skin
+        shoulder_yoke.skeleton = body.skeleton
+        shoulder_yoke.transform = body.transform
+        var yoke_mat := ShaderMaterial.new()
+        yoke_mat.shader = preload("res://rider_external_yoke.gdshader")
+        yoke_mat.set_shader_parameter("rest_bottom", bounds.position.y)
+        yoke_mat.set_shader_parameter("rest_height", bounds.size.y)
+        yoke_mat.set_shader_parameter("rest_center_x", bounds.get_center().x)
+        yoke_mat.set_shader_parameter("rest_width", bounds.size.x)
+        shoulder_yoke.material_override = yoke_mat
+        body.get_parent().add_child(shoulder_yoke)
+        yoke_vertices = yoke_mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
         panels = created
         mantle_span = bounds.size.y * 0.49
         return true
@@ -120,3 +144,51 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
     tool.set_weights(PackedFloat32Array([spine_weight, pelvis_weight, left_weight, right_weight]))
     tool.set_uv(Vector2(u, t))
     tool.add_vertex(Vector3(x, y, z))
+
+func _sculpt_yoke(body: MeshInstance3D) -> ArrayMesh:
+    var bounds := body.mesh.get_aabb()
+    var output := SurfaceTool.new()
+    output.begin(Mesh.PRIMITIVE_TRIANGLES)
+    var accepted := 0
+    for surface in range(body.mesh.get_surface_count()):
+        if body.mesh.surface_get_primitive_type(surface) != Mesh.PRIMITIVE_TRIANGLES:
+            continue
+        var arrays: Array = body.mesh.surface_get_arrays(surface)
+        var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+        var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+        var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
+        var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
+        var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+        if normals.size() != vertices.size() or bones.size() != vertices.size() * 4 or weights.size() != vertices.size() * 4:
+            continue
+        var count := int(indices.size() / 3) if not indices.is_empty() else int(vertices.size() / 3)
+        for triangle in range(count):
+            var a := indices[triangle * 3] if not indices.is_empty() else triangle * 3
+            var b := indices[triangle * 3 + 1] if not indices.is_empty() else triangle * 3 + 1
+            var c := indices[triangle * 3 + 2] if not indices.is_empty() else triangle * 3 + 2
+            if not _is_yoke(vertices[a], bounds) or not _is_yoke(vertices[b], bounds) or not _is_yoke(vertices[c], bounds):
+                continue
+            for index in [a, b, c]:
+                var point := vertices[index]
+                var normal := normals[index].normalized()
+                var x := (point.x - bounds.get_center().x) / bounds.size.x
+                var shoulder := smoothstep(0.075, 0.28, absf(x))
+                var offset := normal * (0.050 + shoulder * 0.025)
+                offset.x += (1.0 if x >= 0.0 else -1.0) * shoulder * 0.022
+                output.set_normal(normal)
+                output.set_bones(PackedInt32Array([
+                    bones[index * 4], bones[index * 4 + 1],
+                    bones[index * 4 + 2], bones[index * 4 + 3]]))
+                output.set_weights(PackedFloat32Array([
+                    weights[index * 4], weights[index * 4 + 1],
+                    weights[index * 4 + 2], weights[index * 4 + 3]]))
+                output.add_vertex(point + offset)
+                accepted += 1
+    if accepted < 120:
+        return null
+    return output.commit()
+
+func _is_yoke(point: Vector3, bounds: AABB) -> bool:
+    var height := (point.y - bounds.position.y) / bounds.size.y
+    var width := absf(point.x - bounds.get_center().x) / bounds.size.x
+    return height >= 0.615 and height <= 0.785 and width <= 0.36
