@@ -157,8 +157,11 @@ func _capture() -> void:
         await process_frame
     await RenderingServer.frame_post_draw
     var face_only := viewport.get_texture().get_image()
-    if not _has_visible_subject(face_only) or face_only.save_png(output + "/diagnostic_front_face_only.png") != OK:
-        _fail("cannot capture skinned-face-only diagnostic")
+    if face_only.save_png(output + "/diagnostic_front_face_only.png") != OK:
+        _fail("cannot save skinned-face-only diagnostic")
+        return
+    if not _has_visible_subject(face_only):
+        _fail("skinned face is invisible even with old mesh and helmet removed")
         return
     print("VISUAL CAPTURE TEST PASSED: 20 nonblank rendered PNGs, including 18 landscape gameplay views and 2 head-occlusion diagnostics")
     quit(0)
