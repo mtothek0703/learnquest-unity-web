@@ -95,14 +95,14 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, side: float,
         spine: int, pelvis: int, arm: int, core: bool, t: float, angle: float) -> void:
     var width := bounds.size.x
     var height := bounds.size.y
-    var shoulder_x := bounds.get_center().x + side * width * 0.26
+    var shoulder_x := bounds.get_center().x + side * width * 0.205
     var upper_y := bounds.position.y + height * 0.72
     var taper := 0.73 + 0.27 * sin(PI * t)
-    var radius_x := width * (0.095 if core else 0.12) * taper
-    var radius_z := width * (0.065 if core else 0.085) * taper
-    var y := upper_y - height * (0.135 if core else 0.165) * t
+    var radius_x := width * (0.060 if core else 0.078) * taper
+    var radius_z := width * (0.040 if core else 0.052) * taper
+    var y := upper_y - height * (0.105 if core else 0.135) * t
     var x := shoulder_x + cos(angle) * radius_x
-    var z := back + rear_sign * (width * (0.065 if core else 0.035) +
+    var z := back + rear_sign * (width * (0.043 if core else 0.025) +
         sin(angle) * radius_z + height * 0.042 * t)
     # The shoulder joint controls the outside of the nacelle, while the
     # spine/pelvis stabilise its inside and base. Four source-Skin slots,
