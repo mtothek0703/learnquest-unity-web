@@ -53,7 +53,9 @@ func _check() -> void:
     for child in board.get_children():
         if child is MeshInstance3D and child.mesh is BoxMesh:
             var box_mesh := child.mesh as BoxMesh
-            if box_mesh.size.z > 1.85 and box_mesh.size.x > 0.8:
+            # Legacy piece() uses unit BoxMesh geometry and node.scale for dimensions.
+            var size: Vector3 = box_mesh.size * (child as MeshInstance3D).scale
+            if size.z > 1.85 and size.x > 0.8:
                 old_boxes += 1
                 if child.visible:
                     _fail("old rectangular chassis/deck overlaps sculpted replacement")
