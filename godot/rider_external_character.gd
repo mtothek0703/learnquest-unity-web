@@ -205,7 +205,7 @@ func fit_to_board() -> bool:
     var height := highest - lowest
     if height < 0.1 or height > 100.0:
         return false
-    var factor := 2.78 / height
+    var factor := 2.62 / height
     character.scale = Vector3.ONE * factor
     character.position.y = 0.08 - lowest * factor
     # Determine the *actual* imported face direction from the weighted Head
