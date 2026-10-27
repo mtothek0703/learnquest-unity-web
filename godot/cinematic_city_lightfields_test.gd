@@ -65,7 +65,7 @@ func _check() -> void:
             return
         tinted[str(lamp.light_color)] = true
         var shaft_material := (shafts[index] as MeshInstance3D).material_override as StandardMaterial3D
-        if shaft_material == null or not shaft_material.emission_enabled or shaft_material.emission.distance_to(lamp.light_color) > 0.02:
+        if shaft_material == null or not shaft_material.emission_enabled or not shaft_material.emission.is_equal_approx(lamp.light_color):
             _fail("shaft glow must match its cyan or magenta district lamp")
             return
     if tinted.size() != 2:
