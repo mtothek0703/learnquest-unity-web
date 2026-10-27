@@ -1,0 +1,132 @@
+extends Node
+## V124: genuine imported 65-joint skinned CC0 humanoid, not a primitive rig.
+## This adapter only changes imported bone rotations; gameplay, board and touch
+## remain entirely owned by RiderCharacter/LegacyRider and world.gd.
+var rider: Node3D
+var character: Node3D
+var skeleton: Skeleton3D
+var skinned_meshes: Array[MeshInstance3D] = []
+var rest_rotations: Dictionary = {}
+var elapsed: float = 0.0
+var previous_height: float = 0.0
+var last_jump: float = 0.0
+
+func configure(owner_rider: Node3D, imported: Node3D) -> bool:
+    rider = owner_rider
+    character = imported
+    if character == null:
+        return false
+    var skeletons := character.find_children("*", "Skeleton3D", true, false)
+    for candidate in skeletons:
+        var candidate_rig := candidate as Skeleton3D
+        if candidate_rig == null or candidate_rig.get_bone_count() < 50:
+            continue
+        var attached: Array[MeshInstance3D] = []
+        for node in character.find_children("*", "MeshInstance3D", true, false):
+            var mesh := node as MeshInstance3D
+            if mesh == null or mesh.mesh == null or mesh.skin == null:
+                continue
+            if mesh.get_node_or_null(mesh.skeleton) != candidate_rig:
+                continue
+            var has_weights := false
+            for surface_index in range(mesh.mesh.get_surface_count()):
+                var arrays: Array = mesh.mesh.surface_get_arrays(surface_index)
+                var points: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+                var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
+                var indices: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
+                if points.size() >= 50 and weights.size() >= points.size() * 4 and indices.size() >= points.size() * 4:
+                    has_weights = true
+                    break
+            if has_weights:
+                attached.append(mesh)
+        if not attached.is_empty():
+            skeleton = candidate_rig
+            skinned_meshes = attached
+            break
+    if skeleton == null:
+        return false
+    for name in ["Hips", "Spine", "Head"]:
+        if skeleton.find_bone(name) < 0:
+            return false
+    for i in range(skeleton.get_bone_count()):
+        rest_rotations[i] = skeleton.get_bone_pose_rotation(i)
+    # Deliberately do not modify bone rest positions, imported inverse bind
+    # matrices or the imported Skin: those are the asset's real authoring data.
+    set_process(true)
+    return true
+
+func _bone(names: Array[String]) -> int:
+    if skeleton == null:
+        return -1
+    for name in names:
+        var index := skeleton.find_bone(name)
+        if index >= 0:
+            return index
+    return -1
+
+func _pose(names: Array[String], delta_rotation: Quaternion, blend: float) -> void:
+    var index := _bone(names)
+    if index < 0:
+        return
+    var base: Quaternion = rest_rotations.get(index, Quaternion.IDENTITY)
+    var current := skeleton.get_bone_pose_rotation(index)
+    skeleton.set_bone_pose_rotation(index, current.slerp(base * delta_rotation, blend))
+
+func _process(delta: float) -> void:
+    if skeleton == null or rider == null:
+        return
+    elapsed += delta
+    var steer := clampf(float(rider.get("lean")), -1.0, 1.0)
+    var turbo := bool(rider.get("boosting"))
+    var height := maxf(rider.position.y, 0.0)
+    var jump := clampf(height / 1.25, 0.0, 1.0)
+    var ascending := height > previous_height + 0.02
+    previous_height = height
+    last_jump = move_toward(last_jump, jump, delta * 7.0)
+    var boost := 1.0 if turbo else 0.0
+    var blend := minf(1.0, delta * 9.0)
+    # Counter-leaning pelvis and upper body, with head gaze into turns.
+    _pose(["Hips"], Quaternion(Vector3.FORWARD, -steer * 0.16), blend)
+    _pose(["Spine"], Quaternion(Vector3.FORWARD, steer * 0.08) *
+        Quaternion(Vector3.RIGHT, boost * 0.13 + last_jump * 0.12), blend)
+    _pose(["Chest", "UpperChest"], Quaternion(Vector3.UP, -steer * 0.18) *
+        Quaternion(Vector3.RIGHT, boost * 0.16 + last_jump * 0.16), blend)
+    _pose(["Neck"], Quaternion(Vector3.UP, steer * 0.09), blend)
+    _pose(["Head"], Quaternion(Vector3.UP, -steer * 0.24) *
+        Quaternion(Vector3.RIGHT, -last_jump * 0.12 + boost * 0.07), blend)
+    # Arms spread on ascent, elbows tuck on landing; knees follow board arc.
+    for side in [-1, 1]:
+        var prefix := "Left" if side < 0 else "Right"
+        var sign_side := float(side)
+        var spread := sign_side * (0.16 + last_jump * (0.32 if ascending else 0.22))
+        _pose([prefix + "UpperArm", prefix + "Arm"],
+            Quaternion(Vector3.FORWARD, spread - steer * 0.11) *
+            Quaternion(Vector3.RIGHT, -boost * 0.25), blend)
+        _pose([prefix + "LowerArm", prefix + "ForeArm", prefix + "Forearm"],
+            Quaternion(Vector3.RIGHT, -0.22 - last_jump * 0.38), blend)
+        _pose([prefix + "UpperLeg", prefix + "UpLeg", prefix + "Thigh"],
+            Quaternion(Vector3.RIGHT, last_jump * 0.28 + boost * 0.09), blend)
+        _pose([prefix + "LowerLeg", prefix + "Leg", prefix + "Shin"],
+            Quaternion(Vector3.RIGHT, -last_jump * 0.49), blend)
+
+func fit_to_board() -> bool:
+    # Normalize different glTF unit conventions without touching the Skin.
+    if character == null or skinned_meshes.is_empty():
+        return false
+    var lowest := INF
+    var highest := -INF
+    for mesh in skinned_meshes:
+        var bounds := mesh.get_aabb()
+        for x in [bounds.position.x, bounds.end.x]:
+            for y in [bounds.position.y, bounds.end.y]:
+                for z in [bounds.position.z, bounds.end.z]:
+                    var point := character.to_local(mesh.to_global(Vector3(x, y, z)))
+                    lowest = minf(lowest, point.y)
+                    highest = maxf(highest, point.y)
+    var height := highest - lowest
+    if height < 0.1 or height > 100.0:
+        return false
+    var factor := 2.78 / height
+    character.scale = Vector3.ONE * factor
+    character.position.y = 0.08 - lowest * factor
+    return true

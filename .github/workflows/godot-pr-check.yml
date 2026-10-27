@@ -23,6 +23,8 @@ jobs:
           curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
           unzip -q /tmp/godot.zip -d /tmp
           chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+      - name: Fetch and verify pinned CC0 humanoid for V124
+        run: python3 .github/scripts/fetch_quaternius_hero.py
       - name: Import and test game without publishing
         shell: bash
         run: |
@@ -32,6 +34,8 @@ jobs:
           grep -Fq 'LEARNQUEST SMOKE TEST PASSED' /tmp/gameplay.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_original_body_skin_test.gd 2>&1 | tee /tmp/original-body-skin.log
           grep -Fq 'ORIGINAL BODY SKIN TEST PASSED' /tmp/original-body-skin.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_character_test.gd 2>&1 | tee /tmp/quaternius-rig.log
+          grep -Fq 'QUATERNIUS RIG TEST PASSED' /tmp/quaternius-rig.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_costume_skin_follow_test.gd 2>&1 | tee /tmp/costume-skin-follow.log
           grep -Fq 'COSTUME SKIN FOLLOW TEST PASSED' /tmp/costume-skin-follow.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_sculpted_skinned_suit_test.gd 2>&1 | tee /tmp/sculpted-suit.log
@@ -112,6 +116,17 @@ jobs:
             --script res://rider_visual_capture_test.gd 2>&1 | tee /tmp/visual-capture.log
           grep -Fq 'VISUAL CAPTURE TEST PASSED' /tmp/visual-capture.log
           test "$(find /tmp/learnquest-visual-qa -name '*.png' | wc -l)" -eq 20
+      - name: Render real V123/V124 rigged hero landscape comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-quaternius-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_QUATERNIUS_OUTPUT=/tmp/learnquest-quaternius-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_character_visual_capture_test.gd 2>&1 | tee /tmp/quaternius-visual.log
+          grep -Fq 'QUATERNIUS VISUAL QA PASSED' /tmp/quaternius-visual.log
+          test "$(find /tmp/learnquest-quaternius-qa -name '*.png' | wc -l)" -eq 8
       - name: Render all four power-up silhouettes for 16:9 QA
         shell: bash
         run: |
@@ -189,6 +204,13 @@ jobs:
             --script res://harbor_cargo_relay_visual_capture_test.gd 2>&1 | tee /tmp/harbor-relay-visual.log
           grep -Fq 'HARBOR CARGO RELAY VISUAL QA PASSED' /tmp/harbor-relay-visual.log
           test "$(find /tmp/learnquest-relay-qa -name '*.png' | wc -l)" -eq 8
+      - name: Upload V124 CC0 humanoid before-after frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-quaternius-before-after
+          path: /tmp/learnquest-quaternius-qa/*.png
+          if-no-files-found: ignore
       - name: Upload V123 Star Harbor cargo relay comparison frames
         if: always()
         uses: actions/upload-artifact@v4
@@ -254,6 +276,8 @@ jobs:
             /tmp/import.log
             /tmp/gameplay.log
             /tmp/original-body-skin.log
+            /tmp/quaternius-rig.log
+            /tmp/quaternius-visual.log
             /tmp/costume-skin-follow.log
             /tmp/sculpted-suit.log
             /tmp/suit-visibility.log
