@@ -108,6 +108,28 @@ func _check() -> void:
     if lock_depth < head_region.size.z * 0.55:
         _fail("back hair locks are buried under the sculpted volume")
         return
+    # A real chase render exposed nine straight, vertically stacked rods.
+    # Require actual wide, tapered 3D strands fanning out at shoulder level.
+    var left_fan := headwear.get_node_or_null("WindSweptBackLock0") as MeshInstance3D
+    var right_fan := headwear.get_node_or_null("WindSweptBackLock8") as MeshInstance3D
+    if left_fan == null or right_fan == null:
+        _fail("missing bilateral swept rear-hair silhouette")
+        return
+    var left_aabb := left_fan.mesh.get_aabb()
+    var right_aabb := right_fan.mesh.get_aabb()
+    if left_aabb.size.x < head_region.size.x * 0.25 or right_aabb.size.x < head_region.size.x * 0.25:
+        _fail("rear hair still forms vertical rods rather than shoulder-swept locks")
+        return
+    if right_aabb.get_center().x - left_aabb.get_center().x < head_region.size.x * 0.90:
+        _fail("rear hair does not fan out bilaterally in chase camera")
+        return
+    for strand in [left_fan, right_fan]:
+        var strand_arrays: Array = strand.mesh.surface_get_arrays(0)
+        var strand_vertices: PackedVector3Array = strand_arrays[Mesh.ARRAY_VERTEX]
+        var strand_normals: PackedVector3Array = strand_arrays[Mesh.ARRAY_NORMAL]
+        if strand_vertices.size() < 800 or strand_normals.size() != strand_vertices.size():
+            _fail("rear strands must be modeled tapered volumes with normals")
+            return
     # V124 facial reconstruction: test the actual two eyes by mesh identity,
     # not float-to-string suffixes (Godot may format -1 as -1 or -1.0).
     var eyes := headwear.find_children("EyeWhite*", "MeshInstance3D", false, false)
