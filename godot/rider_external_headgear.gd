@@ -186,8 +186,8 @@ func _build_headwear() -> void:
             points.append(_visor_point(c, s, -0.93 + float(segment) / 24.0 * 1.86, edge))
         _mesh("VisorLightEdge%d" % int(edge), _tube(points, s.x * 0.018, 6), edge_mat)
 
-    var hair_mat := _material(Color(0.34, 0.16, 0.62), 0.08, 0.54)
-    var highlight := _material(Color(0.61, 0.34, 0.88), 0.12, 0.40)
+    var hair_mat := _material(Color(0.48, 0.24, 0.76), 0.08, 0.48)
+    var highlight := _material(Color(0.78, 0.43, 0.96), 0.12, 0.37)
     for strand in range(7):
         var across := (float(strand) - 3.0) / 3.0
         var start := Vector3(c.x + across * radius_x * 0.46, crown_y + cap_height * 0.94,
@@ -225,11 +225,11 @@ func _build_headwear() -> void:
             var t := float(segment) / 16.0
             var sway := sin(t * PI * 1.5 + float(strand) * 0.48) * 0.09
             flow.append(Vector3(
-                c.x + across * radius_x * (0.66 + 0.12 * t) + sway * radius_x * t,
-                crown_y + cap_height * 0.58 - s.y * (0.12 + 1.02 * t),
+                c.x + across * radius_x * (1.16 + 0.32 * t) + sway * radius_x * t,
+                crown_y + cap_height * 0.58 - s.y * (0.12 + 1.44 * t),
                 c.z - face_sign * radius_z * (0.64 + 0.40 * t + 0.08 * sin(t * PI))))
         _mesh("WindSweptBackLock%d" % strand,
-            _tube(flow, s.x * (0.047 if strand % 2 == 0 else 0.038), 7),
+            _tube(flow, s.x * (0.067 if strand % 2 == 0 else 0.054), 7),
             highlight if strand % 3 == 0 else hair_mat)
     _build_expression(c, s)
 
@@ -254,10 +254,10 @@ func _back_hair_point(c: Vector3, s: Vector3, crown_y: float, cap_height: float,
         radius_x: float, radius_z: float, t: float, u: float) -> Vector3:
     var angle := (u - 0.5) * PI
     var edge := sin(angle)
-    var fall := 1.0 - 0.12 * t
+    var fall := 1.62 - 0.10 * t
     return Vector3(
         c.x + edge * radius_x * fall,
-        crown_y + cap_height * 0.20 - s.y * (0.22 + 0.92 * t) +
+        crown_y + cap_height * 0.20 - s.y * (0.22 + 1.28 * t) +
             s.y * 0.045 * sin(angle * 3.0) * sin(t * PI),
         c.z - face_sign * cos(angle) * radius_z * (0.99 + 0.20 * t))
 
