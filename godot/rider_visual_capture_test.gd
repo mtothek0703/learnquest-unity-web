@@ -131,5 +131,34 @@ func _capture() -> void:
     if count != 18:
         _fail("expected 18 actual rendered perspective/pose images")
         return
-    print("VISUAL CAPTURE TEST PASSED: 18 nonblank rendered landscape PNGs (16:9 and 19.5:9, front/profile/chase, idle/steer-boost/jump)")
+    # Diagnostic close-ups reveal whether a helmet, old glTF or a skin
+    # transform hides the new head. These are NOT player-facing screenshots.
+    viewport.size = SIZES[0]
+    camera.position = Vector3(0.0, 2.5, -3.1)
+    camera.look_at(Vector3(0.0, 2.5, 0.0), Vector3.UP)
+    _apply_pose(rider, "idle")
+    var model := rider.get_node_or_null("ImportedRider") as Node3D
+    var helmet := model.get_node_or_null("AnimatedHeadKinematics") as Node3D
+    if helmet != null:
+        helmet.visible = false
+    for frame in range(4):
+        await process_frame
+    await RenderingServer.frame_post_draw
+    var without_helmet := viewport.get_texture().get_image()
+    if not _has_visible_subject(without_helmet) or without_helmet.save_png(output + "/diagnostic_front_without_helmet.png") != OK:
+        _fail("cannot capture helmet-free face diagnostic")
+        return
+    if model is MeshInstance3D:
+        (model as MeshInstance3D).mesh = null
+    for child in model.get_children():
+        if child is Node3D and String(child.name) not in ["OriginalBodySkinRig", "SculptedSkinnedFace", "ExpressiveFace"]:
+            child.visible = false
+    for frame in range(4):
+        await process_frame
+    await RenderingServer.frame_post_draw
+    var face_only := viewport.get_texture().get_image()
+    if not _has_visible_subject(face_only) or face_only.save_png(output + "/diagnostic_front_face_only.png") != OK:
+        _fail("cannot capture skinned-face-only diagnostic")
+        return
+    print("VISUAL CAPTURE TEST PASSED: 20 nonblank rendered PNGs, including 18 landscape gameplay views and 2 head-occlusion diagnostics")
     quit(0)
