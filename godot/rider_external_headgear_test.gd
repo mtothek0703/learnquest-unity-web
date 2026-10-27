@@ -97,7 +97,9 @@ func _check() -> void:
         return
     var visible_lock := headwear.get_node_or_null("WindSweptBackLock4") as MeshInstance3D
     var underhair := back_hair.material_override as StandardMaterial3D
-    var bright_hair := visible_lock.material_override as StandardMaterial3D if visible_lock != null else null
+    var bright_hair: StandardMaterial3D = null
+    if visible_lock != null:
+        bright_hair = visible_lock.material_override as StandardMaterial3D
     if underhair == null or bright_hair == null or \
             bright_hair.albedo_color.get_luminance() <= underhair.albedo_color.get_luminance() * 1.5:
         _fail("sculpted back locks must visibly contrast against the dark underhair")
