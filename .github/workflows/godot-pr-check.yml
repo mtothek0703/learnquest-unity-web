@@ -50,6 +50,12 @@ jobs:
           grep -Fq 'SKINNED JACKET TEST PASSED' /tmp/skinned-upper-jacket.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_skinned_armwear_test.gd 2>&1 | tee /tmp/skinned-armwear.log
           grep -Fq 'SKINNED ARMWEAR TEST PASSED' /tmp/skinned-armwear.log
+      - name: Verify the new skinned head is actually visible over original glTF
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_legacy_head_retirement_test.gd 2>&1 | tee /tmp/head-replacement.log
+          grep -Fq 'HEAD REPLACEMENT TEST PASSED' /tmp/head-replacement.log
       - name: Validate web export before any main-branch deployment
         shell: bash
         run: |
@@ -103,4 +109,5 @@ jobs:
             /tmp/skinned-armwear.log
             /tmp/web-export.log
             /tmp/visual-capture.log
+            /tmp/head-replacement.log
           if-no-files-found: ignore
