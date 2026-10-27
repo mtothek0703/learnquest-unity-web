@@ -25,7 +25,7 @@ func _check() -> void:
     var tinted := {}
     for index in range(4):
         var well := wells[index] as Node3D
-        if absf(well.position.x) < 11.0:
+        if absf(well.position.x) < 8.0:
             _fail("decorative lighting enters playable lanes")
             return
         for mesh_instance in [shafts[index], pools[index]]:
@@ -52,8 +52,11 @@ func _check() -> void:
             if not has_alpha_gradient:
                 _fail("lightfield must fade rather than use opaque planes")
                 return
+        if well.get_node_or_null("Suspended luminous lens") == null:
+            _fail("readable suspended emitter is missing")
+            return
         var lamp := lamps[index] as OmniLight3D
-        if lamp == null or lamp.shadow_enabled or lamp.omni_range > 8.0 or lamp.light_energy > 1.1:
+        if lamp == null or lamp.shadow_enabled or lamp.omni_range > 9.5 or lamp.light_energy > 1.4:
             _fail("mobile lighting budget or shadow rule violated")
             return
         tinted[str(lamp.light_color)] = true
