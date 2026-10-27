@@ -80,6 +80,8 @@ jobs:
           grep -Fq 'CANYON ROUTES TEST PASSED' /tmp/canyon-routes.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://cinematic_harbor_drydocks_test.gd 2>&1 | tee /tmp/harbor-drydocks.log
           grep -Fq 'HARBOR DRYDOCKS TEST PASSED' /tmp/harbor-drydocks.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://harbor_cargo_relay_test.gd 2>&1 | tee /tmp/harbor-relay.log
+          grep -Fq 'HARBOR CARGO RELAY TEST PASSED' /tmp/harbor-relay.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_skinned_lower_body_test.gd 2>&1 | tee /tmp/skinned-lower-body.log
           grep -Fq 'SKINNED LOWER BODY TEST PASSED' /tmp/skinned-lower-body.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_aero_silhouette_test.gd 2>&1 | tee /tmp/aero-silhouette.log
@@ -176,6 +178,24 @@ jobs:
             --script res://cinematic_harbor_drydocks_visual_capture_test.gd 2>&1 | tee /tmp/harbor-drydocks-visual.log
           grep -Fq 'HARBOR DRYDOCKS VISUAL QA PASSED' /tmp/harbor-drydocks-visual.log
           test "$(find /tmp/learnquest-harbor-qa -name '*.png' | wc -l)" -eq 8
+      - name: Render V123 playable Star Harbor cargo relay in both landscape ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-relay-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_RELAY_OUTPUT=/tmp/learnquest-relay-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://harbor_cargo_relay_visual_capture_test.gd 2>&1 | tee /tmp/harbor-relay-visual.log
+          grep -Fq 'HARBOR CARGO RELAY VISUAL QA PASSED' /tmp/harbor-relay-visual.log
+          test "$(find /tmp/learnquest-relay-qa -name '*.png' | wc -l)" -eq 8
+      - name: Upload V123 Star Harbor cargo relay comparison frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v123-harbor-cargo-relay-before-after
+          path: /tmp/learnquest-relay-qa/*.png
+          if-no-files-found: error
       - name: Upload V122 Star Harbor drydock comparison frames
         if: always()
         uses: actions/upload-artifact@v4
@@ -260,6 +280,8 @@ jobs:
             /tmp/canyon-geodes.log
             /tmp/canyon-routes.log
             /tmp/harbor-drydocks.log
+            /tmp/harbor-relay.log
+            /tmp/harbor-relay-visual.log
             /tmp/harbor-drydocks-visual.log
             /tmp/canyon-routes-visual.log
             /tmp/canyon-geodes-visual.log
