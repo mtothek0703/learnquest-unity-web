@@ -45,7 +45,7 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
             break
     if skeleton == null:
         return false
-    for name in ["Hips", "Spine", "Head"]:
+    for name in ["pelvis", "spine_01", "Head"]:
         if skeleton.find_bone(name) < 0:
             return false
     for i in range(skeleton.get_bone_count()):
@@ -86,12 +86,12 @@ func _process(delta: float) -> void:
     var boost := 1.0 if turbo else 0.0
     var blend := minf(1.0, delta * 9.0)
     # Counter-leaning pelvis and upper body, with head gaze into turns.
-    _pose(["Hips"], Quaternion(Vector3.FORWARD, -steer * 0.16), blend)
-    _pose(["Spine"], Quaternion(Vector3.FORWARD, steer * 0.08) *
+    _pose(["pelvis", "Hips"], Quaternion(Vector3.FORWARD, -steer * 0.16), blend)
+    _pose(["spine_01", "Spine"], Quaternion(Vector3.FORWARD, steer * 0.08) *
         Quaternion(Vector3.RIGHT, boost * 0.13 + last_jump * 0.12), blend)
-    _pose(["Chest", "UpperChest"], Quaternion(Vector3.UP, -steer * 0.18) *
+    _pose(["spine_02", "spine_03", "Chest", "UpperChest"], Quaternion(Vector3.UP, -steer * 0.18) *
         Quaternion(Vector3.RIGHT, boost * 0.16 + last_jump * 0.16), blend)
-    _pose(["Neck"], Quaternion(Vector3.UP, steer * 0.09), blend)
+    _pose(["neck_01", "Neck"], Quaternion(Vector3.UP, steer * 0.09), blend)
     _pose(["Head"], Quaternion(Vector3.UP, -steer * 0.24) *
         Quaternion(Vector3.RIGHT, -last_jump * 0.12 + boost * 0.07), blend)
     # Arms spread on ascent, elbows tuck on landing; knees follow board arc.
@@ -99,14 +99,14 @@ func _process(delta: float) -> void:
         var prefix := "Left" if side < 0 else "Right"
         var sign_side := float(side)
         var spread := sign_side * (0.16 + last_jump * (0.32 if ascending else 0.22))
-        _pose([prefix + "UpperArm", prefix + "Arm"],
+        _pose(["upperarm_l" if side < 0 else "upperarm_r", prefix + "UpperArm", prefix + "Arm"],
             Quaternion(Vector3.FORWARD, spread - steer * 0.11) *
             Quaternion(Vector3.RIGHT, -boost * 0.25), blend)
-        _pose([prefix + "LowerArm", prefix + "ForeArm", prefix + "Forearm"],
+        _pose(["lowerarm_l" if side < 0 else "lowerarm_r", prefix + "LowerArm", prefix + "ForeArm", prefix + "Forearm"],
             Quaternion(Vector3.RIGHT, -0.22 - last_jump * 0.38), blend)
-        _pose([prefix + "UpperLeg", prefix + "UpLeg", prefix + "Thigh"],
+        _pose(["thigh_l" if side < 0 else "thigh_r", prefix + "UpperLeg", prefix + "UpLeg", prefix + "Thigh"],
             Quaternion(Vector3.RIGHT, last_jump * 0.28 + boost * 0.09), blend)
-        _pose([prefix + "LowerLeg", prefix + "Leg", prefix + "Shin"],
+        _pose(["calf_l" if side < 0 else "calf_r", prefix + "LowerLeg", prefix + "Leg", prefix + "Shin"],
             Quaternion(Vector3.RIGHT, -last_jump * 0.49), blend)
 
 func fit_to_board() -> bool:
