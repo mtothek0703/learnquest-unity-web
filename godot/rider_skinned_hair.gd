@@ -7,6 +7,8 @@ const CAP_ROWS := 16
 const CAP_SIDES := 36
 const LOCK_ROWS := 20
 const LOCK_COLS := 10
+const FRINGE_ROWS := 16
+const FRINGE_SIDES := 12
 var skeleton: Skeleton3D
 var skinned_hair: MeshInstance3D
 
@@ -70,9 +72,11 @@ func _cap_point(t: float, angle: float) -> Vector3:
     var latitude := t * PI * 0.5
     var spread := sin(latitude)
     return Vector3(
-        0.492 * spread * cos(angle),
+        0.500 * spread * cos(angle),
         2.69 + 0.435 * cos(latitude),
-        0.060 + 0.495 * spread * sin(angle)
+        # V110: extend the skinned scalp over V109's fuller cranium so the
+        # face no longer pierces the cap along the front hairline.
+        0.060 + 0.535 * spread * sin(angle)
     )
 
 func _lock_tube_point(t: float, angle: float, index: int) -> Vector3:
@@ -91,14 +95,19 @@ func _lock_tube_point(t: float, angle: float, index: int) -> Vector3:
         0.405 + 0.39 * t + 0.035 * sin(t * PI) + sin(angle) * radius_z
     )
 
-func _fringe_point(t: float, u: float, index: int) -> Vector3:
-    var across := 2.0 * u - 1.0
+func _fringe_point(t: float, angle: float, index: int) -> Vector3:
+    # V110: replace four flat triangular forehead ribbons with four
+    # volumetric, swept, tapering locks on the ORIGINAL 13-bone skin.
+    # Roots overlap the widened scalp; tips end above the animated brows.
     var side := float(index) - 1.5
-    var width := 0.15 * (1.0 - 0.65 * t)
+    var taper := pow(1.0 - t, 0.80)
+    var radius_x := 0.010 + 0.075 * taper
+    var radius_z := 0.008 + 0.045 * taper
+    var sweep := side * (0.205 + 0.026 * t)
     return Vector3(
-        side * 0.205 + across * width * 0.5 + side * 0.012 * t,
-        2.88 - 0.21 * t + 0.025 * sin(t * PI),
-        -0.395 - 0.060 * sin(t * PI) - 0.024 * t
+        sweep + 0.018 * sin(t * PI + float(index)) + cos(angle) * radius_x,
+        2.93 - 0.20 * t + 0.012 * sin(t * PI),
+        -0.442 - 0.035 * t + sin(angle) * radius_z
     )
 
 func _quad(tool: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3,
@@ -135,17 +144,19 @@ func _make_hair() -> ArrayMesh:
                     _lock_tube_point(t1, u1 * TAU, index),
                     _lock_tube_point(t0, u1 * TAU, index),
                     t0, t1, u0, u1, float(index) / 7.0)
-    # Four sculpted, side-parted bangs complete the face-to-scalp transition.
-    # They end above the eyebrows, preserving eye/blink readability.
+    # Four side-parted, circular 3D bangs replace the old flat fringe strips.
+    # Same GPU skin, no additional rigid objects or face/eye occlusion.
     for index in range(4):
-        for row in range(8):
-            var t0 := float(row) / 8.0
-            var t1 := float(row + 1) / 8.0
-            for column in range(6):
-                var u0 := float(column) / 6.0
-                var u1 := float(column + 1) / 6.0
-                _quad(tool, _fringe_point(t0, u0, index), _fringe_point(t1, u0, index),
-                    _fringe_point(t1, u1, index), _fringe_point(t0, u1, index),
-                    t0, t1, u0, u1, 0.2)
+        for row in range(FRINGE_ROWS):
+            var t0 := float(row) / float(FRINGE_ROWS)
+            var t1 := float(row + 1) / float(FRINGE_ROWS)
+            for column in range(FRINGE_SIDES):
+                var u0 := float(column) / float(FRINGE_SIDES)
+                var u1 := float(column + 1) / float(FRINGE_SIDES)
+                _quad(tool, _fringe_point(t0, u0 * TAU, index),
+                    _fringe_point(t1, u0 * TAU, index),
+                    _fringe_point(t1, u1 * TAU, index),
+                    _fringe_point(t0, u1 * TAU, index),
+                    t0, t1, u0, u1, float(index) / 4.0)
     tool.generate_normals()
     return tool.commit()

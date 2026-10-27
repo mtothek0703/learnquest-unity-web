@@ -125,3 +125,8 @@ Die Bildserie ist ein **Desktop-Mesa-Rendervergleich**, kein iPhone-Test.
 4. Echte iPhone-FPS, 60-Sekunden-Frametimes und Touchsteuerung im Querformat bleiben eine separate manuelle Prüfung. Keine Geräteabnahme aus Desktop-Mesa-Frames ableiten.
 
 **V109 Erstvergleich (PR #96):** Der abgerundete Kopf und niedrigere Kragen sind in den 16:9-PNGs erkennbar. Das zunächst verdeckte Lächeln ist eine echte Bild-Regression; nach der Smile-Tiefenkorrektur muss `diagnostic_front_face_only.png` das Lächeln wieder zeigen. Kein Release vor dieser Nachprüfung.
+
+
+## V110 — plastischer Pony und Stirn-Haaransatz
+
+V109 und V110 in identischen 1280×720- und 1170×540-Mesa-Frames vergleichen. Insbesondere `diagnostic_front_without_helmet.png` und `1280x720_front_idle.png`: vier flache Dreiecksfransen sollen zu plastischen, verjüngten 3D-Locken werden; die größere V109-Stirn darf nicht durch die skinnierte Kopfhaube stoßen. Prüfe Augenbrauenfreiheit, Stirnnaht, Helm/Visier, Lenkung+Turbo und Sprung. Die neue `rider_volumetric_fringe_test.gd` prüft Geometrie/Skin, nicht tatsächliche Pixel oder iPhone-FPS. Reale 60-Sekunden-Geräteprüfung bleibt offen.
