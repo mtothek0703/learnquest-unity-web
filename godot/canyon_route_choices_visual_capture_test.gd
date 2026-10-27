@@ -80,15 +80,17 @@ func _capture() -> void:
                     baseline = image
                 else:
                     var changed := 0
-                    for y in range(54):
-                        for x in range(96):
-                            var px := int(float(size.x - 1) * float(x) / 95.0)
-                            var py := int(float(size.y - 1) * float(y) / 53.0)
+                    # Thin emissive portal rings fall between coarse 96x54 samples.
+                    # Denser sampling is a stricter visibility check, not a bypass.
+                    for y in range(108):
+                        for x in range(192):
+                            var px := int(float(size.x - 1) * float(x) / 191.0)
+                            var py := int(float(size.y - 1) * float(y) / 107.0)
                             var a := baseline.get_pixel(px, py)
                             var b := image.get_pixel(px, py)
                             if absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b) > 0.18:
                                 changed += 1
-                    if changed < 12:
+                    if changed < 45:
                         _fail("two branch portals are not visibly distinguishable in %s %s (%d samples)" % [str(size), view, changed])
                         return
                 captures += 1
