@@ -10,6 +10,7 @@ var rest_rotations: Dictionary = {}
 var elapsed: float = 0.0
 var previous_height: float = 0.0
 var last_jump: float = 0.0
+var facial_acting: Node
 
 func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     rider = owner_rider
@@ -76,6 +77,16 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
         # Restore a readable stylized face/head silhouette at mobile chase scale.
         # The imported original head/65-bone rig remain untouched underneath.
         headgear.call("set_visual_scale", 1.90)
+        # Animate existing eye/lid/brow/lip meshes on the same real Head bone.
+        # This remains purely visual and does not alter the imported Skin.
+        var acting := preload("res://rider_external_expression.gd").new() as Node
+        acting.name = "ExternalFacialActing"
+        headgear.add_child(acting)
+        if bool(acting.call("configure", headgear)):
+            facial_acting = acting
+        else:
+            acting.queue_free()
+            push_warning("CC0 hero facial acting unavailable; static face preserved")
     else:
         headgear.queue_free()
         push_warning("CC0 hero headwear could not fit imported Head bone")
@@ -187,6 +198,8 @@ func _process(delta: float) -> void:
             Quaternion(Vector3.RIGHT, 0.34 + crouch * 0.50 - last_jump * 0.45), blend)
         _pose(["foot_l" if side < 0 else "foot_r", prefix + "Foot"],
             Quaternion(Vector3.RIGHT, -0.13 - crouch * 0.12 + last_jump * 0.19), blend)
+    if facial_acting != null:
+        facial_acting.call("animate", steer, turbo, last_jump, elapsed)
 
 func fit_to_board() -> bool:
     # Normalize different glTF unit conventions without touching the Skin.
