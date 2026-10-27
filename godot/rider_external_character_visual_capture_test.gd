@@ -52,6 +52,11 @@ func _capture() -> void:
     if old == null or hero == null:
         _fail("both comparable rider models must be available")
         return
+    var pose := rider.get_node_or_null("ExternalHeroPose") as Node
+    var rig := pose.get("skeleton") as Skeleton3D if pose != null else null
+    if rig == null or rig.get_node_or_null("ExternalHeroHeadgear") == null:
+        _fail("real Head-bone helmet/hair must appear in V124 comparison frames")
+        return
     var count := 0
     for size in SIZES:
         viewport.size = size
