@@ -59,6 +59,23 @@ func _ready() -> void:
     # Retire the TWO imported pale glTF hands only after both replacement
     # palms are successfully skinned. Otherwise they occlude the new gloves.
     rig.call("retire_legacy_hand_surfaces")
+    # The original articulated fingers were behind the old pale glTF hands.
+    # Bring their existing pivots to the visible front of the new glove
+    # without replacing their animations or the holographic wrist display.
+    for index in range(2):
+        var arm := model.get_node_or_null("BalanceArm%d" % index) as Node3D
+        if arm == null:
+            continue
+        var gauntlet := arm.get_node_or_null("SculptedRiderGauntlet") as Node3D
+        if gauntlet == null:
+            continue
+        for finger_index in range(4):
+            var finger := gauntlet.get_node_or_null("ArticulatedFinger%d" % finger_index) as Node3D
+            if finger != null:
+                finger.position.z = -0.31
+        var thumb := gauntlet.get_node_or_null("SculptedThumb") as MeshInstance3D
+        if thumb != null:
+            thumb.position.z = -0.29
 
 func _attach(part_name: String, mesh: ArrayMesh, material: Material, skin: Skin) -> MeshInstance3D:
     if mesh == null or mesh.get_surface_count() != 1:
@@ -80,7 +97,7 @@ func _point(side: float, t: float, u: float, stitch: bool = false) -> Vector3:
     radius += 0.011 * knuckles * cos(4.0 * angle + 0.3)
     radius += 0.008 if stitch else 0.0
     var center := Vector3(side * (0.71 + 0.010 * t),
-        lerpf(1.46, 1.24, t), -0.060 - 0.015 * sin(PI * t))
+        lerpf(1.46, 1.08, t), -0.060 - 0.14 * smoothstep(0.10, 0.88, t))
     return center + Vector3(radius * cos(angle),
         0.006 * sin(PI * t) * cos(2.0 * angle),
         radius * sin(angle) * 0.91)
