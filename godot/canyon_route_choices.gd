@@ -32,7 +32,7 @@ func _route_point(side: float, t: float, angle: float) -> Vector3:
     # A curved, fully 3D route ribbon leads from the center approach into
     # the chosen lane. This is a visual guide, never a physical obstacle.
     var bend := smoothstep(0.0, 1.0, t)
-    var radius := 0.095
+    var radius := 0.16
     return Vector3(side * LANE_X * bend + cos(angle) * radius,
         0.10 + 0.025 * sin(t * PI) + sin(angle) * radius,
         -13.0 + 13.0 * t)
@@ -63,8 +63,8 @@ func _route_mesh(side: float) -> ArrayMesh:
 
 func _ready() -> void:
     var portal_mesh := TorusMesh.new()
-    portal_mesh.inner_radius = 1.02
-    portal_mesh.outer_radius = 1.15
+    portal_mesh.inner_radius = 1.62
+    portal_mesh.outer_radius = 1.87
     portal_mesh.rings = 40
     portal_mesh.ring_segments = 10
     var guide_mesh_left := _route_mesh(-1.0)
@@ -84,7 +84,7 @@ func _ready() -> void:
             portal.name = "Energy route portal" if side < 0.0 else "XP route portal"
             portal.mesh = portal_mesh
             portal.material_override = material
-            portal.position = Vector3(side * LANE_X, 2.0, 0.0)
+            portal.position = Vector3(side * LANE_X, 2.15, 0.0)
             portal.rotation.x = PI * 0.5
             junction.add_child(portal)
             portals.append(portal)
@@ -99,11 +99,11 @@ func _ready() -> void:
             var crystal := CylinderMesh.new()
             crystal.top_radius = 0.0
             crystal.bottom_radius = 0.42
-            crystal.height = 1.0
+            crystal.height = 1.7
             crystal.radial_segments = 7
             beacon.mesh = crystal
             beacon.material_override = material
-            beacon.position = Vector3(side * LANE_X, 3.65, 0.0)
+            beacon.position = Vector3(side * LANE_X, 4.55, 0.0)
             junction.add_child(beacon)
 
 func reset_course() -> void:
@@ -149,4 +149,4 @@ func _process(delta: float) -> void:
         # Small beacon pulse without extra dynamic lights or shadows.
         for child in junction.get_children():
             if child is MeshInstance3D and child.name == "Floating route beacon":
-                child.position.y = 3.65 + 0.15 * sin(elapsed * 2.0 + float(index))
+                child.position.y = 4.55 + 0.18 * sin(elapsed * 2.0 + float(index))
