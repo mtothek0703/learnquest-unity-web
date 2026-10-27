@@ -130,3 +130,10 @@ Die Bildserie ist ein **Desktop-Mesa-Rendervergleich**, kein iPhone-Test.
 ## V110 — plastischer Pony und Stirn-Haaransatz
 
 V109 und V110 in identischen 1280×720- und 1170×540-Mesa-Frames vergleichen. Insbesondere `diagnostic_front_without_helmet.png` und `1280x720_front_idle.png`: vier flache Dreiecksfransen sollen zu plastischen, verjüngten 3D-Locken werden; die größere V109-Stirn darf nicht durch die skinnierte Kopfhaube stoßen. Prüfe Augenbrauenfreiheit, Stirnnaht, Helm/Visier, Lenkung+Turbo und Sprung. Die neue `rider_volumetric_fringe_test.gd` prüft Geometrie/Skin, nicht tatsächliche Pixel oder iPhone-FPS. Reale 60-Sekunden-Geräteprüfung bleibt offen.
+
+
+## V110 → V111: shoulder / wrist geometry regression
+
+Source: V110 release workflow `40436378482`, artifact `12704616712` (`learnquest-v110-landscape-character-frames`). Actual `1280x720_front_idle.png`, `1280x720_profile_idle.png` and `diagnostic_front_without_helmet.png` inspected 27 Oct 2026. They show bright exposed magenta shoulder regions between the unified jacket and the arm assemblies. The original V107 sleeve rings were almost flat in Y, and the cuff center overshot the animated hand toward the outside.
+
+V111 changes the existing GPU-skinned sleeve's centerline and perpendicular cross-section, *not* the gameplay or a decorative overlay. Compare V111's front/profile/chase idle, boost and jump PNGs at the identical 1280×720 and 1170×540 camera poses with the V110 artifact. Check shoulder coverage, cuff/hand alignment, both arms in steering and airborne poses, and no new clipping with the gauntlets or collar. The Godot shoulder seam test checks geometry and bone bindings but cannot certify pixel appearance or real iPhone FPS. Preserve all prior release images and URLs.
