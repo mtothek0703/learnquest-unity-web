@@ -51,7 +51,7 @@ static func shield_mesh() -> ArrayMesh:
     # cage in a landscape chase camera, rather than a featureless transparent
     # bubble. They share the same mesh and require no extra draw calls.
     for latitude in [0.29, 0.49, 0.70]:
-        var theta := PI * latitude
+        var theta: float = PI * float(latitude)
         for step in range(64):
             var a := TAU * float(step) / 64.0
             var b := TAU * float(step + 1) / 64.0
