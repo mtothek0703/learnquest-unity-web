@@ -16,7 +16,7 @@ var shafts: Array[MeshInstance3D] = []
 var pools: Array[MeshInstance3D] = []
 var lamps: Array[OmniLight3D] = []
 
-func _glow_material() -> StandardMaterial3D:
+func _glow_material(tint: Color) -> StandardMaterial3D:
     var material := StandardMaterial3D.new()
     material.albedo_color = Color.WHITE
     material.vertex_color_use_as_albedo = true
@@ -24,7 +24,7 @@ func _glow_material() -> StandardMaterial3D:
     material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
     material.cull_mode = BaseMaterial3D.CULL_DISABLED
     material.emission_enabled = true
-    material.emission = Color("#5e8fca")
+    material.emission = tint
     material.emission_energy_multiplier = 1.10
     return material
 
@@ -47,8 +47,8 @@ func _shaft_mesh(tint: Color) -> ArrayMesh:
             var p01 := Vector3(cos(a1) * r0, 0.35 + t0 * 11.4, sin(a1) * r0)
             var p10 := Vector3(cos(a0) * r1, 0.35 + t1 * 11.4, sin(a0) * r1)
             var p11 := Vector3(cos(a1) * r1, 0.35 + t1 * 11.4, sin(a1) * r1)
-            var low := Color(tint.r, tint.g, tint.b, 0.42 * sin(PI * (0.12 + t0 * 0.78)))
-            var high := Color(tint.r, tint.g, tint.b, 0.42 * sin(PI * (0.12 + t1 * 0.78)))
+            var low := Color(tint.r, tint.g, tint.b, 0.42 * pow(sin(PI * t0), 1.3))
+            var high := Color(tint.r, tint.g, tint.b, 0.42 * pow(sin(PI * t1), 1.3))
             _vertex(tool, p00, low)
             _vertex(tool, p10, high)
             _vertex(tool, p01, low)
@@ -85,10 +85,10 @@ func _pool_mesh(tint: Color) -> ArrayMesh:
     return tool.commit()
 
 func _ready() -> void:
-    var glow := _glow_material()
     for index in range(WELL_COUNT):
         var side := -1.0 if index % 2 == 0 else 1.0
         var tint := Color("#5ff4ef") if index % 2 == 0 else Color("#ff85d3")
+        var glow := _glow_material(tint)
         var well := Node3D.new()
         well.name = "Atmospheric light well %d" % index
         well.position = Vector3(side * 8.6, 0.0, -18.0 - float(index) * WELL_SPACING)
