@@ -75,7 +75,7 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     if bool(headgear.call("install", skeleton, skinned_meshes)):
         # Restore a readable stylized face/head silhouette at mobile chase scale.
         # The imported original head/65-bone rig remain untouched underneath.
-        headgear.call("set_visual_scale", 1.34)
+        headgear.call("set_visual_scale", 1.56)
     else:
         headgear.queue_free()
         push_warning("CC0 hero headwear could not fit imported Head bone")
