@@ -143,6 +143,17 @@ jobs:
             --script res://rider_external_character_visual_capture_test.gd 2>&1 | tee /tmp/quaternius-visual.log
           grep -Fq 'QUATERNIUS VISUAL QA PASSED' /tmp/quaternius-visual.log
           test "$(find /tmp/learnquest-quaternius-qa -name '*.png' | wc -l)" -eq 8
+      - name: Render actual V124 neutral versus action face and pose frames
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-expression-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_EXPRESSION_OUTPUT=/tmp/learnquest-expression-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_expression_visual_capture_test.gd 2>&1 | tee /tmp/expression-visual.log
+          grep -Fq 'EXTERNAL EXPRESSION VISUAL QA PASSED' /tmp/expression-visual.log
+          test "$(find /tmp/learnquest-expression-qa -name '*.png' | wc -l)" -eq 8
       - name: Render all four power-up silhouettes for 16:9 QA
         shell: bash
         run: |
@@ -220,6 +231,13 @@ jobs:
             --script res://harbor_cargo_relay_visual_capture_test.gd 2>&1 | tee /tmp/harbor-relay-visual.log
           grep -Fq 'HARBOR CARGO RELAY VISUAL QA PASSED' /tmp/harbor-relay-visual.log
           test "$(find /tmp/learnquest-relay-qa -name '*.png' | wc -l)" -eq 8
+      - name: Upload V124 neutral/action expression frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-expression-neutral-action
+          path: /tmp/learnquest-expression-qa/*.png
+          if-no-files-found: ignore
       - name: Upload V124 CC0 humanoid before-after frames
         if: always()
         uses: actions/upload-artifact@v4
