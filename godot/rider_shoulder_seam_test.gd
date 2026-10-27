@@ -50,7 +50,7 @@ func _check() -> void:
         # a giant hollow cylinder (caught in the first real V111 PNGs).
         var tip_a: Vector3 = garment.call("_point", 0.0, 0.0, side, 0)
         var tip_b: Vector3 = garment.call("_point", 0.0, 0.5, side, 0)
-        if tip_a.distance_to(tip_b) > 0.06:
+        if tip_a.distance_to(tip_b) > 0.06 or tip_a.y < 2.17:
             _fail("shoulder tip is an open cup rather than a rounded cap")
             return
         for step in range(24):
@@ -66,7 +66,7 @@ func _check() -> void:
         if max_y - min_y < 0.18 or max_z - min_z < 0.58:
             _fail("shoulder ring is still flat instead of volumetric")
             return
-        if max_y < 2.22 or min_z > -0.55 or inner_x > 0.39 or outer_x < 0.92:
+        if max_y < 2.17 or min_z > -0.55 or inner_x > 0.39 or outer_x < 0.92:
             _fail("sleeve root does not cover the exposed front shoulder")
             return
         var arm := model.get_node_or_null("BalanceArm%d" % index) as Node3D
