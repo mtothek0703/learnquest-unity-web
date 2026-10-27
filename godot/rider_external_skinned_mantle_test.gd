@@ -58,6 +58,7 @@ func _check() -> void:
         var hem_max := -INF
         var root_depth := 0.0
         var hem_depth := 0.0
+        var closest_hem_to_center := INF
         var root_samples := 0
         var hem_samples := 0
         for i in range(vertices.size()):
@@ -83,6 +84,7 @@ func _check() -> void:
                 hem_min = minf(hem_min, vertices[i].x)
                 hem_max = maxf(hem_max, vertices[i].x)
                 hem_depth += vertices[i].z
+                closest_hem_to_center = minf(closest_hem_to_center, absf(vertices[i].x - source.mesh.get_aabb().get_center().x))
                 hem_samples += 1
             if uv[i].y > 0.9:
                 low_count += 1
@@ -91,6 +93,9 @@ func _check() -> void:
             return
         if hem_max - hem_min < (root_max - root_min) * 2.0:
             _fail("split-wing hems must flare at least twice as wide as the shoulder roots")
+            return
+        if closest_hem_to_center < source.mesh.get_aabb().size.x * 0.12:
+            _fail("split-wing tips must leave a visible center channel for boots and board")
             return
         var headgear := rig.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
         if headgear == null:
