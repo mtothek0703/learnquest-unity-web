@@ -200,7 +200,12 @@ func _build_headwear() -> void:
     _build_expression(c, s)
 
 func _build_expression(c: Vector3, s: Vector3) -> void:
-    # Readable eye/eyebrow/smile landmarks sit on the ORIGINAL weighted face.
+    # The CC0 compact mobile mesh can omit its textured facial surface.
+    # Fill that missing area with ONE smoothly sculpted, head-bone-bound face,
+    # preserving the genuine GPU-skinned original body underneath.
+    _mesh("SculptedContinuousFace", _face_surface(c, s),
+        _material(Color(0.83, 0.53, 0.42), 0.0, 0.69))
+    # Readable eye/eyebrow/smile landmarks sit on the sculpted surface.
     # These are tiny head-bone accessories, not a rigid replacement head.
     var white := _material(Color(0.95, 0.97, 1.0), 0.0, 0.26)
     var iris := _material(Color(0.10, 0.66, 0.91), 0.04, 0.23)
@@ -232,6 +237,34 @@ func _build_expression(c: Vector3, s: Vector3) -> void:
             head_bounds.position.y + s.y * (0.30 + 0.055 * pow(2.0 * t - 1.0, 2.0)),
             front + face_sign * s.z * 0.028))
     _mesh("CurvedSmile", _tube(smile, s.x * 0.014, 6), ink)
+
+func _face_surface(c: Vector3, s: Vector3) -> ArrayMesh:
+    var surface := SurfaceTool.new()
+    surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+    for row in range(18):
+        var v0 := float(row) / 18.0
+        var v1 := float(row + 1) / 18.0
+        for column in range(32):
+            var u0 := float(column) / 32.0
+            var u1 := float(column + 1) / 32.0
+            _quad(surface, _face_point(c, s, u0, v0), _face_point(c, s, u0, v1),
+                _face_point(c, s, u1, v1), _face_point(c, s, u1, v0))
+    surface.generate_normals()
+    return surface.commit()
+
+func _face_point(c: Vector3, s: Vector3, u: float, v: float) -> Vector3:
+    var latitude := v * PI
+    var longitude := u * TAU
+    var silhouette := sin(latitude)
+    var jaw := 0.82 + 0.18 * smoothstep(0.20, 0.58, 1.0 - v)
+    var x := cos(longitude) * silhouette * s.x * 0.49 * jaw
+    var z := sin(longitude) * silhouette * s.z * 0.52
+    # Subtle cheeks and a soft nose ridge, sculpted in the same continuous mesh.
+    var frontness := maxf(0.0, face_sign * sin(longitude))
+    var nose := exp(-pow(x / maxf(0.01, s.x * 0.12), 2.0)) * exp(-pow((v - 0.52) / 0.13, 2.0))
+    var cheek := exp(-pow((absf(x) - s.x * 0.27) / maxf(0.01, s.x * 0.16), 2.0)) * exp(-pow((v - 0.56) / 0.18, 2.0))
+    z += face_sign * frontness * s.z * (nose * 0.12 + cheek * 0.045)
+    return Vector3(c.x + x, c.y + cos(latitude) * s.y * 0.54, c.z + z)
 
 func _ellipsoid(name_text: String, center: Vector3, radii: Vector3, mat: Material) -> void:
     var shape := SphereMesh.new()
