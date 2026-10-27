@@ -12,6 +12,8 @@ const PARTS := [
 const CHEST_INFLUENCE := [1.0, 0.72, 0.90, 0.78, 0.80]
 const CHEST_ANCHOR := Vector3(0.0, 1.95, 0.0)
 var skeleton: Skeleton3D
+var hips_bind_origin := Vector3.ZERO
+var chest_bind_origin := Vector3.ZERO
 var tracked: Array[Node3D] = []
 var rest_transforms: Array[Transform3D] = []
 var strengths: Array[float] = []
@@ -26,6 +28,9 @@ func _ready() -> void:
     skeleton = rig.get_node_or_null("OriginalBodySkeleton13") as Skeleton3D
     if skeleton == null:
         return
+    var bind := skeleton.create_skin_from_rest_transforms()
+    hips_bind_origin = bind.get_bind_pose(0).affine_inverse().origin
+    chest_bind_origin = bind.get_bind_pose(2).affine_inverse().origin
     for i in range(PARTS.size()):
         var part := model.get_node_or_null(NodePath(PARTS[i])) as Node3D
         if part != null:
@@ -38,8 +43,8 @@ func _process(_delta: float) -> void:
         return
     var hips := skeleton.get_bone_global_pose(0)
     var chest := skeleton.get_bone_global_pose(2)
-    var hips_shift := hips.origin - skeleton.get_bone_global_rest(0).origin
-    var chest_shift := chest.origin - skeleton.get_bone_global_rest(2).origin
+    var hips_shift := hips.origin - hips_bind_origin
+    var chest_shift := chest.origin - chest_bind_origin
     var hip_rotation := Quaternion(hips.basis.orthonormalized())
     var chest_rotation := Quaternion(chest.basis.orthonormalized())
     for i in range(tracked.size()):
