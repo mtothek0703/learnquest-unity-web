@@ -33,8 +33,9 @@ func _check() -> void:
     # Geometry-only tests previously missed a critical runtime bug:
     # inverse bind poses shifted the entire skinned character below the
     # board because all bone pose translations remained at the origin.
+    var reference_skin := skeleton.create_skin_from_rest_transforms()
     for bone_id in [0, 2, 4, 6, 10, 12]:
-        var rest_origin := skeleton.get_bone_global_rest(bone_id).origin
+        var rest_origin := reference_skin.get_bind_pose(bone_id).affine_inverse().origin
         var pose_origin := skeleton.get_bone_global_pose(bone_id).origin
         if pose_origin.distance_to(rest_origin) > 0.22:
             _fail("bone %d pose=%s rest=%s must retain authored translation" % [bone_id, str(pose_origin), str(rest_origin)])
