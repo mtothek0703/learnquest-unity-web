@@ -212,7 +212,54 @@ func _build_headwear() -> void:
                 c.z + face_sign * radius_z * (0.05 + 0.25 * t)))
         _mesh("SideHairSweep%s" % ("L" if side < 0.0 else "R"),
             _tube(arc, s.x * 0.065, 7), hair_mat)
+    # A 360-degree character needs a readable REAR silhouette as well.
+    # The old V124 trial had a nearly bald head in chase camera, even though
+    # the front showed swept bangs. Curved back-hair geometry remains cosmetic
+    # and follows the real Head bone through this BoneAttachment3D.
+    _mesh("SculptedBackHairCurtain", _back_hair_surface(c, s, crown_y, cap_height, radius_x, radius_z),
+        hair_mat)
+    for strand in range(9):
+        var across := (float(strand) - 4.0) / 4.0
+        var flow: Array[Vector3] = []
+        for segment in range(17):
+            var t := float(segment) / 16.0
+            var sway := sin(t * PI * 1.5 + float(strand) * 0.48) * 0.09
+            flow.append(Vector3(
+                c.x + across * radius_x * (0.66 + 0.12 * t) + sway * radius_x * t,
+                crown_y + cap_height * 0.58 - s.y * (0.12 + 1.02 * t),
+                c.z - face_sign * radius_z * (0.64 + 0.40 * t + 0.08 * sin(t * PI))))
+        _mesh("WindSweptBackLock%d" % strand,
+            _tube(flow, s.x * (0.047 if strand % 2 == 0 else 0.038), 7),
+            highlight if strand % 3 == 0 else hair_mat)
     _build_expression(c, s)
+
+func _back_hair_surface(c: Vector3, s: Vector3, crown_y: float, cap_height: float,
+        radius_x: float, radius_z: float) -> ArrayMesh:
+    var surface := SurfaceTool.new()
+    surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+    for row in range(14):
+        var t0 := float(row) / 14.0
+        var t1 := float(row + 1) / 14.0
+        for column in range(24):
+            var u0 := float(column) / 24.0
+            var u1 := float(column + 1) / 24.0
+            _quad(surface, _back_hair_point(c, s, crown_y, cap_height, radius_x, radius_z, t0, u0),
+                _back_hair_point(c, s, crown_y, cap_height, radius_x, radius_z, t1, u0),
+                _back_hair_point(c, s, crown_y, cap_height, radius_x, radius_z, t1, u1),
+                _back_hair_point(c, s, crown_y, cap_height, radius_x, radius_z, t0, u1))
+    surface.generate_normals()
+    return surface.commit()
+
+func _back_hair_point(c: Vector3, s: Vector3, crown_y: float, cap_height: float,
+        radius_x: float, radius_z: float, t: float, u: float) -> Vector3:
+    var angle := (u - 0.5) * PI
+    var edge := sin(angle)
+    var fall := 1.0 - 0.12 * t
+    return Vector3(
+        c.x + edge * radius_x * fall,
+        crown_y + cap_height * 0.20 - s.y * (0.22 + 0.92 * t) +
+            s.y * 0.045 * sin(angle * 3.0) * sin(t * PI),
+        c.z - face_sign * cos(angle) * radius_z * (0.99 + 0.20 * t))
 
 func _build_expression(c: Vector3, s: Vector3) -> void:
     # The CC0 compact mobile mesh can omit its textured facial surface.
