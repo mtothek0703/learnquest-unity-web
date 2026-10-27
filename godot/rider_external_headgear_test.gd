@@ -162,6 +162,51 @@ func _check() -> void:
         if headwear.find_child(landmark, false, false) == null:
             _fail("sculpted nose/lip anatomy must not be a flat decal")
             return
+    # V124 cohesive face redesign: color and anatomy must live on the SAME
+    # curved Head-attached surface, not on extra floating rigid face panels.
+    var sculpted_face := headwear.get_node_or_null("SculptedContinuousFace") as MeshInstance3D
+    if sculpted_face == null or sculpted_face.mesh == null:
+        _fail("continuous sculpted face missing")
+        return
+    var face_mat := sculpted_face.material_override as StandardMaterial3D
+    if face_mat == null or not face_mat.vertex_color_use_as_albedo:
+        _fail("facial gradients must be baked into the continuous mesh vertex colors")
+        return
+    var face_arrays: Array = sculpted_face.mesh.surface_get_arrays(0)
+    var face_vertices: PackedVector3Array = face_arrays[Mesh.ARRAY_VERTEX]
+    var face_colors: PackedColorArray = face_arrays[Mesh.ARRAY_COLOR]
+    var face_normals: PackedVector3Array = face_arrays[Mesh.ARRAY_NORMAL]
+    if face_vertices.size() < 5000 or face_colors.size() != face_vertices.size() or \
+            face_normals.size() != face_vertices.size():
+        _fail("face must have continuous high-resolution painted geometry with normals")
+        return
+    var min_light := 1.0
+    var max_light := 0.0
+    for color in face_colors:
+        min_light = minf(min_light, color.get_luminance())
+        max_light = maxf(max_light, color.get_luminance())
+    if max_light - min_light < 0.035:
+        _fail("face color is flat; cheek/brow/jaw shading has been lost")
+        return
+    var face_center := head_region.get_center()
+    var face_size := head_region.size
+    var face_u := 0.25 if float(headwear.get("face_sign")) > 0.0 else 0.75
+    var nose_point: Vector3 = headwear.call("_face_point", face_center, face_size, face_u, 0.52)
+    var side_point: Vector3 = headwear.call("_face_point", face_center, face_size,
+        face_u - 0.12, 0.52)
+    var protrusion := (nose_point.z - side_point.z) * float(headwear.get("face_sign"))
+    if protrusion < face_size.z * 0.08:
+        _fail("sculpted nose/cheek relief must remain visible in front view")
+        return
+    var highlights := headwear.find_children("IrisCatchlight*", "MeshInstance3D", false, false)
+    if highlights.size() != 4:
+        _fail("both expressive irises need two modeled highlights each")
+        return
+    for highlight in highlights:
+        var glint := highlight as MeshInstance3D
+        if glint.mesh == null or glint.mesh.get_surface_count() == 0:
+            _fail("iris highlight has no renderable geometry")
+            return
     var vertices := 0
     for item in meshes:
         var part := item as MeshInstance3D
