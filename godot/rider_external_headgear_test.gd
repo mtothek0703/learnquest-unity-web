@@ -44,6 +44,11 @@ func _check() -> void:
     if back_hair == null or back_hair.mesh == null or back_hair.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() < 1000:
         _fail("chase camera must have substantial curved back-hair geometry")
         return
+    var head_region := headwear.get("head_bounds") as AABB
+    var hair_region := back_hair.mesh.get_aabb()
+    if hair_region.size.x < head_region.size.x * 1.2 or hair_region.size.y < head_region.size.y * 0.9:
+        _fail("rear hair is too narrow or short to read in smartphone chase view")
+        return
     var vertices := 0
     for item in meshes:
         var part := item as MeshInstance3D
