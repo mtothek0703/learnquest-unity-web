@@ -77,15 +77,15 @@ func _capture() -> void:
                     baseline = shot
                 else:
                     var different := 0
-                    for y in range(16):
-                        for x in range(32):
-                            var px := int(float(size.x - 1) * float(x) / 31.0)
-                            var py := int(float(size.y - 1) * float(y) / 15.0)
+                    for y in range(36):
+                        for x in range(64):
+                            var px := int(float(size.x - 1) * float(x) / 63.0)
+                            var py := int(float(size.y - 1) * float(y) / 35.0)
                             var a := baseline.get_pixel(px, py)
                             var b := shot.get_pixel(px, py)
                             if absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b) > 0.16:
                                 different += 1
-                    if different < 6:
+                    if different < 24:
                         _fail("new lighting does not visibly change the %s %s view" % [str(size), view])
                         return
                 count += 1
