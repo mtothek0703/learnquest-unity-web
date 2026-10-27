@@ -148,3 +148,9 @@ V111 changes the existing GPU-skinned sleeve's centerline and perpendicular cros
 ## V113 — faltbare Aerofoils und schmalerer Flugumhang (visuelle Freigabe offen)
 
 Vergleiche V112-Release und V113-PR bei exakt gleicher 1280×720-/1170×540-Verfolgerkamera. In Idle müssen die **vier** bisher seitlich sichtbaren starren Aerofoil-Flächen eingeklappt sein; der **sechsgelenkige** Umhang bleibt vorhanden, aber schmaler. Turbo und Sprung entfalten beide Flügel und den Umhang wieder, Landung führt ohne Sprung in der Silhouette zum ruhigen Zustand zurück. Prüfe besonders die Schulter-/Handschuh- und Kopf-/Haarübergänge sowie verbliebene starre Rückenplatten. Der neue `rider_aero_silhouette_test.gd` prüft nur die Transformations-/Kollisionsinvarianten; das 20-PNG-Renderartefakt muss vor Merge tatsächlich angesehen werden. Keine Behauptung eines High-End-Gesamtcharakters oder realer iPhone-FPS allein aus Mesa-Frames.
+
+## V114: continuous lower-body geometry (PR acceptance)
+- Compare the V113 release's actual 20 PNGs against the V114 PR's 20 PNGs at identical 1280×720 and 1170×540 views (idle, steer+boost, jump; front, profile, chase).
+- Inspect both hip-to-jacket seams, both knees from profile, trouser-to-boot cuffs and front silhouette. Reject any new floating mesh, clipping, missing boot or knee ring.
+- Confirm the new yoke and both trouser meshes are GPU-skinned to the original 13 bones; the old V99 leg guards and V92 rigid trousers are hidden only after successful replacement.
+- Real iPhone Safari/Android landscape FPS, touch controls and full three-vocabulary-question-to-complete-round playthrough remain MANUAL gates; 20 desktop Mesa PNGs are not mobile acceptance.
