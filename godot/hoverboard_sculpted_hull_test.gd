@@ -87,6 +87,10 @@ func _check() -> void:
     var original_y := board.position.y
     rider.set("lean", 0.85)
     rider.set("boosting", true)
+    # The gameplay adapter copies rider input to LegacyRider during its own
+    # process tick; explicitly mirror it in this deterministic manual tick.
+    legacy.set("lean", 0.85)
+    legacy.set("boosting", true)
     legacy.call("_process", 0.28)
     sculpt.call("_process", 0.28)
     if absf(board.rotation.z) < 0.01 or absf(board.position.y - original_y) < 0.001:
