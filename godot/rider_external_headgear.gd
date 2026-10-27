@@ -13,7 +13,7 @@ func set_visual_scale(factor: float) -> void:
     # BoneAttachment3D follows the imported Head and may overwrite its own
     # transform. Scale the actual visual meshes around the sampled head center
     # instead, preserving the original 65-bone Skin and stable Head binding.
-    if factor < 1.0 or factor > 1.7 or absf(visual_scale - 1.0) > 0.001:
+    if factor < 1.0 or factor > 2.05 or absf(visual_scale - 1.0) > 0.001:
         return
     var center := head_bounds.get_center()
     for part in generated_meshes:
