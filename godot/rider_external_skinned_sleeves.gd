@@ -100,14 +100,14 @@ func _sculpt_arm(body: MeshInstance3D, upper: int, lower: int, hand: int) -> Arr
             for vertex_id in [a, b, c]:
                 var inf := _influence(weights, bones, vertex_id, upper, lower, hand)
                 var normal := normals[vertex_id].normalized()
-                # Broad organic upper-arm fabric, narrower forearm and a clean
-                # wrist taper. Shoulder shaping is still driven by real bones.
-                var bulge := 0.020 + 0.044 * inf.y
-                var outer := signf(points[vertex_id].x - bounds.get_center().x)
-                var shaped := points[vertex_id] + normal * bulge + Vector3(
-                    outer * 0.018 * inf.y, 0.0, 0.0)
+                # Coherent shoulder-to-wrist sculpt, not thin floating tubes:
+                # weight-aware shoulder armor, elbow bellows and forearm bracer
+                # stay part of the same four-weight skinned source surface.
+                var shaped := points[vertex_id] + _sculpt_offset(
+                    points[vertex_id], normal, bounds, inf)
+                var panel := _armor_panel(inf)
                 output.set_normal(normal)
-                output.set_color(Color(inf.y, inf.x, 0.0, 1.0))
+                output.set_color(Color(inf.y, inf.x, panel, 1.0))
                 output.set_bones(PackedInt32Array([
                     bones[vertex_id * 4], bones[vertex_id * 4 + 1],
                     bones[vertex_id * 4 + 2], bones[vertex_id * 4 + 3]]))
@@ -119,3 +119,27 @@ func _sculpt_arm(body: MeshInstance3D, upper: int, lower: int, hand: int) -> Arr
     if accepted < 150:
         return null
     return output.commit()
+
+# Sculpting is driven by original upper/lower-arm weights, so the armor
+# follows actual shoulder/elbow bends rather than sliding rigid attachments.
+# Return displacement in the imported mesh's REST space only.
+func _sculpt_offset(point: Vector3, normal: Vector3, bounds: AABB,
+        inf: Vector2) -> Vector3:
+    var shoulder := smoothstep(0.32, 0.90, inf.y)
+    var elbow := exp(-pow((inf.y - 0.48) / 0.20, 2.0))
+    var forearm := smoothstep(0.22, 0.72, inf.x - inf.y)
+    var wrist := 1.0 - smoothstep(0.22, 0.46, inf.x)
+    var shell := 0.028 + 0.088 * shoulder + 0.044 * elbow + 0.046 * forearm * (1.0 - wrist)
+    var lateral := signf(point.x - bounds.get_center().x)
+    # Sculpt the outer shoulder into a broad V-shaped silhouette, while the
+    # elbow keeps clearance and the wrist returns close to the original hand.
+    return normal * shell + Vector3(lateral * (0.038 * shoulder + 0.014 * elbow),
+        0.013 * shoulder, 0.0)
+
+func _armor_panel(inf: Vector2) -> float:
+    # Stored as COLOR.b, interpolated by GPU; visible broad armor zones rather
+    # than subpixel seams at smartphone chase-camera distance.
+    var shoulder_plate := smoothstep(0.43, 0.78, inf.y)
+    var elbow_ring := exp(-pow((inf.y - 0.48) / 0.13, 2.0))
+    var forearm_plate := smoothstep(0.30, 0.69, inf.x - inf.y)
+    return maxf(shoulder_plate, maxf(elbow_ring * 0.75, forearm_plate * 0.86))
