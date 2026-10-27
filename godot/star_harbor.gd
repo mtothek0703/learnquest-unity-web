@@ -11,12 +11,16 @@ var carrier_hulls: Array[Node3D] = []
 var carrier_rings: Array[Node3D] = []
 var carrier_engines: Array[MeshInstance3D] = []
 var cinematic_drydocks: Node3D
+var cargo_relay: Node3D
 
 func _ready() -> void:
     _build_harbor()
     cinematic_drydocks = preload("res://cinematic_harbor_drydocks.gd").new() as Node3D
     cinematic_drydocks.name = "Cinematic Star Harbor loading drydocks"
     add_child(cinematic_drydocks)
+    cargo_relay = preload("res://harbor_cargo_relay.gd").new() as Node3D
+    cargo_relay.name = "Playable Star Harbor cargo relay"
+    add_child(cargo_relay)
 
 func _material(color: Color, glow: bool = false, vertex_shading: bool = false) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -257,7 +261,19 @@ func _build_carriers() -> void:
         floodlight.position = Vector3(0.0, -0.4, 5.4)
         carrier.add_child(floodlight)
 
+func reset_cargo_relay() -> void:
+    cargo_relay.call("reset_course")
+
+func check_cargo_delivery(rider_x: float) -> Dictionary:
+    return cargo_relay.call("check_delivery", rider_x)
+
+func get_cargo_deliveries() -> int:
+    return int(cargo_relay.get("completed_deliveries"))
+
 func _process(delta: float) -> void:
+    if cargo_relay != null:
+        cargo_relay.set("running", running)
+        cargo_relay.set("travel_speed", travel_speed)
     if cinematic_drydocks != null:
         cinematic_drydocks.set("running", running)
         cinematic_drydocks.set("travel_speed", travel_speed)
