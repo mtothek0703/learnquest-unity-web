@@ -142,3 +142,10 @@ Entwickle in **aufeinander aufbauenden Sprints**, nicht in isolierten Kleinstkor
 - **Danach:** Screenshots im identischen 16:9-/19,5:9-Querformat erzeugen, kritische Durchdringungen korrigieren und erst dann weitere Modell-/Animationsschritte. Keine Kleinständerungen als Grafik-Meilenstein melden.
 
 - **Bekannte, nicht blockierende Importmeldung weiterhin vorhanden:** `ERROR: Parameter "t" is null.` im V107-Release-Log. Erfolgreicher Godot-Import, Gameplay-Tests und Export beweisen nicht, dass die Warnung behoben wäre. Nächster Durchlauf: Ursache prüfen, visuelle QA und gerenderte 16:9-Vergleiche vor weiteren Design-Claims.
+
+
+## Sprintprotokoll — 27.10.2026, V108 (gerenderte QA, CI-/Release-Abnahme offen)
+- [x] **Sprint-1-QA-Infrastruktur implementiert:** `godot/rider_visual_capture_test.gd` rendert mit echter OpenGL-Ausgabe statt Dummy-Renderer 18 Landschafts-PNGs: 16:9 und 19,5:9, Front/Profil/Verfolger, Idle/Lenkung+Turbo/Sprung. Ein Godot-Pixeltest verwirft leere Bilder. PR- und Release-Workflows archivieren die Screenshots als herunterladbare GitHub-Actions-Artefakte. Reproduktionsanleitung in `godot/CHARACTER_VISUAL_QA.md`.
+- [ ] **CI-Gate:** PR #95 und die Godot-/Screenshot-Tests prüfen, Fehler vor Merge beheben. Erst nach grüner PR-CI und Archivschutz `skyway-v108/` neu und unveränderlich veröffentlichen; V107 und ältere Versionen sowie Unity-Webarchiv niemals überschreiben.
+- [ ] **Sprint 1 bleibt offen:** Die Bilder müssen noch **visuell** bewertet und mit V107 bei identischer Kamera verglichen werden. Screenshot-Vorhandensein ist kein Beweis für bessere Grafik, Clipping-Freiheit oder iPhone-FPS. Die 13-Knochen-Figur, drei Vokabelaufgaben, ununterbrochene Levelrunden, Klassen 1–10, vier Welten, Bosse, vier Power-ups und bestätigte Touchsteuerung bleiben unberührt.
+- **Nächster Schritt:** An echten QA-PNGs sichtbare Helm-/Haar-/Kragen-/Handschuh-Überlagerungen priorisieren und die organische Gesamtfigur verbessern; danach iPhone-Querformat-FPS/Touch manuell messen. Bekannte Godot-Dummy-Renderer-Importmeldung `Parameter "t" is null` separat beobachten, nicht ohne Nachweis als behoben markieren.
