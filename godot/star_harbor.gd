@@ -10,9 +10,13 @@ var rotors: Array[Node3D] = []
 var carrier_hulls: Array[Node3D] = []
 var carrier_rings: Array[Node3D] = []
 var carrier_engines: Array[MeshInstance3D] = []
+var cinematic_drydocks: Node3D
 
 func _ready() -> void:
     _build_harbor()
+    cinematic_drydocks = preload("res://cinematic_harbor_drydocks.gd").new() as Node3D
+    cinematic_drydocks.name = "Cinematic Star Harbor loading drydocks"
+    add_child(cinematic_drydocks)
 
 func _material(color: Color, glow: bool = false, vertex_shading: bool = false) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -254,6 +258,9 @@ func _build_carriers() -> void:
         carrier.add_child(floodlight)
 
 func _process(delta: float) -> void:
+    if cinematic_drydocks != null:
+        cinematic_drydocks.set("running", running)
+        cinematic_drydocks.set("travel_speed", travel_speed)
     elapsed += delta
     for index in range(rotors.size()):
         rotors[index].rotation.y += delta * (0.55 + float(index % 3) * 0.16)
