@@ -103,7 +103,7 @@ func _point(t: float, u: float, side: float, kind: int) -> Vector3:
     # perpendicular to the actual sloping shoulder-to-wrist centerline.
     # The shoulder overlaps the continuous jacket, while the wrist terminates
     # at the existing articulated hand rather than beyond it.
-    var start := Vector3(side * 0.61, 2.29, -0.31)
+    var start := Vector3(side * 0.61, 2.29, -0.33)
     var finish := Vector3(side * 0.73, 1.33, -0.06)
     var center := start.lerp(finish, t)
     center.x += side * 0.018 * sin(t * PI)
@@ -111,7 +111,7 @@ func _point(t: float, u: float, side: float, kind: int) -> Vector3:
     var tangent := Vector3(
         side * (0.12 + 0.018 * PI * cos(t * PI)),
         -0.96,
-        0.25 + 0.024 * PI * cos(t * PI)
+        0.27 + 0.024 * PI * cos(t * PI)
     ).normalized()
     var radial_x := (Vector3.RIGHT - tangent * tangent.x).normalized()
     var radial_z := tangent.cross(radial_x).normalized()
