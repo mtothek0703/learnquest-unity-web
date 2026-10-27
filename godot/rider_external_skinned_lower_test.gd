@@ -88,6 +88,30 @@ func _check() -> void:
             _fail(property_name + " is not substantial animated leg geometry")
             return
         combined += count
+    # Verify genuine geometric width and boot volume on both legs, not only
+    # material colors. The same profile must mirror without lateral drift.
+    var sample_bounds := AABB(Vector3(-0.6, 0.0, -0.4), Vector3(1.2, 3.0, 0.8))
+    var right_knee: Vector3 = lower.call("_sculpt_offset",
+        Vector3(0.28, 0.915, 0.0), Vector3.RIGHT, sample_bounds, false)
+    var left_knee: Vector3 = lower.call("_sculpt_offset",
+        Vector3(-0.28, 0.915, 0.0), Vector3.LEFT, sample_bounds, false)
+    var right_boot: Vector3 = lower.call("_sculpt_offset",
+        Vector3(0.28, 0.255, 0.0), Vector3.RIGHT, sample_bounds, true)
+    var right_waist: Vector3 = lower.call("_sculpt_offset",
+        Vector3(0.28, 1.2, 0.0), Vector3.RIGHT, sample_bounds, false)
+    if right_knee.x < 0.07 or right_boot.x < 0.075 or right_knee.x < right_waist.x + 0.04:
+        _fail("athletic knee and boot must be sculpted wider than the original narrow legs")
+        return
+    if absf(right_knee.x + left_knee.x) > 0.001:
+        _fail("lower garment silhouette must be left/right symmetric")
+        return
+    for garment_name in ["trousers", "boots"]:
+        var material := (lower.get(garment_name) as MeshInstance3D).material_override as ShaderMaterial
+        var source_bounds := source.mesh.get_aabb()
+        if absf(float(material.get_shader_parameter("rest_height")) - source_bounds.size.y) > 0.001 or \
+                absf(float(material.get_shader_parameter("rest_width")) - source_bounds.size.x) > 0.001:
+            _fail("large color panels must fit actual imported CC0 body bounds")
+            return
     var calf := rig.find_bone("calf_l")
     if calf < 0:
         _fail("imported calf bone missing")
