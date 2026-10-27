@@ -35,10 +35,15 @@ func _check() -> void:
         _fail("expected curved cap, face shield, visor edges and multiple hair locks")
         return
     for expected in ["CurvedFlightHelmetShell", "TranslucentFaceShield", "SculptedContinuousFace",
+            "SculptedBackHairCurtain", "WindSweptBackLock0", "WindSweptBackLock8",
             "EyeWhite*", "Iris*", "Pupil*", "CurvedSmile"]:
         if headwear.find_child(expected, false, false) == null:
             _fail("missing expressive helmet/face feature: " + expected)
             return
+    var back_hair := headwear.get_node_or_null("SculptedBackHairCurtain") as MeshInstance3D
+    if back_hair == null or back_hair.mesh == null or back_hair.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() < 1000:
+        _fail("chase camera must have substantial curved back-hair geometry")
+        return
     var vertices := 0
     for item in meshes:
         var part := item as MeshInstance3D
