@@ -66,6 +66,23 @@ func _check() -> void:
     if headwear == null:
         _fail("real Head bone must carry the new curved headgear")
         return
+    # Preserve a compact, stylized rider-to-board proportion while fitting
+    # the imported GLB using its real mesh bounds (not fixed asset units).
+    var low := INF
+    var high := -INF
+    for item in meshes:
+        var body := item as MeshInstance3D
+        var aabb := body.get_aabb()
+        for x in [aabb.position.x, aabb.end.x]:
+            for y in [aabb.position.y, aabb.end.y]:
+                for z in [aabb.position.z, aabb.end.z]:
+                    var point := imported.to_local(body.to_global(Vector3(x, y, z)))
+                    low = minf(low, point.y)
+                    high = maxf(high, point.y)
+    var scaled_height := (high - low) * imported.scale.y
+    if absf(scaled_height - 2.62) > 0.035:
+        _fail("original skinned character must keep the compact mobile hoverboard proportion")
+        return
     var front_sign := float(headwear.get("face_sign"))
     var expected_facing := PI if front_sign > 0.0 else 0.0
     if absf(imported.rotation.y - expected_facing) > 0.01:
