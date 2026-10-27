@@ -21,18 +21,18 @@ void fragment() {
     float side = smoothstep(0.12, 0.29, x);
     float shoulder = smoothstep(0.085, 0.26, x) * smoothstep(0.65, 0.73, y);
     float waist = 1.0 - smoothstep(0.47, 0.56, y);
-    vec3 deep_navy = vec3(0.045, 0.075, 0.19);
-    vec3 royal_violet = vec3(0.37, 0.17, 0.64);
-    vec3 cobalt = vec3(0.10, 0.36, 0.72);
-    vec3 electric_pink = vec3(0.91, 0.16, 0.53);
+    vec3 deep_navy = vec3(0.095, 0.13, 0.30);
+    vec3 royal_violet = vec3(0.53, 0.28, 0.80);
+    vec3 cobalt = vec3(0.21, 0.49, 0.89);
+    vec3 electric_pink = vec3(0.97, 0.32, 0.63);
     vec3 cloth = mix(deep_navy, royal_violet, 0.45 + center * 0.45);
     cloth = mix(cloth, cobalt, side * chest * 0.90);
     cloth = mix(cloth, electric_pink, shoulder * 0.90);
-    cloth = mix(cloth, deep_navy, waist * 0.38);
+    cloth = mix(cloth, deep_navy, waist * 0.22);
     // Large material regions, rather than tiny high-frequency stripes, must
     // read in both smartphone landscape chase and front perspectives.
     float weave = sin(rest_vertex.x * 85.0) * sin(rest_vertex.y * 90.0);
-    cloth *= 0.975 + 0.025 * weave;
+    cloth *= 0.985 + 0.015 * weave;
     float zipper = exp(-pow(x * 55.0, 2.0)) * chest;
     float piping = exp(-pow((x - 0.205) * 38.0, 2.0)) * chest;
     float chevron = exp(-pow((y - 0.665 + x * 0.28) * 26.0, 2.0)) * chest;
