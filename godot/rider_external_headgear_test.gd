@@ -294,6 +294,9 @@ func _check() -> void:
         if not (eye.mesh is ArrayMesh) or eye.mesh.get_surface_count() != 1:
             _fail("eye white must use a single sculpted almond mesh")
             return
+        if not eye.has_meta("local_eye_geometry"):
+            _fail("sculpted eye must retain its projected center when head scales")
+            return
         var eye_arrays: Array = eye.mesh.surface_get_arrays(0)
         var eye_vertices: PackedVector3Array = eye_arrays[Mesh.ARRAY_VERTEX]
         var eye_normals: PackedVector3Array = eye_arrays[Mesh.ARRAY_NORMAL]
