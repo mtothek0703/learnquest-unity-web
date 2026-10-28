@@ -102,6 +102,21 @@ func _check() -> void:
     if right_knee.x < 0.07 or right_boot.x < 0.075 or right_knee.x < right_waist.x + 0.04:
         _fail("athletic knee and boot must be sculpted wider than the original narrow legs")
         return
+    # The boot collar must be an actual 3D, bilateral four-weight mesh
+    # deformation, not a painted stripe or an unskinned attachment.
+    var right_cuff: Vector3 = lower.call("_sculpt_offset",
+        Vector3(0.28, 0.465, 0.0), Vector3.RIGHT, sample_bounds, true)
+    var below_cuff: Vector3 = lower.call("_sculpt_offset",
+        Vector3(0.28, 0.375, 0.0), Vector3.RIGHT, sample_bounds, true)
+    var left_cuff: Vector3 = lower.call("_sculpt_offset",
+        Vector3(-0.28, 0.465, 0.0), Vector3.LEFT, sample_bounds, true)
+    if right_cuff.x < below_cuff.x + 0.04 or absf(right_cuff.x + left_cuff.x) > 0.001:
+        _fail("weighted ankle collar lacks raised symmetrical 3D volume")
+        return
+    var boot_shader := ((lower.get("boots") as MeshInstance3D).material_override as ShaderMaterial).shader.code
+    if not boot_shader.contains("ankle_cuff") or not boot_shader.contains("boot_mode * 0.58"):
+        _fail("boot collar shading does not follow its actual skinned geometry")
+        return
     if absf(right_knee.x + left_knee.x) > 0.001:
         _fail("lower garment silhouette must be left/right symmetric")
         return
