@@ -77,8 +77,30 @@ func _check() -> void:
     if not bool(adapter.call("fit_to_board")) or absf(_clearance(rider, adapter, grip) - initial) > 0.005:
         _fail("explicit refitting is no longer idempotent")
         return
+    # Carving, boost and an airborne root jump are gameplay-owned. The visual
+    # deck contact must survive all three without changing the rider root.
+    rider.set("lean", 0.75)
+    rider.set("boosting", true)
+    rider.position.y = 0.80
+    board.position.y = previous_y + 0.11
+    var jump_root_y := rider.position.y
+    adapter.call("_process", 0.035)
+    if absf(_clearance(rider, adapter, grip) - initial) > 0.005:
+        _fail("boost/jump/carve pose lost board contact")
+        return
+    if absf(rider.position.y - jump_root_y) > 0.0001:
+        _fail("visual board tracking must never alter gameplay jump height")
+        return
+    rider.set("lean", 0.0)
+    rider.set("boosting", false)
+    rider.position.y = 0.0
+    board.position.y = previous_y
+    adapter.call("_process", 0.035)
+    if absf(_clearance(rider, adapter, grip) - initial) > 0.005:
+        _fail("landing after boost/carve lost sole contact")
+        return
     if hero.find_children("*", "CollisionObject3D", true, false).size() != 0:
         _fail("visual contact correction must not add collision shapes")
         return
-    print("RIDER BOARD CONTACT TEST PASSED: original 65-bone skinned soles automatically follow rising, falling and neutral deck; no refit required")
+    print("RIDER BOARD CONTACT TEST PASSED: original 65-bone skinned soles automatically follow bob, carve, boost, jump and landing; no refit required")
     quit(0)
