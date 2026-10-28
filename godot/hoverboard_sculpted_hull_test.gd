@@ -70,6 +70,41 @@ func _check() -> void:
         if absf(outer.x - inner.x) < 0.5 or absf(outer.x) < 1.35:
             _fail("swept wing does not provide a distinct wider 3D silhouette")
             return
+    # V124: two closed, curved, symmetric propulsion housings and emissive
+    # exhaust toruses, attached to the existing hoverboard (not touch/collision).
+    var port_engine := sculpt.get_node_or_null("PortSculptedTurbine") as MeshInstance3D
+    var starboard_engine := sculpt.get_node_or_null("StarboardSculptedTurbine") as MeshInstance3D
+    var port_halo := sculpt.get_node_or_null("PortExhaustHalo") as MeshInstance3D
+    var starboard_halo := sculpt.get_node_or_null("StarboardExhaustHalo") as MeshInstance3D
+    for part in [port_engine, starboard_engine, port_halo, starboard_halo]:
+        if part == null or part.mesh == null or not part.visible:
+            _fail("missing sculpted propulsion volume or exhaust")
+            return
+        var geometry: Array = part.mesh.surface_get_arrays(0)
+        var points3d: PackedVector3Array = geometry[Mesh.ARRAY_VERTEX]
+        var normals3d: PackedVector3Array = geometry[Mesh.ARRAY_NORMAL]
+        if points3d.size() < 1000 or normals3d.size() != points3d.size():
+            _fail("propulsion geometry must be a smooth shaded 3D surface")
+            return
+    for t in [0.0, 0.45, 0.80, 1.0]:
+        var port: Vector3 = sculpt.call("_thruster_point", -1.0, t, 0.0)
+        var starboard: Vector3 = sculpt.call("_thruster_point", 1.0, t, PI)
+        if absf(port.x + starboard.x) > 0.001 or absf(port.y - starboard.y) > 0.001:
+            _fail("twin turbines are not mirrored around the board centerline")
+            return
+    var engine_mid_top: Vector3 = sculpt.call("_thruster_point", 1.0, 0.5, PI * 0.5)
+    var engine_mid_bottom: Vector3 = sculpt.call("_thruster_point", 1.0, 0.5, PI * 1.5)
+    var engine_tip_top: Vector3 = sculpt.call("_thruster_point", 1.0, 0.0, PI * 0.5)
+    var engine_front: Vector3 = sculpt.call("_thruster_point", 1.0, 0.0, 0.0)
+    var engine_back: Vector3 = sculpt.call("_thruster_point", 1.0, 1.0, 0.0)
+    if engine_mid_top.y - engine_mid_bottom.y < 0.40 or engine_mid_top.y - engine_tip_top.y < 0.08 or engine_back.z - engine_front.z < 1.0:
+        _fail("propulsion housing lacks a swept, three-dimensional tapered body")
+        return
+    var halo_outer: Vector3 = sculpt.call("_exhaust_halo_point", 1.0, 0.0, 0.0)
+    var halo_inner: Vector3 = sculpt.call("_exhaust_halo_point", 1.0, 0.0, PI)
+    if halo_outer.x - halo_inner.x < 0.04 or halo_outer.z < engine_back.z:
+        _fail("exhaust halo is not a separate volumetric rear torus")
+        return
     var retired_prisms := 0
     for child in board.get_children():
         if child is MeshInstance3D and child.mesh is PrismMesh:
@@ -100,8 +135,12 @@ func _check() -> void:
     if light == null or light.emission_energy_multiplier <= 1.25:
         _fail("boost must visibly intensify the curved light rails")
         return
+    var exhaust_light := sculpt.get("core_material") as StandardMaterial3D
+    if exhaust_light == null or not exhaust_light.emission_enabled or exhaust_light.emission_energy_multiplier <= 1.6:
+        _fail("boost must brighten both sculpted exhaust halos")
+        return
     if rider.get_node_or_null("ImportedRider/OriginalBodySkinRig/OriginalBodySkeleton13") == null:
         _fail("original 13-bone skinned character must remain")
         return
-    print("SCULPTED HOVERBOARD TEST PASSED: 360-degree tapered hull, swept wings, contoured deck, dynamic rails, original hover/lean and untouched collisions")
+    print("SCULPTED HOVERBOARD TEST PASSED: continuous hull, paired 3D turbines and boost exhaust, swept wings, hover/lean, original rig and untouched collisions")
     quit(0)
