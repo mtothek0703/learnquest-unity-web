@@ -379,6 +379,7 @@ jobs:
             /tmp/gameplay.log
             /tmp/original-body-skin.log
             /tmp/quaternius-rig.log
+            /tmp/board-contact.log
             /tmp/quaternius-headgear.log
             /tmp/quaternius-portrait-normals.log
             /tmp/quaternius-outfit.log
