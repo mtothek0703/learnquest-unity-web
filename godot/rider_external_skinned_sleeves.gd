@@ -129,12 +129,12 @@ func _sculpt_offset(point: Vector3, normal: Vector3, bounds: AABB,
     var elbow := exp(-pow((inf.y - 0.48) / 0.20, 2.0))
     var forearm := smoothstep(0.22, 0.72, inf.x - inf.y)
     var wrist := 1.0 - smoothstep(0.22, 0.46, inf.x)
-    var shell := 0.028 + 0.088 * shoulder + 0.044 * elbow + 0.046 * forearm * (1.0 - wrist)
+    var shell := 0.018 + 0.052 * shoulder + 0.028 * elbow + 0.035 * forearm * (1.0 - wrist)
     var lateral := signf(point.x - bounds.get_center().x)
     # Sculpt the outer shoulder into a broad V-shaped silhouette, while the
     # elbow keeps clearance and the wrist returns close to the original hand.
-    return normal * shell + Vector3(lateral * (0.038 * shoulder + 0.014 * elbow),
-        0.013 * shoulder, 0.0)
+    return normal * shell + Vector3(lateral * (0.019 * shoulder + 0.009 * elbow),
+        0.009 * shoulder, 0.0)
 
 func _armor_panel(inf: Vector2) -> float:
     # Stored as COLOR.b, interpolated by GPU; visible broad armor zones rather
