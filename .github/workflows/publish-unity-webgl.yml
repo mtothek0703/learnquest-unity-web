@@ -113,6 +113,9 @@ jobs:
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_original_body_skin_test.gd 2>&1 | tee /tmp/godot-original-body-skin.log
           grep -Fq "ORIGINAL BODY SKIN TEST PASSED" /tmp/godot-original-body-skin.log
           echo "Original glTF body skinning regression passed"
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_portrait_normals_test.gd 2>&1 | tee /tmp/godot-portrait-normals.log
+          grep -Fq "EXTERNAL PORTRAIT NORMALS TEST PASSED" /tmp/godot-portrait-normals.log
+          echo "Sculpted Head-bone portrait smooth-normal regression passed"
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_costume_skin_follow_test.gd 2>&1 | tee /tmp/godot-costume-skin-follow.log
           grep -Fq "COSTUME SKIN FOLLOW TEST PASSED" /tmp/godot-costume-skin-follow.log
           echo "Shared head, hair and costume skeleton pose regression passed"
