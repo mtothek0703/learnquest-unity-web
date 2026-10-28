@@ -1,6 +1,6 @@
 extends SceneTree
-## V124: actual original-skinned soles must sit ABOVE the sculpted hoverboard
-## traction deck in both neutral and bobbed poses; never change touch/physics.
+## V124: actual original-skinned soles must follow the moving hoverboard
+## traction deck every frame, without explicit refitting or touch/physics changes.
 func _initialize() -> void:
     call_deferred("_check")
 
@@ -46,26 +46,39 @@ func _check() -> void:
     if absf(initial - 0.045) > 0.03:
         _fail("rest soles intersect the actual board deck: %.3f m" % initial)
         return
-    # Refit to a changed hoverboard bob height, without modifying the board,
-    # the original glTF Skin, input events, or gameplay collision geometry.
+    # The real board moves EVERY FRAME, not only when the character is loaded.
+    # The old implementation only passed when fit_to_board() was called again.
     var previous_y := board.position.y
-    board.position.y += 0.14
-    if not bool(adapter.call("fit_to_board")):
-        _fail("rider did not refit to bobbed board")
+    var previous_hero_y := hero.position.y
+    if int(adapter.process_priority) <= int(board.process_priority):
+        _fail("skinned rider must update after the animated hoverboard")
         return
+    board.position.y += 0.14
+    adapter.call("_process", 0.016)
     var bobbed := _clearance(rider, adapter, grip)
-    if absf(bobbed - 0.045) > 0.03:
-        _fail("bobbed board/boot contact drift: %.3f m" % bobbed)
+    if absf(bobbed - initial) > 0.005 or absf(hero.position.y - previous_hero_y - 0.14) > 0.005:
+        _fail("automatic bob contact drift without refitting: %.3f m" % bobbed)
+        return
+    # A second frame and a descending deck must also remain contact-safe.
+    adapter.call("_process", 0.016)
+    if absf(_clearance(rider, adapter, grip) - initial) > 0.005:
+        _fail("stationary bob contact accumulated drift")
+        return
+    board.position.y = previous_y - 0.06
+    adapter.call("_process", 0.016)
+    if absf(_clearance(rider, adapter, grip) - initial) > 0.005:
+        _fail("descending board lost sole clearance")
         return
     board.position.y = previous_y
-    if not bool(adapter.call("fit_to_board")):
-        _fail("rider could not restore original stance")
+    adapter.call("_process", 0.016)
+    if absf(_clearance(rider, adapter, grip) - initial) > 0.005 or absf(hero.position.y - previous_hero_y) > 0.005:
+        _fail("automatic board contact does not return to neutral")
         return
-    if absf(_clearance(rider, adapter, grip) - initial) > 0.005:
-        _fail("board contact does not return to neutral")
+    if not bool(adapter.call("fit_to_board")) or absf(_clearance(rider, adapter, grip) - initial) > 0.005:
+        _fail("explicit refitting is no longer idempotent")
         return
     if hero.find_children("*", "CollisionObject3D", true, false).size() != 0:
         _fail("visual contact correction must not add collision shapes")
         return
-    print("RIDER BOARD CONTACT TEST PASSED: original 65-bone skinned soles aligned to sculpted deck in neutral and bobbed poses")
+    print("RIDER BOARD CONTACT TEST PASSED: original 65-bone skinned soles automatically follow rising, falling and neutral deck; no refit required")
     quit(0)
