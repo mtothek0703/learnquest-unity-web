@@ -239,23 +239,25 @@ func _build_headwear() -> void:
     var underhair := _material(Color(0.19, 0.085, 0.35), 0.05, 0.68)
     _mesh("SculptedBackHairCurtain", _back_hair_surface(c, s, crown_y, cap_height, radius_x, radius_z),
         underhair)
+    # The previous free-floating nine rear arcs formed a hollow cage around
+    # the head in the actual chase capture. Lay sculpted tapered locks over
+    # the SAME continuous closed rear hair volume instead: each follows the
+    # underlayer's shoulder flare and taper, rather than making giant loops.
+    # No extra rig, physics, textures, collisions or new draw passes.
     for strand in range(9):
-        var across := (float(strand) - 4.0) / 4.0
+        var u := (float(strand) + 0.5) / 9.0
         var flow: Array[Vector3] = []
         for segment in range(17):
             var t := float(segment) / 16.0
-            # The former nine straight rear locks collapsed into a vertical
-            # curtain in the real chase render. Fan them out across the
-            # shoulders with a three-dimensional S-curve and tapered ends.
-            # They still follow the original Head bone, with no simulation.
-            var flare := 1.08 + 1.28 * sin(t * PI * 0.82) + 0.20 * t
-            var sway := sin(t * PI * 1.5 + float(strand) * 0.48) * 0.15
-            flow.append(Vector3(
-                c.x + across * radius_x * flare + sway * radius_x * t,
-                crown_y + cap_height * 0.58 - s.y * (0.12 + 1.30 * t),
-                c.z - face_sign * radius_z * (1.40 + 0.44 * t + 0.12 * sin(t * PI))))
+            var point := _back_hair_point(c, s, crown_y, cap_height,
+                radius_x, radius_z, t, u)
+            point.x += sin(t * PI * 1.5 + float(strand) * 0.35) * \
+                radius_x * 0.07 * sin(PI * t)
+            point.z -= face_sign * s.z * (0.17 + 0.018 * sin(PI * t))
+            point.y += s.y * 0.025 * (1.0 - t)
+            flow.append(point)
         _mesh("WindSweptBackLock%d" % strand,
-            _tapered_hair_lock(flow, s.x * (0.086 if strand % 2 == 0 else 0.070), 9),
+            _tapered_hair_lock(flow, s.x * (0.060 if strand % 2 == 0 else 0.052), 9),
             highlight if strand % 3 == 0 else hair_mat)
     # One coherent, tapered hairline frames the face while the back curtain
     # gains a real inner/outer volume. These follow the imported Head joint.
