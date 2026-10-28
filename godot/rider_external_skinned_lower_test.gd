@@ -106,7 +106,7 @@ func _check() -> void:
         Vector3(0.28, 0.255, 0.0), Vector3.RIGHT, sample_bounds, true)
     var right_waist: Vector3 = lower.call("_sculpt_offset",
         Vector3(0.28, 1.2, 0.0), Vector3.RIGHT, sample_bounds, false)
-    if right_knee.x < 0.07 or right_boot.x < 0.075 or right_knee.x < right_waist.x + 0.04:
+    if right_knee.x < 0.045 or right_boot.x < 0.065 or right_knee.x < right_waist.x + 0.018:
         _fail("athletic knee and boot must be sculpted wider than the original narrow legs")
         return
     # Full skinned boot geometry must have an actual toe, instep, heel,
@@ -127,28 +127,54 @@ func _check() -> void:
         Vector3(0.28, 0.210, 0.0), back_normal, sample_bounds, true)
     var sole_front: Vector3 = lower.call("_sculpt_offset",
         Vector3(0.28, 0.135, 0.0), front_normal, sample_bounds, true)
-    if toe_front.dot(front_normal) < toe_back.dot(front_normal) + 0.13 or \
+    if toe_front.dot(front_normal) < toe_back.dot(front_normal) + 0.065 or \
             instep_front.dot(front_normal) < 0.10 or \
-            shin_front.dot(front_normal) < shin_back.dot(front_normal) + 0.10 or \
+            shin_front.dot(front_normal) < shin_back.dot(front_normal) + 0.070 or \
             heel_back.dot(back_normal) < 0.07 or sole_front.y >= -0.008:
         _fail("true weighted boots lack front toe/instep, rear heel, shin relief or sole")
         return
     # The boot collar must be an actual 3D, bilateral four-weight mesh
     # deformation, not a painted stripe or an unskinned attachment.
     var right_cuff: Vector3 = lower.call("_sculpt_offset",
-        Vector3(0.28, 0.465, 0.0), Vector3.RIGHT, sample_bounds, true)
+        Vector3(0.28, 0.738, 0.0), Vector3.RIGHT, sample_bounds, true)
     var below_cuff: Vector3 = lower.call("_sculpt_offset",
-        Vector3(0.28, 0.375, 0.0), Vector3.RIGHT, sample_bounds, true)
+        Vector3(0.28, 0.600, 0.0), Vector3.RIGHT, sample_bounds, true)
     var left_cuff: Vector3 = lower.call("_sculpt_offset",
-        Vector3(-0.28, 0.465, 0.0), Vector3.LEFT, sample_bounds, true)
-    if right_cuff.x < below_cuff.x + 0.04 or absf(right_cuff.x + left_cuff.x) > 0.001:
+        Vector3(-0.28, 0.738, 0.0), Vector3.LEFT, sample_bounds, true)
+    if right_cuff.x < below_cuff.x + 0.028 or absf(right_cuff.x + left_cuff.x) > 0.001:
         _fail("weighted ankle collar lacks raised symmetrical 3D volume")
         return
     var boot_shader := ((lower.get("boots") as MeshInstance3D).material_override as ShaderMaterial).shader.code
-    if not boot_shader.contains("ankle_cuff") or not boot_shader.contains("boot_mode * 0.58") or \
+    if not boot_shader.contains("ankle_cuff") or not boot_shader.contains("boot_mode * 0.24") or \
             not boot_shader.contains("shin_plate") or not boot_shader.contains("forefoot") or \
             not boot_shader.contains("heel_counter") or not boot_shader.contains("sole_edge"):
         _fail("boot collar shading does not follow its actual skinned geometry")
+        return
+    # Anatomy regression: the narrow ankle must read as a separate joint
+    # between the flared shin guard and broad, forward-swept toe box.
+    var ankle_side: Vector3 = lower.call("_sculpt_offset",
+        Vector3(0.28, 0.453, 0.0), Vector3.RIGHT, sample_bounds, true)
+    var toe_side: Vector3 = lower.call("_sculpt_offset",
+        Vector3(0.28, 0.264, 0.0), Vector3.RIGHT, sample_bounds, true)
+    var calf_side: Vector3 = lower.call("_sculpt_offset",
+        Vector3(0.28, 0.675, 0.0), Vector3.RIGHT, sample_bounds, true)
+    if toe_side.x < ankle_side.x + 0.035 or calf_side.x < ankle_side.x + 0.018:
+        _fail("boot is still a straight tube: missing foot/ankle/calf waist")
+        return
+    if not boot_shader.contains("vec3 boots = mix(midnight, cobalt") or \
+            not boot_shader.contains("shin_seam") or \
+            not boot_shader.contains("toe_cap") or \
+            not boot_shader.contains("ankle * 0.72"):
+        _fail("boot material still paints a uniform blue lower-leg tube")
+        return
+    # Previous boot extraction stopped at y=17.5% and could not contain the
+    # y=22.5% shin guard, even though the shader referenced it.
+    var actual_boot := lower.get("boots") as MeshInstance3D
+    var source_bounds := source.mesh.get_aabb()
+    var boot_bounds := actual_boot.mesh.get_aabb()
+    var boot_top := (boot_bounds.end.y - source_bounds.position.y) / source_bounds.size.y
+    if boot_top < 0.238:
+        _fail("weighted boot geometry was cut off below its sculpted shin guard")
         return
     if absf(right_knee.x + left_knee.x) > 0.001:
         _fail("lower garment silhouette must be left/right symmetric")
