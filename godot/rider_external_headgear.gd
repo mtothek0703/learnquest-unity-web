@@ -306,10 +306,14 @@ func _sculpted_fringe_ribbon(root: Vector3, control: Vector3, tip: Vector3,
                 var b := _fringe_ribbon_point(root, control, tip, width, thickness, t1, u0, outer)
                 var d := _fringe_ribbon_point(root, control, tip, width, thickness, t0, u1, outer)
                 var e := _fringe_ribbon_point(root, control, tip, width, thickness, t1, u1, outer)
+                var na := _fringe_normal(root, control, tip, width, thickness, t0, u0, outer)
+                var nb := _fringe_normal(root, control, tip, width, thickness, t1, u0, outer)
+                var ne := _fringe_normal(root, control, tip, width, thickness, t1, u1, outer)
+                var nd := _fringe_normal(root, control, tip, width, thickness, t0, u1, outer)
                 if outer:
-                    _quad(surface, a, b, e, d)
+                    _quad_smooth(surface, a, b, e, d, na, nb, ne, nd)
                 else:
-                    _quad(surface, d, e, b, a)
+                    _quad_smooth(surface, d, e, b, a, nd, ne, nb, na)
         for u in [0.0, 1.0]:
             _quad(surface,
                 _fringe_ribbon_point(root, control, tip, width, thickness, t0, u, true),
@@ -325,8 +329,24 @@ func _sculpted_fringe_ribbon(root: Vector3, control: Vector3, tip: Vector3,
                 _fringe_ribbon_point(root, control, tip, width, thickness, t, u1, true),
                 _fringe_ribbon_point(root, control, tip, width, thickness, t, u1, false),
                 _fringe_ribbon_point(root, control, tip, width, thickness, t, u0, false))
-    surface.generate_normals()
+    # Edge/cap quads intentionally retain their hard side normals; the
+    # continuous broad hair surfaces already supply analytic smooth normals.
     return surface.commit()
+
+func _fringe_normal(root: Vector3, control: Vector3, tip: Vector3,
+        width: float, thickness: float, t: float, u: float, outer: bool) -> Vector3:
+    var step := 0.001
+    var dt := _fringe_ribbon_point(root, control, tip, width, thickness,
+        clampf(t + step, 0.0, 1.0), u, outer) - \
+        _fringe_ribbon_point(root, control, tip, width, thickness,
+        clampf(t - step, 0.0, 1.0), u, outer)
+    var du := _fringe_ribbon_point(root, control, tip, width, thickness,
+        t, clampf(u + step, 0.0, 1.0), outer) - \
+        _fringe_ribbon_point(root, control, tip, width, thickness,
+        t, clampf(u - step, 0.0, 1.0), outer)
+    var normal := dt.cross(du).normalized()
+    var expected := Vector3(0.0, 0.0, face_sign if outer else -face_sign)
+    return -normal if normal.dot(expected) < 0.0 else normal
 
 func _fringe_ribbon_point(root: Vector3, control: Vector3, tip: Vector3,
         width: float, thickness: float, t: float, u: float, outer: bool) -> Vector3:
@@ -355,10 +375,14 @@ func _tapered_hair_lock(points: Array[Vector3], radius: float, sides: int) -> Ar
                 var b := _back_lock_point(points, radius, t1, u0, outer)
                 var c := _back_lock_point(points, radius, t1, u1, outer)
                 var d := _back_lock_point(points, radius, t0, u1, outer)
+                var na := _back_lock_normal(points, radius, t0, u0, outer)
+                var nb := _back_lock_normal(points, radius, t1, u0, outer)
+                var nc := _back_lock_normal(points, radius, t1, u1, outer)
+                var nd := _back_lock_normal(points, radius, t0, u1, outer)
                 if outer:
-                    _quad(surface, a, b, c, d)
+                    _quad_smooth(surface, a, b, c, d, na, nb, nc, nd)
                 else:
-                    _quad(surface, d, c, b, a)
+                    _quad_smooth(surface, d, c, b, a, nd, nc, nb, na)
         for u in [0.0, 1.0]:
             _quad(surface,
                 _back_lock_point(points, radius, t0, u, true),
@@ -374,8 +398,18 @@ func _tapered_hair_lock(points: Array[Vector3], radius: float, sides: int) -> Ar
                 _back_lock_point(points, radius, t, u1, true),
                 _back_lock_point(points, radius, t, u1, false),
                 _back_lock_point(points, radius, t, u0, false))
-    surface.generate_normals()
     return surface.commit()
+
+func _back_lock_normal(points: Array[Vector3], radius: float, t: float,
+        u: float, outer: bool) -> Vector3:
+    var step := 0.001
+    var dt := _back_lock_point(points, radius, clampf(t + step, 0.0, 1.0), u, outer) - \
+        _back_lock_point(points, radius, clampf(t - step, 0.0, 1.0), u, outer)
+    var du := _back_lock_point(points, radius, t, clampf(u + step, 0.0, 1.0), outer) - \
+        _back_lock_point(points, radius, t, clampf(u - step, 0.0, 1.0), outer)
+    var normal := dt.cross(du).normalized()
+    var expected := Vector3(0.0, 0.0, -face_sign if outer else face_sign)
+    return -normal if normal.dot(expected) < 0.0 else normal
 
 func _rear_lock_curve(point: Vector3, size: Vector3, strand: int, t: float) -> Vector3:
     # Organic rear hair flow: roots stay seated on the continuous back shell,
@@ -424,10 +458,18 @@ func _back_hair_surface(c: Vector3, s: Vector3, crown_y: float, cap_height: floa
                 var b := _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t1, u0, outer)
                 var d := _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t0, u1, outer)
                 var e := _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t1, u1, outer)
+                var na := _back_hair_normal(c, s, crown_y, cap_height,
+                    radius_x, radius_z, t0, u0, outer)
+                var nb := _back_hair_normal(c, s, crown_y, cap_height,
+                    radius_x, radius_z, t1, u0, outer)
+                var ne := _back_hair_normal(c, s, crown_y, cap_height,
+                    radius_x, radius_z, t1, u1, outer)
+                var nd := _back_hair_normal(c, s, crown_y, cap_height,
+                    radius_x, radius_z, t0, u1, outer)
                 if outer:
-                    _quad(surface, a, b, e, d)
+                    _quad_smooth(surface, a, b, e, d, na, nb, ne, nd)
                 else:
-                    _quad(surface, d, e, b, a)
+                    _quad_smooth(surface, d, e, b, a, nd, ne, nb, na)
         for u in [0.0, 1.0]:
             _quad(surface,
                 _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t0, u, true),
@@ -443,8 +485,22 @@ func _back_hair_surface(c: Vector3, s: Vector3, crown_y: float, cap_height: floa
                 _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t, u1, true),
                 _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t, u1, false),
                 _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t, u0, false))
-    surface.generate_normals()
     return surface.commit()
+
+func _back_hair_normal(c: Vector3, s: Vector3, crown_y: float, cap_height: float,
+        radius_x: float, radius_z: float, t: float, u: float, outer: bool) -> Vector3:
+    var step := 0.001
+    var dt := _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z,
+        clampf(t + step, 0.0, 1.0), u, outer) - \
+        _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z,
+        clampf(t - step, 0.0, 1.0), u, outer)
+    var du := _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z,
+        t, clampf(u + step, 0.0, 1.0), outer) - \
+        _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z,
+        t, clampf(u - step, 0.0, 1.0), outer)
+    var normal := dt.cross(du).normalized()
+    var expected := Vector3(0.0, 0.0, -face_sign if outer else face_sign)
+    return -normal if normal.dot(expected) < 0.0 else normal
 
 func _back_hair_volume_point(c: Vector3, s: Vector3, crown_y: float, cap_height: float,
         radius_x: float, radius_z: float, t: float, u: float, outer: bool) -> Vector3:
