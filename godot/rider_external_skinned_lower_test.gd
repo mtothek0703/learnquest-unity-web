@@ -112,6 +112,59 @@ func _check() -> void:
                 absf(float(material.get_shader_parameter("rest_width")) - source_bounds.size.x) > 0.001:
             _fail("large color panels must fit actual imported CC0 body bounds")
             return
+    # A source triangle straddling BOTH garment limits must be clipped into
+    # continuous weighted triangles, never dropped because one corner lies
+    # outside. This catches the former jagged waist/ankle/boot seam defect.
+    var sample: Array[Dictionary] = [
+        {"position": Vector3(-0.4, 0.0, 0.0), "normal": Vector3.FORWARD,
+            "bones": PackedInt32Array([0, 0, 0, 0]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
+        {"position": Vector3(0.4, 1.0, 0.0), "normal": Vector3.FORWARD,
+            "bones": PackedInt32Array([1, 1, 1, 1]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
+        {"position": Vector3(0.0, 2.0, 0.0), "normal": Vector3.FORWARD,
+            "bones": PackedInt32Array([2, 2, 2, 2]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])}
+    ]
+    var clipped: Array[Dictionary] = lower.call("_clip_to_height", sample, 0.5, true)
+    clipped = lower.call("_clip_to_height", clipped, 1.5, false)
+    if clipped.size() < 3:
+        _fail("straddling original weighted triangle was discarded at the lower seams")
+        return
+    var bottom_edges := 0
+    var top_edges := 0
+    var mixed_bones := 0
+    for corner in clipped:
+        var point: Vector3 = corner["position"]
+        if point.y < 0.4999 or point.y > 1.5001:
+            _fail("clipped garment vertex escaped its two seam planes")
+            return
+        if absf(point.y - 0.5) < 0.0001:
+            bottom_edges += 1
+        if absf(point.y - 1.5) < 0.0001:
+            top_edges += 1
+        var ids: PackedInt32Array = corner["bones"]
+        var influences: PackedFloat32Array = corner["weights"]
+        if ids.size() != 4 or influences.size() != 4:
+            _fail("seam vertex lost original four-influence skin format")
+            return
+        var total_weight := 0.0
+        var active := 0
+        for slot in range(4):
+            if ids[slot] < 0 or ids[slot] > 2:
+                _fail("seam interpolation invented a bone")
+                return
+            total_weight += influences[slot]
+            if influences[slot] > 0.1:
+                active += 1
+        if absf(total_weight - 1.0) > 0.0001:
+            _fail("seam interpolation did not normalize four bone weights")
+            return
+        if active >= 2:
+            mixed_bones += 1
+    if bottom_edges == 0 or top_edges == 0 or mixed_bones < 2:
+        _fail("missing interpolated upper/lower seam or blended original bone influences")
+        return
     var calf := rig.find_bone("calf_l")
     if calf < 0:
         _fail("imported calf bone missing")
