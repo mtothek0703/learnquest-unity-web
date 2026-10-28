@@ -140,16 +140,18 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
     # All dimensions derive from the imported CC0 body bounds.
     var width := bounds.size.x
     var center_x := bounds.get_center().x
-    var flare := smoothstep(0.08, 0.96, t)
-    # Keep a clearly open center channel so the rider's boots and board are
-    # visible in chase view; each side reads as a swept flight fin, not a skirt.
+    # Broad at mid-span but tapered at the trailing tips: the old monotonic
+    # flare read like a skirt in the chase camera. A swept aerofoil silhouette
+    # keeps a central boot/board channel while retaining four-weight skinning.
+    var flare := sin(PI * t * 0.78)
     var inner := width * (0.025 + 0.13 * t)
-    var outer := width * (0.14 + 0.31 * flare)
+    var outer := width * (0.14 + 0.33 * flare + 0.065 * t)
     var x := center_x + side * lerpf(inner, outer, u)
     var bow := sin(u * PI) * sin(t * PI)
     var y := bounds.position.y + bounds.size.y * (0.72 - 0.43 * t + 0.020 * bow + 0.035 * u * t)
     var rib := sin(u * PI * 5.0 + t * 2.5) * width * 0.012 * t
-    var sweep := 0.045 + 0.12 * t + 0.42 * pow(t, 1.5) + 0.035 * bow
+    var sweep := 0.045 + 0.12 * t + 0.42 * pow(t, 1.5) + 0.035 * bow + \
+        0.07 * pow(u, 1.5) * sin(PI * t)
     var z := back + back_sign * (sweep + rib)
     # All four weights are present and normalized. Upper rows follow the spine;
     # lower rows inherit pelvis and the corresponding leg for real deformation.

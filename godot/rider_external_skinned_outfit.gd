@@ -101,9 +101,21 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
         (1.0 - smoothstep(0.17, 0.38, absf(lateral)))
     var side_taper := smoothstep(0.23, 0.43, absf(lateral)) * \
         exp(-pow((y - 0.51) / 0.09, 2.0))
+    # One coherent skinned anatomical profile: broad deltoid caps, paired
+    # pectoral volumes and a raised central sternum/spine ridge. These are
+    # deformations of the imported weighted triangles, not rigid add-ons.
+    var pectoral := exp(-pow((y - 0.655) / 0.075, 2.0)) * \
+        exp(-pow((absf(lateral) - 0.17) / 0.11, 2.0))
+    var deltoid := exp(-pow((y - 0.715) / 0.055, 2.0)) * \
+        smoothstep(0.18, 0.32, absf(lateral))
+    var spine_keel := exp(-pow(lateral / 0.065, 2.0)) * \
+        exp(-pow((y - 0.61) / 0.13, 2.0))
     var depth: float = 0.022 + 0.064 * chest + 0.054 * shoulder + \
-        0.009 * waist + 0.031 * chest_ridge + 0.022 * collar - 0.009 * side_taper
-    var spread: float = 0.042 * shoulder + 0.015 * chest_ridge
+        0.009 * waist + 0.031 * chest_ridge + 0.022 * collar - \
+        0.009 * side_taper + 0.037 * pectoral + 0.027 * deltoid + \
+        0.016 * spine_keel
+    var spread: float = 0.042 * shoulder + 0.015 * chest_ridge + \
+        0.032 * deltoid - 0.020 * waist * smoothstep(0.12, 0.35, absf(lateral))
     return normal * depth + Vector3(signf(lateral) * spread, 0.012 * shoulder, 0.0)
 
 func _jacket_material(bounds: AABB) -> ShaderMaterial:

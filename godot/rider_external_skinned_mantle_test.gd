@@ -58,6 +58,8 @@ func _check() -> void:
         var hem_max := -INF
         var root_depth := 0.0
         var hem_depth := 0.0
+        var mid_min := INF
+        var mid_max := -INF
         var closest_hem_to_center := INF
         var root_samples := 0
         var hem_samples := 0
@@ -80,6 +82,9 @@ func _check() -> void:
                 root_max = maxf(root_max, vertices[i].x)
                 root_depth += vertices[i].z
                 root_samples += 1
+            if uv[i].y > 0.47 and uv[i].y < 0.53:
+                mid_min = minf(mid_min, vertices[i].x)
+                mid_max = maxf(mid_max, vertices[i].x)
             if uv[i].y > 0.95:
                 hem_min = minf(hem_min, vertices[i].x)
                 hem_max = maxf(hem_max, vertices[i].x)
@@ -93,6 +98,9 @@ func _check() -> void:
             return
         if hem_max - hem_min < (root_max - root_min) * 2.0:
             _fail("split-wing hems must flare at least twice as wide as the shoulder roots")
+            return
+        if mid_max - mid_min < (hem_max - hem_min) * 1.20:
+            _fail("sculpted aerofoil must be broad at mid-span and taper toward its trailing tip")
             return
         if closest_hem_to_center < source.mesh.get_aabb().size.x * 0.12:
             _fail("split-wing tips must leave a visible center channel for boots and board")

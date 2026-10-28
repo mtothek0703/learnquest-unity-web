@@ -28,6 +28,11 @@ void fragment() {
     vec3 cloth = mix(deep_navy, royal_violet, 0.45 + center * 0.45);
     cloth = mix(cloth, cobalt, side * chest * 0.90);
     cloth = mix(cloth, electric_pink, shoulder * 0.90);
+    // Broad curved chest panels align with the actual 3D pectoral relief.
+    // Large readable surfaces remain legible at gameplay camera distance.
+    float pectoral_panel = exp(-pow((x - 0.17) * 9.0, 2.0))
+        * exp(-pow((y - 0.655) * 11.0, 2.0));
+    cloth = mix(cloth, cobalt, pectoral_panel * 0.37);
     cloth = mix(cloth, deep_navy, waist * 0.22);
     // Large material regions, rather than tiny high-frequency stripes, must
     // read in both smartphone landscape chase and front perspectives.

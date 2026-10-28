@@ -79,6 +79,25 @@ func _check() -> void:
     if absf(ridge.z - mirrored_ridge.z) > 0.001 or absf(ridge.x + mirrored_ridge.x) > 0.001:
         _fail("skinned jacket V-yoke must remain bilaterally symmetrical")
         return
+    # Anatomical shoulder and pectoral relief must exist as actual weighted
+    # geometry, not merely new shader colors.
+    var pectoral_center: Vector3 = outfit.call("_tailored_offset",
+        Vector3(0.238, 1.965, 0.3), forward, test_bounds)
+    var pectoral_outer: Vector3 = outfit.call("_tailored_offset",
+        Vector3(0.58, 1.965, 0.3), forward, test_bounds)
+    var deltoid_top: Vector3 = outfit.call("_tailored_offset",
+        Vector3(0.49, 2.145, 0.3), forward, test_bounds)
+    var deltoid_lower: Vector3 = outfit.call("_tailored_offset",
+        Vector3(0.49, 1.72, 0.3), forward, test_bounds)
+    if pectoral_center.z < pectoral_outer.z + 0.04:
+        _fail("real skinned jacket must have sculpted pectoral volume")
+        return
+    if deltoid_top.x < deltoid_lower.x + 0.035:
+        _fail("real skinned jacket must have an anatomical shoulder cap")
+        return
+    if not (garment.material_override as ShaderMaterial).shader.code.contains("pectoral_panel"):
+        _fail("chest color panels must follow the sculpted torso")
+        return
     if garment.mesh.get_aabb().size.x < imported_bounds.size.x * 0.28:
         _fail("tailored jacket silhouette collapsed")
         return
