@@ -59,6 +59,24 @@ func _check() -> void:
     if shoulder.x < 0.01 or opposite.x > -0.01 or absf(shoulder.x + opposite.x) > 0.002:
         _fail("weighted shoulder expansion must be balanced on both sides")
         return
+    # Verify the new V-shaped ridge and collar are actual geometric relief
+    # on the original weighted jacket, not a painted texture or rigid prop.
+    var ridge: Vector3 = outfit.call("_tailored_offset", Vector3(0.25, 1.905, 0.3),
+        forward, test_bounds)
+    var ridge_off: Vector3 = outfit.call("_tailored_offset", Vector3(0.42, 1.905, 0.3),
+        forward, test_bounds)
+    var collar: Vector3 = outfit.call("_tailored_offset", Vector3(0.08, 2.295, 0.3),
+        forward, test_bounds)
+    var collar_off: Vector3 = outfit.call("_tailored_offset", Vector3(0.42, 2.295, 0.3),
+        forward, test_bounds)
+    if ridge.z < ridge_off.z + 0.025 or collar.z < collar_off.z + 0.014:
+        _fail("V-yoke and raised collar must have real 3D geometry on the skinned torso")
+        return
+    var mirrored_ridge: Vector3 = outfit.call("_tailored_offset", Vector3(-0.25, 1.905, 0.3),
+        forward, test_bounds)
+    if absf(ridge.z - mirrored_ridge.z) > 0.001 or absf(ridge.x + mirrored_ridge.x) > 0.001:
+        _fail("skinned jacket V-yoke must remain bilaterally symmetrical")
+        return
     if garment.mesh.get_aabb().size.x < imported_bounds.size.x * 0.28:
         _fail("tailored jacket silhouette collapsed")
         return
