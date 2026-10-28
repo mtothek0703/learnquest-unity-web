@@ -288,6 +288,31 @@ func _check() -> void:
         return
     for node in eyes:
         var eye := node as MeshInstance3D
+        # The eye must be a genuine smooth, closed almond volume, not the
+        # old spherical primitive or a flat quad. No new collision or draw
+        # surfaces are introduced; blinking still scales the same eye node.
+        if not (eye.mesh is ArrayMesh) or eye.mesh.get_surface_count() != 1:
+            _fail("eye white must use a single sculpted almond mesh")
+            return
+        var eye_arrays: Array = eye.mesh.surface_get_arrays(0)
+        var eye_vertices: PackedVector3Array = eye_arrays[Mesh.ARRAY_VERTEX]
+        var eye_normals: PackedVector3Array = eye_arrays[Mesh.ARRAY_NORMAL]
+        var eye_indices: PackedInt32Array = eye_arrays[Mesh.ARRAY_INDEX]
+        if eye_vertices.size() < 300 or eye_normals.size() != eye_vertices.size() or eye_indices.size() < 2000:
+            _fail("almond eye must be a smoothly shaded, fully modeled 3D lens")
+            return
+        var corner_width := 0.0
+        var middle_width := 0.0
+        var middle_depth := 0.0
+        for point in eye_vertices:
+            if absf(point.x) > 0.98:
+                corner_width = maxf(corner_width, absf(point.y))
+            if absf(point.x) < 0.09:
+                middle_width = maxf(middle_width, absf(point.y))
+                middle_depth = maxf(middle_depth, absf(point.z))
+        if corner_width > 0.15 or middle_width < 0.80 or middle_depth < 0.60:
+            _fail("eye must taper to almond corners while retaining true 3D depth")
+            return
         # Undo the visual-only stylization transform before checking the
         # original face/eye projection in imported Head-local coordinates.
         var factor := float(headwear.get("visual_scale"))
