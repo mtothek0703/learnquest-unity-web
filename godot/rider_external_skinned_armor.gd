@@ -48,8 +48,6 @@ func _extract_panel(source: Mesh, spec: Dictionary, face_sign: float) -> ArrayMe
     var bounds := source.get_aabb()
     if bounds.size.x < 0.05 or bounds.size.y < 0.05:
         return null
-    var x0 := bounds.get_center().x + bounds.size.x * float(spec["left"])
-    var x1 := bounds.get_center().x + bounds.size.x * float(spec["right"])
     var y0 := bounds.position.y + bounds.size.y * float(spec["low"])
     var y1 := bounds.position.y + bounds.size.y * float(spec["high"])
     var output := SurfaceTool.new()
@@ -81,15 +79,20 @@ func _extract_panel(source: Mesh, spec: Dictionary, face_sign: float) -> ArrayMe
             # torso surfaces, not flat rectangular overlays across the body.
             if (facing > 0.38) != bool(spec["front"]):
                 continue
-            polygon = _clip(polygon, 0, x0, true)
-            polygon = _clip(polygon, 0, x1, false)
+            # Cut waist/collar first, then sculpt the side edges as continuous
+            # tapered shoulder-to-waist profiles. Unlike rectangular plates,
+            # every new intersection retains interpolated original Skin weights.
             polygon = _clip(polygon, 1, y0, true)
             polygon = _clip(polygon, 1, y1, false)
+            polygon = _clip_profile(polygon, bounds, spec, false)
+            polygon = _clip_profile(polygon, bounds, spec, true)
             for corner in range(1, polygon.size() - 1):
                 for vertex in [polygon[0], polygon[corner], polygon[corner + 1]]:
                     var p: Vector3 = vertex["position"]
                     var normal: Vector3 = vertex["normal"]
-                    var u := (p.x - x0) / maxf(x1 - x0, 0.0001)
+                    var left_edge := _profile_edge(bounds, spec, false, p.y)
+                    var right_edge := _profile_edge(bounds, spec, true, p.y)
+                    var u := clampf((p.x - left_edge) / maxf(right_edge - left_edge, 0.0001), 0.0, 1.0)
                     var v := (p.y - y0) / maxf(y1 - y0, 0.0001)
                     # Broad, shallow anatomical facets conform to the
                     # weighted jacket instead of creating a barrel chest.
@@ -118,6 +121,57 @@ func _panel_relief(u: float, v: float, is_front: bool) -> float:
     var curved := sin(PI * u) * sin(PI * v)
     var keel := 0.0 if is_front else 0.006 * exp(-pow((u - 0.5) / 0.18, 2.0))
     return 0.006 + 0.021 * bevel + 0.009 * curved + keel
+
+## Three connected anatomical plates: shoulder-width armor tapers toward the
+## waist instead of ending in straight, rectangular edges. This profile is
+## evaluated on the original imported jacket surface, not a rigid overlay.
+func _profile_edge(bounds: AABB, spec: Dictionary, right_edge: bool, y: float) -> float:
+    var low_y := bounds.position.y + bounds.size.y * float(spec["low"])
+    var high_y := bounds.position.y + bounds.size.y * float(spec["high"])
+    var t := clampf((y - low_y) / maxf(high_y - low_y, 0.0001), 0.0, 1.0)
+    var shoulder := smoothstep(0.08, 0.94, t)
+    var x_fraction := 0.0
+    if not bool(spec["front"]):
+        var spine_width := 0.105 + 0.135 * shoulder
+        x_fraction = spine_width if right_edge else -spine_width
+    else:
+        var outer := 0.16 + 0.21 * shoulder
+        var inner := 0.038 + 0.009 * sin(PI * t)
+        if float(spec["left"]) < 0.0:
+            x_fraction = -inner if right_edge else -outer
+        else:
+            x_fraction = outer if right_edge else inner
+    return bounds.get_center().x + bounds.size.x * x_fraction
+
+func _clip_profile(polygon: Array[Dictionary], bounds: AABB,
+        spec: Dictionary, right_edge: bool) -> Array[Dictionary]:
+    var out: Array[Dictionary] = []
+    if polygon.is_empty():
+        return out
+    var previous: Dictionary = polygon[polygon.size() - 1]
+    for current in polygon:
+        var a: Vector3 = previous["position"]
+        var b: Vector3 = current["position"]
+        var inside_a := a.x <= _profile_edge(bounds, spec, true, a.y) if right_edge else a.x >= _profile_edge(bounds, spec, false, a.y)
+        var inside_b := b.x <= _profile_edge(bounds, spec, true, b.y) if right_edge else b.x >= _profile_edge(bounds, spec, false, b.y)
+        if inside_a != inside_b:
+            # Binary intersection against the curved profile (not a straight
+            # chord), preserving correct four-weight skin at the new vertex.
+            var lo := 0.0
+            var hi := 1.0
+            for step in range(13):
+                var middle := (lo + hi) * 0.5
+                var p := a.lerp(b, middle)
+                var inside_middle := p.x <= _profile_edge(bounds, spec, true, p.y) if right_edge else p.x >= _profile_edge(bounds, spec, false, p.y)
+                if inside_middle == inside_a:
+                    lo = middle
+                else:
+                    hi = middle
+            out.append(_interpolate(previous, current, (lo + hi) * 0.5))
+        if inside_b:
+            out.append(current)
+        previous = current
+    return out
 
 func _source_corner(positions: PackedVector3Array, normals: PackedVector3Array,
         bones: PackedInt32Array, weights: PackedFloat32Array, index: int) -> Dictionary:
