@@ -114,6 +114,25 @@ func _check() -> void:
     if absf(right.x - left.x) < absf(front.z - rear.z) * 3.0:
         _fail("forehead locks must be broad curved ribbons, not round hair rollers")
         return
+    # Mobile-scale expression proportions are actual Head-attached geometry.
+    # The face must have a rounded jaw, legible eyes and a broad smile, not
+    # the previous narrow chin / tiny stare. Source Skin stays unchanged.
+    var face_region := headwear.get("head_bounds") as AABB
+    var face_center := face_region.get_center()
+    var face_size: Vector3 = headwear.get("head_bounds").size
+    var jaw_edge: Vector3 = headwear.call("_face_point",
+        face_center, face_size, 0.0, 0.78)
+    if absf(jaw_edge.x - face_center.x) < face_size.x * 0.25:
+        _fail("face jaw remains too narrow for readable stylized expression")
+        return
+    var eye_white := headwear.find_child("EyeWhite*", false, false) as MeshInstance3D
+    var smile_mesh := headwear.get_node_or_null("CurvedSmile") as MeshInstance3D
+    if eye_white == null or eye_white.scale.x < face_size.x * 0.12 * float(headwear.get("visual_scale")):
+        _fail("eyes must be modeled large enough for mobile gameplay")
+        return
+    if smile_mesh == null or smile_mesh.mesh.get_aabb().size.x < face_size.x * 0.44:
+        _fail("sculpted smile must span the wider rounded jaw")
+        return
     var rear_arrays: Array = back_hair.mesh.surface_get_arrays(0)
     var rear_vertices: PackedVector3Array = rear_arrays[Mesh.ARRAY_VERTEX]
     if rear_vertices.size() < 4000:
