@@ -1,5 +1,10 @@
 shader_type spatial;
 render_mode cull_back, diffuse_burley, specular_schlick_ggx;
+// Shared action lighting on the original GPU-skinned hero; no extra meshes.
+uniform float action_boost : hint_range(0.0, 1.0) = 0.0;
+uniform float action_carve : hint_range(-1.0, 1.0) = 0.0;
+uniform float action_jump : hint_range(0.0, 1.0) = 0.0;
+
 
 // V124 DRAFT: fit the actual imported CC0 body's original rest-space bounds.
 // Previous absolute-y thresholds made the underlying 65-bone suit depend on
@@ -50,4 +55,14 @@ void fragment() {
     float silhouette_rim = pow(1.0 - abs(dot(normalize(NORMAL), normalize(VIEW))), 2.6);
     ALBEDO = min(ALBEDO * (1.0 + silhouette_rim * 0.18), vec3(1.0));
     EMISSION += vec3(0.10, 0.36, 0.58) * silhouette_rim * 0.20;
+    // One-pass visual feedback: the actual skinned torso lights up during
+    // boost, and the turn-side / airborne seams remain visible in chase view.
+    float signed_x = (rest_point.x - rest_center_x) / max(rest_width, 0.001);
+    float turn_side = smoothstep(0.03, 0.19, signed_x * action_carve);
+    float boost_channel = exp(-pow((x - 0.19) * 14.0, 2.0)) * torso;
+    float jump_channel = exp(-pow((y - 0.36) * 13.0, 2.0));
+    EMISSION += vec3(0.04, 0.65, 0.95) *
+        (action_boost * (0.15 * torso + 0.58 * boost_channel)
+        + abs(action_carve) * turn_side * 0.34 * torso
+        + action_jump * jump_channel * 0.22);
 }

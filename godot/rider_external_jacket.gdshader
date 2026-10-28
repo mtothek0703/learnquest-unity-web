@@ -1,5 +1,10 @@
 shader_type spatial;
 render_mode cull_back, diffuse_burley, specular_schlick_ggx;
+// Shared action lighting on the original GPU-skinned hero; no extra meshes.
+uniform float action_boost : hint_range(0.0, 1.0) = 0.0;
+uniform float action_carve : hint_range(-1.0, 1.0) = 0.0;
+uniform float action_jump : hint_range(0.0, 1.0) = 0.0;
+
 
 // V124: readable, anatomically aligned chest/shoulder panels on the actual
 // GPU-skinned CC0 jacket. Rest-space bounds are passed from the imported mesh:
@@ -52,4 +57,9 @@ void fragment() {
     float silhouette_rim = pow(1.0 - abs(dot(normalize(NORMAL), normalize(VIEW))), 2.6);
     ALBEDO = min(ALBEDO * (1.0 + silhouette_rim * 0.18), vec3(1.0));
     EMISSION += vec3(0.10, 0.36, 0.58) * silhouette_rim * 0.20;
+    float signed_x = (rest_vertex.x - rest_center_x) / max(rest_width, 0.001);
+    float turn_side = smoothstep(0.02, 0.19, signed_x * action_carve);
+    EMISSION += cyan * (action_boost * (0.22 * torso + 0.55 * piping)
+        + abs(action_carve) * turn_side * 0.30 * torso)
+        + electric_pink * action_jump * chevron * 0.26;
 }

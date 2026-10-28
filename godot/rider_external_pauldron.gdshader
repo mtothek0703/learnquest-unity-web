@@ -1,5 +1,10 @@
 shader_type spatial;
 render_mode cull_disabled, diffuse_burley, specular_schlick_ggx;
+// Shared action lighting on the original GPU-skinned hero; no extra meshes.
+uniform float action_boost : hint_range(0.0, 1.0) = 0.0;
+uniform float action_carve : hint_range(-1.0, 1.0) = 0.0;
+uniform float action_jump : hint_range(0.0, 1.0) = 0.0;
+
 // A single mobile PBR pass on a genuinely skinned, closed shoulder volume.
 // COLOR comes from the 3D shell; UV supplies broad readable panel divisions.
 varying vec4 dye;
@@ -27,4 +32,8 @@ void fragment() {
     ROUGHNESS = 0.36 + lower * 0.12;
     EMISSION = vec3(0.06, 0.67, 0.98) * (leading * 0.26 + rib * 0.18)
         + pink * upper * 0.06;
+    EMISSION += vec3(0.06, 0.68, 0.98) *
+        (action_boost * (0.20 + 0.30 * upper)
+        + abs(action_carve) * leading * 0.20)
+        + pink * action_jump * lower * 0.13;
 }

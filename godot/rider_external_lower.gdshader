@@ -1,5 +1,10 @@
 shader_type spatial;
 render_mode cull_back, diffuse_burley, specular_schlick_ggx;
+// Shared action lighting on the original GPU-skinned hero; no extra meshes.
+uniform float action_boost : hint_range(0.0, 1.0) = 0.0;
+uniform float action_carve : hint_range(-1.0, 1.0) = 0.0;
+uniform float action_jump : hint_range(0.0, 1.0) = 0.0;
+
 // V124 draft: dark articulated shin guards, distinct titanium forefeet,
 // narrow ankle fabric and a thin luminous calf rim. One mobile draw pass.
 // Original 65-bone GPU skinning and source garment dimensions are untouched.
@@ -62,4 +67,10 @@ void fragment() {
     float silhouette_rim = pow(1.0 - abs(dot(normalize(NORMAL), normalize(VIEW))), 2.6);
     ALBEDO = min(ALBEDO * (1.0 + silhouette_rim * 0.16), vec3(1.0));
     EMISSION += vec3(0.10, 0.32, 0.58) * silhouette_rim * 0.12;
+    float signed_x = (source_vertex.x - rest_center_x) / max(rest_width, 0.001);
+    float turn_side = smoothstep(0.02, 0.19, signed_x * action_carve);
+    EMISSION += vec3(0.04, 0.70, 0.99) *
+        (action_boost * (0.28 * calf + 0.48 * forefoot * boot_mode)
+        + action_jump * toe_cap * boot_mode * 0.34
+        + abs(action_carve) * turn_side * (1.0 - boot_mode) * 0.24);
 }

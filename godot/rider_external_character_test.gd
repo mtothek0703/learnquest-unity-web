@@ -120,6 +120,20 @@ func _check() -> void:
     if source_bounds.size.y < 0.5 or source_bounds.size.x < 0.1:
         _fail("source suit has invalid rest-space proportions")
         return
+    # Coordinated light feedback must run on the SAME original skinned body
+    # and garments, without changing gameplay input or adding draw calls.
+    var action_materials: Array = adapter.get("action_materials")
+    if action_materials.size() < 5:
+        _fail("action-light system did not bind body, jacket, lower suit and shoulders")
+        return
+    for material in action_materials:
+        if not (material is ShaderMaterial):
+            _fail("action light must use existing shader materials")
+            return
+        for parameter in ["action_boost", "action_carve", "action_jump"]:
+            if not (material as ShaderMaterial).shader.code.contains("uniform float " + parameter):
+                _fail("skinned action material missing uniform: " + parameter)
+                return
     var left_arm := rig.find_bone("upperarm_l")
     if left_arm < 0:
         _fail("missing original humanoid left upper arm")
@@ -134,6 +148,13 @@ func _check() -> void:
     rider.set("boosting", true)
     rider.position.y = 0.90
     adapter.call("_process", 0.32)
+    for material in action_materials:
+        var active := material as ShaderMaterial
+        if float(active.get_shader_parameter("action_boost")) < 0.95 or \
+                absf(float(active.get_shader_parameter("action_carve")) - 0.85) > 0.001 or \
+                float(active.get_shader_parameter("action_jump")) < 0.4:
+            _fail("all original-skinned suit materials must react to boost, turn and jump")
+            return
     if rig.get_bone_pose_rotation(head_id).angle_to(head_before) < 0.05:
         _fail("the imported real head bone did not animate")
         return
@@ -141,6 +162,13 @@ func _check() -> void:
     rider.set("boosting", false)
     rider.position.y = 0.0
     adapter.call("_process", 0.40)
+    for material in action_materials:
+        var neutral := material as ShaderMaterial
+        if float(neutral.get_shader_parameter("action_boost")) > 0.01 or \
+                absf(float(neutral.get_shader_parameter("action_carve"))) > 0.001 or \
+                float(neutral.get_shader_parameter("action_jump")) > 0.01:
+            _fail("action light must return to neutral after landing")
+            return
     if rig.get_bone_pose_rotation(head_id).angle_to(head_before) > 0.03:
         _fail("the imported head must return to neutral")
         return

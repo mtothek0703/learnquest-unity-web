@@ -17,6 +17,10 @@ var hair_dynamics: Node
 # Keep the real skinned soles at the deck without touching gameplay physics.
 var board_contact_offset: float = 0.0
 var board_contact_active: bool = false
+# A single coordinated action-light pass across original skinned body, jacket,
+# boots, trousers and shoulders; no new render passes or collision nodes.
+var action_materials: Array[ShaderMaterial] = []
+var action_charge: float = 0.0
 
 func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     rider = owner_rider
@@ -188,6 +192,20 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     if not bool(pauldrons.call("install", skinned_meshes, skeleton, mantle_face_sign)):
         pauldrons.queue_free()
         push_warning("CC0 weighted shoulder armor unavailable; original silhouette preserved")
+    # Register only the actual shader materials that expose all three action
+    # uniforms. Every piece remains bound to the original imported Skin.
+    for source in skinned_meshes:
+        if String(source.name).contains("SuperHero"):
+            _register_action_material(source)
+    if outfit.get("garment") is MeshInstance3D:
+        _register_action_material(outfit.get("garment") as MeshInstance3D)
+    if lower.get("trousers") is MeshInstance3D:
+        _register_action_material(lower.get("trousers") as MeshInstance3D)
+    if lower.get("boots") is MeshInstance3D:
+        _register_action_material(lower.get("boots") as MeshInstance3D)
+    if not pauldrons.is_queued_for_deletion():
+        for shell in pauldrons.get("shells"):
+            _register_action_material(shell as MeshInstance3D)
     # Deliberately do not modify bone rest positions, imported inverse bind
     # matrices or the imported Skin: those are the asset's real authoring data.
     # The animated board updates at normal priority. Follow it afterwards to
@@ -195,6 +213,25 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     process_priority = 100
     set_process(true)
     return true
+
+func _register_action_material(mesh: MeshInstance3D) -> void:
+    if mesh == null or not (mesh.material_override is ShaderMaterial):
+        return
+    var material := mesh.material_override as ShaderMaterial
+    if material.shader == null:
+        return
+    var shader_code := material.shader.code
+    for parameter in ["action_boost", "action_carve", "action_jump"]:
+        if not shader_code.contains("uniform float " + parameter):
+            return
+    if not action_materials.has(material):
+        action_materials.append(material)
+
+func _update_action_materials(steer: float, jump: float) -> void:
+    for material in action_materials:
+        material.set_shader_parameter("action_boost", action_charge)
+        material.set_shader_parameter("action_carve", steer)
+        material.set_shader_parameter("action_jump", jump)
 
 func _bone(names: Array[String]) -> int:
     if skeleton == null:
@@ -227,6 +264,8 @@ func _process(delta: float) -> void:
     last_jump = move_toward(last_jump, jump, delta * 7.0)
     var boost := 1.0 if turbo else 0.0
     var blend := minf(1.0, delta * 9.0)
+    action_charge = move_toward(action_charge, boost, delta * 6.0)
+    _update_action_materials(steer, last_jump)
     # Surf stance: bent knees, articulated ankles, responsive hips, elbows and
     # wrists. Every rotation acts on the genuine imported 65-bone skeleton.
     # No board physics, input mapping or game collision logic is changed.
