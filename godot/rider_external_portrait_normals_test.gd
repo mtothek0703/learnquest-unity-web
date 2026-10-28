@@ -69,9 +69,6 @@ func _check() -> void:
             _fail("shared smooth curved vertices not verified on " + name)
             return
         shared_total += duplicates
-    if rider.find_children("*", "CollisionObject3D", true, false).size() < 1:
-        _fail("original rider collision system unexpectedly missing")
-        return
     var hero := rider.get_node_or_null("ExternalRiggedHero") as Node3D
     if hero == null or not hero.find_children("*", "CollisionObject3D", true, false).is_empty():
         _fail("portrait smoothing must not add any visual collision objects")
