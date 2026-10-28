@@ -91,8 +91,19 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     var chest: float = exp(-pow((y - 0.635) / 0.105, 2.0)) * (1.0 - smoothstep(0.23, 0.43, absf(lateral)))
     var shoulder: float = exp(-pow((y - 0.735) / 0.075, 2.0)) * smoothstep(0.065, 0.30, absf(lateral))
     var waist: float = exp(-pow((y - 0.465) / 0.055, 2.0))
-    var depth: float = 0.022 + 0.064 * chest + 0.054 * shoulder + 0.009 * waist
-    var spread: float = 0.042 * shoulder
+    # A continuous raised V-shaped flight-jacket chest and shoulder yoke,
+    # carved into the SAME four-weight source triangles. The ridge follows
+    # the original torso through lean, jump and boost, unlike rigid plates.
+    var diagonal := absf(lateral) - (0.11 + 0.28 * (y - 0.55))
+    var chest_ridge := exp(-pow(diagonal / 0.055, 2.0)) * \
+        exp(-pow((y - 0.635) / 0.115, 2.0))
+    var collar := exp(-pow((y - 0.765) / 0.026, 2.0)) * \
+        (1.0 - smoothstep(0.17, 0.38, absf(lateral)))
+    var side_taper := smoothstep(0.23, 0.43, absf(lateral)) * \
+        exp(-pow((y - 0.51) / 0.09, 2.0))
+    var depth: float = 0.022 + 0.064 * chest + 0.054 * shoulder + \
+        0.009 * waist + 0.031 * chest_ridge + 0.022 * collar - 0.009 * side_taper
+    var spread: float = 0.042 * shoulder + 0.015 * chest_ridge
     return normal * depth + Vector3(signf(lateral) * spread, 0.012 * shoulder, 0.0)
 
 func _jacket_material(bounds: AABB) -> ShaderMaterial:
