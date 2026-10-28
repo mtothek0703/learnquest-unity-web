@@ -187,7 +187,13 @@ func _sculpt_offset(point: Vector3, normal: Vector3, bounds: AABB, is_boot: bool
     var shin := exp(-pow((y - 0.205) / 0.070, 2.0))
     var toe := exp(-pow((y - 0.085) / 0.055, 2.0))
     var boot := 1.0 if is_boot else 0.0
-    var depth := 0.029 + 0.039 * thigh + 0.055 * knee + 0.044 * shin + boot * 0.049 * toe
+    # A continuous raised boot collar is sculpted from the imported weighted
+    # ankle triangles. It follows the original calf/foot bones when animated,
+    # instead of being a rigid glowing cylinder or a shader-only stripe.
+    var ankle_cuff := exp(-pow((y - 0.155) / 0.017, 2.0))
+    var depth := 0.029 + 0.039 * thigh + 0.055 * knee + 0.044 * shin + \
+        boot * (0.049 * toe + 0.047 * ankle_cuff)
     var outside := smoothstep(0.075, 0.24, absf(lateral))
-    var side_spread := outside * (0.022 * thigh + 0.033 * knee + 0.022 * shin + boot * 0.035 * toe)
+    var side_spread := outside * (0.022 * thigh + 0.033 * knee + \
+        0.022 * shin + boot * (0.035 * toe + 0.032 * ankle_cuff))
     return normal * depth + Vector3(signf(lateral) * side_spread, 0.0, 0.0)
