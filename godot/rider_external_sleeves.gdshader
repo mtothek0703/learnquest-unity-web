@@ -19,12 +19,12 @@ void fragment() {
     float panel = smoothstep(0.20, 0.84, panel_mask);
     float joint = exp(-pow((shoulder_weight - 0.48) * 11.0, 2.0));
     vec3 midnight = vec3(0.08, 0.12, 0.27);
-    vec3 cobalt = vec3(0.22, 0.48, 0.88);
-    vec3 violet = vec3(0.53, 0.28, 0.80);
-    vec3 titanium = vec3(0.34, 0.43, 0.61);
-    vec3 cloth = mix(midnight, cobalt, shoulder * 0.75 + forearm * 0.15);
+    vec3 cobalt = vec3(0.14, 0.31, 0.59);
+    vec3 violet = vec3(0.25, 0.26, 0.49);
+    vec3 titanium = vec3(0.23, 0.31, 0.45);
+    vec3 cloth = mix(midnight, cobalt, shoulder * 0.48 + forearm * 0.13);
     vec3 armor = mix(titanium, violet, forearm * 0.60);
-    vec3 color = mix(cloth, armor, panel * 0.87);
+    vec3 color = mix(cloth, armor, panel * 0.68);
     color *= 0.97 + 0.03 * arm_weight;
     ALBEDO = color;
     METALLIC = mix(0.14, 0.53, panel);
@@ -37,5 +37,5 @@ void fragment() {
     // in mobile landscape. No outline shell, light, texture or extra draw call.
     float silhouette_rim = pow(1.0 - abs(dot(normalize(NORMAL), normalize(VIEW))), 2.6);
     ALBEDO = min(ALBEDO * (1.0 + silhouette_rim * 0.18), vec3(1.0));
-    EMISSION += vec3(0.24, 0.19, 0.51) * silhouette_rim * 0.20;
+    EMISSION += vec3(0.12, 0.17, 0.36) * silhouette_rim * 0.15;
 }
