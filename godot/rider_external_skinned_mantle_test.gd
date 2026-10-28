@@ -67,6 +67,33 @@ func _check() -> void:
         if vertices.size() < 1000 or bones.size() != vertices.size() * 4 or weights.size() != vertices.size() * 4 or uv.size() != vertices.size():
             _fail("panel lacks four-weight skinning or UV wind surface")
             return
+        # The final 64 perimeter segments (20 along each chordwise side,
+        # 12 along each root/tip) each contain two explicit wall triangles.
+        # Validate actual nonzero-area volume rather than only a mesh AABB:
+        # degenerate faces can pass the old airfoil-depth check unnoticed.
+        const EDGE_TRIANGLES = (2 * 20 + 2 * 12) * 2
+        if vertices.size() < EDGE_TRIANGLES * 3 or vertices.size() % 3 != 0:
+            _fail("weighted airfoil perimeter has incomplete triangles")
+            return
+        var edge_start := vertices.size() - EDGE_TRIANGLES * 3
+        var wall_triangles := 0
+        for index in range(edge_start, vertices.size(), 3):
+            var a: Vector3 = vertices[index]
+            var b: Vector3 = vertices[index + 1]
+            var c: Vector3 = vertices[index + 2]
+            if (b - a).cross(c - a).length() < 0.0000001:
+                _fail("degenerate flight-wing sidewall triangle")
+                return
+            wall_triangles += 1
+        if wall_triangles != EDGE_TRIANGLES:
+            _fail("missing sealed, four-weight wing perimeter segments")
+            return
+        # Both weighted airfoil faces must have a substantial actual lip,
+        # including at the root and outer trailing tip.
+        for index in range(edge_start, vertices.size(), 6):
+            if vertices[index + 1].distance_to(vertices[index + 2]) < source_width * 0.030:
+                _fail("flight-wing edge has collapsed to a paper-thin wall")
+                return
         var low_count := 0
         var root_min := INF
         var root_max := -INF
