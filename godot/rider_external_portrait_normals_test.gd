@@ -69,6 +69,32 @@ func _check() -> void:
             _fail("shared smooth curved vertices not verified on " + name)
             return
         shared_total += duplicates
+    # Three independent curved hair systems now share smooth broad-surface
+    # normals across neighboring ribbon strips, while retaining hard end caps.
+    # The sampled vertices are an interior shared edge of two adjacent quads.
+    var hair_samples := [
+        {"name": "SculptedTaperedFringe3", "offset": 10 * (5 * 12 + 12)},
+        {"name": "WindSweptBackLock4", "offset": 7 * (6 * 12 + 12)},
+        {"name": "SculptedBackHairCurtain", "offset": 7 * (24 * 12 + 12)}
+    ]
+    for sample in hair_samples:
+        var hair := headwear.get_node_or_null(sample["name"]) as MeshInstance3D
+        if hair == null or hair.mesh == null:
+            _fail("sculpted hair volume missing: " + str(sample["name"]))
+            return
+        var hair_arrays: Array = hair.mesh.surface_get_arrays(0)
+        var hair_points: PackedVector3Array = hair_arrays[Mesh.ARRAY_VERTEX]
+        var hair_normals: PackedVector3Array = hair_arrays[Mesh.ARRAY_NORMAL]
+        var index: int = sample["offset"]
+        if hair_normals.size() != hair_points.size() or index + 12 >= hair_points.size():
+            _fail("hair ribbon normals missing at shared interior edge")
+            return
+        if hair_points[index + 5].distance_to(hair_points[index + 12]) > 0.00005:
+            _fail("hair ribbon broad strips do not share a geometric edge")
+            return
+        if hair_normals[index + 5].dot(hair_normals[index + 12]) < 0.997:
+            _fail("sculpted hair broad face has a visible normal seam")
+            return
     var hero := rider.get_node_or_null("ExternalRiggedHero") as Node3D
     if hero == null or not hero.find_children("*", "CollisionObject3D", true, false).is_empty():
         _fail("portrait smoothing must not add any visual collision objects")
