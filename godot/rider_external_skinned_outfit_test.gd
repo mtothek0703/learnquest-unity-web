@@ -40,6 +40,12 @@ func _check() -> void:
         if not shader_code.contains(required):
             _fail("missing coherent mobile flight-jacket material feature: " + required)
             return
+    # The central navy armored section and cyan V/spine are deliberately
+    # continuous on the same four-weight torso; no rigid floating chest plate.
+    for required in ["center_armor", "flank_armor", "zipper", "chevron", "cyan"]:
+        if not shader_code.contains(required):
+            _fail("missing coherent dark-core flight-suit identity: " + required)
+            return
     # New full-torso sculpt must create a genuinely differentiated silhouette,
     # not just recolor the original narrow body or attach rigid shoulder boxes.
     var imported_bounds := source.mesh.get_aabb()
