@@ -326,6 +326,30 @@ func _check() -> void:
         if offset < head_region.size.z * 0.005 or offset > head_region.size.z * 0.07:
             _fail("eye must embed in continuous face surface, not float above it")
             return
+    # Compare actual eye-part dimensions, independent of Godot's float
+    # suffix formatting. The earlier portrait had oversized cyan irises and
+    # tiny pupils; the revised face should read as friendly at chase scale.
+    var iris_parts: Array[MeshInstance3D] = []
+    for node in headwear.find_children("Iris*", "MeshInstance3D", false, false):
+        var part := node as MeshInstance3D
+        if not String(part.name).contains("Catchlight"):
+            iris_parts.append(part)
+    var pupils := headwear.find_children("Pupil*", "MeshInstance3D", false, false)
+    if iris_parts.size() != 2 or pupils.size() != 2:
+        _fail("facial proportions require two iris/pupil pairs")
+        return
+    for iris in iris_parts:
+        var ratio_ok := false
+        for pupil_node in pupils:
+            var pupil := pupil_node as MeshInstance3D
+            if signf(pupil.position.x - head_region.get_center().x) != \
+                    signf(iris.position.x - head_region.get_center().x):
+                continue
+            var pupil_ratio := pupil.scale.x / maxf(iris.scale.x, 0.00001)
+            ratio_ok = pupil_ratio > 0.52 and pupil_ratio < 0.72
+        if not ratio_ok:
+            _fail("eyes must have readable dark pupils inside restrained cyan irises")
+            return
     for landmark in ["UpperLid", "LowerLid", "CurvedBrow", "CheekAccent"]:
         var features := headwear.find_children(landmark + "*", "MeshInstance3D", false, false)
         if features.size() != 2:
