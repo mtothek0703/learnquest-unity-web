@@ -280,7 +280,11 @@ func fit_to_board() -> bool:
         return false
     var factor := 2.72 / height
     character.scale = Vector3.ONE * factor
-    character.position.y = 0.08 - lowest * factor
+    # Align the imported skinned soles with the ACTUAL animated board's
+    # sculpted traction deck. The old hard-coded 0.08 placed the rider's
+    # lowest source vertex well below the ~0.44-high deck, causing overlap.
+    # This is visual-only: never reposition the board, its collision or touch.
+    character.position.y = _board_deck_height() + 0.045 - lowest * factor
     # Determine the *actual* imported face direction from the weighted Head
     # and eye geometry instead of assuming every CC0 GLB faces +Z.
     # Menu/front camera is -Z; chase camera is +Z.
@@ -290,3 +294,17 @@ func fit_to_board() -> bool:
         forward_sign = float(headwear.get("face_sign"))
     character.rotation.y = PI if forward_sign > 0.0 else 0.0
     return true
+
+func _board_deck_height() -> float:
+    # Sample the real sculpted grip surface in rider coordinates. Using the
+    # node transform also respects the board's existing hover/bob animation.
+    if rider == null:
+        return 0.08
+    var board := rider.get_node_or_null("LegacyRider/Floating hoverboard") as Node3D
+    if board == null:
+        return 0.08
+    var grip := board.get_node_or_null("SculptedHoverboardChassis/ContouredTractionDeck") as MeshInstance3D
+    if grip == null or grip.mesh == null:
+        return 0.08
+    var top_y := grip.mesh.get_aabb().end.y
+    return rider.to_local(grip.to_global(Vector3(0.0, top_y, 0.0))).y
