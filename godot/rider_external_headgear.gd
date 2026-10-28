@@ -744,12 +744,14 @@ func _visor_point(c: Vector3, s: Vector3, angle: float, v: float) -> Vector3:
         c.z + face_sign * (cos(angle) * s.z * 0.57 + s.z * 0.04))
 
 func _quad(surface: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3) -> void:
-    surface.add_vertex(a)
-    surface.add_vertex(b)
-    surface.add_vertex(c)
-    surface.add_vertex(a)
-    surface.add_vertex(c)
-    surface.add_vertex(d)
+    # Broad curved faces use _quad_smooth; seams, ribbon sides and end caps
+    # deliberately keep a single flat normal to retain their crisp edges.
+    var normal := (b - a).cross(c - a).normalized()
+    if normal.length_squared() < 0.1:
+        normal = Vector3.UP
+    for point in [a, b, c, a, c, d]:
+        surface.set_normal(normal)
+        surface.add_vertex(point)
 
 func _tube(points: Array[Vector3], radius: float, sides: int) -> ArrayMesh:
     var surface := SurfaceTool.new()
