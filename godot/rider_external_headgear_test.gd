@@ -40,6 +40,36 @@ func _check() -> void:
         if headwear.find_child(expected, false, false) == null:
             _fail("missing expressive helmet/face feature: " + expected)
             return
+    # Integrated crown/temple silhouette: replace seven separate round tubes
+    # with broad, closed, shell-following volumes. The darker helmet and
+    # lightly tinted visor must not overpower the mobile-scale face.
+    var crown_locks := headwear.find_children("SweptHairLock*", "MeshInstance3D", false, false)
+    var temple_locks := headwear.find_children("SideHairSweep*", "MeshInstance3D", false, false)
+    if crown_locks.size() != 3 or temple_locks.size() != 2:
+        _fail("integrated head must have three crown volumes and two temple sweeps")
+        return
+    for lock_node in crown_locks + temple_locks:
+        var sculpted_lock := lock_node as MeshInstance3D
+        if sculpted_lock.mesh == null or sculpted_lock.mesh.get_surface_count() != 1:
+            _fail("crown/temple volume is not a closed renderable mesh")
+            return
+        var lock_arrays: Array = sculpted_lock.mesh.surface_get_arrays(0)
+        var lock_points: PackedVector3Array = lock_arrays[Mesh.ARRAY_VERTEX]
+        var lock_normals: PackedVector3Array = lock_arrays[Mesh.ARRAY_NORMAL]
+        if lock_points.size() < 800 or lock_normals.size() != lock_points.size():
+            _fail("crown/temple locks must use substantial sculpted geometry and normals")
+            return
+    var helmet := headwear.get_node_or_null("CurvedFlightHelmetShell") as MeshInstance3D
+    var visor := headwear.get_node_or_null("TranslucentFaceShield") as MeshInstance3D
+    var helmet_mat := helmet.material_override as StandardMaterial3D if helmet != null else null
+    var visor_mat := visor.material_override as StandardMaterial3D if visor != null else null
+    if helmet_mat == null or helmet_mat.albedo_color.get_luminance() > 0.18:
+        _fail("helmet crown must remain dark enough to frame the expressive face")
+        return
+    if visor_mat == null or visor_mat.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA or \
+            visor_mat.albedo_color.a > 0.17:
+        _fail("visor must be translucent enough for the face to read at mobile size")
+        return
     var back_hair := headwear.get_node_or_null("SculptedBackHairCurtain") as MeshInstance3D
     if back_hair == null or back_hair.mesh == null or back_hair.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() < 1000:
         _fail("chase camera must have substantial curved back-hair geometry")
