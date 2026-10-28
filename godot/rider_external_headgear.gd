@@ -178,7 +178,7 @@ func _build_headwear() -> void:
                 _cap_point(c, radius_x, radius_z, crown_y, cap_height, a1, t1),
                 _cap_point(c, radius_x, radius_z, crown_y, cap_height, a0, t1))
     cap.generate_normals()
-    _mesh("CurvedFlightHelmetShell", cap.commit(), _material(Color(0.18, 0.095, 0.42), 0.35, 0.34))
+    _mesh("CurvedFlightHelmetShell", cap.commit(), _material(Color(0.075, 0.11, 0.21), 0.42, 0.37))
 
     var visor := SurfaceTool.new()
     visor.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -193,7 +193,7 @@ func _build_headwear() -> void:
                 _visor_point(c, s, u1, v1),
                 _visor_point(c, s, u1, v0))
     visor.generate_normals()
-    _mesh("TranslucentFaceShield", visor.commit(), _material(Color(0.10, 0.67, 0.92, 0.24), 0.35, 0.16, true))
+    _mesh("TranslucentFaceShield", visor.commit(), _material(Color(0.11, 0.58, 0.78, 0.13), 0.28, 0.18, true))
 
     var edge_mat := _material(Color(0.07, 0.80, 0.96), 0.30, 0.25)
     edge_mat.emission_enabled = true
@@ -205,38 +205,41 @@ func _build_headwear() -> void:
             points.append(_visor_point(c, s, -0.93 + float(segment) / 24.0 * 1.86, edge))
         _mesh("VisorLightEdge%d" % int(edge), _tube(points, s.x * 0.018, 6), edge_mat)
 
-    var hair_mat := _material(Color(0.48, 0.24, 0.76), 0.08, 0.48)
-    var highlight := _material(Color(0.78, 0.43, 0.96), 0.12, 0.37)
-    for strand in range(7):
-        var across := (float(strand) - 3.0) / 3.0
-        var start := Vector3(c.x + across * radius_x * 0.46, crown_y + cap_height * 0.94,
-            c.z - face_sign * radius_z * 0.18)
-        var end := Vector3(c.x + across * radius_x * 0.85,
-            crown_y - s.y * (0.025 + 0.035 * absf(across)),
-            c.z + face_sign * radius_z * 1.05)
-        var mid := Vector3(c.x + across * radius_x * 0.72,
-            crown_y + cap_height * 0.52, c.z + face_sign * radius_z * 0.66)
-        var points: Array[Vector3] = []
+    var hair_mat := _material(Color(0.26, 0.17, 0.40), 0.06, 0.56)
+    var highlight := _material(Color(0.50, 0.32, 0.65), 0.10, 0.43)
+    # Rebuild the crown as three broad, closed swept hair volumes that follow
+    # the same sculpted rear shell. Seven free-standing round crown tubes and
+    # two side tubes previously fragmented the head silhouette in chase view.
+    # All parts remain cosmetic children of the imported Head attachment.
+    for strand in range(3):
+        var u := 0.22 + float(strand) * 0.28
+        var crown_flow: Array[Vector3] = []
+        for segment in range(17):
+            var t := float(segment) / 16.0
+            var point := _back_hair_point(c, s, crown_y, cap_height,
+                radius_x, radius_z, t * 0.56, u)
+            point.y += s.y * 0.025 * (1.0 - t)
+            point.z -= face_sign * s.z * (0.16 + 0.015 * sin(PI * t))
+            crown_flow.append(point)
+        _mesh("SweptHairLock%d" % strand,
+            _tapered_hair_lock(crown_flow, s.x * 0.105, 9),
+            highlight if strand == 1 else hair_mat)
+    for side in [-1.0, 1.0]:
+        var temple_flow: Array[Vector3] = []
         for segment in range(13):
             var t := float(segment) / 12.0
-            points.append(start * (1.0 - t) * (1.0 - t) + mid * (2.0 * t * (1.0 - t)) + end * (t * t))
-        _mesh("SweptHairLock%d" % strand, _tube(points, s.x * (0.047 if strand % 2 == 0 else 0.038), 7),
-            highlight if strand % 3 == 0 else hair_mat)
-    for side in [-1.0, 1.0]:
-        var arc: Array[Vector3] = []
-        for segment in range(11):
-            var t := float(segment) / 10.0
-            arc.append(Vector3(c.x + side * radius_x * (0.88 + 0.08 * sin(t * PI)),
-                crown_y + cap_height * (0.20 - t * 0.9),
-                c.z + face_sign * radius_z * (0.05 + 0.25 * t)))
+            temple_flow.append(Vector3(
+                c.x + side * radius_x * (0.87 + 0.06 * sin(t * PI)),
+                crown_y + cap_height * (0.16 - t * 0.88),
+                c.z + face_sign * radius_z * (0.04 + 0.23 * t)))
         _mesh("SideHairSweep%s" % ("L" if side < 0.0 else "R"),
-            _tube(arc, s.x * 0.065, 7), hair_mat)
+            _tapered_hair_lock(temple_flow, s.x * 0.054, 9), hair_mat)
     # A 360-degree character needs a readable REAR silhouette as well.
     # The old V124 trial had a nearly bald head in chase camera, even though
     # the front showed swept bangs. Curved back-hair geometry remains cosmetic
     # and follows the real Head bone through this BoneAttachment3D.
     # Dark underlayer gives the bright sculpted locks readable depth in chase view.
-    var underhair := _material(Color(0.19, 0.085, 0.35), 0.05, 0.68)
+    var underhair := _material(Color(0.10, 0.075, 0.19), 0.05, 0.70)
     _mesh("SculptedBackHairCurtain", _back_hair_surface(c, s, crown_y, cap_height, radius_x, radius_z),
         underhair)
     # The previous free-floating nine rear arcs formed a hollow cage around
@@ -261,7 +264,7 @@ func _build_headwear() -> void:
             highlight if strand % 3 == 0 else hair_mat)
     # One coherent, tapered hairline frames the face while the back curtain
     # gains a real inner/outer volume. These follow the imported Head joint.
-    var fringe_mat := _material(Color(0.64, 0.33, 0.85), 0.06, 0.44)
+    var fringe_mat := _material(Color(0.42, 0.25, 0.57), 0.06, 0.48)
     # The previous six thick round tubes looked like beads above the forehead
     # in real 16:9 captures. Sculpt broad, flattened 3D swept bangs instead:
     # curved from the helmet crown to the upper forehead with a tapered tip.
