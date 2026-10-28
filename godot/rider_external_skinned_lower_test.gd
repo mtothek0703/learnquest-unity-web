@@ -27,6 +27,10 @@ func _check() -> void:
     if rig == null or rig.get_bone_count() < 60:
         _fail("real 65-bone rig missing")
         return
+    var fitted_head := rig.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
+    if fitted_head == null or absf(float(lower.get("face_sign")) - float(fitted_head.get("face_sign"))) > 0.001:
+        _fail("boot forward axis must match the actual imported Head/eyes")
+        return
     var combined := 0
     for property_name in ["trousers", "boots"]:
         var garment := lower.get(property_name) as MeshInstance3D
@@ -51,6 +55,9 @@ func _check() -> void:
         var mode := float(material.get_shader_parameter("boot_mode"))
         if absf(mode - (1.0 if property_name == "boots" else 0.0)) > 0.001:
             _fail(property_name + " uses wrong trouser/boot shader mode")
+            return
+        if absf(float(material.get_shader_parameter("face_sign")) - float(lower.get("face_sign"))) > 0.001:
+            _fail("boot and trouser shader orientation diverged from the imported face")
             return
         var count := 0
         var leg_influences := 0
@@ -102,6 +109,30 @@ func _check() -> void:
     if right_knee.x < 0.07 or right_boot.x < 0.075 or right_knee.x < right_waist.x + 0.04:
         _fail("athletic knee and boot must be sculpted wider than the original narrow legs")
         return
+    # Full skinned boot geometry must have an actual toe, instep, heel,
+    # sole and front shin plate, not merely the previous glowing cuff.
+    var front_normal := Vector3(0.0, 0.0, float(lower.get("face_sign")))
+    var back_normal := -front_normal
+    var toe_front: Vector3 = lower.call("_sculpt_offset",
+        Vector3(0.28, 0.264, 0.0), front_normal, sample_bounds, true)
+    var toe_back: Vector3 = lower.call("_sculpt_offset",
+        Vector3(0.28, 0.264, 0.0), back_normal, sample_bounds, true)
+    var instep_front: Vector3 = lower.call("_sculpt_offset",
+        Vector3(0.28, 0.396, 0.0), front_normal, sample_bounds, true)
+    var shin_front: Vector3 = lower.call("_sculpt_offset",
+        Vector3(0.28, 0.675, 0.0), front_normal, sample_bounds, true)
+    var shin_back: Vector3 = lower.call("_sculpt_offset",
+        Vector3(0.28, 0.675, 0.0), back_normal, sample_bounds, true)
+    var heel_back: Vector3 = lower.call("_sculpt_offset",
+        Vector3(0.28, 0.210, 0.0), back_normal, sample_bounds, true)
+    var sole_front: Vector3 = lower.call("_sculpt_offset",
+        Vector3(0.28, 0.135, 0.0), front_normal, sample_bounds, true)
+    if toe_front.dot(front_normal) < toe_back.dot(front_normal) + 0.13 or \
+            instep_front.dot(front_normal) < 0.10 or \
+            shin_front.dot(front_normal) < shin_back.dot(front_normal) + 0.10 or \
+            heel_back.dot(back_normal) < 0.07 or sole_front.y >= -0.008:
+        _fail("true weighted boots lack front toe/instep, rear heel, shin relief or sole")
+        return
     # The boot collar must be an actual 3D, bilateral four-weight mesh
     # deformation, not a painted stripe or an unskinned attachment.
     var right_cuff: Vector3 = lower.call("_sculpt_offset",
@@ -114,7 +145,9 @@ func _check() -> void:
         _fail("weighted ankle collar lacks raised symmetrical 3D volume")
         return
     var boot_shader := ((lower.get("boots") as MeshInstance3D).material_override as ShaderMaterial).shader.code
-    if not boot_shader.contains("ankle_cuff") or not boot_shader.contains("boot_mode * 0.58"):
+    if not boot_shader.contains("ankle_cuff") or not boot_shader.contains("boot_mode * 0.58") or \
+            not boot_shader.contains("shin_plate") or not boot_shader.contains("forefoot") or \
+            not boot_shader.contains("heel_counter") or not boot_shader.contains("sole_edge"):
         _fail("boot collar shading does not follow its actual skinned geometry")
         return
     if absf(right_knee.x + left_knee.x) > 0.001:

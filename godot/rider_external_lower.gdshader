@@ -4,13 +4,16 @@ render_mode cull_back, diffuse_burley, specular_schlick_ggx;
 // All coordinates are normalized against the real imported CC0 body bounds.
 // The geometry underneath remains the original four-weight 65-bone Skin.
 uniform float boot_mode : hint_range(0.0, 1.0) = 0.0;
+uniform float face_sign = -1.0;
 uniform float rest_bottom = 0.0;
 uniform float rest_height = 3.0;
 uniform float rest_center_x = 0.0;
 uniform float rest_width = 1.0;
 varying vec3 source_vertex;
+varying float forward_surface;
 void vertex() {
     source_vertex = VERTEX;
+    forward_surface = clamp(NORMAL.z * face_sign, 0.0, 1.0);
 }
 void fragment() {
     float y = clamp((source_vertex.y - rest_bottom) / max(rest_height, 0.001), 0.0, 1.0);
@@ -22,6 +25,10 @@ void fragment() {
     float shin = smoothstep(0.18, 0.25, y) * (1.0 - smoothstep(0.34, 0.41, y));
     float toe = 1.0 - smoothstep(0.065, 0.14, y);
     float ankle_cuff = exp(-pow((y - 0.155) * 65.0, 2.0));
+    float shin_plate = exp(-pow((y - 0.225) * 18.0, 2.0)) * forward_surface;
+    float forefoot = exp(-pow((y - 0.088) * 24.0, 2.0)) * forward_surface;
+    float heel_counter = exp(-pow((y - 0.070) * 28.0, 2.0)) * (1.0 - forward_surface);
+    float sole_edge = exp(-pow((y - 0.045) * 70.0, 2.0));
     vec3 cobalt = vec3(0.15, 0.37, 0.77);
     vec3 violet = vec3(0.40, 0.22, 0.67);
     vec3 midnight = vec3(0.055, 0.09, 0.23);
@@ -34,6 +41,9 @@ void fragment() {
     boots = mix(boots, violet, shin * 0.40);
     boots = mix(boots, magenta, outside * (1.0 - toe) * 0.35);
     boots = mix(boots, vec3(0.18, 0.77, 0.95), ankle_cuff * 0.80);
+    boots = mix(boots, midnight, shin_plate * 0.72);
+    boots = mix(boots, titanium, forefoot * 0.78 + heel_counter * 0.45);
+    boots = mix(boots, vec3(0.08, 0.16, 0.32), sole_edge * 0.82);
     ALBEDO = mix(trousers, boots, boot_mode);
     METALLIC = mix(0.16, 0.35, boot_mode);
     ROUGHNESS = mix(0.51, 0.38, boot_mode);
@@ -41,7 +51,8 @@ void fragment() {
     float stripe = exp(-pow((x - 0.28) * 28.0, 2.0)) * thigh;
     EMISSION = vec3(0.03, 0.54, 0.88) * (edge * 0.30 + stripe * 0.23)
         + magenta * knee * outside * 0.12
-        + vec3(0.02, 0.65, 0.98) * ankle_cuff * boot_mode * 0.58;
+        + vec3(0.02, 0.65, 0.98) * ankle_cuff * boot_mode * 0.58
+        + vec3(0.06, 0.40, 0.70) * shin_plate * boot_mode * 0.20;
     // Single-pass, camera-relative contour lift for readable skinned limbs
     // in mobile landscape. No outline shell, light, texture or extra draw call.
     float silhouette_rim = pow(1.0 - abs(dot(normalize(NORMAL), normalize(VIEW))), 2.6);

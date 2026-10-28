@@ -121,7 +121,9 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     var lower := preload("res://rider_external_skinned_lower.gd").new() as Node
     lower.name = "ExternalSkinnedLowerSuit"
     character.add_child(lower)
-    if not bool(lower.call("install", skinned_meshes)):
+    var boot_headgear := skeleton.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
+    var boot_face_sign := float(boot_headgear.get("face_sign")) if boot_headgear != null else -1.0
+    if not bool(lower.call("install", skinned_meshes, boot_face_sign)):
         push_warning("CC0 weighted lower garments unavailable; original legs remain")
     # Real sculpted sleeve triangles preserve imported four-weight elbow bends.
     var sleeves := preload("res://rider_external_skinned_sleeves.gd").new() as Node
