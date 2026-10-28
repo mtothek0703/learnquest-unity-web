@@ -61,4 +61,5 @@ func set_motion(steer: float, boost: float, jump: float, clock: float) -> void:
             Quaternion(Vector3.UP, yaw))
         # T(anchor) * R * T(-anchor) * rest; the root remains attached to
         # the original Head bone even through carve and turbo-jump poses.
-        part.transform = Transform3D(rotation, anchor - rotation * anchor) * rest
+        var pivot: Vector3 = rest * anchor
+        part.transform = Transform3D(rotation, pivot - rotation * pivot) * rest
