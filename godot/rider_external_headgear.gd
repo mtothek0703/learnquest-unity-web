@@ -254,9 +254,10 @@ func _build_headwear() -> void:
             var t := float(segment) / 16.0
             var point := _back_hair_point(c, s, crown_y, cap_height,
                 radius_x, radius_z, t, u)
-            point.x += sin(t * PI * 1.5 + float(strand) * 0.35) * \
-                radius_x * 0.07 * sin(PI * t)
-            point.z -= face_sign * s.z * (0.17 + 0.018 * sin(PI * t))
+            # Sculpt an individual S-curve in all three axes. The old
+            # parallel vertical ribbons read as a flat striped helmet in the
+            # real chase camera; these overlapping volumes now turn and lift.
+            point = _rear_lock_curve(point, s, strand, t)
             point.y += s.y * 0.025 * (1.0 - t)
             flow.append(point)
         _mesh("WindSweptBackLock%d" % strand,
@@ -371,6 +372,21 @@ func _tapered_hair_lock(points: Array[Vector3], radius: float, sides: int) -> Ar
                 _back_lock_point(points, radius, t, u0, false))
     surface.generate_normals()
     return surface.commit()
+
+func _rear_lock_curve(point: Vector3, size: Vector3, strand: int, t: float) -> Vector3:
+    # Organic rear hair flow: roots stay seated on the continuous back shell,
+    # mid-length locks turn in alternating directions, and tips remain near
+    # the upper back instead of intersecting the hoverboard.
+    var phase := float(strand) * 0.73
+    var root_to_tip := clampf(t, 0.0, 1.0)
+    var swing := sin(PI * root_to_tip)
+    point.x += size.x * (0.14 * sin(root_to_tip * TAU * 1.25 + phase) +
+        0.045 * cos(phase * 0.7)) * swing
+    point.y += size.y * (0.035 * sin(root_to_tip * TAU * 1.5 + phase) * swing +
+        0.027 * sin(phase * 1.7) * pow(root_to_tip, 3.0))
+    point.z -= face_sign * size.z * (0.15 +
+        0.055 * sin(PI * root_to_tip) * cos(phase + root_to_tip * TAU))
+    return point
 
 func _back_lock_point(points: Array[Vector3], radius: float, t: float,
         u: float, outer: bool) -> Vector3:
