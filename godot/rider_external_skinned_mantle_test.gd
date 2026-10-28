@@ -32,6 +32,13 @@ func _check() -> void:
             float(mantle.get("mantle_span")) > source.mesh.get_aabb().size.y * 0.30:
         _fail("short skinned flight fins must reveal the lower suit and hoverboard")
         return
+    # Integrated wing redesign must occupy a readable chase silhouette
+    # without widening beyond the rider/board composition.
+    var wing_reach := float(mantle.get("wing_reach"))
+    var source_width := source.mesh.get_aabb().size.x
+    if wing_reach < source_width * 0.50 or wing_reach > source_width * 0.76:
+        _fail("swept wings must be broad but not detached from the rider")
+        return
     var active_leg_binds := 0
     for panel in panels:
         var mesh := panel as MeshInstance3D
@@ -44,6 +51,14 @@ func _check() -> void:
         if mesh.get_child_count() != 0 or not (mesh.material_override is ShaderMaterial):
             _fail("panel should be shader-driven cosmetic geometry only")
             return
+        var wing_shader := mesh.material_override as ShaderMaterial
+        if wing_shader == null or wing_shader.shader == null:
+            _fail("integrated wing has no one-pass sculpted material")
+            return
+        for zone in ["leading", "trailing", "central_spar", "silhouette_rim"]:
+            if not wing_shader.shader.code.contains(zone):
+                _fail("integrated wing missing material region: " + zone)
+                return
         var arrays: Array = mesh.mesh.surface_get_arrays(0)
         var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
         var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
@@ -103,6 +118,9 @@ func _check() -> void:
                 low_count += 1
         if root_samples < 10 or hem_samples < 10:
             _fail("mantle must have sampled shoulder and wing-tip rows")
+            return
+        if mid_max - mid_min < source_width * 0.30:
+            _fail("swept wing must add a broad, visible sculpted midspan")
             return
         if mid_max - mid_min < (root_max - root_min) * 3.0:
             _fail("sculpted fin must have substantial mid-chord width")
@@ -202,5 +220,5 @@ func _check() -> void:
     if rider.get_node_or_null("LegacyRider") == null:
         _fail("legacy fallback and existing hoverboard must remain")
         return
-    print("EXTERNAL SKINNED MANTLE TEST PASSED: %d four-weight vertices on two closed sculpted flight fins plus weighted shoulder yoke" % int(mantle.get("generated_vertices")))
+    print("EXTERNAL SKINNED MANTLE TEST PASSED: %d four-weight vertices, swept wing reach %.3f, closed airfoils and weighted shoulder yoke" % [int(mantle.get("generated_vertices")), wing_reach])
     quit(0)
