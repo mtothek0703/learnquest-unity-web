@@ -159,6 +159,10 @@ func _quad(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
 
 func _edge(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
         side: float, binds: PackedInt32Array, a: Vector2, b: Vector2) -> void:
+    # The original edge fan used the same endpoint twice per triangle,
+    # producing zero-area faces and leaving both skinned airfoils open.
+    # Bridge the actual +thickness and -thickness contours with two
+    # nondegenerate triangles. The four source Skin influences are unchanged.
     _vertex(tool, bounds, back, back_sign, side, a.x, a.y, binds, 1.0)
     _vertex(tool, bounds, back, back_sign, side, b.x, b.y, binds, 1.0)
     _vertex(tool, bounds, back, back_sign, side, b.x, b.y, binds, -1.0)
