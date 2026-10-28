@@ -130,6 +130,15 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
         outfit.add_child(armor)
         if not bool(armor.call("install", outfit.get("garment") as MeshInstance3D, armor_face_sign)):
             push_warning("CC0 skinned anatomical armor unavailable")
+    # The four diagonal flight-harness bands are clipped from the SAME
+    # weighted jacket, not rigid decals. Both camera sides stay legible.
+    if outfit.get("garment") is MeshInstance3D:
+        var harness := preload("res://rider_external_skinned_harness.gd").new() as Node
+        harness.name = "IntegratedSkinnedFlightHarness"
+        outfit.add_child(harness)
+        if not bool(harness.call("install", outfit.get("garment") as MeshInstance3D, armor_face_sign)):
+            harness.queue_free()
+            push_warning("CC0 four-weight flight harness unavailable")
     # Weighted trousers and boots use the same original four-influence
     # skinning as the body; unlike rigid props, knees/ankles follow the rig.
     var lower := preload("res://rider_external_skinned_lower.gd").new() as Node
