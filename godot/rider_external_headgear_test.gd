@@ -298,8 +298,8 @@ func _check() -> void:
     if brow_top.y - face_center.y > face_size.y * 0.50:
         _fail("portrait facial shell is still vertically elongated")
         return
-    var smile_mesh := headwear.get_node_or_null("CurvedSmile") as MeshInstance3D
-    if smile_mesh == null or smile_mesh.mesh.get_aabb().size.x < face_size.x * 0.53:
+    var portrait_smile := headwear.get_node_or_null("CurvedSmile") as MeshInstance3D
+    if portrait_smile == null or portrait_smile.mesh.get_aabb().size.x < face_size.x * 0.53:
         _fail("wider smile must remain actual curved facial geometry")
         return
     var highlights := headwear.find_children("IrisCatchlight*", "MeshInstance3D", false, false)
