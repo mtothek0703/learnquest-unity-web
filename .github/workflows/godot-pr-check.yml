@@ -147,6 +147,17 @@ jobs:
             --script res://rider_external_character_visual_capture_test.gd 2>&1 | tee /tmp/quaternius-visual.log
           grep -Fq 'QUATERNIUS VISUAL QA PASSED' /tmp/quaternius-visual.log
           test "$(find /tmp/learnquest-quaternius-qa -name '*.png' | wc -l)" -eq 8
+      - name: Render 32 real V123/V124 neutral and action silhouette frames
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-action-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_ACTION_OUTPUT=/tmp/learnquest-action-qa \
+            timeout 150s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_action_visual_capture_test.gd 2>&1 | tee /tmp/action-visual.log
+          grep -Fq 'EXTERNAL ACTION SILHOUETTE QA PASSED' /tmp/action-visual.log
+          test "$(find /tmp/learnquest-action-qa -name '*.png' | wc -l)" -eq 32
       - name: Render actual V123/V124 skinned hoverboot close-ups at two landscape ratios
         shell: bash
         run: |
@@ -278,6 +289,13 @@ jobs:
           name: learnquest-v124-expression-neutral-action
           path: /tmp/learnquest-expression-qa/*.png
           if-no-files-found: ignore
+      - name: Upload V124 neutral and action silhouette comparison frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-action-silhouette-before-after
+          path: /tmp/learnquest-action-qa/*.png
+          if-no-files-found: error
       - name: Upload V124 CC0 humanoid before-after frames
         if: always()
         uses: actions/upload-artifact@v4
@@ -355,6 +373,7 @@ jobs:
             /tmp/quaternius-outfit.log
             /tmp/quaternius-thrusters.log
             /tmp/quaternius-visual.log
+            /tmp/action-visual.log
             /tmp/turbine-visual.log
             /tmp/costume-skin-follow.log
             /tmp/sculpted-suit.log
