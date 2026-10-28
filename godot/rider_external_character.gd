@@ -80,9 +80,12 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     # dimensions sampled from head-weighted vertices; the skinned face stays.
     var headgear := preload("res://rider_external_headgear.gd").new() as BoneAttachment3D
     if bool(headgear.call("install", skeleton, skinned_meshes)):
+        # Match the expressive V123 mobile head-to-body ratio without scaling
+        # the original 65-bone GLB or its GPU skin. Rear drape is shortened
+        # in Head-local space to protect the shoulders during lean/jump.
         # Restore a readable stylized face/head silhouette at mobile chase scale.
         # The imported original head/65-bone rig remain untouched underneath.
-        headgear.call("set_visual_scale", 2.30)
+        headgear.call("set_visual_scale", 2.62)
         # Animate existing eye/lid/brow/lip meshes on the same real Head bone.
         # This remains purely visual and does not alter the imported Skin.
         var acting := preload("res://rider_external_expression.gd").new() as Node
