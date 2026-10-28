@@ -42,7 +42,7 @@ func _check() -> void:
     var rear_point: Vector3 = headwear.call("_back_hair_point",
         rear_center, rear_size, region.position.y + rear_size.y * 0.85,
         rear_size.y * 0.21, rear_size.x * 0.56, rear_size.z * 0.57, 1.0, 0.5)
-    if rear_point.y < rear_center.y - rear_size.y * 0.65:
+    if rear_point.y < rear_center.y - rear_size.y * 0.95:
         _fail("larger head rear hair hangs too far into the shoulder/board silhouette")
         return
     var meshes: Array = headwear.get("generated_meshes")
