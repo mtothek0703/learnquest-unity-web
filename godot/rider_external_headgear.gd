@@ -695,12 +695,43 @@ func _face_point(c: Vector3, s: Vector3, u: float, v: float) -> Vector3:
         eye_socket * 0.06 + brow * 0.055 + lips * 0.045 + chin * 0.065)
     return Vector3(c.x + x, c.y + cos(latitude) * s.y * 0.48, c.z + z)
 
+func _almond_eye_mesh() -> ArrayMesh:
+    # A closed, smooth, single-surface 3D lens. The outer and inner corners
+    # taper to points; unlike a flattened sphere it still has real depth.
+    # Original eye transform and blink scaling are preserved.
+    var surface := SurfaceTool.new()
+    surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+    var longitudinal := 24
+    var radial := 18
+    for i in range(longitudinal):
+        var t0 := float(i) / float(longitudinal)
+        var t1 := float(i + 1) / float(longitudinal)
+        for j in range(radial):
+            var a0 := TAU * float(j) / float(radial)
+            var a1 := TAU * float(j + 1) / float(radial)
+            for sample in [Vector2(t0, a0), Vector2(t1, a0),
+                    Vector2(t1, a1), Vector2(t0, a0),
+                    Vector2(t1, a1), Vector2(t0, a1)]:
+                var x := sample.x * 2.0 - 1.0
+                var taper := pow(maxf(0.0, 1.0 - x * x), 0.72)
+                surface.add_vertex(Vector3(x, sin(sample.y) * taper,
+                    cos(sample.y) * taper * 0.72))
+    surface.index()
+    surface.generate_normals()
+    return surface.commit()
+
 func _ellipsoid(name_text: String, center: Vector3, radii: Vector3, mat: Material) -> void:
-    var shape := SphereMesh.new()
-    shape.radius = 1.0
-    shape.height = 2.0
-    shape.radial_segments = 16
-    shape.rings = 8
+    # Eye whites used to be perfect spheres: in the actual front camera they
+    # looked like two loose beads. Sculpt the SAME two Head-attached objects
+    # into closed, tapered almond volumes with continuous normals. Iris,
+    # pupils and catchlights keep their original animation and materials.
+    var shape: Mesh = _almond_eye_mesh() if name_text.begins_with("EyeWhite") else SphereMesh.new()
+    if shape is SphereMesh:
+        var sphere := shape as SphereMesh
+        sphere.radius = 1.0
+        sphere.height = 2.0
+        sphere.radial_segments = 16
+        sphere.rings = 8
     var part := MeshInstance3D.new()
     part.name = name_text
     part.mesh = shape
