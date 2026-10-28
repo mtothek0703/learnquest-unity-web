@@ -712,10 +712,11 @@ func _almond_eye_mesh() -> ArrayMesh:
             for sample in [Vector2(t0, a0), Vector2(t1, a0),
                     Vector2(t1, a1), Vector2(t0, a0),
                     Vector2(t1, a1), Vector2(t0, a1)]:
-                var x := sample.x * 2.0 - 1.0
-                var taper := pow(maxf(0.0, 1.0 - x * x), 0.72)
-                surface.add_vertex(Vector3(x, sin(sample.y) * taper,
-                    cos(sample.y) * taper * 0.72))
+                var uv: Vector2 = sample
+                var x: float = uv.x * 2.0 - 1.0
+                var taper: float = pow(maxf(0.0, 1.0 - x * x), 0.72)
+                surface.add_vertex(Vector3(x, sin(uv.y) * taper,
+                    cos(uv.y) * taper * 0.72))
     surface.index()
     surface.generate_normals()
     return surface.commit()
