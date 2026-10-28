@@ -136,7 +136,9 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
         var harness := preload("res://rider_external_skinned_harness.gd").new() as Node
         harness.name = "IntegratedSkinnedFlightHarness"
         outfit.add_child(harness)
-        if not bool(harness.call("install", outfit.get("garment") as MeshInstance3D, armor_face_sign)):
+        var harness_head := skeleton.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
+        var harness_face_sign := float(harness_head.get("face_sign")) if harness_head != null else -1.0
+        if not bool(harness.call("install", outfit.get("garment") as MeshInstance3D, harness_face_sign)):
             harness.queue_free()
             push_warning("CC0 four-weight flight harness unavailable")
     # Weighted trousers and boots use the same original four-influence
