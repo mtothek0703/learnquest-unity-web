@@ -28,8 +28,9 @@ func _check() -> void:
     if panels.size() != 2 or int(mantle.get("generated_vertices")) < 2000:
         _fail("two substantial curved mesh panels required")
         return
-    if float(mantle.get("mantle_span")) < source.mesh.get_aabb().size.y * 0.40:
-        _fail("flight mantle does not reach lower silhouette")
+    if float(mantle.get("mantle_span")) < source.mesh.get_aabb().size.y * 0.24 or \
+            float(mantle.get("mantle_span")) > source.mesh.get_aabb().size.y * 0.30:
+        _fail("short skinned flight fins must reveal the lower suit and hoverboard")
         return
     var active_leg_binds := 0
     for panel in panels:
@@ -63,6 +64,9 @@ func _check() -> void:
         var closest_hem_to_center := INF
         var root_samples := 0
         var hem_samples := 0
+        var airfoil_min_z := INF
+        var airfoil_max_z := -INF
+        var lowest_y := INF
         for i in range(vertices.size()):
             var total := 0.0
             for j in range(4):
@@ -77,6 +81,10 @@ func _check() -> void:
             if absf(total - 1.0) > 0.001:
                 _fail("GPU skin weights not normalized")
                 return
+            lowest_y = minf(lowest_y, vertices[i].y)
+            if uv[i].x > 0.48 and uv[i].x < 0.52 and uv[i].y > 0.48 and uv[i].y < 0.52:
+                airfoil_min_z = minf(airfoil_min_z, vertices[i].z)
+                airfoil_max_z = maxf(airfoil_max_z, vertices[i].z)
             if uv[i].y < 0.05:
                 root_min = minf(root_min, vertices[i].x)
                 root_max = maxf(root_max, vertices[i].x)
@@ -96,11 +104,17 @@ func _check() -> void:
         if root_samples < 10 or hem_samples < 10:
             _fail("mantle must have sampled shoulder and wing-tip rows")
             return
-        if hem_max - hem_min < (root_max - root_min) * 2.0:
-            _fail("split-wing hems must flare at least twice as wide as the shoulder roots")
+        if mid_max - mid_min < (root_max - root_min) * 3.0:
+            _fail("sculpted fin must have substantial mid-chord width")
             return
-        if mid_max - mid_min < (hem_max - hem_min) * 1.20:
-            _fail("sculpted aerofoil must be broad at mid-span and taper toward its trailing tip")
+        if hem_max - hem_min > (mid_max - mid_min) * 0.60:
+            _fail("fin tip must taper rather than become a skirt-like hem")
+            return
+        if lowest_y < source.mesh.get_aabb().position.y + source.mesh.get_aabb().size.y * 0.44:
+            _fail("short fins must not conceal the original skinned legs or board")
+            return
+        if airfoil_max_z - airfoil_min_z < source.mesh.get_aabb().size.x * 0.025:
+            _fail("flight fins need real front/back airfoil volume, not flat double-sided cloth")
             return
         if closest_hem_to_center < source.mesh.get_aabb().size.x * 0.12:
             _fail("split-wing tips must leave a visible center channel for boots and board")
@@ -114,7 +128,7 @@ func _check() -> void:
             _fail("wing hems must sweep behind the original skinned torso")
             return
         if low_count < 50:
-            _fail("missing broad trailing hem geometry")
+            _fail("missing tapered, sealed flight-fin tip geometry")
             return
     # The sculpted shoulder bridge is also a true weighted source-body
     # surface, not a rigid armor primitive hovering over the torso.
@@ -188,5 +202,5 @@ func _check() -> void:
     if rider.get_node_or_null("LegacyRider") == null:
         _fail("legacy fallback and existing hoverboard must remain")
         return
-    print("EXTERNAL SKINNED MANTLE TEST PASSED: %d genuine weighted textile vertices on two 65-bone flight panels plus weighted shoulder yoke" % int(mantle.get("generated_vertices")))
+    print("EXTERNAL SKINNED MANTLE TEST PASSED: %d four-weight vertices on two closed sculpted flight fins plus weighted shoulder yoke" % int(mantle.get("generated_vertices")))
     quit(0)
