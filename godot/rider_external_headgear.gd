@@ -524,8 +524,8 @@ func _build_expression(c: Vector3, s: Vector3) -> void:
     var lower_lip: Array[Vector3] = []
     for i in range(21):
         var t := float(i) / 20.0
-        var x := c.x + (t - 0.5) * s.x * 0.47
-        var y := head_bounds.position.y + s.y * (0.285 + 0.065 * pow(2.0 * t - 1.0, 2.0))
+        var x := c.x + (t - 0.5) * s.x * 0.58
+        var y := head_bounds.position.y + s.y * (0.300 + 0.095 * pow(2.0 * t - 1.0, 2.0))
         smile.append(_face_front_point(c, s, x, y) +
             Vector3(0.0, 0.0, face_sign * s.z * 0.026))
         lower_lip.append(_face_front_point(c, s, x, y - s.y * 0.032 * sin(t * PI)) +
@@ -534,12 +534,12 @@ func _build_expression(c: Vector3, s: Vector3) -> void:
     _mesh("LowerLipContour", _tube(lower_lip, s.x * 0.012, 6), blush)
 
 func _face_front_point(c: Vector3, s: Vector3, x: float, y: float) -> Vector3:
-    # Invert the face's latitude/longitude parameterization so eyes, lids,
+    # Match the widened, less elongated face silhouette exactly: eyes, lids,
     # cheeks and mouth sit on the same curved, jaw-tapered mesh.
-    var latitude := acos(clampf((y - c.y) / maxf(s.y * 0.54, 0.001), -0.98, 0.98))
+    var latitude := acos(clampf((y - c.y) / maxf(s.y * 0.48, 0.001), -0.98, 0.98))
     var v := latitude / PI
-    var jaw := 0.84 + 0.16 * smoothstep(0.12, 0.67, 1.0 - v)
-    var radius := maxf(0.001, sin(latitude) * s.x * 0.49 * jaw)
+    var jaw := 0.92 + 0.08 * smoothstep(0.12, 0.67, 1.0 - v)
+    var radius := maxf(0.001, sin(latitude) * s.x * 0.55 * jaw)
     var angle := acos(clampf((x - c.x) / radius, -0.985, 0.985))
     if face_sign < 0.0:
         angle = TAU - angle
@@ -581,10 +581,10 @@ func _face_point(c: Vector3, s: Vector3, u: float, v: float) -> Vector3:
     var latitude := v * PI
     var longitude := u * TAU
     var silhouette := sin(latitude)
-    var jaw := 0.84 + 0.16 * smoothstep(0.12, 0.67, 1.0 - v)
-    var x := cos(longitude) * silhouette * s.x * 0.49 * jaw
+    var jaw := 0.92 + 0.08 * smoothstep(0.12, 0.67, 1.0 - v)
+    var x := cos(longitude) * silhouette * s.x * 0.55 * jaw
     var z := sin(longitude) * silhouette * s.z * 0.52
-    # Sculpt the actual facial surface as a coherent 3D shape. The face-front
+    # V124 portrait pass: a wider cheek/jaw and shorter face reads as a\n    # stylized adventurer rather than a long narrow mask. The face-front
     # inverse projection uses the SAME x/jaw mapping, keeping eyes/lids seated.
     var frontness := maxf(0.0, face_sign * sin(longitude))
     var nose := exp(-pow(x / maxf(0.01, s.x * 0.12), 2.0)) * exp(-pow((v - 0.52) / 0.13, 2.0))
@@ -595,7 +595,7 @@ func _face_point(c: Vector3, s: Vector3, u: float, v: float) -> Vector3:
     var chin := exp(-pow((v - 0.79) / 0.10, 2.0)) * exp(-pow(x / maxf(0.01, s.x * 0.27), 2.0))
     z += face_sign * frontness * s.z * (nose * 0.24 + cheek * 0.09 -
         eye_socket * 0.06 + brow * 0.055 + lips * 0.045 + chin * 0.065)
-    return Vector3(c.x + x, c.y + cos(latitude) * s.y * 0.54, c.z + z)
+    return Vector3(c.x + x, c.y + cos(latitude) * s.y * 0.48, c.z + z)
 
 func _ellipsoid(name_text: String, center: Vector3, radii: Vector3, mat: Material) -> void:
     var shape := SphereMesh.new()
