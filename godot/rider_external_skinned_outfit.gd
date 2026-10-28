@@ -158,40 +158,32 @@ func _is_jacket_vertex(point: Vector3, bottom: float, height: float) -> bool:
     return y >= 0.43 and y <= 0.78
 
 func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
-    # Normalized proportions use the actual imported CC0 mesh, not guessed
-    # world-space units. The silhouette is fuller at chest/shoulder and
-    # deliberately narrower at the waist, without breaking 4-weight skinning.
-    var y: float = (point.y - bounds.position.y) / bounds.size.y
-    var lateral: float = (point.x - bounds.get_center().x) / bounds.size.x
-    var chest: float = exp(-pow((y - 0.635) / 0.105, 2.0)) * (1.0 - smoothstep(0.23, 0.43, absf(lateral)))
-    var shoulder: float = exp(-pow((y - 0.735) / 0.075, 2.0)) * smoothstep(0.065, 0.30, absf(lateral))
-    var waist: float = exp(-pow((y - 0.465) / 0.055, 2.0))
-    # A continuous raised V-shaped flight-jacket chest and shoulder yoke,
-    # carved into the SAME four-weight source triangles. The ridge follows
-    # the original torso through lean, jump and boost, unlike rigid plates.
-    var diagonal := absf(lateral) - (0.11 + 0.28 * (y - 0.55))
-    var chest_ridge := exp(-pow(diagonal / 0.055, 2.0)) * \
-        exp(-pow((y - 0.635) / 0.115, 2.0))
-    var collar := exp(-pow((y - 0.765) / 0.026, 2.0)) * \
-        (1.0 - smoothstep(0.17, 0.38, absf(lateral)))
-    var side_taper := smoothstep(0.23, 0.43, absf(lateral)) * \
-        exp(-pow((y - 0.51) / 0.09, 2.0))
-    # One coherent skinned anatomical profile: broad deltoid caps, paired
-    # pectoral volumes and a raised central sternum/spine ridge. These are
-    # deformations of the imported weighted triangles, not rigid add-ons.
-    var pectoral := exp(-pow((y - 0.655) / 0.075, 2.0)) * \
-        exp(-pow((absf(lateral) - 0.17) / 0.11, 2.0))
-    var deltoid := exp(-pow((y - 0.715) / 0.055, 2.0)) * \
-        smoothstep(0.18, 0.32, absf(lateral))
-    var spine_keel := exp(-pow(lateral / 0.065, 2.0)) * \
-        exp(-pow((y - 0.61) / 0.13, 2.0))
-    var depth: float = 0.022 + 0.064 * chest + 0.054 * shoulder + \
-        0.009 * waist + 0.031 * chest_ridge + 0.022 * collar - \
-        0.009 * side_taper + 0.037 * pectoral + 0.027 * deltoid + \
-        0.016 * spine_keel
-    var spread: float = 0.042 * shoulder + 0.015 * chest_ridge + \
-        0.032 * deltoid - 0.020 * waist * smoothstep(0.12, 0.35, absf(lateral))
-    return normal * depth + Vector3(signf(lateral) * spread, 0.012 * shoulder, 0.0)
+    # V124 silhouette reset: the imported 65-bone torso remains the actual
+    # deforming mesh. Carve a narrow waist, a readable V-yoke and a defined
+    # deltoid-to-pectoral transition instead of stacking a barrel-shaped shell.
+    # All coordinates are proportions of the source glTF AABB.
+    var y := (point.y - bounds.position.y) / maxf(bounds.size.y, 0.001)
+    var lateral := (point.x - bounds.get_center().x) / maxf(bounds.size.x, 0.001)
+    var x := absf(lateral)
+    var chest := exp(-pow((y - 0.635) / 0.105, 2.0)) * (1.0 - smoothstep(0.23, 0.43, x))
+    var shoulder := exp(-pow((y - 0.735) / 0.075, 2.0)) * smoothstep(0.065, 0.30, x)
+    var waist := exp(-pow((y - 0.465) / 0.065, 2.0))
+    var diagonal := x - (0.11 + 0.28 * (y - 0.55))
+    var chest_ridge := exp(-pow(diagonal / 0.055, 2.0)) * exp(-pow((y - 0.635) / 0.115, 2.0))
+    var collar := exp(-pow((y - 0.765) / 0.026, 2.0)) * (1.0 - smoothstep(0.17, 0.38, x))
+    var pectoral := exp(-pow((y - 0.655) / 0.075, 2.0)) * exp(-pow((x - 0.17) / 0.11, 2.0))
+    var deltoid := exp(-pow((y - 0.715) / 0.055, 2.0)) * smoothstep(0.18, 0.32, x)
+    var spine_keel := exp(-pow(lateral / 0.065, 2.0)) * exp(-pow((y - 0.61) / 0.13, 2.0))
+    # A shallow underlying skin-following suit, not the former additive
+    # 0.15-unit chest bulge. Distinct local relief remains visible in motion.
+    var depth := 0.012 + 0.031 * chest + 0.031 * shoulder + \
+        0.037 * chest_ridge + 0.027 * collar + 0.029 * pectoral + \
+        0.018 * deltoid + 0.009 * spine_keel
+    # Stronger waist inward shaping counterbalances the shoulder profile.
+    # The signed X displacement is symmetric, preserving left/right poses.
+    var waist_inset := 0.042 * waist * smoothstep(0.12, 0.35, x)
+    var spread := 0.031 * shoulder + 0.022 * deltoid - waist_inset
+    return normal * depth + Vector3(signf(lateral) * spread, 0.006 * shoulder, 0.0)
 
 func _jacket_material(bounds: AABB) -> ShaderMaterial:
     var material := ShaderMaterial.new()

@@ -62,6 +62,9 @@ func _check() -> void:
     if chest.z < waist.z + 0.025 or shoulder.z < waist.z + 0.025:
         _fail("new skinned torso must have sculpted chest/shoulder volume and a tapered waist")
         return
+    if chest.z > 0.18 or shoulder.z > 0.18:
+        _fail("torso redesign regressed to the oversized barrel-chest shell")
+        return
     if shoulder.x < 0.01 or opposite.x > -0.01 or absf(shoulder.x + opposite.x) > 0.002:
         _fail("weighted shoulder expansion must be balanced on both sides")
         return

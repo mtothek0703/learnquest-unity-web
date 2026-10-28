@@ -33,6 +33,7 @@ func _check() -> void:
         return
     var names := ["SkinnedLeftPectoral", "SkinnedRightPectoral", "SkinnedSpineShield"]
     var total_vertices := 0
+    var colored_vertices := 0
     for i in range(3):
         var part := panels[i] as MeshInstance3D
         if part == null or part.name != names[i] or part.mesh == null:
@@ -49,6 +50,13 @@ func _check() -> void:
         var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
         var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
         var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
+        var colors: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
+        if colors.size() != vertices.size():
+            _fail("anatomical armor must have vertex-painted facets, not flat overlay plates")
+            return
+        for tint in colors:
+            if tint.b > 0.30:
+                colored_vertices += 1
         if vertices.size() < 90 or normals.size() != vertices.size() or bones.size() != vertices.size() * 4 or weights.size() != vertices.size() * 4:
             _fail("panel is not a genuine substantial four-weight skinned surface: " + names[i])
             return
@@ -64,6 +72,14 @@ func _check() -> void:
                 _fail("interpolated armor bone weights are not normalized")
                 return
         total_vertices += vertices.size()
+    if colored_vertices < 90:
+        _fail("missing integrated two-tone armor geometry")
+        return
+    var center_depth := float(armor.call("_panel_relief", 0.5, 0.5, true))
+    var edge_depth := float(armor.call("_panel_relief", 0.01, 0.01, true))
+    if center_depth <= edge_depth + 0.02 or center_depth >= 0.055:
+        _fail("new chest facets must have a shallow sculpted bevel, not barrel-shaped protrusions")
+        return
     var left := (panels[0] as MeshInstance3D).mesh.get_aabb()
     var right := (panels[1] as MeshInstance3D).mesh.get_aabb()
     var back := (panels[2] as MeshInstance3D).mesh.get_aabb()

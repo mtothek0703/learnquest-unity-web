@@ -33,9 +33,10 @@ func install(jacket: MeshInstance3D, face_sign: float) -> bool:
         part.skeleton = jacket.skeleton
         part.transform = jacket.transform
         var material := StandardMaterial3D.new()
-        material.albedo_color = spec["color"]
-        material.metallic = 0.42
-        material.roughness = 0.37
+        material.albedo_color = Color.WHITE
+        material.vertex_color_use_as_albedo = true
+        material.metallic = 0.29
+        material.roughness = 0.47
         material.cull_mode = BaseMaterial3D.CULL_DISABLED
         part.material_override = material
         jacket.get_parent().add_child(part)
@@ -90,11 +91,16 @@ func _extract_panel(source: Mesh, spec: Dictionary, face_sign: float) -> ArrayMe
                     var normal: Vector3 = vertex["normal"]
                     var u := (p.x - x0) / maxf(x1 - x0, 0.0001)
                     var v := (p.y - y0) / maxf(y1 - y0, 0.0001)
-                    # Rounded, thickened pectoral and spine volumes with
-                    # bevels at all four borders, directly in weighted mesh.
-                    var bevel := smoothstep(0.0, 0.13, minf(u, 1.0 - u)) * smoothstep(0.0, 0.12, minf(v, 1.0 - v))
-                    var anatomical := 0.014 * sin(PI * u) * sin(PI * v)
-                    var depth := 0.018 + 0.058 * bevel + anatomical
+                    # Broad, shallow anatomical facets conform to the
+                    # weighted jacket instead of creating a barrel chest.
+                    var depth := _panel_relief(u, v, bool(spec["front"]))
+                    var base_color: Color = spec["color"]
+                    var vein := exp(-pow((u - 0.50 - 0.22 * (v - 0.50)) / 0.085, 2.0)) * \
+                        smoothstep(0.15, 0.40, v)
+                    var border := exp(-pow((u - 0.075) / 0.065, 2.0)) + \
+                        exp(-pow((u - 0.925) / 0.065, 2.0))
+                    var color := base_color.lerp(Color(0.09, 0.62, 0.86), clampf(vein * 0.42 + border * 0.16, 0.0, 0.58))
+                    output.set_color(color)
                     output.set_normal(normal)
                     output.set_bones(vertex["bones"])
                     output.set_weights(vertex["weights"])
@@ -103,6 +109,15 @@ func _extract_panel(source: Mesh, spec: Dictionary, face_sign: float) -> ArrayMe
     if accepted < 90:
         return null
     return output.commit()
+
+func _panel_relief(u: float, v: float, is_front: bool) -> float:
+    # Continuous rounded facets with a beveled border and shallow center.
+    # Back shield receives a narrow spine keel, not a second bulky backpack.
+    var bevel := smoothstep(0.0, 0.14, minf(u, 1.0 - u)) * \
+        smoothstep(0.0, 0.15, minf(v, 1.0 - v))
+    var curved := sin(PI * u) * sin(PI * v)
+    var keel := 0.0 if is_front else 0.006 * exp(-pow((u - 0.5) / 0.18, 2.0))
+    return 0.006 + 0.021 * bevel + 0.009 * curved + keel
 
 func _source_corner(positions: PackedVector3Array, normals: PackedVector3Array,
         bones: PackedInt32Array, weights: PackedFloat32Array, index: int) -> Dictionary:
