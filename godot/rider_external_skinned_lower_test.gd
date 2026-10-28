@@ -170,9 +170,9 @@ func _check() -> void:
     # Previous boot extraction stopped at y=17.5% and could not contain the
     # y=22.5% shin guard, even though the shader referenced it.
     var actual_boot := lower.get("boots") as MeshInstance3D
-    var source_bounds := source.mesh.get_aabb()
+    var boot_source_bounds := source.mesh.get_aabb()
     var boot_bounds := actual_boot.mesh.get_aabb()
-    var boot_top := (boot_bounds.end.y - source_bounds.position.y) / source_bounds.size.y
+    var boot_top := (boot_bounds.end.y - boot_source_bounds.position.y) / boot_source_bounds.size.y
     if boot_top < 0.238:
         _fail("weighted boot geometry was cut off below its sculpted shin guard")
         return
