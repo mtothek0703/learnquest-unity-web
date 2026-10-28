@@ -139,6 +139,31 @@ func _check() -> void:
     if exhaust_light == null or not exhaust_light.emission_enabled or exhaust_light.emission_energy_multiplier <= 1.6:
         _fail("boost must brighten both sculpted exhaust halos")
         return
+    # Both physical rails already existed. Their independent emission now
+    # communicates steer direction without adding draw calls or touch input.
+    var side_materials: Array = sculpt.get("rail_materials")
+    if side_materials.size() != 2 or side_materials[0] == side_materials[1]:
+        _fail("port/starboard rails need distinct materials for carve feedback")
+        return
+    var port_light := side_materials[0] as StandardMaterial3D
+    var starboard_light := side_materials[1] as StandardMaterial3D
+    if port_light == null or starboard_light == null or \
+            starboard_light.emission_energy_multiplier <= port_light.emission_energy_multiplier + 0.10:
+        _fail("right carve must brighten the right-hand existing rail")
+        return
+    legacy.set("lean", -0.85)
+    legacy.set("boosting", false)
+    for frame in range(16):
+        sculpt.call("_process", 0.016)
+    if port_light.emission_energy_multiplier <= starboard_light.emission_energy_multiplier + 0.35:
+        _fail("left carve must switch the dominant rail and recover from boost")
+        return
+    if port_light.emission == starboard_light.emission:
+        _fail("opposite rail emissions must use visibly distinct turn colors")
+        return
+    if sculpt.find_children("*", "CollisionObject3D", true, false).size() > 0:
+        _fail("turn lighting must not add new collision objects")
+        return
     if rider.get_node_or_null("ImportedRider/OriginalBodySkinRig/OriginalBodySkeleton13") == null:
         _fail("original 13-bone skinned character must remain")
         return

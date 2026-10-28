@@ -14,6 +14,9 @@ var thruster_housings: Array[MeshInstance3D] = []
 var thruster_cores: Array[MeshInstance3D] = []
 var core_material: StandardMaterial3D
 var rail_material: StandardMaterial3D
+# Separate materials for existing port/starboard meshes make carve direction
+# visible from the chase camera; no additional geometry or collision bodies.
+var rail_materials: Array[StandardMaterial3D] = []
 
 func _ready() -> void:
     var shell_material := StandardMaterial3D.new()
@@ -46,8 +49,10 @@ func _ready() -> void:
     grip = _attach("ContouredTractionDeck", _make_grip(), grip_material)
     keel = _attach("UndersideKeel", _make_keel(), shell_material)
     for side in [-1.0, 1.0]:
+        var side_rail_material := rail_material.duplicate() as StandardMaterial3D
+        rail_materials.append(side_rail_material)
         var rail := _attach("PortEdgeLight" if side < 0.0 else "StarboardEdgeLight",
-            _make_rail(side), rail_material)
+            _make_rail(side), side_rail_material)
         rails.append(rail)
         swept_wings.append(_attach("PortSculptedAeroWing" if side < 0.0 else "StarboardSculptedAeroWing",
             _make_wing(side), shell_material))
@@ -72,6 +77,17 @@ func _process(_delta: float) -> void:
         rail_material.emission_energy_multiplier, 3.0 if boost else 1.25, 0.18)
     core_material.emission_energy_multiplier = lerpf(
         core_material.emission_energy_multiplier, 5.0 if boost else 1.6, 0.18)
+    # A turn brightens the outside rail, while the original shared exhaust
+    # and boost response stay unchanged. Use existing mobile-safe materials.
+    var lean := clampf(float(controller.get("lean")), -1.0, 1.0)
+    for i in range(rail_materials.size()):
+        var side := -1.0 if i == 0 else 1.0
+        var turn_strength := maxf(0.0, side * lean)
+        var material := rail_materials[i]
+        var target_energy := (3.0 if boost else 1.25) + turn_strength * 1.40
+        material.emission_energy_multiplier = lerpf(
+            material.emission_energy_multiplier, target_energy, 0.18)
+        material.emission = Color("#1dbcf5").lerp(Color("#cf4df7"), turn_strength * 0.68)
 
 func _attach(part_name: String, mesh: ArrayMesh, material: Material) -> MeshInstance3D:
     if mesh == null or mesh.get_surface_count() == 0:
