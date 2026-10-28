@@ -16,8 +16,8 @@ func install(source_meshes: Array[MeshInstance3D], forward_sign: float = -1.0) -
             continue
         if not String(body.name).contains("SuperHero"):
             continue
-        var leg_mesh := _extract(body, 0.155, 0.425, false)
-        var boot_mesh := _extract(body, 0.025, 0.175, true)
+        var leg_mesh := _extract(body, 0.245, 0.425, false)
+        var boot_mesh := _extract(body, 0.025, 0.258, true)
         if leg_mesh == null or boot_mesh == null:
             continue
         trousers = _make_garment(body, leg_mesh, "TrueSkinnedFlightTrousers", false)
@@ -180,42 +180,42 @@ func _in_region(point: Vector3, bottom: float, height: float, minimum: float, ma
     var normalized := (point.y - bottom) / height
     return normalized >= minimum and normalized <= maximum
 
-## One cohesive rest-space profile for both lower garments. All distances
-## scale with the imported model; original Skin indices and weights are copied.
-## This is a visible silhouette change, not a shader-only recolor.
+## V124 anatomical boot reconstruction: a distinct foot, narrow articulated
+## ankle, shaped calf/shin, and thin flared top cuff. Geometry is displaced
+## directly on the imported four-weight skin; no rigid props or extra colliders.
+## The boot shaft now extends to 25.8% of height so its shin plate is actually
+## present in the extracted mesh (the old 17.5% cutoff silently removed it).
 func _sculpt_offset(point: Vector3, normal: Vector3, bounds: AABB, is_boot: bool) -> Vector3:
-    # Continuous original four-weight triangles, not a rigid shoe replacement.
-    # Model the whole foot silhouette (toe/instep/heel/sole), shin guards and
-    # ankle collar in the imported rest pose; all deformation stays on the
-    # original 65-joint Skin and follows ankle/calf articulation.
     var y := (point.y - bounds.position.y) / maxf(bounds.size.y, 0.001)
     var lateral := (point.x - bounds.get_center().x) / maxf(bounds.size.x, 0.001)
-    var thigh := exp(-pow((y - 0.385) / 0.075, 2.0))
-    var knee := exp(-pow((y - 0.305) / 0.048, 2.0))
-    var shin := exp(-pow((y - 0.205) / 0.070, 2.0))
-    var toe := exp(-pow((y - 0.085) / 0.055, 2.0))
-    var forefoot := exp(-pow((y - 0.088) / 0.040, 2.0))
-    var instep := exp(-pow((y - 0.132) / 0.032, 2.0))
-    var heel := exp(-pow((y - 0.070) / 0.032, 2.0))
-    var sole := exp(-pow((y - 0.045) / 0.014, 2.0))
-    var shin_guard := exp(-pow((y - 0.225) / 0.054, 2.0))
-    var boot := 1.0 if is_boot else 0.0
-    var ankle_cuff := exp(-pow((y - 0.155) / 0.017, 2.0))
+    var outside := smoothstep(0.08, 0.25, absf(lateral))
+    var centerline := 1.0 - smoothstep(0.025, 0.14, absf(absf(lateral) - 0.24))
     var front := maxf(0.0, normal.z * face_sign)
     var back := maxf(0.0, -normal.z * face_sign)
-    # Bilateral centerlines are measured against the imported total width.
-    var leg_center := absf(absf(lateral) - 0.24)
-    var central_ridge := 1.0 - smoothstep(0.025, 0.15, leg_center)
-    var depth := 0.029 + 0.039 * thigh + 0.055 * knee + 0.044 * shin + \
-        boot * (0.049 * toe + 0.047 * ankle_cuff + 0.048 * shin_guard * front * central_ridge + \
-        0.058 * instep * front + 0.035 * heel * back + 0.040 * sole)
-    var outside := smoothstep(0.075, 0.24, absf(lateral))
-    var side_spread := outside * (0.022 * thigh + 0.033 * knee + \
-        0.022 * shin + boot * (0.035 * toe + 0.032 * ankle_cuff + \
-        0.035 * forefoot + 0.023 * sole))
-    # A real forward-swept toe and a separate rear heel counter. The sign is
-    # determined by the imported eyes; both feet share one mirrored profile.
-    var fore_aft := boot * (0.105 * forefoot * front + 0.042 * instep * front - \
-        0.045 * heel * back)
-    return normal * depth + Vector3(signf(lateral) * side_spread, \
-        -boot * sole * 0.017, face_sign * fore_aft)
+    var thigh := exp(-pow((y - 0.385) / 0.070, 2.0))
+    var knee := exp(-pow((y - 0.305) / 0.043, 2.0))
+    var calf := exp(-pow((y - 0.225) / 0.045, 2.0))
+    var ankle := exp(-pow((y - 0.151) / 0.027, 2.0))
+    var top_cuff := exp(-pow((y - 0.246) / 0.011, 2.0))
+    var toe := exp(-pow((y - 0.086) / 0.046, 2.0))
+    var forefoot := exp(-pow((y - 0.088) / 0.040, 2.0))
+    var instep := exp(-pow((y - 0.130) / 0.034, 2.0))
+    var heel := exp(-pow((y - 0.069) / 0.034, 2.0))
+    var sole := exp(-pow((y - 0.045) / 0.014, 2.0))
+    var boot := 1.0 if is_boot else 0.0
+    # Ankle deliberately narrows between the broad foot and raised calf.
+    # The old uniform +0.029 shell and swollen shin/knee read as two tubes.
+    var depth := 0.010 + 0.014 * thigh + 0.020 * knee + boot * (
+        0.019 * calf + 0.008 * ankle + 0.031 * top_cuff +
+        0.030 * toe + 0.033 * instep * front +
+        0.028 * calf * front * centerline +
+        0.022 * heel * back + 0.031 * sole)
+    var side_spread := outside * (0.012 * thigh + 0.024 * knee + boot * (
+        0.017 * calf - 0.010 * ankle + 0.043 * top_cuff +
+        0.037 * forefoot + 0.030 * toe + 0.023 * sole))
+    # Swept toe, raised instep and independent heel counter form a readable
+    # horizontal shoe silhouette, while preserving source foot bone weights.
+    var fore_aft := boot * (0.107 * forefoot * front +
+        0.047 * instep * front - 0.049 * heel * back)
+    return normal * depth + Vector3(signf(lateral) * side_spread,
+        -boot * sole * 0.018, face_sign * fore_aft)
