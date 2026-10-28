@@ -176,6 +176,14 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     character.add_child(thrusters)
     if not bool(thrusters.call("install", skinned_meshes, skeleton, mantle_face_sign)):
         push_warning("CC0 weighted shoulder thrusters unavailable; original rider remains")
+    # Coherent front/chase shoulder armor, sculpted around the actual CC0
+    # torso and GPU-skinned to the same arm/spine/pelvis bones.
+    var pauldrons := preload("res://rider_external_skinned_pauldron.gd").new() as Node
+    pauldrons.name = "ExternalSkinnedFlightPauldrons"
+    character.add_child(pauldrons)
+    if not bool(pauldrons.call("install", skinned_meshes, skeleton, mantle_face_sign)):
+        pauldrons.queue_free()
+        push_warning("CC0 weighted shoulder armor unavailable; original silhouette preserved")
     # Deliberately do not modify bone rest positions, imported inverse bind
     # matrices or the imported Skin: those are the asset's real authoring data.
     set_process(true)
