@@ -13,7 +13,7 @@ func set_visual_scale(factor: float) -> void:
     # BoneAttachment3D follows the imported Head and may overwrite its own
     # transform. Scale the actual visual meshes around the sampled head center
     # instead, preserving the original 65-bone Skin and stable Head binding.
-    if factor < 1.0 or factor > 2.35 or absf(visual_scale - 1.0) > 0.001:
+    if factor < 1.0 or factor > 2.75 or absf(visual_scale - 1.0) > 0.001:
         return
     var center := head_bounds.get_center()
     for part in generated_meshes:
@@ -436,16 +436,17 @@ func _back_hair_volume_point(c: Vector3, s: Vector3, crown_y: float, cap_height:
 
 func _back_hair_point(c: Vector3, s: Vector3, crown_y: float, cap_height: float,
         radius_x: float, radius_z: float, t: float, u: float) -> Vector3:
+    # Shorter, more tapered rear drape for the larger mobile-readable head;
     # Sculpted silhouette: broad at shoulder, tapered toward the ends and
     # split into softly scalloped locks. Avoid a rectangular purple hair slab.
     var angle := (u - 0.5) * PI
     var edge := sin(angle)
-    var width_profile := 1.12 + 0.55 * sin(PI * t) - 0.24 * t
+    var width_profile := 1.09 + 0.44 * sin(PI * t) - 0.31 * t
     var strand_wave := 0.07 * sin(7.0 * angle + 2.5 * t) * sin(PI * t)
     var hem := 0.13 * pow(t, 5.0) * (0.5 + 0.5 * cos(7.0 * angle))
     return Vector3(
         c.x + (edge * width_profile + strand_wave) * radius_x,
-        crown_y + cap_height * 0.20 - s.y * (0.20 + 1.23 * t - hem),
+        crown_y + cap_height * 0.20 - s.y * (0.20 + 1.05 * t - hem),
         c.z - face_sign * cos(angle) * radius_z *
             (0.97 + 0.23 * t + 0.07 * sin(5.0 * angle) * sin(PI * t)))
 
