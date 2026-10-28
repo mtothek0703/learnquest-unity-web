@@ -147,6 +147,17 @@ jobs:
             --script res://rider_external_character_visual_capture_test.gd 2>&1 | tee /tmp/quaternius-visual.log
           grep -Fq 'QUATERNIUS VISUAL QA PASSED' /tmp/quaternius-visual.log
           test "$(find /tmp/learnquest-quaternius-qa -name '*.png' | wc -l)" -eq 8
+      - name: Render actual V123/V124 skinned hoverboot close-ups at two landscape ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-boots-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_BOOT_OUTPUT=/tmp/learnquest-boots-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_boot_visual_capture_test.gd 2>&1 | tee /tmp/boot-visual.log
+          grep -Fq 'SKINNED BOOT VISUAL QA PASSED' /tmp/boot-visual.log
+          test "$(find /tmp/learnquest-boots-qa -name '*.png' | wc -l)" -eq 8
       - name: Render actual V124 twin-turbine before-after landscape frames
         shell: bash
         run: |
@@ -246,6 +257,13 @@ jobs:
             --script res://harbor_cargo_relay_visual_capture_test.gd 2>&1 | tee /tmp/harbor-relay-visual.log
           grep -Fq 'HARBOR CARGO RELAY VISUAL QA PASSED' /tmp/harbor-relay-visual.log
           test "$(find /tmp/learnquest-relay-qa -name '*.png' | wc -l)" -eq 8
+      - name: Upload V124 skinned hoverboot close-up comparison frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-hoverboots-before-after
+          path: /tmp/learnquest-boots-qa/*.png
+          if-no-files-found: ignore
       - name: Upload V124 twin-turbine before-after landscape frames
         if: always()
         uses: actions/upload-artifact@v4
