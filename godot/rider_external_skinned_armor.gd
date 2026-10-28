@@ -62,7 +62,10 @@ func _extract_panel(source: Mesh, spec: Dictionary, face_sign: float) -> ArrayMe
         var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
         var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
         var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
-        var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+        # SurfaceTool's unindexed jacket has a null INDEX slot in Godot 4.
+        var indices := PackedInt32Array()
+        if arrays[Mesh.ARRAY_INDEX] != null:
+            indices = arrays[Mesh.ARRAY_INDEX]
         if normals.size() != positions.size() or bones.size() != positions.size() * 4 or weights.size() != positions.size() * 4:
             continue
         var triangles := int(indices.size() / 3) if not indices.is_empty() else int(positions.size() / 3)
