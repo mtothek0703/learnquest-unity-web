@@ -17,8 +17,8 @@ func set_visual_scale(factor: float) -> void:
         return
     var center := head_bounds.get_center()
     for part in generated_meshes:
-        if part.mesh is ArrayMesh:
-            # Procedural surfaces store their points in Head-local coordinates.
+        if part.mesh is ArrayMesh and not part.has_meta("local_eye_geometry"):
+            # Most procedural surfaces store points in Head-local coordinates.
             part.position = center * (1.0 - factor)
             part.scale = Vector3.ONE * factor
         else:
@@ -735,6 +735,10 @@ func _ellipsoid(name_text: String, center: Vector3, radii: Vector3, mat: Materia
     var part := MeshInstance3D.new()
     part.name = name_text
     part.mesh = shape
+    # Unlike the other procedural ArrayMeshes, the almond eye uses local
+    # unit geometry with a separately projected eye-center transform.
+    if name_text.begins_with("EyeWhite"):
+        part.set_meta("local_eye_geometry", true)
     part.material_override = mat
     part.position = center
     part.scale = radii
