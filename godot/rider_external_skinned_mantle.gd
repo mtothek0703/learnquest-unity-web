@@ -5,6 +5,7 @@ extends Node
 var panels: Array[MeshInstance3D] = []
 var generated_vertices: int = 0
 var mantle_span: float = 0.0
+var wing_reach: float = 0.0
 var shoulder_yoke: MeshInstance3D
 var yoke_vertices: int = 0
 
@@ -83,6 +84,9 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: f
         yoke_vertices = yoke_mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
         panels = created
         mantle_span = bounds.size.y * 0.26
+        # Measured on the actual weighted geometry, not a guessed sprite size.
+        wing_reach = maxf(absf(created[0].mesh.get_aabb().position.x - bounds.get_center().x),
+            absf(created[1].mesh.get_aabb().end.x - bounds.get_center().x))
         return true
     return false
 
@@ -113,10 +117,10 @@ func _torso_back(mesh: Mesh, bounds: AABB, back_sign: float) -> float:
     return bounds.end.z if back_sign > 0.0 else bounds.position.z
 
 func _panel(bounds: AABB, back: float, back_sign: float, side: float, binds: PackedInt32Array) -> ArrayMesh:
-    # Sculpt a closed, genuinely three-dimensional pair of SHORT swept fins.
-    # The former floor-length flat cape concealed the 65-bone suit and board
-    # in the chase camera. Two airfoil surfaces and four sealed edges preserve
-    # the center channel and expose the weighted jacket/back hardware.
+    # One connected aero-silhouette instead of new floating decorative props:
+    # broad, tapered swept wings with curved 3D camber, a sculpted trailing
+    # scallop and sealed airfoil thickness. Four real imported bone influences
+    # bend each wing while the central channel leaves the boots/board visible.
     var tool := SurfaceTool.new()
     tool.begin(Mesh.PRIMITIVE_TRIANGLES)
     const ROWS = 20
@@ -167,19 +171,21 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
         surface_sign: float) -> void:
     var width := bounds.size.x
     var center_x := bounds.get_center().x
-    # Root follows the back, broad mid-chord makes a recognizable flight fin,
-    # and the narrow elevated tip leaves hips, legs and hoverboard unobscured.
+    # The root stays close to the weighted shoulder yoke. The outer edge
+    # expands into a broad midspan sail, then tapers to a narrow raised tip;
+    # alternating scallops keep the chase silhouette from reading as a skirt.
     var flare := sin(PI * t * 0.87)
+    var scallop := 0.042 * sin(5.0 * PI * t) * sin(PI * t)
     var inner := width * (0.07 + 0.15 * t)
-    var outer := width * (0.12 + 0.27 * flare + 0.04 * t)
+    var outer := width * (0.12 + 0.44 * flare + 0.04 * t + scallop)
     var x := center_x + side * lerpf(inner, outer, u)
     var camber := sin(u * PI) * sin(t * PI)
     var y := bounds.position.y + bounds.size.y * (0.72 - 0.26 * t +
-        0.025 * camber + 0.018 * u * t)
-    var sweep := 0.045 + 0.16 * t + 0.26 * pow(t, 1.4) + 0.045 * camber
-    var rib := sin(u * PI * 3.0 + t * 3.0) * width * 0.008 * t
-    # Real front/back separation: a convex airfoil, sealed at every edge.
-    var thickness := width * (0.006 + 0.032 * sin(PI * u) * sin(PI * t))
+        0.042 * camber + 0.018 * u * t)
+    # Real curved spar and swept depth, not a flat two-sided ribbon.
+    var sweep := 0.045 + 0.16 * t + 0.26 * pow(t, 1.4) + 0.12 * camber
+    var rib := sin(u * PI * 3.0 + t * 3.0) * width * 0.010 * t
+    var thickness := width * (0.008 + 0.050 * sin(PI * u) * sin(PI * t))
     var z := back + back_sign * (sweep + rib + surface_sign * thickness)
     var spine_weight := 0.72 * (1.0 - t) * (1.0 - t)
     var leg_weight := 0.34 * t * t
