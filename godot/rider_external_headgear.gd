@@ -545,7 +545,7 @@ func _build_expression(c: Vector3, s: Vector3) -> void:
     var ink := _material(Color(0.14, 0.075, 0.22), 0.0, 0.76)
     var lid_mat := _material(Color(0.30, 0.14, 0.28), 0.0, 0.66)
     var blush := _material(Color(0.77, 0.36, 0.43), 0.0, 0.79)
-    # Larger eyes and a softer cheek-to-jaw profile remain seated on the same
+    # After side-by-side V123/V124 portrait QA: calm the oversized cyan irises,\n    # give pupils more expression, strengthen brows, and soften the nose,\n    # cheek marks and smile curvature as one coherent mobile facial design.\n    # Larger eyes and a softer cheek-to-jaw profile remain seated on the same
     # continuous Head-bone facial surface; no floating face plane is added.
     var eye_y := head_bounds.position.y + s.y * 0.59
     for side in [-1.0, 1.0]:
@@ -553,13 +553,13 @@ func _build_expression(c: Vector3, s: Vector3) -> void:
         var base := _face_front_point(c, s, eye_x, eye_y)
         _ellipsoid("EyeWhite%s" % str(side),
             base + Vector3(0.0, 0.0, face_sign * s.z * 0.024),
-            Vector3(s.x * 0.128, s.y * 0.091, s.z * 0.049), white)
+            Vector3(s.x * 0.123, s.y * 0.083, s.z * 0.046), white)
         _ellipsoid("Iris%s" % str(side),
             base + Vector3(0.0, 0.0, face_sign * s.z * 0.073),
-            Vector3(s.x * 0.064, s.y * 0.066, s.z * 0.023), iris)
+            Vector3(s.x * 0.057, s.y * 0.058, s.z * 0.022), iris)
         _ellipsoid("Pupil%s" % str(side),
             base + Vector3(0.0, 0.0, face_sign * s.z * 0.094),
-            Vector3(s.x * 0.028, s.y * 0.038, s.z * 0.014), pupil)
+            Vector3(s.x * 0.033, s.y * 0.041, s.z * 0.014), pupil)
         # Two small highlights are embedded in each iris, not floating props.
         # They remain visible in the 1280x720 and 1170x540 front cameras.
         _ellipsoid("IrisCatchlight%s_Main" % str(side),
@@ -576,13 +576,13 @@ func _build_expression(c: Vector3, s: Vector3) -> void:
             var t := float(i) / 16.0
             var x := eye_x + (t - 0.5) * s.x * 0.245
             var arc := sin(t * PI)
-            var upper_y := eye_y + s.y * (0.012 + 0.092 * arc)
-            var lower_y := eye_y - s.y * (0.016 + 0.078 * arc)
+            var upper_y := eye_y + s.y * (0.012 + 0.083 * arc)
+            var lower_y := eye_y - s.y * (0.016 + 0.070 * arc)
             upper_lid.append(_face_front_point(c, s, x, upper_y) +
                 Vector3(0.0, 0.0, face_sign * s.z * 0.069))
             lower_lid.append(_face_front_point(c, s, x, lower_y) +
                 Vector3(0.0, 0.0, face_sign * s.z * 0.058))
-            var brow_y := eye_y + s.y * (0.165 + 0.025 * arc)
+            var brow_y := eye_y + s.y * (0.158 + 0.025 * arc)
             brow.append(_face_front_point(c, s, x, brow_y) +
                 Vector3(0.0, 0.0, face_sign * s.z * 0.027))
             var cheek_y := eye_y - s.y * (0.170 + 0.015 * arc)
@@ -590,28 +590,28 @@ func _build_expression(c: Vector3, s: Vector3) -> void:
                 Vector3(0.0, 0.0, face_sign * s.z * 0.020))
         _mesh("UpperLid%s" % str(side), _tube(upper_lid, s.x * 0.013, 6), lid_mat)
         _mesh("LowerLid%s" % str(side), _tube(lower_lid, s.x * 0.009, 6), lid_mat)
-        _mesh("CurvedBrow%s" % str(side), _tube(brow, s.x * 0.020, 6), ink)
-        _mesh("CheekAccent%s" % str(side), _tube(cheek, s.x * 0.017, 6), blush)
+        _mesh("CurvedBrow%s" % str(side), _tube(brow, s.x * 0.027, 6), ink)
+        _mesh("CheekAccent%s" % str(side), _tube(cheek, s.x * 0.010, 6), blush)
     var nose_bridge: Array[Vector3] = []
     for i in range(13):
         var t := float(i) / 12.0
         var y := head_bounds.position.y + s.y * (0.53 - 0.16 * t)
         nose_bridge.append(_face_front_point(c, s, c.x, y) +
             Vector3(0.0, 0.0, face_sign * s.z * 0.016))
-    _mesh("SculptedNoseBridge", _tube(nose_bridge, s.x * 0.017, 7),
+    _mesh("SculptedNoseBridge", _tube(nose_bridge, s.x * 0.010, 7),
         _material(Color(0.91, 0.61, 0.50), 0.0, 0.74))
     var smile: Array[Vector3] = []
     var lower_lip: Array[Vector3] = []
     for i in range(21):
         var t := float(i) / 20.0
         var x := c.x + (t - 0.5) * s.x * 0.58
-        var y := head_bounds.position.y + s.y * (0.300 + 0.095 * pow(2.0 * t - 1.0, 2.0))
+        var y := head_bounds.position.y + s.y * (0.307 + 0.052 * pow(2.0 * t - 1.0, 2.0))
         smile.append(_face_front_point(c, s, x, y) +
             Vector3(0.0, 0.0, face_sign * s.z * 0.026))
         lower_lip.append(_face_front_point(c, s, x, y - s.y * 0.032 * sin(t * PI)) +
             Vector3(0.0, 0.0, face_sign * s.z * 0.023))
-    _mesh("CurvedSmile", _tube(smile, s.x * 0.014, 6), ink)
-    _mesh("LowerLipContour", _tube(lower_lip, s.x * 0.012, 6), blush)
+    _mesh("CurvedSmile", _tube(smile, s.x * 0.011, 6), ink)
+    _mesh("LowerLipContour", _tube(lower_lip, s.x * 0.008, 6), blush)
 
 func _face_front_point(c: Vector3, s: Vector3, x: float, y: float) -> Vector3:
     # Match the widened, less elongated face silhouette exactly: eyes, lids,
