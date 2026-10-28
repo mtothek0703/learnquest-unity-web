@@ -13,6 +13,10 @@ var last_jump: float = 0.0
 var facial_acting: Node
 var flight_mantle: Node
 var hair_dynamics: Node
+# Runtime-only visual contact: the board bobs after the initial fitting pass.
+# Keep the real skinned soles at the deck without touching gameplay physics.
+var board_contact_offset: float = 0.0
+var board_contact_active: bool = false
 
 func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     rider = owner_rider
@@ -186,6 +190,9 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
         push_warning("CC0 weighted shoulder armor unavailable; original silhouette preserved")
     # Deliberately do not modify bone rest positions, imported inverse bind
     # matrices or the imported Skin: those are the asset's real authoring data.
+    # The animated board updates at normal priority. Follow it afterwards to
+    # avoid a one-frame deck/boot gap while steering, boosting or landing.
+    process_priority = 100
     set_process(true)
     return true
 
@@ -209,6 +216,7 @@ func _pose(names: Array[String], delta_rotation: Quaternion, blend: float) -> vo
 func _process(delta: float) -> void:
     if skeleton == null or rider == null:
         return
+    _follow_board_contact()
     elapsed += delta
     var steer := clampf(float(rider.get("lean")), -1.0, 1.0)
     var turbo := bool(rider.get("boosting"))
@@ -284,7 +292,9 @@ func fit_to_board() -> bool:
     # sculpted traction deck. The old hard-coded 0.08 placed the rider's
     # lowest source vertex well below the ~0.44-high deck, causing overlap.
     # This is visual-only: never reposition the board, its collision or touch.
-    character.position.y = _board_deck_height() + 0.045 - lowest * factor
+    board_contact_offset = 0.045 - lowest * factor
+    board_contact_active = true
+    _follow_board_contact()
     # Determine the *actual* imported face direction from the weighted Head
     # and eye geometry instead of assuming every CC0 GLB faces +Z.
     # Menu/front camera is -Z; chase camera is +Z.
@@ -294,6 +304,13 @@ func fit_to_board() -> bool:
         forward_sign = float(headwear.get("face_sign"))
     character.rotation.y = PI if forward_sign > 0.0 else 0.0
     return true
+
+func _follow_board_contact() -> void:
+    if not board_contact_active or character == null:
+        return
+    # No lerp: even a one-frame lag lets the moving deck intersect the boots.
+    # The rider's root jump arc and original 65-bone animation remain intact.
+    character.position.y = _board_deck_height() + board_contact_offset
 
 func _board_deck_height() -> float:
     # Sample the real sculpted grip surface in rider coordinates. Using the
