@@ -176,6 +176,23 @@ func _check() -> void:
     if right_aabb.get_center().x - left_aabb.get_center().x < head_region.size.x * 0.90:
         _fail("rear hair does not fan out bilaterally in chase camera")
         return
+    # The old rear locks floated far beyond the closed hair shell and formed
+    # a hollow cage in real chase images. All nine must now hug the sculpted
+    # volume while keeping a broad, readable shoulder-level silhouette.
+    var attached_locks := headwear.find_children("WindSweptBackLock*", "MeshInstance3D", false, false)
+    if attached_locks.size() != 9:
+        _fail("expected nine surface-following sculpted rear locks")
+        return
+    for item in attached_locks:
+        var lock := item as MeshInstance3D
+        var lock_box := lock.mesh.get_aabb()
+        if lock_box.position.x < hair_region.position.x - head_region.size.x * 0.20 or \
+                lock_box.end.x > hair_region.end.x + head_region.size.x * 0.20:
+            _fail("rear lock forms an outboard hair cage instead of following the closed volume")
+            return
+        if lock_box.size.y < head_region.size.y * 0.65:
+            _fail("surface-following rear locks must retain crown-to-shoulder length")
+            return
     for strand in [left_fan, right_fan]:
         var strand_arrays: Array = strand.mesh.surface_get_arrays(0)
         var strand_vertices: PackedVector3Array = strand_arrays[Mesh.ARRAY_VERTEX]
