@@ -92,6 +92,34 @@ func _check() -> void:
     if suit_mesh == null or not (suit_mesh.material_override is ShaderMaterial):
         _fail("real skinned body must have original procedural flight-suit material")
         return
+    # The imported CC0 rest bounds must drive the ORIGINAL GPU-skinned body's
+    # costume regions, not hard-coded absolute y coordinates from another GLB.
+    var source_bounds := suit_mesh.mesh.get_aabb()
+    var body_material := suit_mesh.material_override as ShaderMaterial
+    var body_code := body_material.shader.code
+    for required in ["rest_bottom", "rest_height", "rest_center_x", "rest_width",
+            "torso", "shoulder", "thigh", "uncovered", "silhouette_rim"]:
+        if not body_code.contains(required):
+            _fail("source flight-suit material lost fitted full-body zone: " + required)
+            return
+    for parameter in ["rest_bottom", "rest_height", "rest_center_x", "rest_width"]:
+        var expected := 0.0
+        match parameter:
+            "rest_bottom":
+                expected = source_bounds.position.y
+            "rest_height":
+                expected = source_bounds.size.y
+            "rest_center_x":
+                expected = source_bounds.get_center().x
+            "rest_width":
+                expected = source_bounds.size.x
+        var actual := float(body_material.get_shader_parameter(parameter))
+        if absf(actual - expected) > 0.001:
+            _fail("source GPU-skinned suit uses wrong imported bounds: " + parameter)
+            return
+    if source_bounds.size.y < 0.5 or source_bounds.size.x < 0.1:
+        _fail("source suit has invalid rest-space proportions")
+        return
     var left_arm := rig.find_bone("upperarm_l")
     if left_arm < 0:
         _fail("missing original humanoid left upper arm")
