@@ -89,6 +89,62 @@ func _check() -> void:
     if left.get_center().x >= right.get_center().x or back.size.x < left.size.x:
         _fail("anatomical chest and spine layout is not bilateral")
         return
+    # The real imported Skin must now form curved, shoulder-wide armor
+    # rather than three rectangular patches. Check all three waist/shoulder
+    # profiles against the jacket's own rest-space bounds.
+    var jacket_bounds := jacket.mesh.get_aabb()
+    var profiles := [
+        {"left": -0.37, "right": -0.025, "low": 0.22, "high": 0.88, "front": true},
+        {"left": 0.025, "right": 0.37, "low": 0.22, "high": 0.88, "front": true},
+        {"left": -0.23, "right": 0.23, "low": 0.13, "high": 0.93, "front": false}
+    ]
+    for spec in profiles:
+        var low_y := jacket_bounds.position.y + jacket_bounds.size.y * (float(spec["low"]) * 0.95 + float(spec["high"]) * 0.05)
+        var high_y := jacket_bounds.position.y + jacket_bounds.size.y * (float(spec["low"]) * 0.05 + float(spec["high"]) * 0.95)
+        var low_width := float(armor.call("_profile_edge", jacket_bounds, spec, true, low_y)) - float(armor.call("_profile_edge", jacket_bounds, spec, false, low_y))
+        var high_width := float(armor.call("_profile_edge", jacket_bounds, spec, true, high_y)) - float(armor.call("_profile_edge", jacket_bounds, spec, false, high_y))
+        if low_width <= 0.0 or high_width < low_width * 1.25:
+            _fail("original-skinned anatomical armor must widen continuously toward shoulders")
+            return
+    # Synthetic triangle crosses a CURVED left profile. The binary clipping
+    # intersection must lie on that profile, retaining normalized source Skin.
+    var curved_spec: Dictionary = profiles[2]
+    var curve_y := jacket_bounds.position.y + jacket_bounds.size.y * 0.53
+    var curve_x := float(armor.call("_profile_edge", jacket_bounds, curved_spec, false, curve_y))
+    var curved_triangle: Array[Dictionary] = [
+        {"position": Vector3(curve_x - 0.15, curve_y - 0.10, 0.0),
+            "normal": Vector3.FORWARD, "bones": PackedInt32Array([0, 1, 2, 3]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
+        {"position": Vector3(curve_x + 0.18, curve_y + 0.08, 0.0),
+            "normal": Vector3.FORWARD, "bones": PackedInt32Array([4, 5, 6, 7]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
+        {"position": Vector3(curve_x + 0.21, curve_y - 0.09, 0.0),
+            "normal": Vector3.FORWARD, "bones": PackedInt32Array([8, 9, 10, 11]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])}
+    ]
+    var curved_cut: Array[Dictionary] = armor.call("_clip_profile", curved_triangle, jacket_bounds, curved_spec, false)
+    if curved_cut.size() < 3:
+        _fail("curved armor clipping discarded crossing source triangle")
+        return
+    var boundary_count := 0
+    for corner in curved_cut:
+        var point: Vector3 = corner["position"]
+        var edge := float(armor.call("_profile_edge", jacket_bounds, curved_spec, false, point.y))
+        if point.x < edge - 0.0003:
+            _fail("curved armor vertex escaped sculpted boundary")
+            return
+        if absf(point.x - edge) < 0.0003:
+            boundary_count += 1
+        var skin_weights: PackedFloat32Array = corner["weights"]
+        var skin_total := 0.0
+        for influence in skin_weights:
+            skin_total += influence
+        if skin_weights.size() != 4 or absf(skin_total - 1.0) > 0.001:
+            _fail("curved shoulder seam lost original normalized four-weight skin")
+            return
+    if boundary_count < 2:
+        _fail("curved armor did not generate two weighted boundary intersections")
+        return
     # Synthetic clipping must preserve both source influences at a seam.
     var a := {"position": Vector3(-1.0, 0.0, 0.0), "normal": Vector3.FORWARD,
         "bones": PackedInt32Array([0, 1, 2, 3]), "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])}
