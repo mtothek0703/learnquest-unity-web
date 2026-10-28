@@ -30,6 +30,21 @@ func _check() -> void:
     if headwear == null or headwear.bone_name != "Head":
         _fail("headwear must be attached to original Head bone")
         return
+    # Mobile art-direction pass: the real Head-bone accessory must be large
+    # enough to read at 16:9 while retaining the imported skinned body.
+    var scale_factor := float(headwear.get("visual_scale"))
+    if scale_factor < 2.55 or scale_factor > 2.75:
+        _fail("hero face is not sized for the readable V123-like mobile portrait")
+        return
+    var region := headwear.get("head_bounds") as AABB
+    var rear_center := region.get_center()
+    var rear_size := region.size
+    var rear_point: Vector3 = headwear.call("_back_hair_point",
+        rear_center, rear_size, region.position.y + rear_size.y * 0.85,
+        rear_size.y * 0.21, rear_size.x * 0.56, rear_size.z * 0.57, 1.0, 0.5)
+    if rear_point.y < rear_center.y - rear_size.y * 0.65:
+        _fail("larger head rear hair hangs too far into the shoulder/board silhouette")
+        return
     var meshes: Array = headwear.get("generated_meshes")
     if meshes.size() < 10:
         _fail("expected curved cap, face shield, visor edges and multiple hair locks")
