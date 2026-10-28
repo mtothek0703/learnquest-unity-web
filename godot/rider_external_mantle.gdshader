@@ -20,22 +20,26 @@ void vertex() {
     VERTEX.y += sin(TIME * 2.6 + UV.y * 7.0) * 0.010 * flutter + jump_amount * 0.024 * trailing;
 }
 void fragment() {
+    // Dark structural upper surface with a broad illuminated cyan spar.
+    // The former all-purple cloth read as a skirt and hid the character.
     float edge = 1.0 - smoothstep(0.012, 0.055, min(cloth_uv.x, 1.0 - cloth_uv.x));
-    float hem = smoothstep(0.94, 0.995, cloth_uv.y);
-    float ribs = pow(0.5 + 0.5 * cos(cloth_uv.x * 25.1327), 4.0);
-    float fold = 0.5 + 0.5 * sin(cloth_uv.x * 16.0 + cloth_uv.y * 5.0);
-    vec3 midnight = vec3(0.12, 0.16, 0.34);
-    vec3 violet = vec3(0.43, 0.23, 0.72);
-    vec3 electric = vec3(0.10, 0.58, 0.88);
-    vec3 cloth = mix(midnight, violet, 0.35 + 0.55 * fold);
-    cloth = mix(cloth, electric, 0.13 + 0.16 * ribs);
-    ALBEDO = cloth;
-    METALLIC = 0.15;
-    ROUGHNESS = 0.56;
-    EMISSION = vec3(0.045, 0.57, 0.90) * max(edge * 0.86, hem * 0.74);
-    // Single-pass, camera-relative contour lift for readable skinned limbs
-    // in mobile landscape. No outline shell, light, texture or extra draw call.
+    float tip = smoothstep(0.84, 1.0, cloth_uv.y);
+    float foil_ridge = exp(-pow((cloth_uv.x - 0.58) * 12.0, 2.0));
+    float sweep_panel = smoothstep(0.12, 0.28, cloth_uv.x)
+        * (1.0 - smoothstep(0.78, 0.94, cloth_uv.x));
+    float fold = 0.5 + 0.5 * sin(cloth_uv.x * 8.0 + cloth_uv.y * 3.0);
+    vec3 midnight = vec3(0.055, 0.085, 0.21);
+    vec3 cobalt = vec3(0.14, 0.27, 0.56);
+    vec3 violet = vec3(0.33, 0.17, 0.57);
+    vec3 electric = vec3(0.07, 0.66, 0.94);
+    vec3 shell = mix(midnight, cobalt, sweep_panel * 0.80);
+    shell = mix(shell, violet, 0.08 + 0.15 * fold);
+    shell = mix(shell, electric, foil_ridge * 0.36 * (1.0 - tip * 0.5));
+    ALBEDO = shell;
+    METALLIC = 0.32;
+    ROUGHNESS = 0.38 + 0.12 * fold;
+    EMISSION = electric * (edge * 0.57 + foil_ridge * 0.31 + tip * 0.18);
     float silhouette_rim = pow(1.0 - abs(dot(normalize(NORMAL), normalize(VIEW))), 2.6);
-    ALBEDO = min(ALBEDO * (1.0 + silhouette_rim * 0.18), vec3(1.0));
-    EMISSION += vec3(0.14, 0.35, 0.61) * silhouette_rim * 0.18;
+    ALBEDO = min(ALBEDO * (1.0 + silhouette_rim * 0.16), vec3(1.0));
+    EMISSION += vec3(0.11, 0.33, 0.60) * silhouette_rim * 0.17;
 }
