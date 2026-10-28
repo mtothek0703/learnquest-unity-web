@@ -12,6 +12,7 @@ var previous_height: float = 0.0
 var last_jump: float = 0.0
 var facial_acting: Node
 var flight_mantle: Node
+var hair_dynamics: Node
 
 func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     rider = owner_rider
@@ -86,6 +87,16 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
         # Restore a readable stylized face/head silhouette at mobile chase scale.
         # The imported original head/65-bone rig remain untouched underneath.
         headgear.call("set_visual_scale", 2.62)
+        # Wind-reactive rear locks remain Head-bone attachments. Pivoted
+        # movement preserves their scalp roots and avoids extra draw calls.
+        var hair_motion := preload("res://rider_external_hair_dynamics.gd").new() as Node
+        hair_motion.name = "ExternalHairDynamics"
+        headgear.add_child(hair_motion)
+        if not bool(hair_motion.call("configure", headgear)):
+            hair_motion.queue_free()
+            push_warning("CC0 dynamic hair unavailable; static hair preserved")
+        else:
+            hair_dynamics = hair_motion
         # Animate existing eye/lid/brow/lip meshes on the same real Head bone.
         # This remains purely visual and does not alter the imported Skin.
         var acting := preload("res://rider_external_expression.gd").new() as Node
@@ -228,6 +239,8 @@ func _process(delta: float) -> void:
         flight_mantle.call("set_motion", steer, boost, last_jump)
     if facial_acting != null:
         facial_acting.call("animate", steer, turbo, last_jump, elapsed)
+    if hair_dynamics != null:
+        hair_dynamics.call("set_motion", steer, boost, last_jump, elapsed)
 
 func fit_to_board() -> bool:
     # Normalize different glTF unit conventions without touching the Skin.
