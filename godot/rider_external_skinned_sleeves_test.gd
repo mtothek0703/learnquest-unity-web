@@ -142,8 +142,9 @@ func _check() -> void:
     if seam_edges != 2 or blended != 2:
         _fail("missing two properly skinned, interpolated shoulder seam vertices")
         return
+    var outside: Array[Dictionary] = [seam[0], seam[0], seam[0]]
     var excluded: Array[Dictionary] = controller.call("_clip_arm_polygon",
-        [seam[0], seam[0], seam[0]], 0.40)
+        outside, 0.40)
     if not excluded.is_empty():
         _fail("non-arm torso triangles must not enter the skinned sleeves")
         return
