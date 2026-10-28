@@ -38,6 +38,8 @@ jobs:
           grep -Fq 'QUATERNIUS RIG TEST PASSED' /tmp/quaternius-rig.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_headgear_test.gd 2>&1 | tee /tmp/quaternius-headgear.log
           grep -Fq 'EXTERNAL HEADGEAR TEST PASSED' /tmp/quaternius-headgear.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_portrait_normals_test.gd 2>&1 | tee /tmp/quaternius-portrait-normals.log
+          grep -Fq 'EXTERNAL PORTRAIT NORMALS TEST PASSED' /tmp/quaternius-portrait-normals.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_hair_dynamics_test.gd 2>&1 | tee /tmp/quaternius-hair-motion.log
           grep -Fq 'EXTERNAL HAIR DYNAMICS TEST PASSED' /tmp/quaternius-hair-motion.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_expression_test.gd 2>&1 | tee /tmp/quaternius-expression.log
@@ -372,6 +374,7 @@ jobs:
             /tmp/original-body-skin.log
             /tmp/quaternius-rig.log
             /tmp/quaternius-headgear.log
+            /tmp/quaternius-portrait-normals.log
             /tmp/quaternius-outfit.log
             /tmp/quaternius-thrusters.log
             /tmp/quaternius-visual.log
