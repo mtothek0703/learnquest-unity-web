@@ -173,11 +173,15 @@ func _build_headwear() -> void:
         for column in range(32):
             var t0 := float(column) / 32.0 * TAU
             var t1 := float(column + 1) / 32.0 * TAU
-            _quad(cap, _cap_point(c, radius_x, radius_z, crown_y, cap_height, a0, t0),
-                _cap_point(c, radius_x, radius_z, crown_y, cap_height, a1, t0),
-                _cap_point(c, radius_x, radius_z, crown_y, cap_height, a1, t1),
-                _cap_point(c, radius_x, radius_z, crown_y, cap_height, a0, t1))
-    cap.generate_normals()
+            var p00 := _cap_point(c, radius_x, radius_z, crown_y, cap_height, a0, t0)
+            var p10 := _cap_point(c, radius_x, radius_z, crown_y, cap_height, a1, t0)
+            var p11 := _cap_point(c, radius_x, radius_z, crown_y, cap_height, a1, t1)
+            var p01 := _cap_point(c, radius_x, radius_z, crown_y, cap_height, a0, t1)
+            _quad_smooth(cap, p00, p10, p11, p01,
+                _cap_normal(p00, c, radius_x, radius_z, crown_y, cap_height),
+                _cap_normal(p10, c, radius_x, radius_z, crown_y, cap_height),
+                _cap_normal(p11, c, radius_x, radius_z, crown_y, cap_height),
+                _cap_normal(p01, c, radius_x, radius_z, crown_y, cap_height))
     _mesh("CurvedFlightHelmetShell", cap.commit(), _material(Color(0.075, 0.11, 0.21), 0.42, 0.37))
 
     var visor := SurfaceTool.new()
@@ -188,11 +192,11 @@ func _build_headwear() -> void:
         for column in range(24):
             var u0 := -0.93 + float(column) / 24.0 * 1.86
             var u1 := -0.93 + float(column + 1) / 24.0 * 1.86
-            _quad(visor, _visor_point(c, s, u0, v0),
-                _visor_point(c, s, u0, v1),
-                _visor_point(c, s, u1, v1),
-                _visor_point(c, s, u1, v0))
-    visor.generate_normals()
+            _quad_smooth(visor,
+                _visor_point(c, s, u0, v0), _visor_point(c, s, u0, v1),
+                _visor_point(c, s, u1, v1), _visor_point(c, s, u1, v0),
+                _visor_normal(s, u0), _visor_normal(s, u0),
+                _visor_normal(s, u1), _visor_normal(s, u1))
     _mesh("TranslucentFaceShield", visor.commit(), _material(Color(0.11, 0.58, 0.78, 0.13), 0.28, 0.18, true))
 
     var edge_mat := _material(Color(0.07, 0.80, 0.96), 0.30, 0.25)
@@ -579,9 +583,27 @@ func _face_surface(c: Vector3, s: Vector3) -> ArrayMesh:
             for uv in [Vector2(u0, v0), Vector2(u0, v1), Vector2(u1, v1),
                     Vector2(u0, v0), Vector2(u1, v1), Vector2(u1, v0)]:
                 surface.set_color(_face_color(c, s, uv.x, uv.y))
+                # The face is an unindexed triangle surface. generate_normals()
+                # would produce a separate flat normal for every triangle,
+                # creating visible angular cheek/forehead shading. Derive a
+                # continuous normal from the actual sculpted face curvature.
+                surface.set_normal(_face_normal(c, s, uv.x, uv.y))
                 surface.add_vertex(_face_point(c, s, uv.x, uv.y))
-    surface.generate_normals()
     return surface.commit()
+
+func _face_normal(c: Vector3, s: Vector3, u: float, v: float) -> Vector3:
+    # Derivatives of the SAME deformed surface as _face_point, including
+    # cheek/nose/socket/chin relief. Use a small safe latitude near the poles.
+    var latitude := clampf(v, 0.002, 0.998)
+    var step := 0.001
+    var tangent_u := _face_point(c, s, u + step, latitude) - \
+        _face_point(c, s, u - step, latitude)
+    var tangent_v := _face_point(c, s, u, latitude + step) - \
+        _face_point(c, s, u, latitude - step)
+    var normal := tangent_u.cross(tangent_v).normalized()
+    if normal.length_squared() < 0.1:
+        return Vector3.UP if v < 0.5 else Vector3.DOWN
+    return normal
 
 func _face_color(c: Vector3, s: Vector3, u: float, v: float) -> Color:
     var longitude := u * TAU
@@ -636,6 +658,29 @@ func _cap_point(c: Vector3, rx: float, rz: float, base: float, height: float, el
     return Vector3(c.x + rx * sin(elevation) * cos(azimuth),
         base + height * cos(elevation),
         c.z + rz * sin(elevation) * sin(azimuth))
+
+func _cap_normal(point: Vector3, center: Vector3, rx: float, rz: float,
+        base: float, height: float) -> Vector3:
+    # Ellipsoidal cap gradient: adjacent triangles share identical vertex
+    # normals, so the helmet reads as a single polished shell.
+    return Vector3((point.x - center.x) / maxf(rx * rx, 0.00001),
+        (point.y - base) / maxf(height * height, 0.00001),
+        (point.z - center.z) / maxf(rz * rz, 0.00001)).normalized()
+
+func _visor_normal(s: Vector3, angle: float) -> Vector3:
+    return Vector3(sin(angle) / maxf(s.x * 0.51, 0.001),
+        0.0, face_sign * cos(angle) / maxf(s.z * 0.57, 0.001)).normalized()
+
+func _quad_smooth(surface: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3,
+        na: Vector3, nb: Vector3, nc: Vector3, nd: Vector3) -> void:
+    # Preserve the existing triangle winding and material, but provide
+    # coherent analytic normals instead of per-triangle flat shading.
+    for vertex in [
+            {"point": a, "normal": na}, {"point": b, "normal": nb},
+            {"point": c, "normal": nc}, {"point": a, "normal": na},
+            {"point": c, "normal": nc}, {"point": d, "normal": nd}]:
+        surface.set_normal(vertex["normal"])
+        surface.add_vertex(vertex["point"])
 
 func _visor_point(c: Vector3, s: Vector3, angle: float, v: float) -> Vector3:
     return Vector3(c.x + sin(angle) * s.x * 0.51,
