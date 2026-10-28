@@ -60,6 +60,11 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
             if String(mesh.name).contains("SuperHero"):
                 var suit := ShaderMaterial.new()
                 suit.shader = suit_shader
+                var source_bounds := mesh.mesh.get_aabb()
+                suit.set_shader_parameter("rest_bottom", source_bounds.position.y)
+                suit.set_shader_parameter("rest_height", source_bounds.size.y)
+                suit.set_shader_parameter("rest_center_x", source_bounds.get_center().x)
+                suit.set_shader_parameter("rest_width", source_bounds.size.x)
                 mesh.material_override = suit
             elif String(mesh.name).to_lower().contains("eyebrow"):
                 var brow := StandardMaterial3D.new()
