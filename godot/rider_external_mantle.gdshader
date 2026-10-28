@@ -20,26 +20,33 @@ void vertex() {
     VERTEX.y += sin(TIME * 2.6 + UV.y * 7.0) * 0.010 * flutter + jump_amount * 0.024 * trailing;
 }
 void fragment() {
-    // Dark structural upper surface with a broad illuminated cyan spar.
-    // The former all-purple cloth read as a skirt and hid the character.
-    float edge = 1.0 - smoothstep(0.012, 0.055, min(cloth_uv.x, 1.0 - cloth_uv.x));
-    float tip = smoothstep(0.84, 1.0, cloth_uv.y);
-    float foil_ridge = exp(-pow((cloth_uv.x - 0.58) * 12.0, 2.0));
-    float sweep_panel = smoothstep(0.12, 0.28, cloth_uv.x)
-        * (1.0 - smoothstep(0.78, 0.94, cloth_uv.x));
+    // One continuous high-contrast airfoil: a dark load-bearing wing, a
+    // cobalt mid-chord, an illuminated leading spar and a magenta trailing
+    // feather. This replaces the old flat purple skirt silhouette without
+    // adding draw passes, texture assets, lights or mobile overdraw layers.
+    float leading = 1.0 - smoothstep(0.025, 0.10, cloth_uv.x);
+    float trailing = smoothstep(0.86, 0.985, cloth_uv.x);
+    float tip = smoothstep(0.83, 1.0, cloth_uv.y);
+    float central_spar = exp(-pow((cloth_uv.x - 0.43) * 12.0, 2.0));
+    float chord = smoothstep(0.08, 0.24, cloth_uv.x)
+        * (1.0 - smoothstep(0.78, 0.96, cloth_uv.x));
     float fold = 0.5 + 0.5 * sin(cloth_uv.x * 8.0 + cloth_uv.y * 3.0);
-    vec3 midnight = vec3(0.055, 0.085, 0.21);
-    vec3 cobalt = vec3(0.14, 0.27, 0.56);
-    vec3 violet = vec3(0.33, 0.17, 0.57);
-    vec3 electric = vec3(0.07, 0.66, 0.94);
-    vec3 shell = mix(midnight, cobalt, sweep_panel * 0.80);
-    shell = mix(shell, violet, 0.08 + 0.15 * fold);
-    shell = mix(shell, electric, foil_ridge * 0.36 * (1.0 - tip * 0.5));
+    float root = 1.0 - smoothstep(0.08, 0.28, cloth_uv.y);
+    vec3 midnight = vec3(0.045, 0.072, 0.17);
+    vec3 cobalt = vec3(0.13, 0.36, 0.72);
+    vec3 violet = vec3(0.36, 0.19, 0.60);
+    vec3 cyan = vec3(0.035, 0.72, 0.98);
+    vec3 magenta = vec3(0.88, 0.18, 0.52);
+    vec3 shell = mix(midnight, cobalt, chord * (0.67 + fold * 0.13));
+    shell = mix(shell, violet, central_spar * 0.38);
+    shell = mix(shell, magenta, trailing * (0.70 + 0.12 * tip));
+    shell = mix(shell, midnight, root * 0.56);
     ALBEDO = shell;
-    METALLIC = 0.32;
-    ROUGHNESS = 0.38 + 0.12 * fold;
-    EMISSION = electric * (edge * 0.57 + foil_ridge * 0.31 + tip * 0.18);
+    METALLIC = mix(0.23, 0.40, central_spar);
+    ROUGHNESS = 0.39 + 0.12 * fold;
+    EMISSION = cyan * (leading * 0.62 + central_spar * 0.30)
+        + magenta * (trailing * 0.36 + tip * 0.12);
     float silhouette_rim = pow(1.0 - abs(dot(normalize(NORMAL), normalize(VIEW))), 2.6);
-    ALBEDO = min(ALBEDO * (1.0 + silhouette_rim * 0.16), vec3(1.0));
+    ALBEDO = min(ALBEDO * (1.0 + silhouette_rim * 0.17), vec3(1.0));
     EMISSION += vec3(0.11, 0.33, 0.60) * silhouette_rim * 0.17;
 }
