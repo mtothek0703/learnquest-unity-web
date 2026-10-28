@@ -92,6 +92,61 @@ func _check() -> void:
         if upper_hits < 30 or lower_hits < 30:
             _fail("sleeve lacks genuinely articulated shoulder/elbow geometry")
             return
+    # A mixed torso/arm triangle must be CLIPPED, not discarded. Both
+    # intersections retain real imported four-influence weights and normals.
+    var seam: Array[Dictionary] = [
+        {"position": Vector3(0.0, 0.0, 0.0), "normal": Vector3.UP,
+            "bones": PackedInt32Array([0, 1, 0, 0]),
+            "weights": PackedFloat32Array([0.95, 0.05, 0.0, 0.0]),
+            "influence": Vector2(0.05, 0.0)},
+        {"position": Vector3(1.0, 0.0, 0.0), "normal": Vector3.UP,
+            "bones": PackedInt32Array([1, 2, 1, 1]),
+            "weights": PackedFloat32Array([0.75, 0.25, 0.0, 0.0]),
+            "influence": Vector2(1.0, 0.75)},
+        {"position": Vector3(0.0, 1.0, 0.0), "normal": Vector3.UP,
+            "bones": PackedInt32Array([1, 3, 1, 1]),
+            "weights": PackedFloat32Array([0.65, 0.35, 0.0, 0.0]),
+            "influence": Vector2(1.0, 0.65)}
+    ]
+    var clipped: Array[Dictionary] = controller.call("_clip_arm_polygon", seam, 0.40)
+    if clipped.size() != 4:
+        _fail("shoulder seam lost the mixed original triangle instead of clipping it")
+        return
+    var seam_edges := 0
+    var blended := 0
+    for vertex in clipped:
+        var influence: Vector2 = vertex["influence"]
+        var normal: Vector3 = vertex["normal"]
+        var bone_ids: PackedInt32Array = vertex["bones"]
+        var bone_weights: PackedFloat32Array = vertex["weights"]
+        if influence.x < 0.39999 or normal.distance_to(Vector3.UP) > 0.001 or \
+                bone_ids.size() != 4 or bone_weights.size() != 4:
+            _fail("clipped arm seam lost its influence boundary or normal/skin data")
+            return
+        var total_weight := 0.0
+        var nonzero := 0
+        for slot in range(4):
+            if bone_ids[slot] < 0 or bone_ids[slot] > 3 or bone_weights[slot] < 0.0:
+                _fail("arm seam introduced an invalid or invented bone influence")
+                return
+            total_weight += bone_weights[slot]
+            if bone_weights[slot] > 0.08:
+                nonzero += 1
+        if absf(total_weight - 1.0) > 0.0001:
+            _fail("arm seam four-weight normalization failed")
+            return
+        if absf(influence.x - 0.40) < 0.0001:
+            seam_edges += 1
+            if nonzero >= 2:
+                blended += 1
+    if seam_edges != 2 or blended != 2:
+        _fail("missing two properly skinned, interpolated shoulder seam vertices")
+        return
+    var excluded: Array[Dictionary] = controller.call("_clip_arm_polygon",
+        [seam[0], seam[0], seam[0]], 0.40)
+    if not excluded.is_empty():
+        _fail("non-arm torso triangles must not enter the skinned sleeves")
+        return
     # Check actual rest-space sculpt instead of accepting a color-only change.
     # Shoulder armor must be materially thicker than a flat 2-cm skin copy;
     # wrist and elbow profiles must remain distinct for readable articulation.
