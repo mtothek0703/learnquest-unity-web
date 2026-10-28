@@ -103,6 +103,19 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     character.add_child(outfit)
     if not bool(outfit.call("install", skinned_meshes)):
         push_warning("CC0 skinned jacket shell unavailable; original body remains")
+    else:
+        # Anatomical plates share the imported Skin and original joint poses.
+        # Resolve the actual forward direction from the fitted head, never
+        # assume the GLB faces a hardcoded local Z direction.
+        var armor_face_sign := -1.0
+        var armor_head := skeleton.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
+        if armor_head != null:
+            armor_face_sign = float(armor_head.get("face_sign"))
+        var armor := preload("res://rider_external_skinned_armor.gd").new() as Node
+        armor.name = "IntegratedSkinnedArmor"
+        outfit.add_child(armor)
+        if not bool(armor.call("install", outfit.get("garment") as MeshInstance3D, armor_face_sign)):
+            push_warning("CC0 skinned anatomical armor unavailable")
     # Weighted trousers and boots use the same original four-influence
     # skinning as the body; unlike rigid props, knees/ankles follow the rig.
     var lower := preload("res://rider_external_skinned_lower.gd").new() as Node
