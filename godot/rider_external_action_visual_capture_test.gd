@@ -65,8 +65,14 @@ func _capture() -> void:
     if rig == null or rig.get_bone_count() < 50 or meshes.is_empty():
         _fail("real imported 65-bone skinned hero unavailable")
         return
-    if rig.get_node_or_null("ExternalHeroHeadgear") == null:
+    var headwear := rig.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
+    if headwear == null:
         _fail("real Head-bone accessories missing")
+        return
+    var hair_motion := headwear.get_node_or_null("ExternalHairDynamics") as Node
+    var action_lock := headwear.get_node_or_null("WindSweptBackLock0") as MeshInstance3D
+    if hair_motion == null or action_lock == null:
+        _fail("actual action capture must include scalp-anchored dynamic hair")
         return
     for mesh_item in meshes:
         var body := mesh_item as MeshInstance3D
@@ -85,6 +91,7 @@ func _capture() -> void:
         _fail("original Head joint missing")
         return
     var neutral_head := Quaternion.IDENTITY
+    var neutral_hair := Transform3D.IDENTITY
     var count := 0
     for pose_name in POSES:
         rider.position.y = 0.0
@@ -103,9 +110,14 @@ func _capture() -> void:
         adapter.call("_process", 0.35)
         if pose_name == "neutral":
             neutral_head = rig.get_bone_pose_rotation(head_id)
-        elif rig.get_bone_pose_rotation(head_id).angle_to(neutral_head) < 0.035:
-            _fail("action pose did not move the imported Head bone: " + pose_name)
-            return
+            neutral_hair = action_lock.transform
+        else:
+            if rig.get_bone_pose_rotation(head_id).angle_to(neutral_head) < 0.035:
+                _fail("action pose did not move the imported Head bone: " + pose_name)
+                return
+            if action_lock.transform.is_equal_approx(neutral_hair):
+                _fail("action hair stayed rigid in " + pose_name)
+                return
         for size in SIZES:
             viewport.size = size
             for view in VIEWS:
