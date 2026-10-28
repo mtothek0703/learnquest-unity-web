@@ -10,6 +10,9 @@ var grip: MeshInstance3D
 var keel: MeshInstance3D
 var rails: Array[MeshInstance3D] = []
 var swept_wings: Array[MeshInstance3D] = []
+var thruster_housings: Array[MeshInstance3D] = []
+var thruster_cores: Array[MeshInstance3D] = []
+var core_material: StandardMaterial3D
 var rail_material: StandardMaterial3D
 
 func _ready() -> void:
@@ -32,6 +35,13 @@ func _ready() -> void:
     rail_material.emission_energy_multiplier = 1.25
     rail_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
     rail_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+    core_material = StandardMaterial3D.new()
+    core_material.albedo_color = Color("#62dff7")
+    core_material.emission_enabled = true
+    core_material.emission = Color("#16c9ff")
+    core_material.emission_energy_multiplier = 1.6
+    core_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    core_material.cull_mode = BaseMaterial3D.CULL_DISABLED
     chassis = _attach("ContinuousAerodynamicChassis", _make_shell(), shell_material)
     grip = _attach("ContouredTractionDeck", _make_grip(), grip_material)
     keel = _attach("UndersideKeel", _make_keel(), shell_material)
@@ -41,9 +51,13 @@ func _ready() -> void:
         rails.append(rail)
         swept_wings.append(_attach("PortSculptedAeroWing" if side < 0.0 else "StarboardSculptedAeroWing",
             _make_wing(side), shell_material))
-    built = chassis != null and grip != null and keel != null and rails.size() == 2 and swept_wings.size() == 2
+        thruster_housings.append(_attach("PortSculptedTurbine" if side < 0.0 else "StarboardSculptedTurbine",
+            _make_thruster_housing(side), shell_material))
+        thruster_cores.append(_attach("PortExhaustHalo" if side < 0.0 else "StarboardExhaustHalo",
+            _make_exhaust_halo(side), core_material))
+    built = chassis != null and grip != null and keel != null and rails.size() == 2 and swept_wings.size() == 2 and thruster_housings.size() == 2 and thruster_cores.size() == 2
     if built:
-        for part in [chassis, grip, keel] + rails + swept_wings:
+        for part in [chassis, grip, keel] + rails + swept_wings + thruster_housings + thruster_cores:
             if part.mesh == null or part.mesh.get_surface_count() == 0:
                 built = false
 
@@ -56,6 +70,8 @@ func _process(_delta: float) -> void:
     var boost := bool(controller.get("boosting"))
     rail_material.emission_energy_multiplier = lerpf(
         rail_material.emission_energy_multiplier, 3.0 if boost else 1.25, 0.18)
+    core_material.emission_energy_multiplier = lerpf(
+        core_material.emission_energy_multiplier, 5.0 if boost else 1.6, 0.18)
 
 func _attach(part_name: String, mesh: ArrayMesh, material: Material) -> MeshInstance3D:
     if mesh == null or mesh.get_surface_count() == 0:
@@ -215,6 +231,74 @@ func _make_wing(side: float) -> ArrayMesh:
                 var highlight := maxf(0.0, sin(sample.y))
                 tool.set_color(Color("#283456").lerp(Color("#9b63c9"),
                     0.26 + 0.48 * highlight + 0.12 * sin(PI * sample.x)))
+                tool.add_vertex(point)
+    tool.generate_normals()
+    return tool.commit()
+
+
+# V124 integrated propulsion: two genuinely volumetric, swept turbine housings
+# and toroidal exhaust halos. Both are children of the existing animated board,
+# so leaning, hovering, jumping and boost retain their original gameplay path.
+# Geometry and materials are original procedural work; no external asset.
+func _thruster_point(side: float, t: float, angle: float) -> Vector3:
+    var z := lerpf(0.42, 1.55, t)
+    var swell := pow(maxf(0.0, sin(PI * t)), 0.75)
+    var radius := 0.115 + 0.145 * swell + 0.035 * smoothstep(0.68, 1.0, t)
+    var center_x := side * (0.80 + 0.08 * t)
+    return Vector3(center_x + radius * cos(angle),
+        0.24 + radius * 0.82 * sin(angle), z)
+
+func _make_thruster_housing(side: float) -> ArrayMesh:
+    var tool := SurfaceTool.new()
+    tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+    for i in range(24):
+        var a := float(i) / 24.0
+        var b := float(i + 1) / 24.0
+        for j in range(16):
+            var u := TAU * float(j) / 16.0
+            var v := TAU * float(j + 1) / 16.0
+            for sample in [Vector2(a, u), Vector2(b, u), Vector2(b, v),
+                Vector2(a, u), Vector2(b, v), Vector2(a, v)]:
+                var upper := maxf(0.0, sin(sample.y))
+                var accent := smoothstep(0.66, 0.94, sample.x)
+                tool.set_color(Color("#17213d").lerp(Color("#647ca6"),
+                    0.20 + 0.48 * upper + 0.20 * accent))
+                tool.add_vertex(_thruster_point(side, sample.x, sample.y))
+    # End caps make each turbine a real closed volume, not a decorative plane.
+    for end in [0.0, 1.0]:
+        var edge := _thruster_point(side, end, 0.0)
+        var center := Vector3(side * (0.80 + 0.08 * end), 0.24, edge.z)
+        for j in range(16):
+            var u := TAU * float(j) / 16.0
+            var v := TAU * float(j + 1) / 16.0
+            for point in [center,
+                _thruster_point(side, end, v if end == 0.0 else u),
+                _thruster_point(side, end, u if end == 0.0 else v)]:
+                tool.set_color(Color("#101a34"))
+                tool.add_vertex(point)
+    tool.generate_normals()
+    return tool.commit()
+
+func _exhaust_halo_point(side: float, around: float, section: float) -> Vector3:
+    var radius := 0.153 + 0.023 * cos(section)
+    return Vector3(side * 0.88 + radius * cos(around),
+        0.24 + radius * sin(around), 1.58 + 0.023 * sin(section))
+
+func _make_exhaust_halo(side: float) -> ArrayMesh:
+    var tool := SurfaceTool.new()
+    tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+    for i in range(32):
+        var a := TAU * float(i) / 32.0
+        var b := TAU * float(i + 1) / 32.0
+        for j in range(8):
+            var u := TAU * float(j) / 8.0
+            var v := TAU * float(j + 1) / 8.0
+            for point in [_exhaust_halo_point(side, a, u),
+                _exhaust_halo_point(side, b, u),
+                _exhaust_halo_point(side, b, v),
+                _exhaust_halo_point(side, a, u),
+                _exhaust_halo_point(side, b, v),
+                _exhaust_halo_point(side, a, v)]:
                 tool.add_vertex(point)
     tool.generate_normals()
     return tool.commit()
