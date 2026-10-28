@@ -82,7 +82,7 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: f
         body.get_parent().add_child(shoulder_yoke)
         yoke_vertices = yoke_mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
         panels = created
-        mantle_span = bounds.size.y * 0.43
+        mantle_span = bounds.size.y * 0.26
         return true
     return false
 
@@ -113,6 +113,10 @@ func _torso_back(mesh: Mesh, bounds: AABB, back_sign: float) -> float:
     return bounds.end.z if back_sign > 0.0 else bounds.position.z
 
 func _panel(bounds: AABB, back: float, back_sign: float, side: float, binds: PackedInt32Array) -> ArrayMesh:
+    # Sculpt a closed, genuinely three-dimensional pair of SHORT swept fins.
+    # The former floor-length flat cape concealed the 65-bone suit and board
+    # in the chase camera. Two airfoil surfaces and four sealed edges preserve
+    # the center channel and expose the weighted jacket/back hardware.
     var tool := SurfaceTool.new()
     tool.begin(Mesh.PRIMITIVE_TRIANGLES)
     const ROWS = 20
@@ -123,38 +127,60 @@ func _panel(bounds: AABB, back: float, back_sign: float, side: float, binds: Pac
             var u1 := float(column + 1) / float(COLUMNS)
             var t0 := float(row) / float(ROWS)
             var t1 := float(row + 1) / float(ROWS)
-            _vertex(tool, bounds, back, back_sign, side, u0, t0, binds)
-            _vertex(tool, bounds, back, back_sign, side, u0, t1, binds)
-            _vertex(tool, bounds, back, back_sign, side, u1, t1, binds)
-            _vertex(tool, bounds, back, back_sign, side, u0, t0, binds)
-            _vertex(tool, bounds, back, back_sign, side, u1, t1, binds)
-            _vertex(tool, bounds, back, back_sign, side, u1, t0, binds)
+            # Opposite winding on the two faces; both use the ORIGINAL Skin.
+            _quad(tool, bounds, back, back_sign, side, binds,
+                Vector2(u0, t0), Vector2(u0, t1), Vector2(u1, t1), Vector2(u1, t0), 1.0)
+            _quad(tool, bounds, back, back_sign, side, binds,
+                Vector2(u0, t0), Vector2(u1, t0), Vector2(u1, t1), Vector2(u0, t1), -1.0)
+    # Seal the entire perimeter. These are actual weighted sidewalls, not a
+    # two-sided material pretending to be a solid sculpted wing.
+    for row in range(ROWS):
+        var t0 := float(row) / float(ROWS)
+        var t1 := float(row + 1) / float(ROWS)
+        _edge(tool, bounds, back, back_sign, side, binds, Vector2(0.0, t0), Vector2(0.0, t1))
+        _edge(tool, bounds, back, back_sign, side, binds, Vector2(1.0, t1), Vector2(1.0, t0))
+    for column in range(COLUMNS):
+        var u0 := float(column) / float(COLUMNS)
+        var u1 := float(column + 1) / float(COLUMNS)
+        _edge(tool, bounds, back, back_sign, side, binds, Vector2(u1, 0.0), Vector2(u0, 0.0))
+        _edge(tool, bounds, back, back_sign, side, binds, Vector2(u0, 1.0), Vector2(u1, 1.0))
     tool.generate_normals()
     return tool.commit()
 
+func _quad(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
+        side: float, binds: PackedInt32Array, a: Vector2, b: Vector2,
+        c: Vector2, d: Vector2, surface_sign: float) -> void:
+    for point in [a, b, c, a, c, d]:
+        _vertex(tool, bounds, back, back_sign, side, point.x, point.y, binds, surface_sign)
+
+func _edge(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
+        side: float, binds: PackedInt32Array, a: Vector2, b: Vector2) -> void:
+    _vertex(tool, bounds, back, back_sign, side, a.x, a.y, binds, 1.0)
+    _vertex(tool, bounds, back, back_sign, side, b.x, b.y, binds, 1.0)
+    _vertex(tool, bounds, back, back_sign, side, b.x, b.y, binds, -1.0)
+    _vertex(tool, bounds, back, back_sign, side, a.x, a.y, binds, 1.0)
+    _vertex(tool, bounds, back, back_sign, side, b.x, b.y, binds, -1.0)
+    _vertex(tool, bounds, back, back_sign, side, a.x, a.y, binds, -1.0)
+
 func _vertex(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
-        side: float, u: float, t: float, binds: PackedInt32Array) -> void:
-    # A continuous aerodynamic split-wing silhouette instead of two narrow
-    # hanging strips. The upper seam remains close to the real skinned spine,
-    # while each broad hem flares sideways AND sweeps behind the rider's legs.
-    # All dimensions derive from the imported CC0 body bounds.
+        side: float, u: float, t: float, binds: PackedInt32Array,
+        surface_sign: float) -> void:
     var width := bounds.size.x
     var center_x := bounds.get_center().x
-    # Broad at mid-span but tapered at the trailing tips: the old monotonic
-    # flare read like a skirt in the chase camera. A swept aerofoil silhouette
-    # keeps a central boot/board channel while retaining four-weight skinning.
-    var flare := sin(PI * t * 0.78)
-    var inner := width * (0.025 + 0.13 * t)
-    var outer := width * (0.14 + 0.33 * flare + 0.065 * t)
+    # Root follows the back, broad mid-chord makes a recognizable flight fin,
+    # and the narrow elevated tip leaves hips, legs and hoverboard unobscured.
+    var flare := sin(PI * t * 0.87)
+    var inner := width * (0.07 + 0.15 * t)
+    var outer := width * (0.12 + 0.27 * flare + 0.04 * t)
     var x := center_x + side * lerpf(inner, outer, u)
-    var bow := sin(u * PI) * sin(t * PI)
-    var y := bounds.position.y + bounds.size.y * (0.72 - 0.43 * t + 0.020 * bow + 0.035 * u * t)
-    var rib := sin(u * PI * 5.0 + t * 2.5) * width * 0.012 * t
-    var sweep := 0.045 + 0.12 * t + 0.42 * pow(t, 1.5) + 0.035 * bow + \
-        0.07 * pow(u, 1.5) * sin(PI * t)
-    var z := back + back_sign * (sweep + rib)
-    # All four weights are present and normalized. Upper rows follow the spine;
-    # lower rows inherit pelvis and the corresponding leg for real deformation.
+    var camber := sin(u * PI) * sin(t * PI)
+    var y := bounds.position.y + bounds.size.y * (0.72 - 0.26 * t +
+        0.025 * camber + 0.018 * u * t)
+    var sweep := 0.045 + 0.16 * t + 0.26 * pow(t, 1.4) + 0.045 * camber
+    var rib := sin(u * PI * 3.0 + t * 3.0) * width * 0.008 * t
+    # Real front/back separation: a convex airfoil, sealed at every edge.
+    var thickness := width * (0.006 + 0.032 * sin(PI * u) * sin(PI * t))
+    var z := back + back_sign * (sweep + rib + surface_sign * thickness)
     var spine_weight := 0.72 * (1.0 - t) * (1.0 - t)
     var leg_weight := 0.34 * t * t
     var pelvis_weight := 1.0 - spine_weight - leg_weight
