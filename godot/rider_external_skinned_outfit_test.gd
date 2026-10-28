@@ -59,6 +59,57 @@ func _check() -> void:
     if shoulder.x < 0.01 or opposite.x > -0.01 or absf(shoulder.x + opposite.x) > 0.002:
         _fail("weighted shoulder expansion must be balanced on both sides")
         return
+    # The garment must keep EVERY intersecting source triangle instead of
+    # dropping the neckline/waist triangles and exposing the naked CC0 torso.
+    # Synthetic clipping also exercises interpolation of real skin influences.
+    var corner_a := {
+        "position": Vector3(-0.4, 0.20, 0.0), "normal": Vector3.FORWARD,
+        "bones": PackedInt32Array([0, 1, 2, 3]),
+        "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])
+    }
+    var corner_b := {
+        "position": Vector3(0.4, 0.80, 0.0), "normal": Vector3.FORWARD,
+        "bones": PackedInt32Array([4, 5, 6, 7]),
+        "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])
+    }
+    var corner_c := {
+        "position": Vector3(0.0, 0.50, 0.2), "normal": Vector3.FORWARD,
+        "bones": PackedInt32Array([0, 1, 2, 3]),
+        "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])
+    }
+    var source_triangle: Array[Dictionary] = [corner_a, corner_b, corner_c]
+    var clipped: Array[Dictionary] = outfit.call("_clip_to_height", source_triangle, 0.35, true)
+    clipped = outfit.call("_clip_to_height", clipped, 0.65, false)
+    if clipped.size() < 3:
+        _fail("waist/collar clipping discarded an intersecting weighted triangle")
+        return
+    var has_new_boundary := false
+    for corner in clipped:
+        var position: Vector3 = corner["position"]
+        if position.y < 0.3499 or position.y > 0.6501:
+            _fail("new jacket geometry escapes the waist/collar clipping planes")
+            return
+        if absf(position.y - 0.35) < 0.0001 or absf(position.y - 0.65) < 0.0001:
+            has_new_boundary = true
+        var ids: PackedInt32Array = corner["bones"]
+        var skin_weights: PackedFloat32Array = corner["weights"]
+        if ids.size() != 4 or skin_weights.size() != 4:
+            _fail("clipped vertices lost their four original skin influences")
+            return
+        var sum_weights := 0.0
+        for weight in skin_weights:
+            sum_weights += weight
+        if absf(sum_weights - 1.0) > 0.001:
+            _fail("interpolated clipped skin weights are not normalized")
+            return
+    if not has_new_boundary:
+        _fail("clipping failed to generate interpolated boundary vertices")
+        return
+    var middle: Dictionary = outfit.call("_interpolate_corner", corner_a, corner_b, 0.5)
+    var middle_weights: PackedFloat32Array = middle["weights"]
+    if absf(middle_weights[0] - 0.5) > 0.001 or absf(middle_weights[1] - 0.5) > 0.001:
+        _fail("boundary intersection must preserve both source bone influences")
+        return
     # Verify the new V-shaped ridge and collar are actual geometric relief
     # on the original weighted jacket, not a painted texture or rigid prop.
     var ridge: Vector3 = outfit.call("_tailored_offset", Vector3(0.25, 1.905, 0.3),
