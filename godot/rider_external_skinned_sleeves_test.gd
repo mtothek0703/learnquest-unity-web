@@ -102,8 +102,9 @@ func _check() -> void:
         Vector3(0.45, 1.3, 0.0), Vector3.RIGHT, sample_bounds, Vector2(0.99, 0.48))
     var wrist_shape: Vector3 = controller.call("_sculpt_offset",
         Vector3(0.45, 1.0, 0.0), Vector3.RIGHT, sample_bounds, Vector2(0.20, 0.02))
-    if shoulder_shape.x < 0.12 or elbow_shape.x < 0.06 or wrist_shape.x > 0.07:
-        _fail("sleeves must have substantial shoulder volume, elbow shaping and a wrist taper")
+    if shoulder_shape.x < 0.075 or shoulder_shape.x > 0.115 or \
+            elbow_shape.x < 0.06 or wrist_shape.x > 0.07:
+        _fail("sleeves need a tailored compact shoulder, articulated elbow and tapered wrist")
         return
     var shoulder_panel: float = controller.call("_armor_panel", Vector2(1.0, 0.96))
     var elbow_panel: float = controller.call("_armor_panel", Vector2(1.0, 0.48))
