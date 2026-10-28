@@ -159,10 +159,8 @@ func _quad(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
 
 func _edge(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
         side: float, binds: PackedInt32Array, a: Vector2, b: Vector2) -> void:
-    # The original edge fan used the same endpoint twice per triangle,
-    # producing zero-area faces and leaving both skinned airfoils open.
-    # Bridge the actual +thickness and -thickness contours with two
-    # nondegenerate triangles. The four source Skin influences are unchanged.
+    # Bridge both weighted surface contours with actual perimeter triangles.
+    # Preserve four original Skin influences on both sides of each wall.
     _vertex(tool, bounds, back, back_sign, side, a.x, a.y, binds, 1.0)
     _vertex(tool, bounds, back, back_sign, side, b.x, b.y, binds, 1.0)
     _vertex(tool, bounds, back, back_sign, side, b.x, b.y, binds, -1.0)
@@ -189,7 +187,11 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
     # Real curved spar and swept depth, not a flat two-sided ribbon.
     var sweep := 0.045 + 0.16 * t + 0.26 * pow(t, 1.4) + 0.12 * camber
     var rib := sin(u * PI * 3.0 + t * 3.0) * width * 0.010 * t
-    var thickness := width * (0.008 + 0.050 * sin(PI * u) * sin(PI * t))
+    # A raised, variable-thickness trailing lip gives the airfoil an
+    # actual sculpted edge at chase distance instead of a paper-thin sheet.
+    # Thickness remains positive at every boundary, so the sidewalls seal.
+    var thickness := width * (0.016 + 0.043 * sin(PI * u) * sin(PI * t) +
+        0.016 * sin(PI * t) * u * u)
     var z := back + back_sign * (sweep + rib + surface_sign * thickness)
     var spine_weight := 0.72 * (1.0 - t) * (1.0 - t)
     var leg_weight := 0.34 * t * t
