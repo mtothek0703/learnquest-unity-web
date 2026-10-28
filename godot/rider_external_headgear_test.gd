@@ -108,17 +108,17 @@ func _check() -> void:
             return
     # New rear-lock volumes must have distinct, three-dimensional S-curves
     # instead of nine parallel vertical stripes on a flat back-hair sheet.
-    var sample_root := Vector3.ZERO
+    var hair_origin := Vector3.ZERO
     var curl_a: Vector3 = headwear.call("_rear_lock_curve",
-        sample_root, rear_size, 0, 0.50)
+        hair_origin, rear_size, 0, 0.50)
     var curl_b: Vector3 = headwear.call("_rear_lock_curve",
-        sample_root, rear_size, 4, 0.50)
+        hair_origin, rear_size, 4, 0.50)
     if absf(curl_a.x - curl_b.x) < rear_size.x * 0.06 and \
             absf(curl_a.z - curl_b.z) < rear_size.z * 0.04:
         _fail("rear hairstyle still has identical parallel flat locks")
         return
     var root_curve: Vector3 = headwear.call("_rear_lock_curve",
-        sample_root, rear_size, 2, 0.0)
+        hair_origin, rear_size, 2, 0.0)
     if absf(root_curve.x) > rear_size.x * 0.01:
         _fail("sculpted rear hair roots must stay attached to the continuous shell")
         return
