@@ -36,6 +36,8 @@ jobs:
           grep -Fq 'ORIGINAL BODY SKIN TEST PASSED' /tmp/original-body-skin.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_character_test.gd 2>&1 | tee /tmp/quaternius-rig.log
           grep -Fq 'QUATERNIUS RIG TEST PASSED' /tmp/quaternius-rig.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_board_contact_test.gd 2>&1 | tee /tmp/board-contact.log
+          grep -Fq 'RIDER BOARD CONTACT TEST PASSED' /tmp/board-contact.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_headgear_test.gd 2>&1 | tee /tmp/quaternius-headgear.log
           grep -Fq 'EXTERNAL HEADGEAR TEST PASSED' /tmp/quaternius-headgear.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_portrait_normals_test.gd 2>&1 | tee /tmp/quaternius-portrait-normals.log
