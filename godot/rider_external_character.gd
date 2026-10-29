@@ -329,7 +329,11 @@ func fit_to_board() -> bool:
     if height < 0.1 or height > 100.0:
         return false
     var factor := 2.72 / height
-    character.scale = Vector3.ONE * factor
+    # The source CC0 humanoid is exceptionally narrow in both landscape
+    # cameras relative to its head and the existing board. Widen the entire
+    # genuine 65-bone visual in model space, not the bones or inverse binds.
+    # Keep the original 2.72 m vertical fit and all gameplay contact points.
+    character.scale = Vector3(factor * 1.16, factor, factor * 1.06)
     # Align the imported skinned soles with the ACTUAL animated board's
     # sculpted traction deck. The old hard-coded 0.08 placed the rider's
     # lowest source vertex well below the ~0.44-high deck, causing overlap.
