@@ -177,7 +177,7 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://rider_external_skinned_back_hair_visual_capture_test.gd 2>&1 | tee /tmp/skinned-hair-visual.log
           grep -Fq 'SKINNED BACK HAIR VISUAL QA PASSED' /tmp/skinned-hair-visual.log
-          test "$(find /tmp/learnquest-skinned-hair-qa -name '*.png' | wc -l)" -eq 16
+          test "$(find /tmp/learnquest-skinned-hair-qa -name '*.png' | wc -l)" -eq 18
       - name: Render 32 real V123/V124 neutral and action silhouette frames
         shell: bash
         run: |
