@@ -119,6 +119,69 @@ func _check() -> void:
     if headwear.find_children("WindSweptBackLock*", "MeshInstance3D", false, false).size() != 5:
         _fail("expressive animated hair locks must remain attached to Head")
         return
+    # The five large visible sculpted locks must no longer be rigid Head
+    # accessories. Verify real original Skin and FOUR normalized influences
+    # on their actual rendered meshes, not just on the underhair curtain.
+    var weighted_controller := controller.get("weighted_locks") as Node
+    if weighted_controller == null:
+        _fail("five true-skinned rear hair volumes were not installed")
+        return
+    var weighted_locks: Array = weighted_controller.get("locks")
+    var rigid_locks: Array = weighted_controller.get("originals")
+    var weighted_materials: Array = weighted_controller.get("materials")
+    if weighted_locks.size() != 5 or rigid_locks.size() != 5 or \
+            weighted_materials.size() != 5 or int(weighted_controller.get("vertex_count")) < 2500:
+        _fail("all five substantial rear volumes must be GPU-skinned")
+        return
+    for i in range(5):
+        var lock := weighted_locks[i] as MeshInstance3D
+        var rigid := rigid_locks[i] as MeshInstance3D
+        var dye := weighted_materials[i] as ShaderMaterial
+        if lock == null or lock.mesh == null or lock.skin != source.skin or \
+                lock.skeleton != source.skeleton or lock.get_parent() != source.get_parent() or \
+                not lock.transform.is_equal_approx(source.transform) or not lock.visible or \
+                rigid == null or rigid.visible:
+            _fail("rear lock %d must replace its hidden rigid duplicate using original Skin" % i)
+            return
+        var lock_arrays: Array = lock.mesh.surface_get_arrays(0)
+        var lp: PackedVector3Array = lock_arrays[Mesh.ARRAY_VERTEX]
+        var ln: PackedVector3Array = lock_arrays[Mesh.ARRAY_NORMAL]
+        var lb: PackedInt32Array = lock_arrays[Mesh.ARRAY_BONES]
+        var lw: PackedFloat32Array = lock_arrays[Mesh.ARRAY_WEIGHTS]
+        var lu: PackedVector2Array = lock_arrays[Mesh.ARRAY_TEX_UV]
+        if lp.size() < 500 or ln.size() != lp.size() or \
+                lb.size() != lp.size() * 4 or lw.size() != lp.size() * 4 or \
+                lu.size() != lp.size():
+            _fail("rear lock %d missing 3D normals, UVs or original GPU skin data" % i)
+            return
+        for j in range(lp.size()):
+            if not lp[j].is_finite() or not ln[j].is_finite() or \
+                    absf(ln[j].length() - 1.0) > 0.02 or not lu[j].is_finite() or \
+                    lu[j].y < 0.0 or lu[j].y > 1.0:
+                _fail("rear lock %d has invalid rest geometry" % i)
+                return
+            var total := 0.0
+            for k in range(4):
+                if lb[j * 4 + k] != bindings[k] or lw[j * 4 + k] <= 0.0:
+                    _fail("rear lock %d lost genuine Head/Neck/Spine influences" % i)
+                    return
+                total += lw[j * 4 + k]
+            if absf(total - 1.0) > 0.001:
+                _fail("rear lock %d has non-normalized four-bone weights" % i)
+                return
+        var original_mat := rigid.material_override as StandardMaterial3D
+        if dye == null or dye.shader != wind.shader or original_mat == null or \
+                not (dye.get_shader_parameter("hair_base_tint") as Color).is_equal_approx(original_mat.albedo_color):
+            _fail("rear lock %d lost original chestnut color or root-anchored wind shader" % i)
+            return
+    weighted_controller.call("set_motion", 0.85, 1.0, 0.6, 2.0)
+    for material in weighted_materials:
+        var active := material as ShaderMaterial
+        if absf(float(active.get_shader_parameter("steer_amount")) - 0.85) > 0.001 or \
+                float(active.get_shader_parameter("boost_amount")) != 1.0 or \
+                absf(float(active.get_shader_parameter("jump_amount")) - 0.6) > 0.001:
+            _fail("all five weighted locks must respond to steering, boost and jump")
+            return
     var head_id := rig.find_bone("Head")
     var neck_id := rig.find_bone("neck_01")
     var before := rig.get_bone_pose_rotation(head_id)
@@ -133,5 +196,5 @@ func _check() -> void:
     if hero.find_children("*", "CollisionObject3D", true, false).size() != 0:
         _fail("cosmetic skinned hair must not add gameplay collisions")
         return
-    print("TRUE SKINNED BACK HAIR TEST PASSED: 65 original bones, four-weight head/neck/spine hair, root-anchored GPU wind and animated rig")
+    print("TRUE SKINNED BACK HAIR TEST PASSED: 65 original bones, four-weight head/neck/spine curtain AND five sculpted locks, root-anchored GPU wind and animated rig")
     quit(0)
