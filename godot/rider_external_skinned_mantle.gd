@@ -1,5 +1,5 @@
 extends Node
-## V124 draft: two compact, swept-back, four-weight GPU-skinned coat fins.
+## V124 draft: two long, tailored, four-weight GPU-skinned coat tails.
 ## Their shape is sampled from the imported CC0 body bounds, and the original
 ## Skin/inverse binds are reused. No physics, collisions, paid assets or touch edits.
 var panels: Array[MeshInstance3D] = []
@@ -83,7 +83,7 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: f
         body.get_parent().add_child(shoulder_yoke)
         yoke_vertices = yoke_mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
         panels = created
-        mantle_span = bounds.size.y * 0.34
+        mantle_span = bounds.size.y * 0.51
         # Measured on the actual weighted geometry, not a guessed sprite size.
         wing_reach = maxf(absf(created[0].mesh.get_aabb().position.x - bounds.get_center().x),
             absf(created[1].mesh.get_aabb().end.x - bounds.get_center().x))
@@ -174,22 +174,22 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
         surface_sign: float) -> void:
     var width := bounds.size.x
     var center_x := bounds.get_center().x
-    # The shoulder-root grows into a compact mid-body fin, then folds down
-    # behind the hips. Both sides remain separated around the weighted spine
-    # and original boots, without airplane-wide horizontal sail tips.
+    # Full-length split coat tails grow from the real weighted shoulder yoke,
+    # narrow toward the thighs and leave the original skinned legs visible.
+    # The narrow aerodynamic drape replaces the former horizontal wing shape.
     var flare := pow(maxf(0.0, sin(PI * t)), 0.84)
     var scallop := 0.014 * sin(3.0 * PI * t) * sin(PI * t)
-    var inner := width * (0.08 + 0.12 * t)
-    var outer := width * (0.13 + 0.31 * flare + 0.10 * t + scallop)
+    var inner := width * (0.085 + 0.09 * t)
+    var outer := width * (0.14 + 0.20 * flare + 0.07 * t + scallop)
     var x := center_x + side * lerpf(inner, outer, u)
     var camber := sin(u * PI) * sin(t * PI)
-    # Lower trailing fins visually connect shoulder hardware to the skinned
-    # waist instead of cutting across the character at chest height.
-    var y := bounds.position.y + bounds.size.y * (0.74 - 0.34 * t +
-        0.030 * camber + 0.012 * u * t)
-    # A deep rearward sweep preserves airfoil volume but reads as a tailored
-    # split coat in the chase camera rather than flat horizontal wings.
-    var sweep := 0.045 + 0.15 * t + 0.33 * pow(t, 1.4) + 0.08 * camber
+    # Long vertical tailoring reads as an actual split coat rather than
+    # outboard aero-wings. The hem stops above the real skinned boot cuffs.
+    var y := bounds.position.y + bounds.size.y * (0.76 - 0.51 * t +
+        0.025 * camber + 0.012 * u * t)
+    # Rear sweep preserves a real 3D drape while bringing the tail back
+    # toward the legs, not far outboard of the character's silhouette.
+    var sweep := 0.05 + 0.13 * t + 0.29 * pow(t, 1.4) + 0.06 * camber
     var rib := sin(u * PI * 3.0 + t * 3.0) * width * 0.008 * t
     # A raised, variable-thickness trailing lip gives the airfoil an
     # actual sculpted edge at chase distance instead of a paper-thin sheet.
