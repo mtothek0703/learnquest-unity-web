@@ -30,17 +30,32 @@ void vertex() {
 }
 
 void fragment() {
-    // Continuous dark roots and warmer strand ridges, not five painted
-    // flat stripes. All dye comes from the original sculpt's vertex colors.
+    // A unified dark-chestnut fiber finish across the weighted curtain and
+    // all five true-skinned locks. Low-frequency strand groups give volume;
+    // fine fibers add directionality without extra geometry, textures, passes
+    // or bright painted ribbons. Both frequencies follow the same root-to-tip
+    // UVs in the imported Head/Neck/Spine rest pose.
     float root = 1.0 - smoothstep(0.04, 0.34, hair_uv.y);
-    float strand = 0.5 + 0.5 * sin(hair_uv.x * 28.0
-        + hair_uv.y * 6.0);
-    float tip = smoothstep(0.55, 1.0, hair_uv.y);
-    vec3 base = hair_dye.rgb * hair_base_tint.rgb;
-    base *= 0.88 + strand * 0.16;
-    base = mix(base, hair_base_tint.rgb * 0.65, root * 0.48);
-    ALBEDO = base * (1.0 - tip * 0.09);
-    METALLIC = 0.015;
-    ROUGHNESS = 0.66 + root * 0.09 - strand * 0.10;
-    SPECULAR = 0.34;
+    float tip = smoothstep(0.58, 1.0, hair_uv.y);
+    float broad = 0.5 + 0.5 * sin(hair_uv.x * 17.0
+        + hair_uv.y * 4.0 + sin(hair_uv.y * 7.0) * 0.4);
+    float fibers = 0.5 + 0.5 * sin(hair_uv.x * 109.0
+        + hair_uv.y * 14.0 + broad * 2.2);
+    float directional = pow(1.0 - abs(dot(normalize(NORMAL),
+        normalize(VIEW))), 2.5);
+    vec3 original_dye = hair_dye.rgb * hair_base_tint.rgb;
+    // Melanin-like tonal layering: deep roots, warm mid-shafts and subtly
+    // translucent-looking tips. Keep the original dark dye, not an unbounded
+    // white specular/albedo wash (previously caught by real OpenGL frames).
+    float tonal = 0.82 + 0.19 * broad + 0.075 * fibers;
+    vec3 base = original_dye * tonal;
+    base = mix(base, original_dye * 0.66, root * 0.68);
+    base *= 1.0 - tip * 0.075;
+    base += original_dye * directional * (0.08 + 0.10 * fibers)
+        * (1.0 - root * 0.75);
+    ALBEDO = min(base, original_dye * 1.28);
+    METALLIC = 0.012;
+    ROUGHNESS = clamp(0.64 + root * 0.14 - broad * 0.10
+        - fibers * 0.045 + tip * 0.06, 0.45, 0.84);
+    SPECULAR = 0.40;
 }
