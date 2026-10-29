@@ -43,13 +43,22 @@ func _check() -> void:
         var n := normals[i]
         if not v.is_finite() or not n.is_finite() or absf(n.length() - 1.0) > 0.015:
             nonfinite += 1
-        if v.y < c.y - s.y * 0.18 and absf(v.x - c.x) > s.x * 0.54:
+        if v.y < c.y - s.y * 0.18 and absf(v.x - c.x) > s.x * 0.43:
             if v.x < c.x:
                 left += 1
             else:
                 right += 1
             if float(headwear.get("face_sign")) * (v.z - c.z) > s.z * 0.38:
                 front_limit += 1
+    # Profile QA: cheek guards must taper toward the jaw instead of forming
+    # the broad rectangular side slabs seen in the first real render.
+    var contour := preload("res://rider_external_helmet_contour.gd").new()
+    var face_sign := float(headwear.get("face_sign"))
+    var upper: Vector3 = contour.call("_point", c, s, face_sign, 1.0, 0.0, 1.0, true)
+    var lower: Vector3 = contour.call("_point", c, s, face_sign, 1.0, 1.0, 1.0, true)
+    if upper.x - lower.x < s.x * 0.08 or face_sign * (upper.z - lower.z) < s.z * 0.30:
+        _fail("sculpted cheek contour must taper in width and depth toward the jaw")
+        return
     if nonfinite != 0 or left < 50 or right < 50:
         _fail("both anatomically tapered cheek guards must have finite, closed geometry")
         return
