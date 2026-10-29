@@ -115,6 +115,8 @@ jobs:
           echo "Original glTF body skinning regression passed"
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_portrait_normals_test.gd 2>&1 | tee /tmp/godot-portrait-normals.log
           grep -Fq "EXTERNAL PORTRAIT NORMALS TEST PASSED" /tmp/godot-portrait-normals.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_back_hair_sculpt_test.gd 2>&1 | tee /tmp/godot-back-hair-sculpt.log
+          grep -Fq 'CONTINUOUS BACK HAIR SCULPT TEST PASSED' /tmp/godot-back-hair-sculpt.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_harness_test.gd 2>&1 | tee /tmp/godot-skinned-harness.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_pauldron_test.gd 2>&1 | tee /tmp/godot-pauldron.log
           grep -Fq 'EXTERNAL PAULDRON TEST PASSED' /tmp/godot-pauldron.log
