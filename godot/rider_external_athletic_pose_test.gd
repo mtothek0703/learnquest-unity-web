@@ -33,6 +33,24 @@ func _check() -> void:
     var neutral_thigh := rig.get_bone_pose_rotation(thigh_id)
     var neutral_calf := rig.get_bone_pose_rotation(calf_id)
     var neutral_elbow := rig.get_bone_pose_rotation(elbow_id)
+    var left_shoulder_id := rig.find_bone("upperarm_l")
+    var right_shoulder_id := rig.find_bone("upperarm_r")
+    var right_elbow_id := rig.find_bone("lowerarm_r")
+    if left_shoulder_id < 0 or right_shoulder_id < 0 or right_elbow_id < 0:
+        _fail("both original shoulders and elbows must articulate")
+        return
+    var neutral_left_shoulder := rig.get_bone_pose_rotation(left_shoulder_id)
+    var neutral_right_shoulder := rig.get_bone_pose_rotation(right_shoulder_id)
+    var neutral_right_elbow := rig.get_bone_pose_rotation(right_elbow_id)
+    # Both arms must be visibly lowered from the imported superhero T-pose,
+    # and must remain approximately balanced in the resting surf stance.
+    if neutral_left_shoulder.get_angle() < 1.05 or neutral_right_shoulder.get_angle() < 1.05 or \
+            absf(neutral_left_shoulder.get_angle() - neutral_right_shoulder.get_angle()) > 0.30:
+        _fail("compact balanced shoulder surf silhouette is missing")
+        return
+    if neutral_elbow.get_angle() < 0.45 or neutral_right_elbow.get_angle() < 0.45:
+        _fail("both original elbows must remain clearly flexed")
+        return
     if neutral_thigh.get_angle() < 0.24 or neutral_calf.get_angle() < 0.35 or \
             neutral_elbow.get_angle() < 0.30:
         _fail("idle stance must be athletic, with bent knees and elbows")
@@ -45,6 +63,11 @@ func _check() -> void:
             rig.get_bone_pose_rotation(calf_id).angle_to(neutral_calf) < 0.07:
         _fail("turn/boost/jump must alter real hip and knee balance")
         return
+    if rig.get_bone_pose_rotation(left_shoulder_id).angle_to(neutral_left_shoulder) < 0.10 or \
+            rig.get_bone_pose_rotation(right_shoulder_id).angle_to(neutral_right_shoulder) < 0.10 or \
+            rig.get_bone_pose_rotation(right_elbow_id).angle_to(neutral_right_elbow) < 0.10:
+        _fail("turn/boost/jump must articulate both skinned arms")
+        return
     rider.set("lean", 0.0)
     rider.set("boosting", false)
     rider.position.y = 0.0
@@ -53,6 +76,10 @@ func _check() -> void:
             rig.get_bone_pose_rotation(calf_id).angle_to(neutral_calf) > 0.035:
         _fail("surf stance must settle to the same stable neutral knee pose")
         return
+    if rig.get_bone_pose_rotation(left_shoulder_id).angle_to(neutral_left_shoulder) > 0.04 or \
+            rig.get_bone_pose_rotation(right_shoulder_id).angle_to(neutral_right_shoulder) > 0.04:
+        _fail("both original shoulders must recover their compact idle stance")
+        return
     if hero.find_children("*", "CollisionObject3D", true, false).size() > 0:
         _fail("animation may not change collisions")
         return
@@ -60,5 +87,5 @@ func _check() -> void:
     if original == null or original.skin == null or original.skin.get_bind_count() < 50:
         _fail("real weighted imported body must remain")
         return
-    print("EXTERNAL ATHLETIC POSE TEST PASSED: 65-bone crouch, elbow articulation, boost balance and neutral recovery")
+    print("EXTERNAL ATHLETIC POSE TEST PASSED: 65-bone compact bilateral surf arms, crouch, boost balance and neutral recovery")
     quit(0)
