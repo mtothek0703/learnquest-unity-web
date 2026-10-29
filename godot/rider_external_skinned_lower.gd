@@ -63,6 +63,7 @@ func _extract(source: MeshInstance3D, from_height: float, to_height: float, is_b
     var output := SurfaceTool.new()
     output.begin(Mesh.PRIMITIVE_TRIANGLES)
     var accepted := 0
+    var normal_offset := Callable(self, "_sculpt_offset").bind(is_boot)
     for surface in range(source.mesh.get_surface_count()):
         if source.mesh.surface_get_primitive_type(surface) != Mesh.PRIMITIVE_TRIANGLES:
             continue
@@ -92,7 +93,8 @@ func _extract(source: MeshInstance3D, from_height: float, to_height: float, is_b
                 for vertex in [polygon[0], polygon[corner], polygon[corner + 1]]:
                     var point: Vector3 = vertex["position"]
                     var normal: Vector3 = vertex["normal"]
-                    output.set_normal(normal)
+                    output.set_normal(preload("res://rider_sculpted_surface_normals.gd").corrected(
+                        point, normal, bounds, normal_offset))
                     output.set_bones(vertex["bones"])
                     output.set_weights(vertex["weights"])
                     output.add_vertex(point + _sculpt_offset(point, normal, bounds, is_boot))
