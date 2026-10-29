@@ -4,6 +4,9 @@ extends RefCounted
 ## physics. This deforms the EXISTING Head-bone-bound closed curtain surface.
 const CHANNELS := 5
 
+func channel_count() -> int:
+    return CHANNELS
+
 func ridge(t: float, u: float) -> float:
     var height := sin(PI * clampf(t, 0.0, 1.0))
     var flow := u + 0.018 * height + 0.009 * t * t
