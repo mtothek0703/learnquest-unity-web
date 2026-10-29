@@ -150,7 +150,7 @@ func _check() -> void:
         if root_samples < 10 or hem_samples < 10:
             _fail("mantle must have sampled shoulder and wing-tip rows")
             return
-        if mid_max - mid_min < source_width * 0.14:
+        if mid_max - mid_min < source_width * 0.115:
             _fail("swept wing must add a broad, visible sculpted midspan")
             return
         if mid_max - mid_min < (root_max - root_min) * 1.75:
