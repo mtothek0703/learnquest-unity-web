@@ -122,12 +122,23 @@ func _shell_point(t: float, angle: float) -> Vector3:
     return Vector3(width * cos(angle),
         0.285 + raised_nose + rear_sweep + thickness * sin(angle), z)
 
+# Analytic normals follow the actual swept chassis instead of treating every
+# unindexed triangle as a separate flat facet. This preserves highlights along
+# the entire 360-degree hull without additional meshes or mobile draw calls.
+func _shell_normal(t: float, angle: float) -> Vector3:
+    var h := 0.001
+    var tangent_t := _shell_point(clampf(t + h, 0.0, 1.0), angle) - \
+        _shell_point(clampf(t - h, 0.0, 1.0), angle)
+    var tangent_ring := _shell_point(t, angle + h) - _shell_point(t, angle - h)
+    return tangent_ring.cross(tangent_t).normalized()
+
 func _emit_shell(tool: SurfaceTool, t: float, angle: float) -> void:
     var edge := absf(cos(angle))
     var upper := maxf(0.0, sin(angle))
     var color := Color("#101a34").lerp(Color("#44587d"), upper * 0.65)
     color = color.lerp(Color("#754b9b"), edge * (0.14 + 0.20 * t))
     tool.set_color(color)
+    tool.set_normal(_shell_normal(t, angle))
     tool.add_vertex(_shell_point(t, angle))
 
 func _make_shell() -> ArrayMesh:
@@ -151,10 +162,10 @@ func _make_shell() -> ArrayMesh:
             var u := TAU * float(j) / float(RING_STEPS)
             var v := TAU * float(j + 1) / float(RING_STEPS)
             tool.set_color(Color("#101a34"))
+            tool.set_normal(Vector3.BACK if end == 0.0 else Vector3.FORWARD)
             tool.add_vertex(Vector3(0.0, _shell_point(end, 0.0).y, lerpf(-1.37, 1.33, end)))
             _emit_shell(tool, end, v if end == 0.0 else u)
             _emit_shell(tool, end, u if end == 0.0 else v)
-    tool.generate_normals()
     return tool.commit()
 
 func _grip_point(t: float, across: float) -> Vector3:
@@ -164,9 +175,18 @@ func _grip_point(t: float, across: float) -> Vector3:
     return Vector3(across * width,
         0.415 + 0.022 * (1.0 - across * across) + 0.012 * cos(PI * t), z)
 
+func _grip_normal(t: float, across: float) -> Vector3:
+    var h := 0.001
+    var tangent_t := _grip_point(clampf(t + h, 0.0, 1.0), across) - \
+        _grip_point(clampf(t - h, 0.0, 1.0), across)
+    var tangent_across := _grip_point(t, clampf(across + h, -1.0, 1.0)) - \
+        _grip_point(t, clampf(across - h, -1.0, 1.0))
+    return tangent_t.cross(tangent_across).normalized()
+
 func _emit_grip(tool: SurfaceTool, t: float, across: float) -> void:
     var stripe := pow(maxf(0.0, 1.0 - absf(across)), 3.0)
     tool.set_color(Color("#1b2944").lerp(Color("#45617b"), 0.25 + 0.35 * stripe))
+    tool.set_normal(_grip_normal(t, across))
     tool.add_vertex(_grip_point(t, across))
 
 func _make_grip() -> ArrayMesh:
@@ -184,7 +204,6 @@ func _make_grip() -> ArrayMesh:
             _emit_grip(tool, a, u)
             _emit_grip(tool, a, v)
             _emit_grip(tool, b, v)
-    tool.generate_normals()
     return tool.commit()
 
 func _keel_point(t: float, across: float) -> Vector3:
@@ -240,6 +259,15 @@ func _wing_point(side: float, t: float, angle: float) -> Vector3:
     return Vector3(side * (center + radius * cos(angle)),
         0.295 + curl + (0.035 + 0.022 * swell) * sin(angle), z)
 
+func _wing_normal(side: float, t: float, angle: float) -> Vector3:
+    var h := 0.001
+    var tangent_t := _wing_point(side, clampf(t + h, 0.0, 1.0), angle) - \
+        _wing_point(side, clampf(t - h, 0.0, 1.0), angle)
+    var tangent_ring := _wing_point(side, t, angle + h) - \
+        _wing_point(side, t, angle - h)
+    # Mirrored stabilizers must retain outward-facing normals on both sides.
+    return (tangent_ring.cross(tangent_t) * side).normalized()
+
 func _make_wing(side: float) -> ArrayMesh:
     var tool := SurfaceTool.new()
     tool.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -255,6 +283,7 @@ func _make_wing(side: float) -> ArrayMesh:
                 var highlight := maxf(0.0, sin(sample.y))
                 tool.set_color(Color("#152640").lerp(Color("#56718a"),
                     0.18 + 0.35 * highlight + 0.07 * sin(PI * sample.x)))
+                tool.set_normal(_wing_normal(side, sample.x, sample.y))
                 tool.add_vertex(point)
     # Both aerofoil ends now have real 3D caps, avoiding open tubular wings.
     for end in [0.0, 1.0]:
@@ -268,8 +297,8 @@ func _make_wing(side: float) -> ArrayMesh:
                 _wing_point(side, end, v if end == 0.0 else u),
                 _wing_point(side, end, u if end == 0.0 else v)]:
                 tool.set_color(Color("#20334e"))
+                tool.set_normal(Vector3.BACK if end == 0.0 else Vector3.FORWARD)
                 tool.add_vertex(point)
-    tool.generate_normals()
     return tool.commit()
 
 
@@ -284,6 +313,14 @@ func _thruster_point(side: float, t: float, angle: float) -> Vector3:
     var center_x := side * (0.80 + 0.08 * t)
     return Vector3(center_x + radius * cos(angle),
         0.24 + radius * 0.82 * sin(angle), z)
+
+func _thruster_normal(side: float, t: float, angle: float) -> Vector3:
+    var h := 0.001
+    var tangent_t := _thruster_point(side, clampf(t + h, 0.0, 1.0), angle) - \
+        _thruster_point(side, clampf(t - h, 0.0, 1.0), angle)
+    var tangent_ring := _thruster_point(side, t, angle + h) - \
+        _thruster_point(side, t, angle - h)
+    return tangent_ring.cross(tangent_t).normalized()
 
 func _make_thruster_housing(side: float) -> ArrayMesh:
     var tool := SurfaceTool.new()
@@ -300,6 +337,7 @@ func _make_thruster_housing(side: float) -> ArrayMesh:
                 var accent := smoothstep(0.66, 0.94, sample.x)
                 tool.set_color(Color("#17213d").lerp(Color("#647ca6"),
                     0.20 + 0.48 * upper + 0.20 * accent))
+                tool.set_normal(_thruster_normal(side, sample.x, sample.y))
                 tool.add_vertex(_thruster_point(side, sample.x, sample.y))
     # End caps make each turbine a real closed volume, not a decorative plane.
     for end in [0.0, 1.0]:
@@ -312,8 +350,8 @@ func _make_thruster_housing(side: float) -> ArrayMesh:
                 _thruster_point(side, end, v if end == 0.0 else u),
                 _thruster_point(side, end, u if end == 0.0 else v)]:
                 tool.set_color(Color("#101a34"))
+                tool.set_normal(Vector3.BACK if end == 0.0 else Vector3.FORWARD)
                 tool.add_vertex(point)
-    tool.generate_normals()
     return tool.commit()
 
 func _exhaust_halo_point(side: float, around: float, section: float) -> Vector3:
