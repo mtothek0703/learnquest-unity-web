@@ -53,9 +53,9 @@ func _point(c: Vector3, s: Vector3, facing: float, side: float,
         t: float, u: float, outer: bool) -> Vector3:
     # The sidewalls are behind the eyes and follow a tapered cheek/jaw
     # contour, rather than protruding as separate box-like ear decorations.
-    var shell := 0.560 + 0.023 * sin(PI * t)
+    var shell := 0.560 + 0.023 * sin(PI * t) - 0.110 * t * t
     var thickness := 0.025 if outer else -0.015
-    var depth := -0.14 + (0.46 - 0.16 * t) * u + 0.025 * sin(PI * t)
+    var depth := -0.14 + (0.46 * (1.0 - 0.75 * t)) * u + 0.025 * sin(PI * t)
     return Vector3(
         c.x + side * s.x * (shell + thickness),
         c.y + s.y * (0.35 - 0.59 * t + 0.014 * sin(PI * u) * sin(PI * t)),
@@ -66,7 +66,7 @@ func _vertex_normal(vertex: Vector3) -> Vector3:
     # including closed edge rims. This avoids visible mobile-lighting seams.
     var side := -1.0 if vertex.x < _center.x else 1.0
     var t := clampf((0.35 - (vertex.y - _center.y) / _size.y) / 0.59, 0.0, 1.0)
-    var shell := 0.560 + 0.023 * sin(PI * t)
+    var shell := 0.560 + 0.023 * sin(PI * t) - 0.110 * t * t
     var outer := absf(vertex.x - _center.x) / _size.x > shell + 0.004
     return Vector3(side * (1.0 if outer else -1.0),
         0.10 * (0.5 - t), _facing * (0.12 if outer else -0.12)).normalized()
