@@ -211,6 +211,13 @@ jobs:
             --script res://rider_visual_capture_test.gd 2>&1 | tee /tmp/godot-visual-capture.log
           grep -Fq 'VISUAL CAPTURE TEST PASSED' /tmp/godot-visual-capture.log
           test "$(find /tmp/learnquest-visual-qa -name '*.png' | wc -l)" -eq 20
+          mkdir -p /tmp/learnquest-skinned-hair-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_SKINNED_HAIR_OUTPUT=/tmp/learnquest-skinned-hair-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_skinned_back_hair_visual_capture_test.gd 2>&1 | tee /tmp/godot-skinned-hair-visual.log
+          grep -Fq 'SKINNED BACK HAIR VISUAL QA PASSED' /tmp/godot-skinned-hair-visual.log
+          test "$(find /tmp/learnquest-skinned-hair-qa -name '*.png' | wc -l)" -eq 16
           mkdir -p /tmp/learnquest-wake-qa
           LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_WAKE_OUTPUT=/tmp/learnquest-wake-qa \
             timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
