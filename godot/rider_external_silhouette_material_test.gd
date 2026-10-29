@@ -31,6 +31,25 @@ func _check() -> void:
         if code.contains("next_pass") or code.contains("depth_draw_always"):
             _fail("contour treatment must not add an outline pass: " + path)
             return
+    # The full source body, tailored jacket and weighted lower garments must
+    # share fitted, two-finish PBR textile treatment. No texture downloads,
+    # extra shader passes or changes to the imported GPU Skin are permitted.
+    for path in ["res://rider_quaternius_suit.gdshader",
+            "res://rider_external_jacket.gdshader",
+            "res://rider_external_lower.gdshader"]:
+        var textile_shader := load(path) as Shader
+        if textile_shader == null:
+            _fail("integrated textile shader missing: " + path)
+            return
+        var textile_code := textile_shader.code
+        for token in ["textile_uv", "rest_width", "rest_height", "weave",
+                "carbon_fiber", "ROUGHNESS", "METALLIC", "action_boost"]:
+            if not textile_code.contains(token):
+                _fail("inconsistent skinned costume textile: " + token + " in " + path)
+                return
+        if textile_code.contains("texture(") or textile_code.contains("sampler2D"):
+            _fail("textile treatment must remain procedural and asset-free: " + path)
+            return
     var rider := preload("res://rider_character.tscn").instantiate() as Node3D
     rider.set("prefer_cc0_rigged_hero", true)
     root.add_child(rider)
