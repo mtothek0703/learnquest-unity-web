@@ -141,6 +141,13 @@ func _emit_shell(tool: SurfaceTool, t: float, angle: float) -> void:
     tool.set_normal(_shell_normal(t, angle))
     tool.add_vertex(_shell_point(t, angle))
 
+func _emit_shell_cap(tool: SurfaceTool, end: float, angle: float) -> void:
+    # Duplicate the perimeter only for the hard cap normal; the curved
+    # chassis surface keeps its own smooth analytic normal at the same point.
+    tool.set_color(Color("#101a34"))
+    tool.set_normal(Vector3.FORWARD if end == 0.0 else Vector3.BACK)
+    tool.add_vertex(_shell_point(end, angle))
+
 func _make_shell() -> ArrayMesh:
     var tool := SurfaceTool.new()
     tool.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -164,8 +171,8 @@ func _make_shell() -> ArrayMesh:
             tool.set_color(Color("#101a34"))
             tool.set_normal(Vector3.FORWARD if end == 0.0 else Vector3.BACK)
             tool.add_vertex(Vector3(0.0, _shell_point(end, 0.0).y, lerpf(-1.37, 1.33, end)))
-            _emit_shell(tool, end, v if end == 0.0 else u)
-            _emit_shell(tool, end, u if end == 0.0 else v)
+            _emit_shell_cap(tool, end, v if end == 0.0 else u)
+            _emit_shell_cap(tool, end, u if end == 0.0 else v)
     return tool.commit()
 
 func _grip_point(t: float, across: float) -> Vector3:
