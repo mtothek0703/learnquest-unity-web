@@ -99,6 +99,11 @@ func _check() -> void:
     if controller.get("wind_material") != wind:
         _fail("the wind controller must drive the installed skinned material")
         return
+    var original_dye := old.material_override as StandardMaterial3D
+    var weighted_dye: Color = wind.get_shader_parameter("hair_base_tint")
+    if original_dye == null or not weighted_dye.is_equal_approx(original_dye.albedo_color):
+        _fail("shader must retain original dark chestnut hair albedo; never render white")
+        return
     controller.call("set_motion", 0.8, 1.0, 0.5, 3.0)
     if absf(float(wind.get_shader_parameter("steer_amount")) - 0.8) > 0.001 or \
             absf(float(wind.get_shader_parameter("boost_amount")) - 1.0) > 0.001 or \
