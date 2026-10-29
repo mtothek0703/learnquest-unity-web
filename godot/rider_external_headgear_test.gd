@@ -205,6 +205,9 @@ func _check() -> void:
         if not lens.mesh is ArrayMesh or lens.mesh.get_surface_count() != 1:
             _fail("iris and pupils must use closed sculpted lenses, not spheres")
             return
+        if not lens.has_meta("local_eye_geometry"):
+            _fail("sculpted eye lens must keep fitted center and radius on portrait scaling")
+            return
         var lens_arrays: Array = lens.mesh.surface_get_arrays(0)
         var lens_vertices: PackedVector3Array = lens_arrays[Mesh.ARRAY_VERTEX]
         var lens_normals: PackedVector3Array = lens_arrays[Mesh.ARRAY_NORMAL]
