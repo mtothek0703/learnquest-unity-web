@@ -86,7 +86,13 @@ func _check() -> void:
     if chest.z > 0.18 or shoulder.z > 0.18:
         _fail("torso redesign regressed to the oversized barrel-chest shell")
         return
-    if shoulder.x < 0.01 or opposite.x > -0.01 or absf(shoulder.x + opposite.x) > 0.002:
+    # At actual mobile camera distance the previous thin CC0 jacket lost
+    # its pectoral/deltoid silhouette. Check the new three-dimensional
+    # athletic V-shape, not just a cosmetic color change.
+    if chest.z < 0.09 or shoulder.z < 0.065 or shoulder.x < 0.035:
+        _fail("original-skinned torso lost the fuller chest/deltoid V silhouette")
+        return
+    if opposite.x > -0.035 or absf(shoulder.x + opposite.x) > 0.002:
         _fail("weighted shoulder expansion must be balanced on both sides")
         return
     # The garment must keep EVERY intersecting source triangle instead of
