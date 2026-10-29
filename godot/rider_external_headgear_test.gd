@@ -229,6 +229,9 @@ func _check() -> void:
         _fail("rear hair must have a sculpted shoulder flare and tapered tips")
         return
     var visible_lock := headwear.get_node_or_null("WindSweptBackLock4") as MeshInstance3D
+    # The previous bright violet noodle hair distracted from the 65-bone
+    # adventurer silhouette. Require layered, matte chestnut locks, a darker
+    # continuous undercoat and a shortened, side-swept neck-length profile.
     var underhair := back_hair.material_override as StandardMaterial3D
     var bright_hair: StandardMaterial3D = null
     if visible_lock != null:
@@ -236,6 +239,16 @@ func _check() -> void:
     if underhair == null or bright_hair == null or \
             bright_hair.albedo_color.get_luminance() <= underhair.albedo_color.get_luminance() * 1.5:
         _fail("sculpted back locks must visibly contrast against the dark underhair")
+        return
+    if bright_hair.albedo_color.r < bright_hair.albedo_color.b * 1.4 or \
+            bright_hair.roughness < 0.70 or underhair.roughness < 0.80:
+        _fail("rear hairstyle must use natural matte layered chestnut, not glossy purple rods")
+        return
+    var neck_tip: Vector3 = headwear.call("_back_hair_point", center, head_region.size,
+        crown, cap_height, rx, rz, 1.0, 0.5)
+    if neck_tip.y < head_region.position.y - head_region.size.y * 0.30 or \
+            neck_tip.x < center.x + head_region.size.x * 0.04:
+        _fail("rear hair must form a shorter asymmetric swept cut above the shoulders")
         return
     var lock_depth := (visible_lock.mesh.get_aabb().get_center().z - center.z) * -float(headwear.get("face_sign"))
     if lock_depth < head_region.size.z * 0.55:
