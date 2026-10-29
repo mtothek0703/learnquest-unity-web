@@ -48,7 +48,9 @@ func _capture() -> void:
     await process_frame
     var legacy := rider.get_node_or_null("LegacyRider") as Node3D
     var board := rider.get_node_or_null("LegacyRider/Floating hoverboard/SculptedHoverboardChassis") as Node3D
-    var wake := board.get_node_or_null("BoostWake") as Node3D if board != null else null
+    var wake: Node3D = null
+    if board != null:
+        wake = board.get_node_or_null("BoostWake") as Node3D
     if legacy == null or board == null or wake == null:
         _fail("original animated board or its 3D wake missing")
         return
@@ -89,7 +91,12 @@ func _capture() -> void:
                 elif view == "chase":
                     for y in range(0, size.y, 6):
                         for x in range(0, size.x, 6):
-                            if frame_image.get_pixel(x, y).distance_to(previous.get_pixel(x, y)) > 0.08:
+                            var after_color := frame_image.get_pixel(x, y)
+                            var before_color := previous.get_pixel(x, y)
+                            var channel_delta := maxf(absf(after_color.r - before_color.r),
+                                maxf(absf(after_color.g - before_color.g),
+                                    absf(after_color.b - before_color.b)))
+                            if channel_delta > 0.08:
                                 changed_chase += 1
                 count += 1
     if count != 8 or changed_chase < 35:
