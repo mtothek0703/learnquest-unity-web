@@ -44,8 +44,16 @@ void fragment() {
     cloth = mix(cloth, electric_pink, shoulder * 0.28);
     cloth = mix(cloth, deep_navy, waist * 0.65);
     // Broad readable panel layout plus restrained material weave.
-    float weave = sin(rest_vertex.x * 85.0) * sin(rest_vertex.y * 90.0);
-    cloth *= 0.986 + 0.014 * weave;
+    // The material grain follows normalized imported rest-space proportions,
+    // not arbitrary exporter units. Wide woven cloth and fine diagonal carbon
+    // are separate material responses on the SAME genuinely skinned mesh.
+    vec2 textile_uv = vec2((rest_vertex.x - rest_center_x) / max(rest_width, 0.001),
+        (rest_vertex.y - rest_bottom) / max(rest_height, 0.001));
+    float weave = sin(textile_uv.x * 82.0) * sin(textile_uv.y * 104.0);
+    float carbon_fiber = sin(textile_uv.x * 104.0 + textile_uv.y * 31.0)
+        * sin(textile_uv.y * 110.0 - textile_uv.x * 25.0);
+    float textile_light = 0.985 + 0.015 * weave;
+    cloth *= textile_light;
     // Integrated material language: raised source-skin pectorals get brushed
     // metal, while their boundaries read as recessed, matte stitched seams.
     // All bands are in the imported rest pose so they follow GPU skinning.
@@ -59,7 +67,10 @@ void fragment() {
         * (1.0 - smoothstep(0.33, 0.44, x));
     float side_joint = exp(-pow((x - 0.337) * 67.0, 2.0)) * torso;
     float stitched_panel = max(chest_panel_seam, side_joint);
+    // Sculpted hard-shell zones receive a brushed carbon response, while
+    // exposed joints remain softly woven. No textures or extra draw calls.
     cloth = mix(cloth, vec3(0.16, 0.24, 0.38), armor_field * 0.30);
+    cloth *= 1.0 + carbon_fiber * armor_field * 0.047;
     cloth = mix(cloth, vec3(0.018, 0.032, 0.072),
         clamp(stitched_panel * 0.78 + waist_gasket * 0.72, 0.0, 0.92));
     cloth = mix(cloth, vec3(0.27, 0.38, 0.51), collar_lip * 0.72);
@@ -69,7 +80,8 @@ void fragment() {
     ALBEDO = cloth;
     METALLIC = clamp(0.13 + armor_field * 0.43 + collar_lip * 0.22, 0.0, 0.76);
     ROUGHNESS = clamp(0.56 - armor_field * 0.23 + waist_gasket * 0.18
-        + stitched_panel * 0.12 + weave * 0.018, 0.24, 0.82);
+        + stitched_panel * 0.12 + weave * (1.0 - armor_field) * 0.025
+        - carbon_fiber * armor_field * 0.021, 0.24, 0.82);
     EMISSION = cyan * (zipper * 0.70 + chevron * 0.38 + piping * 0.24)
         + electric_pink * shoulder * 0.14;
     float silhouette_rim = pow(1.0 - abs(dot(normalize(NORMAL), normalize(VIEW))), 2.6);
