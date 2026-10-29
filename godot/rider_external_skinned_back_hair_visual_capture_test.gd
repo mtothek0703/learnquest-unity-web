@@ -65,6 +65,16 @@ func _capture() -> void:
     if original == null or skinned == null or skinned.skin == null:
         _fail("rigid and weighted hair must both exist for direct comparison")
         return
+    var wind_controller := hero.get_node_or_null("ExternalSkinnedBackHair") as Node
+    var lock_controller := wind_controller.get("weighted_locks") as Node if wind_controller != null else null
+    if lock_controller == null:
+        _fail("all five weighted hair locks required for real rigid-vs-skinned visual QA")
+        return
+    var weighted_locks: Array = lock_controller.get("locks")
+    var rigid_locks: Array = lock_controller.get("originals")
+    if weighted_locks.size() != 5 or rigid_locks.size() != 5:
+        _fail("incomplete five-lock weighted hair visual comparison")
+        return
     rider.set_process(false)
     adapter.set_process(false)
     var count := 0
@@ -89,6 +99,9 @@ func _capture() -> void:
                 for variant in ["rigid", "skinned"]:
                     original.visible = variant == "rigid"
                     skinned.visible = variant == "skinned"
+                    for i in range(5):
+                        (rigid_locks[i] as MeshInstance3D).visible = variant == "rigid"
+                        (weighted_locks[i] as MeshInstance3D).visible = variant == "skinned"
                     for frame in range(5):
                         await process_frame
                     await RenderingServer.frame_post_draw
@@ -128,6 +141,9 @@ func _capture() -> void:
     # extra frames prove secondary motion is visible, not just a uniform set.
     original.visible = false
     skinned.visible = true
+    for i in range(5):
+        (rigid_locks[i] as MeshInstance3D).visible = false
+        (weighted_locks[i] as MeshInstance3D).visible = true
     var wind := hero.get_node_or_null("ExternalSkinnedBackHair") as Node
     if wind == null or wind.get("wind_material") == null:
         _fail("original GPU-skinned wind material unavailable")
@@ -169,5 +185,5 @@ func _capture() -> void:
             bleached_hair > int(sampled_hair * 0.20):
         _fail("expected 18 frames, visible wind and no white hair regression: %d %d %d/%d" % [changed_chase, changed_wind, bleached_hair, sampled_hair])
         return
-    print("SKINNED BACK HAIR VISUAL QA PASSED: 18 real landscape images, including isolated weighted-hair wind; manual clipping and iPhone FPS still required")
+    print("SKINNED BACK HAIR VISUAL QA PASSED: 18 real landscape images, including all five four-weight locks and isolated weighted-hair wind; manual clipping and iPhone FPS still required")
     quit(0)
