@@ -225,6 +225,25 @@ func _check() -> void:
     if port_light.emission == starboard_light.emission:
         _fail("opposite rail emissions must use visibly distinct turn colors")
         return
+    # The same 0.1-second lighting transition must look identical at
+    # 30 and 60 FPS; fixed per-frame interpolation previously drifted.
+    legacy.set("lean", 0.75)
+    legacy.set("boosting", true)
+    var energy_30 := 0.0
+    for fps in [30, 60]:
+        port_light.emission_energy_multiplier = 1.25
+        starboard_light.emission_energy_multiplier = 1.25
+        var frames := 3 if fps == 30 else 6
+        for frame in range(frames):
+            sculpt.call("_process", 1.0 / float(fps))
+        if fps == 30:
+            energy_30 = starboard_light.emission_energy_multiplier
+        elif absf(starboard_light.emission_energy_multiplier - energy_30) > 0.015:
+            _fail("hoverboard glow must have frame-rate-independent response on phones")
+            return
+    if starboard_light.emission_energy_multiplier <= port_light.emission_energy_multiplier + 0.25:
+        _fail("frame-rate-independent lighting must preserve steer direction")
+        return
     if sculpt.find_children("*", "CollisionObject3D", true, false).size() > 0:
         _fail("turn lighting must not add new collision objects")
         return
