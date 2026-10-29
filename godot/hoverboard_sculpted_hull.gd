@@ -162,7 +162,7 @@ func _make_shell() -> ArrayMesh:
             var u := TAU * float(j) / float(RING_STEPS)
             var v := TAU * float(j + 1) / float(RING_STEPS)
             tool.set_color(Color("#101a34"))
-            tool.set_normal(Vector3.BACK if end == 0.0 else Vector3.FORWARD)
+            tool.set_normal(Vector3.FORWARD if end == 0.0 else Vector3.BACK)
             tool.add_vertex(Vector3(0.0, _shell_point(end, 0.0).y, lerpf(-1.37, 1.33, end)))
             _emit_shell(tool, end, v if end == 0.0 else u)
             _emit_shell(tool, end, u if end == 0.0 else v)
@@ -297,7 +297,7 @@ func _make_wing(side: float) -> ArrayMesh:
                 _wing_point(side, end, v if end == 0.0 else u),
                 _wing_point(side, end, u if end == 0.0 else v)]:
                 tool.set_color(Color("#20334e"))
-                tool.set_normal(Vector3.BACK if end == 0.0 else Vector3.FORWARD)
+                tool.set_normal(Vector3.FORWARD if end == 0.0 else Vector3.BACK)
                 tool.add_vertex(point)
     return tool.commit()
 
@@ -350,7 +350,7 @@ func _make_thruster_housing(side: float) -> ArrayMesh:
                 _thruster_point(side, end, v if end == 0.0 else u),
                 _thruster_point(side, end, u if end == 0.0 else v)]:
                 tool.set_color(Color("#101a34"))
-                tool.set_normal(Vector3.BACK if end == 0.0 else Vector3.FORWARD)
+                tool.set_normal(Vector3.FORWARD if end == 0.0 else Vector3.BACK)
                 tool.add_vertex(point)
     return tool.commit()
 
