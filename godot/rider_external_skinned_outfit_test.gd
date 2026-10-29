@@ -36,6 +36,16 @@ func _check() -> void:
         _fail("mobile PBR jacket shader not attached to the real skinned garment")
         return
     var shader_code := material.shader.code
+    # The entire jacket must share a sculpt-aligned PBR panel language, not
+    # return to a uniform neon shell or rely on unskinned floating decals.
+    for region in ["armor_field", "collar_lip", "chest_panel_seam",
+            "waist_gasket", "side_joint", "stitched_panel"]:
+        if not shader_code.contains(region):
+            _fail("missing integrated skinned jacket material zone: " + region)
+            return
+    if not shader_code.contains("METALLIC = clamp") or not shader_code.contains("ROUGHNESS = clamp"):
+        _fail("skinned jacket requires bounded satin armor and matte seam response")
+        return
     for required in ["electric_pink", "cobalt", "weave", "EMISSION", "ROUGHNESS"]:
         if not shader_code.contains(required):
             _fail("missing coherent mobile flight-jacket material feature: " + required)
