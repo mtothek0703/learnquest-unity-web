@@ -1,7 +1,7 @@
 extends SceneTree
 ## Render REAL V123 vs V124 16:9 / 19.5:9 frames; not a fake image.
 const SIZES := [Vector2i(1280, 720), Vector2i(1170, 540)]
-const VIEWS := ["front", "chase"]
+const VIEWS := ["front", "chase", "front_detail", "chase_detail"]
 func _initialize() -> void:
     call_deferred("_capture")
 func _fail(message: String) -> void:
@@ -63,8 +63,20 @@ func _capture() -> void:
     for size in SIZES:
         viewport.size = size
         for view in VIEWS:
-            camera.position = Vector3(0.0, 2.05, -7.4) if view == "front" else Vector3(0.0, 2.6, 7.8)
-            camera.look_at(Vector3(0.0, 1.7, 0.0), Vector3.UP)
+            # Retain the identical wide V123/V124 comparisons and add a
+            # closer full-figure framing. The original wide shots hide the
+            # face, boot seams and shoulder clipping at mobile screen size.
+            camera.fov = 43.0
+            match view:
+                "front":
+                    camera.position = Vector3(0.0, 2.05, -7.4)
+                "chase":
+                    camera.position = Vector3(0.0, 2.6, 7.8)
+                "front_detail":
+                    camera.position = Vector3(0.0, 2.0, -5.2)
+                "chase_detail":
+                    camera.position = Vector3(0.0, 2.25, 5.4)
+            camera.look_at(Vector3(0.0, 1.8 if view.ends_with("detail") else 1.7, 0.0), Vector3.UP)
             for variant in ["before", "after"]:
                 old.visible = variant == "before"
                 hero.visible = variant == "after"
@@ -80,8 +92,8 @@ func _capture() -> void:
                     _fail("could not save actual rendered PNG")
                     return
                 count += 1
-    if count != 8:
-        _fail("expected eight actual landscape before/after images")
+    if count != 16:
+        _fail("expected sixteen actual wide/detail landscape before/after images")
         return
-    print("QUATERNIUS VISUAL QA PASSED: 8 actual rendered V123/V124 landscape comparison PNGs (manual quality review still required)")
+    print("QUATERNIUS VISUAL QA PASSED: 16 real V123/V124 wide/detail landscape PNGs (manual quality review still required)")
     quit(0)
