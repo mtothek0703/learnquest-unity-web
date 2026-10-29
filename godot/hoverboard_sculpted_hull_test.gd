@@ -145,8 +145,8 @@ func _check() -> void:
             _fail("swept board geometry has faceted, discontinuous or inward-facing surface normals")
             return
     # End caps need their own hard outward normals, unlike the curved sides.
-    if not _smooth_at(chassis.mesh, Vector3(0.0,
-            (sculpt.call("_shell_point", 0.0, 0.0) as Vector3).y, -1.37),
+    var front_cap: Vector3 = sculpt.call("_shell_point", 0.0, 0.0)
+    if not _smooth_at(chassis.mesh, Vector3(0.0, front_cap.y, -1.37),
             Vector3.FORWARD):
         _fail("front chassis end cap is not closed with an outward normal")
         return
