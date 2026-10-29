@@ -217,7 +217,7 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://rider_external_skinned_back_hair_visual_capture_test.gd 2>&1 | tee /tmp/godot-skinned-hair-visual.log
           grep -Fq 'SKINNED BACK HAIR VISUAL QA PASSED' /tmp/godot-skinned-hair-visual.log
-          test "$(find /tmp/learnquest-skinned-hair-qa -name '*.png' | wc -l)" -eq 16
+          test "$(find /tmp/learnquest-skinned-hair-qa -name '*.png' | wc -l)" -eq 18
           mkdir -p /tmp/learnquest-wake-qa
           LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_WAKE_OUTPUT=/tmp/learnquest-wake-qa \
             timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
