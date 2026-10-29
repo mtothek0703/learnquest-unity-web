@@ -155,8 +155,10 @@ func _capture() -> void:
         if state == "still":
             still = shot
         else:
-            for y in range(0, 720, 4):
-                for x in range(0, 1280, 4):
+            # Restrict the motion proof to the upper-center head/hair ROI.
+            # Animated board jets below the waist must not count as hair wind.
+            for y in range(0, int(720 * 0.22), 4):
+                for x in range(int(1280 * 0.38), int(1280 * 0.62), 4):
                     var a := shot.get_pixel(x, y)
                     var b := still.get_pixel(x, y)
                     if maxf(absf(a.r - b.r), maxf(absf(a.g - b.g), absf(a.b - b.b))) > 0.08:
