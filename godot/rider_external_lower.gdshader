@@ -54,9 +54,27 @@ void fragment() {
     boots = mix(boots, titanium, heel_counter * 0.54);
     boots = mix(boots, vec3(0.10, 0.15, 0.27), sole_edge * 0.88);
     boots = mix(boots, vec3(0.23, 0.48, 0.69), ankle_cuff * 0.60);
+    // Shared costume finish with the torso: separate sculpted shin, ankle,
+    // forefoot and heel zones by dark flexible joints and satin hard shells.
+    // The silhouette remains the original four-weight CC0 skinned geometry.
+    float knee_gasket = exp(-pow((y - 0.283) * 91.0, 2.0));
+    float shin_segment = exp(-pow((y - 0.209) * 39.0, 2.0))
+        * forward_surface * (0.60 + 0.40 * outside);
+    float instep_joint = exp(-pow((y - 0.119) * 84.0, 2.0));
+    float toe_divider = exp(-pow((y - 0.071) * 115.0, 2.0))
+        * forward_surface;
+    float heel_rim = exp(-pow((y - 0.063) * 97.0, 2.0))
+        * (1.0 - forward_surface);
+    float boot_seams = clamp(instep_joint * 0.80 + toe_divider * 0.55
+        + heel_rim * 0.48, 0.0, 1.0);
+    trousers = mix(trousers, vec3(0.025, 0.041, 0.085),
+        knee_gasket * 0.64);
+    boots = mix(boots, vec3(0.20, 0.29, 0.42), shin_segment * 0.58);
+    boots = mix(boots, vec3(0.019, 0.032, 0.065), boot_seams * 0.86);
     ALBEDO = mix(trousers, boots, boot_mode);
-    METALLIC = mix(0.16, 0.43, boot_mode);
-    ROUGHNESS = mix(0.51, 0.39, boot_mode);
+    METALLIC = mix(0.13, 0.36 + shin_segment * 0.18, boot_mode);
+    ROUGHNESS = mix(0.55 + knee_gasket * 0.12,
+        0.44 - shin_segment * 0.13 + boot_seams * 0.20, boot_mode);
     float edge = exp(-pow((x - 0.225) * 32.0, 2.0));
     float stripe = exp(-pow((x - 0.28) * 28.0, 2.0)) * thigh;
     float shin_seam = exp(-pow((x - 0.235) * 45.0, 2.0)) * calf;
