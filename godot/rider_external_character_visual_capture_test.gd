@@ -1,7 +1,8 @@
 extends SceneTree
 ## Render REAL V123 vs V124 16:9 / 19.5:9 frames; not a fake image.
 const SIZES := [Vector2i(1280, 720), Vector2i(1170, 540)]
-const VIEWS := ["front", "chase", "front_detail", "chase_detail"]
+const VIEWS := ["front", "chase", "front_detail", "chase_detail",
+    "left_profile", "right_profile"]
 func _initialize() -> void:
     call_deferred("_capture")
 func _fail(message: String) -> void:
@@ -76,6 +77,10 @@ func _capture() -> void:
                     camera.position = Vector3(0.0, 2.0, -5.2)
                 "chase_detail":
                     camera.position = Vector3(0.0, 2.25, 5.4)
+                "left_profile":
+                    camera.position = Vector3(-5.6, 2.15, 0.0)
+                "right_profile":
+                    camera.position = Vector3(5.6, 2.15, 0.0)
             camera.look_at(Vector3(0.0, 1.8 if view.ends_with("detail") else 1.7, 0.0), Vector3.UP)
             for variant in ["before", "after"]:
                 old.visible = variant == "before"
@@ -92,8 +97,8 @@ func _capture() -> void:
                     _fail("could not save actual rendered PNG")
                     return
                 count += 1
-    if count != 16:
-        _fail("expected sixteen actual wide/detail landscape before/after images")
+    if count != 24:
+        _fail("expected twenty-four actual wide/detail/profile landscape before/after images")
         return
-    print("QUATERNIUS VISUAL QA PASSED: 16 real V123/V124 wide/detail landscape PNGs (manual quality review still required)")
+    print("QUATERNIUS VISUAL QA PASSED: 24 real V123/V124 wide/detail/profile landscape PNGs (manual quality review still required)")
     quit(0)
