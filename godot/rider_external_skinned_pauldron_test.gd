@@ -28,7 +28,8 @@ func _check() -> void:
         _fail("need two substantial closed shoulder volumes")
         return
     var bounds := source.mesh.get_aabb()
-    if float(controller.get("shoulder_span")) < bounds.size.x * 0.60:
+    if float(controller.get("shoulder_span")) < bounds.size.x * 0.60 or \
+            float(controller.get("shoulder_span")) > bounds.size.x * 0.66:
         _fail("sculpted shoulder silhouette not broad enough")
         return
     var influenced := 0
@@ -41,7 +42,9 @@ func _check() -> void:
             _fail("skinned shoulder not installed beside original source mesh")
             return
         var shell_bounds := shell.mesh.get_aabb()
-        if shell_bounds.size.x < bounds.size.x * 0.20 or shell_bounds.size.z < bounds.size.x * 0.22:
+        if shell_bounds.size.x < bounds.size.x * 0.20 or shell_bounds.size.x > bounds.size.x * 0.23 or \
+                shell_bounds.size.z < bounds.size.x * 0.22 or shell_bounds.size.z > bounds.size.x * 0.26 or \
+                shell_bounds.size.y > bounds.size.y * 0.16:
             _fail("shoulder shell must be a curved 3D volume, not a flat plate")
             return
         var arrays: Array = shell.mesh.surface_get_arrays(0)
