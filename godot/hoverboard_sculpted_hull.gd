@@ -269,8 +269,8 @@ func _wing_point(side: float, t: float, angle: float) -> Vector3:
     # Keep the existing animated board root, physics and touch controls.
     var swell := pow(maxf(0.0, sin(PI * t)), 1.15)
     var z := lerpf(-1.05, 0.97, t)
-    var inner := 0.72 + 0.06 * swell
-    var outer := 0.95 + 0.29 * swell + 0.04 * t
+    var inner := 0.70 + 0.055 * swell
+    var outer := 0.92 + 0.25 * swell + 0.04 * t
     var center := (inner + outer) * 0.5
     var radius := (outer - inner) * 0.5
     var curl := 0.065 * smoothstep(0.70, 1.0, t)

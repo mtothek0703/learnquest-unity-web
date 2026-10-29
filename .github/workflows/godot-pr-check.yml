@@ -46,6 +46,8 @@ jobs:
           grep -Fq 'TRUE SKINNED BACK HAIR TEST PASSED' /tmp/quaternius-true-skinned-hair.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_hair_finish_test.gd 2>&1 | tee /tmp/weighted-hair-finish.log
           grep -Fq 'WEIGHTED HAIR FINISH TEST PASSED' /tmp/weighted-hair-finish.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_v124_integrated_silhouette_test.gd 2>&1 | tee /tmp/integrated-hero-silhouette.log
+          grep -Fq 'INTEGRATED HERO SILHOUETTE TEST PASSED' /tmp/integrated-hero-silhouette.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_portrait_normals_test.gd 2>&1 | tee /tmp/quaternius-portrait-normals.log
           grep -Fq 'EXTERNAL PORTRAIT NORMALS TEST PASSED' /tmp/quaternius-portrait-normals.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_hair_dynamics_test.gd 2>&1 | tee /tmp/quaternius-hair-motion.log

@@ -283,22 +283,21 @@ func _build_headwear() -> void:
     # The previous six thick round tubes looked like beads above the forehead
     # in real 16:9 captures. Sculpt broad, flattened 3D swept bangs instead:
     # curved from the helmet crown to the upper forehead with a tapered tip.
-    for strand in range(6):
-        var across := (float(strand) - 2.5) / 2.5
-        var root := Vector3(c.x + across * radius_x * 0.69,
-            crown_y + cap_height * 0.25, c.z + face_sign * radius_z * 0.38)
-        # Six asymmetric, overlapping swept bangs now descend onto the
-        # forehead instead of standing as six tiny spikes above it. Their
-        # lowest points remain ABOVE the eye centers (0.59 of head height).
-        # No new meshes, bones, materials, collisions or draw calls.
-        var sweep := radius_x * (0.16 + 0.08 * (1.0 - absf(across)))
-        var tip := Vector3(c.x + across * radius_x * 0.76 + sweep,
-            head_bounds.position.y + s.y * (0.67 + 0.05 * absf(across)),
-            c.z + face_sign * radius_z * (0.96 - 0.09 * absf(across)))
-        var control := Vector3(c.x + across * radius_x * 0.90 + sweep * 0.62,
-            crown_y + cap_height * 0.53, c.z + face_sign * radius_z * 0.91)
+    # Four broad asymmetric locks replace six narrow parallel forehead
+    # ribbons. Their curved faces frame the eyes, without a row of spikes.
+    for strand in range(4):
+        var across := (float(strand) - 1.5) / 1.5
+        var sweep_side := -1.0 if strand < 2 else 1.0
+        var root := Vector3(c.x + across * radius_x * 0.65,
+            crown_y + cap_height * 0.23, c.z + face_sign * radius_z * 0.36)
+        var sweep := radius_x * (0.13 + 0.06 * (1.0 - absf(across)))
+        var tip := Vector3(c.x + across * radius_x * 0.70 + sweep_side * sweep,
+            head_bounds.position.y + s.y * (0.67 + 0.055 * absf(across)),
+            c.z + face_sign * radius_z * (0.92 - 0.08 * absf(across)))
+        var control := Vector3(c.x + across * radius_x * 0.79 + sweep_side * sweep * 0.52,
+            crown_y + cap_height * 0.50, c.z + face_sign * radius_z * 0.88)
         _mesh("SculptedTaperedFringe%d" % strand,
-            _sculpted_fringe_ribbon(root, control, tip, s.x * 0.24, s.z * 0.038),
+            _sculpted_fringe_ribbon(root, control, tip, s.x * 0.32, s.z * 0.035),
             fringe_mat if strand % 2 == 0 else hair_mat)
     _build_expression(c, s)
 

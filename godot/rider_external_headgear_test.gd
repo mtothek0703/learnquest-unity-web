@@ -33,7 +33,7 @@ func _check() -> void:
     # Balanced 360-degree silhouette: the Head-bone portrait remains readable
     # at mobile landscape size without overpowering the real skinned torso.
     var scale_factor := float(headwear.get("visual_scale"))
-    if scale_factor < 2.04 or scale_factor > 2.16:
+    if scale_factor < 1.89 or scale_factor > 1.95:
         _fail("integrated hero portrait scale must balance the skinned torso")
         return
     var region := headwear.get("head_bounds") as AABB
@@ -135,11 +135,11 @@ func _check() -> void:
     if absf(sample_right.x - sample_left.x) < absf(sample_outer.z - sample_inner.z) * 3.0:
         _fail("rear hair must form broad ribbons, not cylindrical pipes")
         return
-    # A genuine closed 3D rear volume plus six shaped face-framing locks,
+    # A genuine closed 3D rear volume plus four broad face-framing locks,
     # rather than more floating rigid panels, must survive the mobile rig fit.
     var sculpted_fringe := headwear.find_children("SculptedTaperedFringe*", "MeshInstance3D", false, false)
-    if sculpted_fringe.size() != 6:
-        _fail("the cohesive forehead hairstyle must contain six tapered locks")
+    if sculpted_fringe.size() != 4:
+        _fail("the redesigned forehead hairstyle must contain four broad tapered locks")
         return
     for item in sculpted_fringe:
         var lock := item as MeshInstance3D

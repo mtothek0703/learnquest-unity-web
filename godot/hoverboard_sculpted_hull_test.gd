@@ -104,7 +104,7 @@ func _check() -> void:
     for side in [-1.0, 1.0]:
         var inner: Vector3 = sculpt.call("_wing_point", side, 0.52, PI)
         var outer: Vector3 = sculpt.call("_wing_point", side, 0.52, 0.0)
-        if absf(outer.x - inner.x) < 0.42 or absf(outer.x) < 1.17 or absf(outer.x) > 1.34:
+        if absf(outer.x - inner.x) < 0.42 or absf(outer.x) < 1.17 or absf(outer.x) > 1.23:
             _fail("compact stabilizer must be substantial but not an oversized side wing")
             return
         var wing := sculpt.get_node_or_null(

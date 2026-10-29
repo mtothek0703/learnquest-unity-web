@@ -33,7 +33,7 @@ func configure(attachment: BoneAttachment3D) -> bool:
                 "kind": kind,
                 "index": locks.size()
             })
-    return locks.size() >= 13
+    return locks.size() >= 11
 
 func set_motion(steer: float, boost: float, jump: float, clock: float) -> void:
     if headwear == null:

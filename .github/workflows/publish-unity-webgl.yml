@@ -113,6 +113,8 @@ jobs:
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_original_body_skin_test.gd 2>&1 | tee /tmp/godot-original-body-skin.log
           grep -Fq "ORIGINAL BODY SKIN TEST PASSED" /tmp/godot-original-body-skin.log
           echo "Original glTF body skinning regression passed"
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_v124_integrated_silhouette_test.gd 2>&1 | tee /tmp/integrated-hero-silhouette.log
+          grep -Fq 'INTEGRATED HERO SILHOUETTE TEST PASSED' /tmp/integrated-hero-silhouette.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_portrait_normals_test.gd 2>&1 | tee /tmp/godot-portrait-normals.log
           grep -Fq "EXTERNAL PORTRAIT NORMALS TEST PASSED" /tmp/godot-portrait-normals.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_back_hair_sculpt_test.gd 2>&1 | tee /tmp/godot-back-hair-sculpt.log
