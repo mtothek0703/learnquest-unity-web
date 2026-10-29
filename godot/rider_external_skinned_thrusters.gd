@@ -99,12 +99,12 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, side: float,
         spine: int, pelvis: int, arm: int, core: bool, t: float, angle: float) -> void:
     var width := bounds.size.x
     var height := bounds.size.y
-    var shoulder_x := bounds.get_center().x + side * width * 0.185
+    var shoulder_x := bounds.get_center().x + side * width * 0.175
     var upper_y := bounds.position.y + height * 0.715
     var taper := 0.49 + 0.51 * pow(maxf(0.0, sin(PI * t)), 0.75)
-    var radius_x := width * (0.045 if core else 0.067) * taper
-    var radius_z := width * (0.030 if core else 0.042) * taper
-    var y := upper_y - height * (0.090 if core else 0.115) * t
+    var radius_x := width * (0.039 if core else 0.054) * taper
+    var radius_z := width * (0.026 if core else 0.032) * taper
+    var y := upper_y - height * (0.075 if core else 0.095) * t
     var x := shoulder_x + cos(angle) * radius_x
     var z := back + rear_sign * (width * (0.028 if core else 0.018) +
         sin(angle) * radius_z + height * 0.026 * t)

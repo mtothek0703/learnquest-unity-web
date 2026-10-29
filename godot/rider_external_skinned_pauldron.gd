@@ -111,12 +111,12 @@ func _point(tool: SurfaceTool, bounds: AABB, depth: float, side: float,
     if center:
         profile = 0.0
     var sweep := 0.012 * sin(PI * t)
-    var x := bounds.get_center().x + side * width * (0.195 + sweep + cos(angle) * 0.107 * profile)
-    var y := bounds.position.y + height * (0.770 - t * 0.150)
+    var x := bounds.get_center().x + side * width * (0.185 + sweep + cos(angle) * 0.075 * profile)
+    var y := bounds.position.y + height * (0.765 - t * 0.125)
     # A curved back-to-front shell follows the actual torso depth, with a
     # raised outer ridge and a subtle aerodynamic taper toward the waist.
     var ridge := 0.011 * width * pow(absf(cos(angle)), 5.0) * sin(PI * t)
-    var z := depth + sin(angle) * width * (0.115 * profile + 0.008) + ridge * face_sign
+    var z := depth + sin(angle) * width * (0.080 * profile + 0.008) + ridge * face_sign
     var arm_weight := (0.37 + 0.25 * maxf(0.0, cos(angle))) * (1.0 - 0.25 * t)
     var pelvis_weight := 0.07 + 0.15 * t
     var spine_weight := 1.0 - arm_weight - pelvis_weight

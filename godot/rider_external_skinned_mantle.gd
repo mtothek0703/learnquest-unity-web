@@ -83,7 +83,7 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: f
         body.get_parent().add_child(shoulder_yoke)
         yoke_vertices = yoke_mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
         panels = created
-        mantle_span = bounds.size.y * 0.51
+        mantle_span = bounds.size.y * 0.39
         # Measured on the actual weighted geometry, not a guessed sprite size.
         wing_reach = maxf(absf(created[0].mesh.get_aabb().position.x - bounds.get_center().x),
             absf(created[1].mesh.get_aabb().end.x - bounds.get_center().x))
@@ -179,17 +179,17 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
     # The narrow aerodynamic drape replaces the former horizontal wing shape.
     var flare := pow(maxf(0.0, sin(PI * t)), 1.20)
     var scallop := 0.014 * sin(3.0 * PI * t) * sin(PI * t)
-    var inner := width * (0.080 + 0.055 * t)
-    var outer := width * (0.155 + 0.095 * flare + 0.030 * t + scallop * 0.35)
+    var inner := width * (0.070 + 0.045 * t)
+    var outer := width * (0.135 + 0.075 * flare + 0.018 * t + scallop * 0.35)
     var x := center_x + side * lerpf(inner, outer, u)
     var camber := sin(u * PI) * sin(t * PI)
     # Long vertical tailoring reads as an actual split coat rather than
     # outboard aero-wings. The hem stops above the real skinned boot cuffs.
-    var y := bounds.position.y + bounds.size.y * (0.76 - 0.51 * t +
+    var y := bounds.position.y + bounds.size.y * (0.76 - 0.39 * t +
         0.025 * camber + 0.012 * u * t)
     # Rear sweep preserves a real 3D drape while bringing the tail back
     # toward the legs, not far outboard of the character's silhouette.
-    var sweep := 0.055 + 0.14 * t + 0.20 * pow(t, 1.4) + 0.025 * camber
+    var sweep := 0.040 + 0.10 * t + 0.12 * pow(t, 1.4) + 0.025 * camber
     var rib := sin(u * PI * 2.0 + t * 1.7) * width * 0.018 * sin(PI * t)
     # Thin but closed fabric edges with gentle three-dimensional pleats,
     # not the previous inflated airfoil cross section.

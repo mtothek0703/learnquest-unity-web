@@ -28,8 +28,8 @@ func _check() -> void:
         _fail("need two substantial closed shoulder volumes")
         return
     var bounds := source.mesh.get_aabb()
-    if float(controller.get("shoulder_span")) < bounds.size.x * 0.60 or \
-            float(controller.get("shoulder_span")) > bounds.size.x * 0.66:
+    if float(controller.get("shoulder_span")) < bounds.size.x * 0.50 or \
+            float(controller.get("shoulder_span")) > bounds.size.x * 0.54:
         _fail("sculpted shoulder silhouette not broad enough")
         return
     var influenced := 0
@@ -42,8 +42,8 @@ func _check() -> void:
             _fail("skinned shoulder not installed beside original source mesh")
             return
         var shell_bounds := shell.mesh.get_aabb()
-        if shell_bounds.size.x < bounds.size.x * 0.20 or shell_bounds.size.x > bounds.size.x * 0.23 or \
-                shell_bounds.size.z < bounds.size.x * 0.22 or shell_bounds.size.z > bounds.size.x * 0.26 or \
+        if shell_bounds.size.x < bounds.size.x * 0.14 or shell_bounds.size.x > bounds.size.x * 0.16 or \
+                shell_bounds.size.z < bounds.size.x * 0.16 or shell_bounds.size.z > bounds.size.x * 0.19 or \
                 shell_bounds.size.y > bounds.size.y * 0.16:
             _fail("shoulder shell must be a curved 3D volume, not a flat plate")
             return
@@ -84,6 +84,18 @@ func _check() -> void:
     adapter.call("_process", 0.30)
     if rig.get_bone_pose_rotation(arm_id).angle_to(before) < 0.04:
         _fail("original arm pose must still respond to steer and boost")
+        return
+    # Regression for the full front/chase silhouette, not isolated shells.
+    var mantle := hero.get_node_or_null("ExternalSkinnedFlightMantle") as Node
+    var thrusters := hero.get_node_or_null("ExternalSkinnedShoulderThrusters") as Node
+    if mantle == null or thrusters == null:
+        _fail("integrated streamlined shoulder/coat assembly missing")
+        return
+    var mantle_fraction := float(mantle.get("mantle_span")) / bounds.size.y
+    var thruster_fraction := float(thrusters.get("shoulder_span")) / bounds.size.x
+    if mantle_fraction < 0.38 or mantle_fraction > 0.40 or \
+            thruster_fraction < 0.44 or thruster_fraction > 0.49:
+        _fail("compact mantle and recessed thrusters must fit the skinned shoulders together")
         return
     print("EXTERNAL PAULDRON TEST PASSED: %d vertices, two closed original-skinned sculpted shoulders and animated arms" % int(controller.get("generated_vertices")))
     quit(0)
