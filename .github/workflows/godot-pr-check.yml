@@ -167,6 +167,17 @@ jobs:
             --script res://rider_external_character_visual_capture_test.gd 2>&1 | tee /tmp/quaternius-visual.log
           grep -Fq 'QUATERNIUS VISUAL QA PASSED' /tmp/quaternius-visual.log
           test "$(find /tmp/learnquest-quaternius-qa -name '*.png' | wc -l)" -eq 24
+      - name: Compare rigid versus genuinely skinned rear hair in 16 landscape frames
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-skinned-hair-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_SKINNED_HAIR_OUTPUT=/tmp/learnquest-skinned-hair-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_skinned_back_hair_visual_capture_test.gd 2>&1 | tee /tmp/skinned-hair-visual.log
+          grep -Fq 'SKINNED BACK HAIR VISUAL QA PASSED' /tmp/skinned-hair-visual.log
+          test "$(find /tmp/learnquest-skinned-hair-qa -name '*.png' | wc -l)" -eq 16
       - name: Render 32 real V123/V124 neutral and action silhouette frames
         shell: bash
         run: |
@@ -305,6 +316,13 @@ jobs:
         with:
           name: learnquest-v124-hoverboots-before-after
           path: /tmp/learnquest-boots-qa/*.png
+          if-no-files-found: ignore
+      - name: Upload genuine skinned versus rigid hair landscape comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-skinned-hair-before-after
+          path: /tmp/learnquest-skinned-hair-qa/*.png
           if-no-files-found: ignore
       - name: Upload V124 volumetric boost wake before-after landscape frames
         if: always()
