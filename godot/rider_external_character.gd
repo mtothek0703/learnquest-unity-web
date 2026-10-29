@@ -122,6 +122,17 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     else:
         headgear.queue_free()
         push_warning("CC0 hero headwear could not fit imported Head bone")
+    # The long rear hair curtain is no longer a rigid Head-bone shell.
+    # Convert its actual sculpted triangles to the imported four-weight Skin
+    # in original rest coordinates; keep animated loose locks and facial
+    # attachments on Head. The rigid source remains as a safe fallback.
+    var skinned_hair := preload("res://rider_external_skinned_back_hair.gd").new() as Node
+    skinned_hair.name = "ExternalSkinnedBackHair"
+    character.add_child(skinned_hair)
+    var hair_headwear := skeleton.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
+    if not bool(skinned_hair.call("install", skinned_meshes, skeleton, hair_headwear)):
+        skinned_hair.queue_free()
+        push_warning("CC0 weighted rear hair unavailable; Head-attached original preserved")
     # Build a real four-weighted, curved flight jacket from the original
     # humanoid triangles. It shares the imported Skin and skeleton.
     var outfit := preload("res://rider_external_skinned_outfit.gd").new() as Node
