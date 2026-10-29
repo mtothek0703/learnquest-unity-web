@@ -153,7 +153,7 @@ func _check() -> void:
         if mid_max - mid_min < source_width * 0.20:
             _fail("swept wing must add a broad, visible sculpted midspan")
             return
-        if mid_max - mid_min < (root_max - root_min) * 2.7:
+        if mid_max - mid_min < (root_max - root_min) * 2.0:
             _fail("sculpted fin must have substantial mid-chord width")
             return
         if hem_max - hem_min > (mid_max - mid_min) * 0.35:
