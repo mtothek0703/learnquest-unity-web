@@ -186,6 +186,52 @@ func _check() -> void:
     if absf(jaw_edge.x - mobile_face_center.x) < mobile_face_size.x * 0.25:
         _fail("face jaw remains too narrow for readable stylized expression")
         return
+    # The front portrait must use shallow, CLOSED sculpted iris/pupil lenses,
+    # not detached spherical beads. They keep their original gaze/blink nodes
+    # and sit close to the same real Head-attached almond-eye surface.
+    var iris_count := 0
+    var pupil_count := 0
+    for feature in headwear.find_children("*", "MeshInstance3D", false, false):
+        var lens := feature as MeshInstance3D
+        var feature_name := String(lens.name)
+        if feature_name.begins_with("IrisCatchlight"):
+            continue
+        if not feature_name.begins_with("Iris") and not feature_name.begins_with("Pupil"):
+            continue
+        if feature_name.begins_with("Iris"):
+            iris_count += 1
+        else:
+            pupil_count += 1
+        if not lens.mesh is ArrayMesh or lens.mesh.get_surface_count() != 1:
+            _fail("iris and pupils must use closed sculpted lenses, not spheres")
+            return
+        var lens_arrays: Array = lens.mesh.surface_get_arrays(0)
+        var lens_vertices: PackedVector3Array = lens_arrays[Mesh.ARRAY_VERTEX]
+        var lens_normals: PackedVector3Array = lens_arrays[Mesh.ARRAY_NORMAL]
+        if lens_vertices.size() < 1000 or lens_normals.size() != lens_vertices.size():
+            _fail("convex eye lenses require substantial modeled surface and normals")
+            return
+        var lens_bounds := lens.mesh.get_aabb()
+        if lens_bounds.size.z >= lens_bounds.size.x * 0.5:
+            _fail("iris/pupil lens has become a protruding sphere")
+            return
+    if iris_count != 2 or pupil_count != 2:
+        _fail("both eyes must retain separate iris and pupil animation nodes")
+        return
+    var white_left := headwear.find_child("EyeWhite*", false, false) as MeshInstance3D
+    var iris_left := headwear.find_child("Iris*", false, false) as MeshInstance3D
+    var pupil_left := headwear.find_child("Pupil*", false, false) as MeshInstance3D
+    if white_left == null or iris_left == null or pupil_left == null:
+        _fail("recessed eye geometry missing")
+        return
+    var forward := float(headwear.get("face_sign"))
+    var white_front := forward * white_left.position.z + white_left.scale.z * 0.72
+    var iris_front := forward * iris_left.position.z + iris_left.scale.z * 0.20
+    var pupil_front := forward * pupil_left.position.z + pupil_left.scale.z * 0.20
+    if iris_front < white_front or pupil_front <= iris_front or \
+            pupil_front - white_front > white_left.scale.z * 0.75:
+        _fail("iris/pupil must be layered on the almond eye without floating beads")
+        return
     var eye_white := headwear.find_child("EyeWhite*", false, false) as MeshInstance3D
     var smile_mesh := headwear.get_node_or_null("CurvedSmile") as MeshInstance3D
     if eye_white == null or eye_white.scale.x < mobile_face_size.x * 0.12 * float(headwear.get("visual_scale")):
