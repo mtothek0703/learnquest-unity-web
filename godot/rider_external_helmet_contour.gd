@@ -5,8 +5,14 @@ extends RefCounted
 ## Geometry is procedural, self-contained, and uses no third-party asset.
 const VERTICAL_STEPS := 18
 const DEPTH_STEPS := 12
+var _center: Vector3
+var _size: Vector3
+var _facing: float
 
 func append_to(surface: SurfaceTool, center: Vector3, size: Vector3, face_sign: float) -> void:
+    _center = center
+    _size = size
+    _facing = face_sign
     for side in [-1.0, 1.0]:
         for row in range(VERTICAL_STEPS):
             var t0 := float(row) / float(VERTICAL_STEPS)
@@ -55,14 +61,23 @@ func _point(c: Vector3, s: Vector3, facing: float, side: float,
         c.y + s.y * (0.35 - 0.59 * t + 0.014 * sin(PI * u) * sin(PI * t)),
         c.z + facing * s.z * depth)
 
+func _vertex_normal(vertex: Vector3) -> Vector3:
+    # Identical shared positions get identical normals across every panel,
+    # including closed edge rims. This avoids visible mobile-lighting seams.
+    var side := -1.0 if vertex.x < _center.x else 1.0
+    var t := clampf((0.35 - (vertex.y - _center.y) / _size.y) / 0.59, 0.0, 1.0)
+    var shell := 0.560 + 0.023 * sin(PI * t)
+    var outer := absf(vertex.x - _center.x) / _size.x > shell + 0.004
+    return Vector3(side * (1.0 if outer else -1.0),
+        0.10 * (0.5 - t), _facing * (0.12 if outer else -0.12)).normalized()
+
 func _quad(surface: SurfaceTool, a: Vector3, b: Vector3,
         c: Vector3, d: Vector3, expected: Vector3) -> void:
-    var normal := (b - a).cross(c - a).normalized()
-    if normal.dot(expected) < 0.0:
+    var geometric := (b - a).cross(c - a).normalized()
+    if geometric.dot(expected) < 0.0:
         var swap := b
         b = d
         d = swap
-        normal = -normal
     for vertex in [a, b, c, a, c, d]:
-        surface.set_normal(normal)
+        surface.set_normal(_vertex_normal(vertex))
         surface.add_vertex(vertex)
