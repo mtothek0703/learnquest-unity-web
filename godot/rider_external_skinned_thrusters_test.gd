@@ -74,7 +74,9 @@ func _check() -> void:
         var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
         var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
         var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
-        if vertices.size() < 1000 or weights.size() != vertices.size() * 4 or bones.size() != vertices.size() * 4:
+        var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+        if vertices.size() < 1000 or weights.size() != vertices.size() * 4 or bones.size() != vertices.size() * 4 or \
+                normals.size() != vertices.size() or normals[2].dot(normals[7]) < 0.995:
             _fail("missing real four-weight GPU skinning on nacelle/core")
             return
         for i in range(vertices.size()):
