@@ -198,6 +198,17 @@ jobs:
             --script res://hoverboard_turbine_visual_capture_test.gd 2>&1 | tee /tmp/turbine-visual.log
           grep -Fq 'TURBINE VISUAL QA PASSED' /tmp/turbine-visual.log
           test "$(find /tmp/learnquest-turbine-qa -name '*.png' | wc -l)" -eq 8
+      - name: Render V124 paired 3D boost wakes in both phone landscape ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-wake-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_WAKE_OUTPUT=/tmp/learnquest-wake-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://hoverboard_boost_wake_visual_capture_test.gd 2>&1 | tee /tmp/boost-wake-visual.log
+          grep -Fq 'BOOST WAKE VISUAL QA PASSED' /tmp/boost-wake-visual.log
+          test "$(find /tmp/learnquest-wake-qa -name '*.png' | wc -l)" -eq 8
       - name: Render actual V124 neutral versus action face and pose frames
         shell: bash
         run: |
@@ -292,6 +303,13 @@ jobs:
         with:
           name: learnquest-v124-hoverboots-before-after
           path: /tmp/learnquest-boots-qa/*.png
+          if-no-files-found: ignore
+      - name: Upload V124 volumetric boost wake before-after landscape frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-boost-wake-before-after
+          path: /tmp/learnquest-wake-qa/*.png
           if-no-files-found: ignore
       - name: Upload V124 twin-turbine before-after landscape frames
         if: always()
