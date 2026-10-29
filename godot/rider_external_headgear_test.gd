@@ -30,11 +30,11 @@ func _check() -> void:
     if headwear == null or headwear.bone_name != "Head":
         _fail("headwear must be attached to original Head bone")
         return
-    # Mobile art-direction pass: the real Head-bone accessory must be large
-    # enough to read at 16:9 while retaining the imported skinned body.
+    # Balanced 360-degree silhouette: the Head-bone portrait remains readable
+    # at mobile landscape size without overpowering the real skinned torso.
     var scale_factor := float(headwear.get("visual_scale"))
-    if scale_factor < 2.55 or scale_factor > 2.75:
-        _fail("hero face is not sized for the readable V123-like mobile portrait")
+    if scale_factor < 2.20 or scale_factor > 2.40:
+        _fail("integrated hero portrait scale must balance the skinned torso")
         return
     var region := headwear.get("head_bounds") as AABB
     var rear_center := region.get_center()
