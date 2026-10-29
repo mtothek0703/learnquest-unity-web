@@ -61,6 +61,17 @@ func _check() -> void:
     if points.size() < 3000 or colors.size() != points.size():
         _fail("chassis needs substantial shaded custom geometry")
         return
+    # The smooth-shaded chassis must remain legible in the dark chase camera.
+    # Highly metallic dark material lost the old faceted specular highlights.
+    var chassis_material := chassis.material_override as StandardMaterial3D
+    if chassis_material == null or chassis_material.metallic > 0.50 or \
+            chassis_material.roughness < 0.40:
+        _fail("smooth chassis needs readable satin material, not dark mirror metal")
+        return
+    var upper_tint: Color = sculpt.call("_shell_color_probe") if sculpt.has_method("_shell_color_probe") else Color("#283956").lerp(Color("#7089a8"), 0.65)
+    if upper_tint.get_luminance() < 0.10:
+        _fail("smooth chassis top lost its readable base color")
+        return
     var nose: float = sculpt.call("_half_width", 0.0)
     var middle: float = sculpt.call("_half_width", 0.52)
     var tail: float = sculpt.call("_half_width", 1.0)
