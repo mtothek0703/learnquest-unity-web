@@ -50,7 +50,7 @@ func _check() -> void:
         _fail("expected curved cap, face shield, visor edges and multiple hair locks")
         return
     for expected in ["CurvedFlightHelmetShell", "TranslucentFaceShield", "SculptedContinuousFace",
-            "SculptedBackHairCurtain", "WindSweptBackLock0", "WindSweptBackLock8",
+            "SculptedBackHairCurtain", "WindSweptBackLock0", "WindSweptBackLock4",
             "EyeWhite*", "Iris*", "Pupil*", "CurvedSmile"]:
         if headwear.find_child(expected, false, false) == null:
             _fail("missing expressive helmet/face feature: " + expected)
@@ -89,11 +89,11 @@ func _check() -> void:
     if back_hair == null or back_hair.mesh == null or back_hair.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() < 1000:
         _fail("chase camera must have substantial curved back-hair geometry")
         return
-    # Nine substantial closed ribbons must replace round pipe-like rear locks.
+    # Five broad sculpted locks replace nine narrow parallel striped ribbons.
     # Their broad faces should be much wider than their thickness at midspan.
     var rear_locks := headwear.find_children("WindSweptBackLock*", "MeshInstance3D", false, false)
-    if rear_locks.size() != 9:
-        _fail("nine Head-attached rear sculpted locks must remain")
+    if rear_locks.size() != 5:
+        _fail("five broad Head-attached rear sculpted locks must remain")
         return
     for item in rear_locks:
         var lock := item as MeshInstance3D
@@ -292,7 +292,7 @@ func _check() -> void:
             absf(shoulder_edge.x - center.x) < absf(tip_edge.x - center.x) * 1.35:
         _fail("rear hair must have a sculpted shoulder flare and tapered tips")
         return
-    var visible_lock := headwear.get_node_or_null("WindSweptBackLock4") as MeshInstance3D
+    var visible_lock := headwear.get_node_or_null("WindSweptBackLock2") as MeshInstance3D
     # The previous bright violet noodle hair distracted from the 65-bone
     # adventurer silhouette. Require layered, matte chestnut locks, a darker
     # continuous undercoat and a shortened, side-swept neck-length profile.
@@ -321,7 +321,7 @@ func _check() -> void:
     # A real chase render exposed nine straight, vertically stacked rods.
     # Require actual wide, tapered 3D strands fanning out at shoulder level.
     var left_fan := headwear.get_node_or_null("WindSweptBackLock0") as MeshInstance3D
-    var right_fan := headwear.get_node_or_null("WindSweptBackLock8") as MeshInstance3D
+    var right_fan := headwear.get_node_or_null("WindSweptBackLock4") as MeshInstance3D
     if left_fan == null or right_fan == null:
         _fail("missing bilateral swept rear-hair silhouette")
         return
@@ -337,8 +337,8 @@ func _check() -> void:
     # a hollow cage in real chase images. All nine must now hug the sculpted
     # volume while keeping a broad, readable shoulder-level silhouette.
     var attached_locks := headwear.find_children("WindSweptBackLock*", "MeshInstance3D", false, false)
-    if attached_locks.size() != 9:
-        _fail("expected nine surface-following sculpted rear locks")
+    if attached_locks.size() != 5:
+        _fail("expected five surface-following sculpted rear locks")
         return
     for item in attached_locks:
         var lock := item as MeshInstance3D
@@ -476,6 +476,13 @@ func _check() -> void:
     var protrusion := (nose_point.z - side_point.z) * float(headwear.get("face_sign"))
     if protrusion < face_size.z * 0.08:
         _fail("sculpted nose/cheek relief must remain visible in front view")
+        return
+    # Bilateral profile QA: the nose should be sculpted, but the entire
+    # cosmetic face must not project far ahead of the original skull.
+    # Check the actual generated surface, not a screenshot-only heuristic.
+    var profile_forward := (nose_point.z - face_center.z) * float(headwear.get("face_sign"))
+    if profile_forward > face_size.z * 0.68 or profile_forward < face_size.z * 0.54:
+        _fail("face profile must be integrated with the skull, not a protruding mask")
         return
     # Portrait silhouette gate: the continuous head surface must have
     # wider cheek/jaw anatomy and a less elongated profile, with facial
