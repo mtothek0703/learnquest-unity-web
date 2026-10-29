@@ -66,7 +66,9 @@ func _capture() -> void:
         _fail("rigid and weighted hair must both exist for direct comparison")
         return
     var wind_controller := hero.get_node_or_null("ExternalSkinnedBackHair") as Node
-    var lock_controller := wind_controller.get("weighted_locks") as Node if wind_controller != null else null
+    var lock_controller: Node
+    if wind_controller != null:
+        lock_controller = wind_controller.get("weighted_locks") as Node
     if lock_controller == null:
         _fail("all five weighted hair locks required for real rigid-vs-skinned visual QA")
         return
