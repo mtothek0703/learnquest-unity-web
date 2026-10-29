@@ -108,6 +108,8 @@ jobs:
           grep -Fq 'SKINNED GLOVE TEST PASSED' /tmp/skinned-gloves.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://hoverboard_sculpted_hull_test.gd 2>&1 | tee /tmp/sculpted-hoverboard.log
           grep -Fq 'SCULPTED HOVERBOARD TEST PASSED' /tmp/sculpted-hoverboard.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://hoverboard_boost_wake_test.gd 2>&1 | tee /tmp/boost-wake.log
+          grep -Fq 'VOLUMETRIC BOOST WAKE TEST PASSED' /tmp/boost-wake.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://powerup_vfx_test.gd 2>&1 | tee /tmp/powerup-vfx.log
           grep -Fq 'POWERUP VFX TEST PASSED' /tmp/powerup-vfx.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://cinematic_city_districts_test.gd 2>&1 | tee /tmp/city-districts.log
