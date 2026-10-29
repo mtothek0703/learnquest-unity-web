@@ -209,6 +209,13 @@ jobs:
             --script res://rider_visual_capture_test.gd 2>&1 | tee /tmp/godot-visual-capture.log
           grep -Fq 'VISUAL CAPTURE TEST PASSED' /tmp/godot-visual-capture.log
           test "$(find /tmp/learnquest-visual-qa -name '*.png' | wc -l)" -eq 20
+          mkdir -p /tmp/learnquest-wake-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_WAKE_OUTPUT=/tmp/learnquest-wake-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://hoverboard_boost_wake_visual_capture_test.gd 2>&1 | tee /tmp/godot-boost-wake-visual.log
+          grep -Fq 'BOOST WAKE VISUAL QA PASSED' /tmp/godot-boost-wake-visual.log
+          test "$(find /tmp/learnquest-wake-qa -name '*.png' | wc -l)" -eq 8
           mkdir -p /tmp/learnquest-powerup-qa
           LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_POWERUP_OUTPUT=/tmp/learnquest-powerup-qa \
             timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
@@ -341,6 +348,13 @@ jobs:
             /tmp/godot-canyon-geodes-visual.log
           if-no-files-found: ignore
 
+      - name: Upload V124 volumetric boost wake before-after landscape frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-boost-wake-before-after
+          path: /tmp/learnquest-wake-qa/*.png
+          if-no-files-found: ignore
       - name: Upload actual rendered landscape QA images
         if: always()
         uses: actions/upload-artifact@v4
