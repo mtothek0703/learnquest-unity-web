@@ -92,9 +92,9 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
         # Match the expressive V123 mobile head-to-body ratio without scaling
         # the original 65-bone GLB or its GPU skin. Rear drape is shortened
         # in Head-local space to protect the shoulders during lean/jump.
-        # Restore a readable stylized face/head silhouette at mobile chase scale.
+        # Keep the portrait legible without the previous oversized cartoon head.
         # The imported original head/65-bone rig remain untouched underneath.
-        headgear.call("set_visual_scale", 2.62)
+        headgear.call("set_visual_scale", 2.32)
         # Wind-reactive rear locks remain Head-bone attachments. Pivoted
         # movement preserves their scalp roots and avoids extra draw calls.
         var hair_motion := preload("res://rider_external_hair_dynamics.gd").new() as Node
