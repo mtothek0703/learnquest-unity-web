@@ -39,6 +39,8 @@ func _check() -> void:
     if int(controller.get("generated_vertices")) < 6000:
         _fail("shoulder modules lack substantial actual 3D geometry")
         return
+    # The original large glowing shoulder cylinders read as headphones in
+    # the chase camera. This gate enforces narrow, recessed, mobile-scale pods.
     var active_arm_weights := 0
     for node in shells + cores:
         var mesh := node as MeshInstance3D
@@ -58,11 +60,14 @@ func _check() -> void:
         if absf(pod_bounds.get_center().x - source_bounds.get_center().x) > source_bounds.size.x * 0.34:
             _fail("shoulder nacelle is detached from the actual torso")
             return
-        if pod_bounds.size.x > source_bounds.size.x * 0.23:
+        if pod_bounds.size.x > source_bounds.size.x * 0.17 or \
+                pod_bounds.size.z > source_bounds.size.x * 0.15 or \
+                pod_bounds.size.y > source_bounds.size.y * 0.13:
             _fail("shoulder nacelle is oversized for a mobile character")
             return
         var mat := mesh.material_override as StandardMaterial3D
-        if mat == null or not mat.emission_enabled:
+        if mat == null or not mat.emission_enabled or \
+                mat.emission_energy_multiplier > (1.10 if String(mesh.name).contains("Core") else 0.20):
             _fail("shoulder hardware needs emissive mobile-friendly materials")
             return
         var arrays: Array = mesh.mesh.surface_get_arrays(0)
