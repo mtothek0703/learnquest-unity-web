@@ -90,6 +90,11 @@ func _extract(source: MeshInstance3D, from_height: float, to_height: float, is_b
             if polygon.size() < 3:
                 continue
             for corner in range(1, polygon.size() - 1):
+                var a: Vector3 = polygon[0]["position"]
+                var b: Vector3 = polygon[corner]["position"]
+                var c: Vector3 = polygon[corner + 1]["position"]
+                if (b - a).cross(c - a).length_squared() <= 0.000000000001:
+                    continue
                 for vertex in [polygon[0], polygon[corner], polygon[corner + 1]]:
                     var point: Vector3 = vertex["position"]
                     var normal: Vector3 = vertex["normal"]
@@ -134,7 +139,26 @@ func _clip_to_height(polygon: Array[Dictionary], plane_y: float,
         if current_inside:
             clipped.append(current)
         previous = current
-    return clipped
+    return _deduplicate_polygon(clipped)
+
+func _deduplicate_polygon(polygon: Array[Dictionary]) -> Array[Dictionary]:
+    # Plane-aligned imported vertices can be emitted twice by clipping.
+    # Removing consecutive duplicates prevents zero-area triangles and
+    # unstable normals at the animated waist, cuff and collar boundaries.
+    var unique: Array[Dictionary] = []
+    for corner in polygon:
+        var point: Vector3 = corner["position"]
+        if not unique.is_empty():
+            var previous: Vector3 = unique[unique.size() - 1]["position"]
+            if point.distance_squared_to(previous) <= 0.0000000001:
+                continue
+        unique.append(corner)
+    if unique.size() > 1:
+        var first: Vector3 = unique[0]["position"]
+        var last: Vector3 = unique[unique.size() - 1]["position"]
+        if first.distance_squared_to(last) <= 0.0000000001:
+            unique.pop_back()
+    return unique
 
 func _interpolate_corner(a: Dictionary, b: Dictionary, t: float) -> Dictionary:
     # An intersection can mix up to eight distinct imported bone influences.

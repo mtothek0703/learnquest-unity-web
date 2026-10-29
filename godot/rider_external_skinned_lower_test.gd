@@ -272,5 +272,34 @@ func _check() -> void:
     if rig.get_bone_pose_rotation(calf).angle_to(before) < 0.02:
         _fail("lower-body imported bone did not animate")
         return
+    # A source vertex exactly on a cut plane used to be duplicated by
+    # Sutherland-Hodgman clipping, producing zero-area skinned triangles.
+    var boundary_triangle: Array[Dictionary] = [
+        {"position": Vector3(0.0, 0.5, 0.0), "normal": Vector3.FORWARD,
+            "bones": PackedInt32Array([0, 0, 0, 0]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
+        {"position": Vector3(1.0, 0.25, 0.0), "normal": Vector3.FORWARD,
+            "bones": PackedInt32Array([1, 1, 1, 1]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
+        {"position": Vector3(0.0, 0.75, 1.0), "normal": Vector3.FORWARD,
+            "bones": PackedInt32Array([2, 2, 2, 2]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])}
+    ]
+    var boundary_result: Array[Dictionary] = lower.call(
+        "_clip_to_height", boundary_triangle, 0.5, true)
+    if boundary_result.size() != 3:
+        _fail("boot/trouser seam clipping must remove coincident boundary vertices")
+        return
+    for boundary_index in range(boundary_result.size()):
+        var current_point: Vector3 = boundary_result[boundary_index]["position"]
+        var next_point: Vector3 = boundary_result[(boundary_index + 1) % boundary_result.size()]["position"]
+        if current_point.distance_squared_to(next_point) <= 0.0000000001:
+            _fail("boot/trouser seam clipping retained a zero-length edge")
+            return
+    var edge_a: Vector3 = boundary_result[1]["position"] - boundary_result[0]["position"]
+    var edge_b: Vector3 = boundary_result[2]["position"] - boundary_result[0]["position"]
+    if edge_a.cross(edge_b).length_squared() <= 0.000000000001:
+        _fail("boot/trouser seam clipping created a zero-area polygon")
+        return
     print("EXTERNAL SKINNED LOWER TEST PASSED: %d weighted trouser/boot vertices on original 65-bone Skin" % combined)
     quit(0)
