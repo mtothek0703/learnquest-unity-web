@@ -33,7 +33,7 @@ func _check() -> void:
     # Balanced 360-degree silhouette: the Head-bone portrait remains readable
     # at mobile landscape size without overpowering the real skinned torso.
     var scale_factor := float(headwear.get("visual_scale"))
-    if scale_factor < 2.20 or scale_factor > 2.40:
+    if scale_factor < 2.04 or scale_factor > 2.16:
         _fail("integrated hero portrait scale must balance the skinned torso")
         return
     var region := headwear.get("head_bounds") as AABB
@@ -241,10 +241,21 @@ func _check() -> void:
         return
     var eye_white := headwear.find_child("EyeWhite*", false, false) as MeshInstance3D
     var smile_mesh := headwear.get_node_or_null("CurvedSmile") as MeshInstance3D
-    if eye_white == null or eye_white.scale.x < mobile_face_size.x * 0.12 * float(headwear.get("visual_scale")):
-        _fail("eyes must be modeled large enough for mobile gameplay")
+    if eye_white == null:
+        _fail("both modeled eyes must remain visible")
         return
-    if smile_mesh == null or smile_mesh.mesh.get_aabb().size.x < mobile_face_size.x * 0.44:
+    var eye_width_ratio := eye_white.scale.x / (mobile_face_size.x * float(headwear.get("visual_scale")))
+    if eye_width_ratio < 0.098 or eye_width_ratio > 0.114:
+        _fail("athletic portrait eyes must be readable without oversized cartoon proportions")
+        return
+    var iris_width_ratio := iris_left.scale.x / eye_white.scale.x
+    var pupil_width_ratio := pupil_left.scale.x / iris_left.scale.x
+    if iris_width_ratio < 0.37 or iris_width_ratio > 0.45 or \
+            pupil_width_ratio < 0.54 or pupil_width_ratio > 0.69:
+        _fail("smaller eye, iris and pupil proportions must remain coordinated")
+        return
+    if smile_mesh == null or smile_mesh.mesh.get_aabb().size.x < mobile_face_size.x * 0.42 or \
+            smile_mesh.mesh.get_aabb().size.x > mobile_face_size.x * 0.53:
         _fail("sculpted smile must span the wider rounded jaw")
         return
     var rear_arrays: Array = back_hair.mesh.surface_get_arrays(0)
@@ -477,9 +488,14 @@ func _check() -> void:
     if brow_top.y - face_center.y > face_size.y * 0.50:
         _fail("portrait facial shell is still vertically elongated")
         return
+    var chin_edge: Vector3 = headwear.call("_face_point", face_center, face_size, 0.0, 0.78)
+    if chin_edge.x - face_center.x >= (cheek_side.x - face_center.x) * 0.57:
+        _fail("athletic portrait needs a genuinely tapered jaw, not a round face mask")
+        return
     var portrait_smile := headwear.get_node_or_null("CurvedSmile") as MeshInstance3D
-    if portrait_smile == null or portrait_smile.mesh.get_aabb().size.x < face_size.x * 0.53:
-        _fail("wider smile must remain actual curved facial geometry")
+    if portrait_smile == null or portrait_smile.mesh.get_aabb().size.x < face_size.x * 0.42 or \
+            portrait_smile.mesh.get_aabb().size.x > face_size.x * 0.53:
+        _fail("restrained smile must remain actual curved facial geometry")
         return
     var highlights := headwear.find_children("IrisCatchlight*", "MeshInstance3D", false, false)
     if highlights.size() != 4:
