@@ -210,7 +210,9 @@ func _build_headwear() -> void:
         _mesh("VisorLightEdge%d" % int(edge), _tube(points, s.x * 0.018, 6), edge_mat)
 
     var hair_mat := _material(Color(0.22, 0.125, 0.12), 0.02, 0.76)
-    var highlight := _material(Color(0.42, 0.235, 0.19), 0.03, 0.66)
+    # Restrained warm highlights blend with the continuous underlayer;
+    # the previous high-contrast alternating stripes looked like cables.
+    var highlight := _material(Color(0.32, 0.185, 0.155), 0.02, 0.76)
     # Rebuild the crown as three broad, closed swept hair volumes that follow
     # the same sculpted rear shell. Seven free-standing round crown tubes and
     # two side tubes previously fragmented the head silhouette in chase view.
@@ -277,13 +279,18 @@ func _build_headwear() -> void:
         var across := (float(strand) - 2.5) / 2.5
         var root := Vector3(c.x + across * radius_x * 0.69,
             crown_y + cap_height * 0.25, c.z + face_sign * radius_z * 0.38)
-        var tip := Vector3(c.x + across * radius_x * 0.88 + radius_x * 0.06,
-            head_bounds.position.y + s.y * (0.72 + 0.025 * absf(across)),
-            c.z + face_sign * radius_z * (0.94 - 0.09 * absf(across)))
-        var control := Vector3(c.x + across * radius_x * 0.94,
-            crown_y + cap_height * 0.57, c.z + face_sign * radius_z * 0.91)
+        # Six asymmetric, overlapping swept bangs now descend onto the
+        # forehead instead of standing as six tiny spikes above it. Their
+        # lowest points remain ABOVE the eye centers (0.59 of head height).
+        # No new meshes, bones, materials, collisions or draw calls.
+        var sweep := radius_x * (0.16 + 0.08 * (1.0 - absf(across)))
+        var tip := Vector3(c.x + across * radius_x * 0.76 + sweep,
+            head_bounds.position.y + s.y * (0.67 + 0.05 * absf(across)),
+            c.z + face_sign * radius_z * (0.96 - 0.09 * absf(across)))
+        var control := Vector3(c.x + across * radius_x * 0.90 + sweep * 0.62,
+            crown_y + cap_height * 0.53, c.z + face_sign * radius_z * 0.91)
         _mesh("SculptedTaperedFringe%d" % strand,
-            _sculpted_fringe_ribbon(root, control, tip, s.x * 0.20, s.z * 0.035),
+            _sculpted_fringe_ribbon(root, control, tip, s.x * 0.24, s.z * 0.038),
             fringe_mat if strand % 2 == 0 else hair_mat)
     _build_expression(c, s)
 
