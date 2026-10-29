@@ -98,6 +98,18 @@ func _check() -> void:
     # Verify genuine geometric width and boot volume on both legs, not only
     # material colors. The same profile must mirror without lateral drift.
     var sample_bounds := AABB(Vector3(-0.6, 0.0, -0.4), Vector3(1.2, 3.0, 0.8))
+    # Calf and cuff sculpt must change the actual GPU lighting normals;
+    # imported unmodified skin normals previously flattened all 3D relief.
+    var normal_tool := preload("res://rider_sculpted_surface_normals.gd")
+    var boot_forward := Vector3(0.0, 0.0, float(lower.get("face_sign")))
+    var cuff_normal: Vector3 = normal_tool.corrected(
+        Vector3(0.28, 0.72, 0.0), boot_forward, sample_bounds,
+        Callable(lower, "_sculpt_offset").bind(true))
+    if not cuff_normal.is_finite() or absf(cuff_normal.length() - 1.0) > 0.001 or \
+            cuff_normal.dot(boot_forward) < 0.65 or \
+            cuff_normal.dot(boot_forward) > 0.995:
+        _fail("skinned boot cuff needs coherent relief-aware outward normals")
+        return
     var right_knee: Vector3 = lower.call("_sculpt_offset",
         Vector3(0.28, 0.915, 0.0), Vector3.RIGHT, sample_bounds, false)
     var left_knee: Vector3 = lower.call("_sculpt_offset",
