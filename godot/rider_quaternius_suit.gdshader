@@ -47,9 +47,21 @@ void fragment() {
     float seams = exp(-pow((x - 0.22) * 34.0, 2.0)) * torso;
     float collar = exp(-pow((y - 0.78) * 40.0, 2.0)) * (1.0 - uncovered);
     float knee = exp(-pow((y - 0.30) * 28.0, 2.0)) * outer;
+    // The imported 65-bone under-suit now shares the tailored jacket and
+    // lower garment's normalized fabric grain. This avoids a smooth plastic
+    // torso showing through articulated joints during surfing poses.
+    vec2 textile_uv = vec2((rest_point.x - rest_center_x) / max(rest_width, 0.001),
+        (rest_point.y - rest_bottom) / max(rest_height, 0.001));
+    float weave = sin(textile_uv.x * 82.0) * sin(textile_uv.y * 104.0);
+    float carbon_fiber = sin(textile_uv.x * 104.0 + textile_uv.y * 31.0)
+        * sin(textile_uv.y * 110.0 - textile_uv.x * 25.0);
+    float under_armor = clamp(torso * center * 0.70 + boots * 0.85, 0.0, 1.0);
+    cloth *= 0.986 + 0.014 * weave * (1.0 - under_armor)
+        + 0.038 * carbon_fiber * under_armor;
     ALBEDO = mix(cloth, skin, uncovered);
     METALLIC = mix(0.21 + boots * 0.13, 0.02, uncovered);
-    ROUGHNESS = mix(0.52 - boots * 0.13, 0.72, uncovered);
+    ROUGHNESS = mix(0.52 - boots * 0.13 + weave * 0.016 * (1.0 - under_armor)
+        - carbon_fiber * 0.018 * under_armor, 0.72, uncovered);
     EMISSION = vec3(0.04, 0.51, 0.80) * (seams * 0.38 + collar * 0.36)
         + magenta * knee * 0.12;
     float silhouette_rim = pow(1.0 - abs(dot(normalize(NORMAL), normalize(VIEW))), 2.6);
