@@ -80,6 +80,73 @@ func _check() -> void:
             rig.get_bone_pose_rotation(right_shoulder_id).angle_to(neutral_right_shoulder) > 0.04:
         _fail("both original shoulders must recover their compact idle stance")
         return
+    # A full second of identical carve/boost at 30 and 60 Hz must converge
+    # to the same original bone pose. This catches frame-dependent slerp and
+    # asymmetric knee weight transfer regressions on mobile displays.
+    var comparison_riders: Array[Node3D] = []
+    var comparison_adapters: Array[Node] = []
+    var comparison_rigs: Array[Skeleton3D] = []
+    for refresh_rate in [30, 60]:
+        var sample := preload("res://rider_character.tscn").instantiate() as Node3D
+        sample.set("prefer_cc0_rigged_hero", true)
+        root.add_child(sample)
+        comparison_riders.append(sample)
+    await process_frame
+    for sample in comparison_riders:
+        var sample_adapter := sample.get_node_or_null("ExternalHeroPose") as Node
+        if sample_adapter == null:
+            _fail("refresh-rate sample lost external pose adapter")
+            return
+        var sample_rig := sample_adapter.get("skeleton") as Skeleton3D
+        if sample_rig == null or sample_rig.get_bone_count() < 50:
+            _fail("refresh-rate sample lost real imported skin")
+            return
+        sample_adapter.set_process(false)
+        sample.set("lean", 0.8)
+        sample.set("boosting", true)
+        comparison_adapters.append(sample_adapter)
+        comparison_rigs.append(sample_rig)
+    for sample_index in range(2):
+        var fps := 30 if sample_index == 0 else 60
+        for step in range(fps):
+            comparison_adapters[sample_index].call("_process", 1.0 / float(fps))
+    for bone in ["pelvis", "spine_01", "upperarm_l", "upperarm_r",
+            "thigh_l", "thigh_r", "calf_l", "calf_r", "foot_l", "foot_r"]:
+        var a := comparison_rigs[0].find_bone(bone)
+        var b := comparison_rigs[1].find_bone(bone)
+        if a < 0 or b < 0:
+            _fail("missing source bone in refresh-rate comparison: " + bone)
+            return
+        var difference := comparison_rigs[0].get_bone_pose_rotation(a).angle_to(
+            comparison_rigs[1].get_bone_pose_rotation(b))
+        if difference > 0.025:
+            _fail("30/60 Hz animation divergence at " + bone + ": " + str(difference))
+            return
+    var comparison_rig := comparison_rigs[1]
+    var left_calf := comparison_rig.find_bone("calf_l")
+    var right_calf := comparison_rig.find_bone("calf_r")
+    if absf(comparison_rig.get_bone_pose_rotation(left_calf).get_angle() -
+            comparison_rig.get_bone_pose_rotation(right_calf).get_angle()) < 0.08:
+        _fail("carving must transfer weight asymmetrically across the real knee bones")
+        return
+    # A touchdown generates short-lived knee/hip compression without moving
+    # the collision body or detaching the imported skin from the hoverboard.
+    var landing_rider := comparison_riders[1]
+    var landing_adapter := comparison_adapters[1]
+    landing_rider.position.y = 0.8
+    landing_adapter.call("_process", 1.0 / 60.0)
+    landing_rider.position.y = 0.0
+    landing_adapter.call("_process", 1.0 / 60.0)
+    if float(landing_adapter.get("landing_impact")) < 0.25:
+        _fail("real jump landing must generate a visible compression impulse")
+        return
+    landing_rider.set("lean", 0.0)
+    landing_rider.set("boosting", false)
+    for step in range(90):
+        landing_adapter.call("_process", 1.0 / 60.0)
+    if float(landing_adapter.get("landing_impact")) > 0.005:
+        _fail("landing compression must decay without animation drift")
+        return
     if hero.find_children("*", "CollisionObject3D", true, false).size() > 0:
         _fail("animation may not change collisions")
         return
