@@ -111,10 +111,48 @@ func _capture() -> void:
                                 if diff > 0.08:
                                     changed_chase += 1
                     count += 1
+    # Hold the same original 65-bone action pose, camera and lighting, then
+    # change ONLY the weighted curtain's GPU wind parameters. These two
+    # extra frames prove secondary motion is visible, not just a uniform set.
     original.visible = false
     skinned.visible = true
-    if count != 16 or changed_chase < 12:
-        _fail("expected 16 actual landscape images and visible skinned-hair change in chase action pose")
+    var wind := hero.get_node_or_null("ExternalSkinnedBackHair") as Node
+    if wind == null or wind.get("wind_material") == null:
+        _fail("original GPU-skinned wind material unavailable")
         return
-    print("SKINNED BACK HAIR VISUAL QA PASSED: 16 real rigid/skinned landscape images; manual clipping and iPhone FPS still required")
+    viewport.size = SIZES[0]
+    camera.position = Vector3(0.0, 2.25, 5.4)
+    camera.look_at(Vector3(0.0, 1.8, 0.0), Vector3.UP)
+    var still: Image
+    var changed_wind := 0
+    for state in ["still", "wind"]:
+        if state == "still":
+            wind.call("set_motion", 0.0, 0.0, 0.0, 2.0)
+        else:
+            wind.call("set_motion", 0.95, 1.0, 0.6, 2.0)
+        for frame in range(5):
+            await process_frame
+        await RenderingServer.frame_post_draw
+        var shot := viewport.get_texture().get_image()
+        if shot.is_empty() or shot.get_width() != 1280 or shot.get_height() != 720:
+            _fail("invalid GPU hair wind landscape framebuffer")
+            return
+        if shot.save_png("%s/1280x720_carve_chase_hair_%s.png" % [folder, state]) != OK:
+            _fail("cannot save weighted hair wind comparison")
+            return
+        if state == "still":
+            still = shot
+        else:
+            for y in range(0, 720, 4):
+                for x in range(0, 1280, 4):
+                    var a := shot.get_pixel(x, y)
+                    var b := still.get_pixel(x, y)
+                    if maxf(absf(a.r - b.r), maxf(absf(a.g - b.g), absf(a.b - b.b))) > 0.08:
+                        changed_wind += 1
+        count += 1
+    wind.call("set_motion", 0.0, 0.0, 0.0, 0.0)
+    if count != 18 or changed_chase < 12 or changed_wind < 8:
+        _fail("expected 18 landscape frames and visible rigid/skinned plus still/wind differences: %d %d" % [changed_chase, changed_wind])
+        return
+    print("SKINNED BACK HAIR VISUAL QA PASSED: 18 real landscape images, including isolated weighted-hair wind; manual clipping and iPhone FPS still required")
     quit(0)
