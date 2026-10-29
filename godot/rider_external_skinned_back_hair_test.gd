@@ -58,15 +58,21 @@ func _check() -> void:
     var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
     var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
     var colors: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
+    var uvs: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
     if points.size() < 2000 or normals.size() != points.size() or \
             weights.size() != points.size() * 4 or \
-            bones.size() != points.size() * 4 or colors.size() != points.size():
+            bones.size() != points.size() * 4 or colors.size() != points.size() or \
+            uvs.size() != points.size():
         _fail("hair must contain normals, vertex colors and four GPU skin influences")
         return
     for i in range(points.size()):
         if not points[i].is_finite() or not normals[i].is_finite() or \
                 absf(normals[i].length() - 1.0) > 0.015:
             _fail("invalid skinned hair rest geometry or normal")
+            return
+        if not uvs[i].is_finite() or uvs[i].x < 0.0 or uvs[i].x > 1.0 or \
+                uvs[i].y < 0.0 or uvs[i].y > 1.0:
+            _fail("sculpted scalp-to-tip wind coordinates must be finite and normalized")
             return
         var total := 0.0
         for j in range(4):
@@ -84,8 +90,26 @@ func _check() -> void:
             tip_weights[2] < root_weights[2] * 5.0:
         _fail("hair root must follow Head and ends must deform with neck/spine")
         return
-    if new_hair.material_override != old.material_override:
-        _fail("weighted hair must preserve the original painted surface material")
+    var wind := new_hair.material_override as ShaderMaterial
+    if wind == null or wind.shader == null or \
+            not wind.shader.code.contains("smoothstep(0.14, 0.98, UV.y)") or \
+            not wind.shader.code.contains("hair_dye = COLOR"):
+        _fail("weighted hair needs a root-anchored one-pass vertex-color wind shader")
+        return
+    if controller.get("wind_material") != wind:
+        _fail("the wind controller must drive the installed skinned material")
+        return
+    controller.call("set_motion", 0.8, 1.0, 0.5, 3.0)
+    if absf(float(wind.get_shader_parameter("steer_amount")) - 0.8) > 0.001 or \
+            absf(float(wind.get_shader_parameter("boost_amount")) - 1.0) > 0.001 or \
+            absf(float(wind.get_shader_parameter("jump_amount")) - 0.5) > 0.001 or \
+            absf(float(wind.get_shader_parameter("motion_phase")) - 3.0) > 0.001:
+        _fail("hair wind must respond to carve, boost, jump and elapsed phase")
+        return
+    controller.call("set_motion", -2.0, 0.0, 0.0, -1.0)
+    if float(wind.get_shader_parameter("steer_amount")) != -1.0 or \
+            float(wind.get_shader_parameter("motion_phase")) != 0.0:
+        _fail("hair wind inputs must be bounded for mobile stability")
         return
     if headwear.find_children("WindSweptBackLock*", "MeshInstance3D", false, false).size() != 5:
         _fail("expressive animated hair locks must remain attached to Head")
@@ -104,5 +128,5 @@ func _check() -> void:
     if hero.find_children("*", "CollisionObject3D", true, false).size() != 0:
         _fail("cosmetic skinned hair must not add gameplay collisions")
         return
-    print("TRUE SKINNED BACK HAIR TEST PASSED: 65 original bones, four-weight head/neck/spine hair and animated rig")
+    print("TRUE SKINNED BACK HAIR TEST PASSED: 65 original bones, four-weight head/neck/spine hair, root-anchored GPU wind and animated rig")
     quit(0)
