@@ -67,9 +67,27 @@ func _check() -> void:
     for side in [-1.0, 1.0]:
         var inner: Vector3 = sculpt.call("_wing_point", side, 0.52, PI)
         var outer: Vector3 = sculpt.call("_wing_point", side, 0.52, 0.0)
-        if absf(outer.x - inner.x) < 0.5 or absf(outer.x) < 1.35:
-            _fail("swept wing does not provide a distinct wider 3D silhouette")
+        if absf(outer.x - inner.x) < 0.42 or absf(outer.x) < 1.17 or absf(outer.x) > 1.34:
+            _fail("compact stabilizer must be substantial but not an oversized side wing")
             return
+        var wing := sculpt.get_node_or_null(
+            "PortSculptedAeroWing" if side < 0.0 else "StarboardSculptedAeroWing") as MeshInstance3D
+        var wing_arrays: Array = wing.mesh.surface_get_arrays(0)
+        var wing_vertices: PackedVector3Array = wing_arrays[Mesh.ARRAY_VERTEX]
+        var wing_colors: PackedColorArray = wing_arrays[Mesh.ARRAY_COLOR]
+        if wing_vertices.size() < 1800 or wing_colors.size() != wing_vertices.size():
+            _fail("side stabilizers need closed end caps and shaded color data")
+            return
+        var satin := wing.material_override as StandardMaterial3D
+        if satin == null or satin.roughness < 0.55 or satin.metallic > 0.40:
+            _fail("side stabilizers must use satin composite, not glossy purple")
+            return
+        for t in [0.15, 0.5, 0.85]:
+            var mirrored: Vector3 = sculpt.call("_wing_point", -side, t, 0.0)
+            var sample: Vector3 = sculpt.call("_wing_point", side, t, 0.0)
+            if absf(mirrored.x + sample.x) > 0.001 or absf(mirrored.y - sample.y) > 0.001:
+                _fail("integrated stabilizers lost their mirrored 3D sweep")
+                return
     # V124: two closed, curved, symmetric propulsion housings and emissive
     # exhaust toruses, attached to the existing hoverboard (not touch/collision).
     var port_engine := sculpt.get_node_or_null("PortSculptedTurbine") as MeshInstance3D

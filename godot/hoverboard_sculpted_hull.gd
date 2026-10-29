@@ -14,6 +14,7 @@ var thruster_housings: Array[MeshInstance3D] = []
 var thruster_cores: Array[MeshInstance3D] = []
 var core_material: StandardMaterial3D
 var rail_material: StandardMaterial3D
+var wing_material: StandardMaterial3D
 # Separate materials for existing port/starboard meshes make carve direction
 # visible from the chase camera; no additional geometry or collision bodies.
 var rail_materials: Array[StandardMaterial3D] = []
@@ -31,6 +32,13 @@ func _ready() -> void:
     grip_material.metallic = 0.22
     grip_material.roughness = 0.75
     grip_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+    # Closed side stabilizers are satin composite, not oversized glossy fins.
+    wing_material = StandardMaterial3D.new()
+    wing_material.albedo_color = Color.WHITE
+    wing_material.vertex_color_use_as_albedo = true
+    wing_material.metallic = 0.34
+    wing_material.roughness = 0.61
+    wing_material.cull_mode = BaseMaterial3D.CULL_DISABLED
     rail_material = StandardMaterial3D.new()
     rail_material.albedo_color = Color("#42cce8")
     rail_material.emission_enabled = true
@@ -55,7 +63,7 @@ func _ready() -> void:
             _make_rail(side), side_rail_material)
         rails.append(rail)
         swept_wings.append(_attach("PortSculptedAeroWing" if side < 0.0 else "StarboardSculptedAeroWing",
-            _make_wing(side), shell_material))
+            _make_wing(side), wing_material))
         thruster_housings.append(_attach("PortSculptedTurbine" if side < 0.0 else "StarboardSculptedTurbine",
             _make_thruster_housing(side), shell_material))
         thruster_cores.append(_attach("PortExhaustHalo" if side < 0.0 else "StarboardExhaustHalo",
@@ -220,17 +228,17 @@ func _make_rail(side: float) -> ArrayMesh:
     return tool.commit()
 
 func _wing_point(side: float, t: float, angle: float) -> Vector3:
-    # Sculpted swept aerofoil, not a rotated primitive prism. Broad shoulders
-    # near the middle and a curled rear edge are visible from the chase camera.
-    var swell := sin(PI * t)
+    # V124 compact, swept stabilizer integrated into the board silhouette.
+    # Keep the existing animated board root, physics and touch controls.
+    var swell := pow(maxf(0.0, sin(PI * t)), 1.15)
     var z := lerpf(-1.05, 0.97, t)
-    var inner := 0.69 + 0.07 * swell
-    var outer := 1.08 + 0.39 * swell + 0.10 * t
+    var inner := 0.72 + 0.06 * swell
+    var outer := 0.95 + 0.29 * swell + 0.04 * t
     var center := (inner + outer) * 0.5
     var radius := (outer - inner) * 0.5
-    var curl := 0.12 * smoothstep(0.70, 1.0, t)
+    var curl := 0.065 * smoothstep(0.70, 1.0, t)
     return Vector3(side * (center + radius * cos(angle)),
-        0.315 + curl + (0.045 + 0.035 * swell) * sin(angle), z)
+        0.295 + curl + (0.035 + 0.022 * swell) * sin(angle), z)
 
 func _make_wing(side: float) -> ArrayMesh:
     var tool := SurfaceTool.new()
@@ -245,8 +253,21 @@ func _make_wing(side: float) -> ArrayMesh:
                 Vector2(a, u), Vector2(b, v), Vector2(a, v)]:
                 var point := _wing_point(side, sample.x, sample.y)
                 var highlight := maxf(0.0, sin(sample.y))
-                tool.set_color(Color("#283456").lerp(Color("#9b63c9"),
-                    0.26 + 0.48 * highlight + 0.12 * sin(PI * sample.x)))
+                tool.set_color(Color("#152640").lerp(Color("#56718a"),
+                    0.18 + 0.35 * highlight + 0.07 * sin(PI * sample.x)))
+                tool.add_vertex(point)
+    # Both aerofoil ends now have real 3D caps, avoiding open tubular wings.
+    for end in [0.0, 1.0]:
+        var outer_point := _wing_point(side, end, 0.0)
+        var inner_point := _wing_point(side, end, PI)
+        var cap_center := (outer_point + inner_point) * 0.5
+        for j in range(12):
+            var u := TAU * float(j) / 12.0
+            var v := TAU * float(j + 1) / 12.0
+            for point in [cap_center,
+                _wing_point(side, end, v if end == 0.0 else u),
+                _wing_point(side, end, u if end == 0.0 else v)]:
+                tool.set_color(Color("#20334e"))
                 tool.add_vertex(point)
     tool.generate_normals()
     return tool.commit()
