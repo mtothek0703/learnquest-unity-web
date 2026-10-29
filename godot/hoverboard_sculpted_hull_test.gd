@@ -7,6 +7,28 @@ func _fail(message: String) -> void:
     push_error("SCULPTED HOVERBOARD TEST FAILED: " + message)
     quit(1)
 
+# Compare all coincident vertices in the real unindexed render mesh.
+# At least three copies must agree to rule out per-triangle flat shading.
+func _smooth_at(mesh: Mesh, point: Vector3, expected: Vector3) -> bool:
+    var arrays: Array = mesh.surface_get_arrays(0)
+    var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+    var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+    if normals.size() != vertices.size():
+        return false
+    var count := 0
+    var first := Vector3.ZERO
+    for i in range(vertices.size()):
+        if vertices[i].distance_to(point) > 0.0001:
+            continue
+        var normal: Vector3 = normals[i]
+        if normal.length_squared() < 0.95 or normal.dot(expected) < 0.75:
+            return false
+        if count > 0 and normal.dot(first) < 0.995:
+            return false
+        first = normal
+        count += 1
+    return count >= 3
+
 func _check() -> void:
     var rider := preload("res://rider_character.tscn").instantiate() as Node3D
     root.add_child(rider)
@@ -104,6 +126,30 @@ func _check() -> void:
         if points3d.size() < 1000 or normals3d.size() != points3d.size():
             _fail("propulsion geometry must be a smooth shaded 3D surface")
             return
+    # The actual unindexed mesh vertices must now share smooth analytic
+    # normals across triangle boundaries. Flat generated normals previously
+    # made the chassis, traction deck, wings and turbines look faceted.
+    var deck := sculpt.get_node("ContouredTractionDeck") as MeshInstance3D
+    var port_wing := sculpt.get_node("PortSculptedAeroWing") as MeshInstance3D
+    var starboard_wing := sculpt.get_node("StarboardSculptedAeroWing") as MeshInstance3D
+    var normal_cases: Array[Dictionary] = [
+        {"mesh": chassis.mesh, "point": sculpt.call("_shell_point", 0.5, PI * 0.5)},
+        {"mesh": deck.mesh, "point": sculpt.call("_grip_point", 0.5, 0.0)},
+        {"mesh": port_wing.mesh, "point": sculpt.call("_wing_point", -1.0, 0.5, PI * 0.5)},
+        {"mesh": starboard_wing.mesh, "point": sculpt.call("_wing_point", 1.0, 0.5, PI * 0.5)},
+        {"mesh": port_engine.mesh, "point": sculpt.call("_thruster_point", -1.0, 0.5, PI * 0.5)},
+        {"mesh": starboard_engine.mesh, "point": sculpt.call("_thruster_point", 1.0, 0.5, PI * 0.5)}
+    ]
+    for sample_case in normal_cases:
+        if not _smooth_at(sample_case["mesh"], sample_case["point"], Vector3.UP):
+            _fail("swept board geometry has faceted, discontinuous or inward-facing surface normals")
+            return
+    # End caps need their own hard outward normals, unlike the curved sides.
+    if not _smooth_at(chassis.mesh, Vector3(0.0,
+            (sculpt.call("_shell_point", 0.0, 0.0) as Vector3).y, -1.37),
+            Vector3.FORWARD):
+        _fail("front chassis end cap is not closed with an outward normal")
+        return
     for t in [0.0, 0.45, 0.80, 1.0]:
         var port: Vector3 = sculpt.call("_thruster_point", -1.0, t, 0.0)
         var starboard: Vector3 = sculpt.call("_thruster_point", 1.0, t, PI)
