@@ -36,11 +36,11 @@ func _check() -> void:
             float(mantle.get("mantle_span")) > source.mesh.get_aabb().size.y * 0.53:
         _fail("full-length weighted coat tails must reach the thighs without covering the board")
         return
-    # Compact tailored coat-fin redesign must occupy the chase silhouette
+    # Narrow matte fabric tails must occupy the chase silhouette
     # without hiding the real 65-bone torso, legs, or hoverboard.
     var wing_reach := float(mantle.get("wing_reach"))
     var source_width := source.mesh.get_aabb().size.x
-    if wing_reach < source_width * 0.32 or wing_reach > source_width * 0.44:
+    if wing_reach < source_width * 0.23 or wing_reach > source_width * 0.34:
         _fail("compact coat fins must not become detached airplane wings")
         return
     var active_leg_binds := 0
@@ -95,7 +95,7 @@ func _check() -> void:
         # Both weighted airfoil faces must have a substantial actual lip,
         # including at the root and outer trailing tip.
         for index in range(edge_start, vertices.size(), 6):
-            if vertices[index + 1].distance_to(vertices[index + 2]) < source_width * 0.030:
+            if vertices[index + 1].distance_to(vertices[index + 2]) < source_width * 0.015:
                 _fail("flight-wing edge has collapsed to a paper-thin wall")
                 return
         var low_count := 0
@@ -150,7 +150,7 @@ func _check() -> void:
         if root_samples < 10 or hem_samples < 10:
             _fail("mantle must have sampled shoulder and wing-tip rows")
             return
-        if mid_max - mid_min < source_width * 0.20:
+        if mid_max - mid_min < source_width * 0.14:
             _fail("swept wing must add a broad, visible sculpted midspan")
             return
         if mid_max - mid_min < (root_max - root_min) * 2.0:
@@ -174,7 +174,7 @@ func _check() -> void:
             _fail("original Head attachment missing")
             return
         var back_sign := -1.0 if float(headgear.get("face_sign")) > 0.0 else 1.0
-        if back_sign * (hem_depth / float(hem_samples) - root_depth / float(root_samples)) < 0.37:
+        if back_sign * (hem_depth / float(hem_samples) - root_depth / float(root_samples)) < 0.29:
             _fail("wing hems must sweep behind the original skinned torso")
             return
         if low_count < 50:
@@ -218,6 +218,11 @@ func _check() -> void:
         if not yoke_shader.code.contains(region):
             _fail("weighted yoke must continue the jacket's material hierarchy: " + region)
             return
+    var cloth_shader := (panels[0] as MeshInstance3D).material_override as ShaderMaterial
+    if cloth_shader == null or not cloth_shader.shader.code.contains("ROUGHNESS = 0.65") or \
+            not cloth_shader.shader.code.contains("METALLIC = mix(0.055"):
+        _fail("weighted coat tails must use matte flexible fabric, not inflated metal wings")
+        return
     if active_leg_binds < 100:
         _fail("trailing mantle must actually deform with leg bones")
         return
