@@ -54,6 +54,17 @@ func _check() -> void:
         _fail("jacket color panels must be fitted to the actual CC0 rest bounds")
         return
     var test_bounds := AABB(Vector3(-0.7, 0.0, -0.35), Vector3(1.4, 3.0, 0.7))
+    # Actual sculpt relief must affect lighting normals, not just vertex
+    # positions. Keep them outward, unit length and distinct from source skin.
+    var normal_tool := preload("res://rider_sculpted_surface_normals.gd")
+    var chest_normal: Vector3 = normal_tool.corrected(
+        Vector3(0.25, 1.86, 0.3), Vector3.FORWARD, test_bounds,
+        Callable(outfit, "_tailored_offset"))
+    if not chest_normal.is_finite() or absf(chest_normal.length() - 1.0) > 0.001 or \
+            chest_normal.dot(Vector3.FORWARD) < 0.65 or \
+            chest_normal.dot(Vector3.FORWARD) > 0.995:
+        _fail("skinned chest relief must have outward smooth normals following its sculpt")
+        return
     var forward := Vector3(0.0, 0.0, 1.0)
     var chest: Vector3 = outfit.call("_tailored_offset", Vector3(0.10, 1.905, 0.3), forward, test_bounds)
     var waist: Vector3 = outfit.call("_tailored_offset", Vector3(0.10, 1.395, 0.3), forward, test_bounds)
