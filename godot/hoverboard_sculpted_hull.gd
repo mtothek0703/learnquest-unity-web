@@ -23,8 +23,8 @@ func _ready() -> void:
     var shell_material := StandardMaterial3D.new()
     shell_material.albedo_color = Color.WHITE
     shell_material.vertex_color_use_as_albedo = true
-    shell_material.metallic = 0.63
-    shell_material.roughness = 0.31
+    shell_material.metallic = 0.44
+    shell_material.roughness = 0.46
     shell_material.cull_mode = BaseMaterial3D.CULL_DISABLED
     var grip_material := StandardMaterial3D.new()
     grip_material.albedo_color = Color.WHITE
@@ -138,8 +138,10 @@ func _shell_normal(t: float, angle: float) -> Vector3:
 func _emit_shell(tool: SurfaceTool, t: float, angle: float) -> void:
     var edge := absf(cos(angle))
     var upper := maxf(0.0, sin(angle))
-    var color := Color("#101a34").lerp(Color("#44587d"), upper * 0.65)
-    color = color.lerp(Color("#754b9b"), edge * (0.14 + 0.20 * t))
+    # Smooth normals need a brighter satin base than the former flat-facet specular.
+    # Keep the underside dark but restore legibility in the chase camera.
+    var color := Color("#283956").lerp(Color("#7089a8"), upper * 0.65)
+    color = color.lerp(Color("#586c90"), edge * (0.14 + 0.20 * t))
     tool.set_color(color)
     tool.set_normal(_shell_normal(t, angle))
     tool.add_vertex(_shell_point(t, angle))
@@ -147,7 +149,7 @@ func _emit_shell(tool: SurfaceTool, t: float, angle: float) -> void:
 func _emit_shell_cap(tool: SurfaceTool, end: float, angle: float) -> void:
     # Duplicate the perimeter only for the hard cap normal; the curved
     # chassis surface keeps its own smooth analytic normal at the same point.
-    tool.set_color(Color("#101a34"))
+    tool.set_color(Color("#283956"))
     tool.set_normal(Vector3.FORWARD if end == 0.0 else Vector3.BACK)
     tool.add_vertex(_shell_point(end, angle))
 
@@ -171,7 +173,7 @@ func _make_shell() -> ArrayMesh:
         for j in range(RING_STEPS):
             var u := TAU * float(j) / float(RING_STEPS)
             var v := TAU * float(j + 1) / float(RING_STEPS)
-            tool.set_color(Color("#101a34"))
+            tool.set_color(Color("#283956"))
             tool.set_normal(Vector3.FORWARD if end == 0.0 else Vector3.BACK)
             tool.add_vertex(Vector3(0.0, _shell_point(end, 0.0).y, lerpf(-1.37, 1.33, end)))
             _emit_shell_cap(tool, end, v if end == 0.0 else u)
@@ -359,7 +361,7 @@ func _make_thruster_housing(side: float) -> ArrayMesh:
             for point in [center,
                 _thruster_point(side, end, v if end == 0.0 else u),
                 _thruster_point(side, end, u if end == 0.0 else v)]:
-                tool.set_color(Color("#101a34"))
+                tool.set_color(Color("#283956"))
                 tool.set_normal(Vector3.FORWARD if end == 0.0 else Vector3.BACK)
                 tool.add_vertex(point)
     return tool.commit()
