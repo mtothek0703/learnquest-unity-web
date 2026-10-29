@@ -156,7 +156,7 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://rider_external_character_visual_capture_test.gd 2>&1 | tee /tmp/quaternius-visual.log
           grep -Fq 'QUATERNIUS VISUAL QA PASSED' /tmp/quaternius-visual.log
-          test "$(find /tmp/learnquest-quaternius-qa -name '*.png' | wc -l)" -eq 16
+          test "$(find /tmp/learnquest-quaternius-qa -name '*.png' | wc -l)" -eq 24
       - name: Render 32 real V123/V124 neutral and action silhouette frames
         shell: bash
         run: |
