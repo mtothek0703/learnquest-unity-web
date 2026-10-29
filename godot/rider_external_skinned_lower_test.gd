@@ -48,6 +48,16 @@ func _check() -> void:
             _fail(property_name + " lacks the real skinned lower-body PBR shader")
             return
         var shader_code := material.shader.code
+        # Boot plates, trouser knees and soft ankle seams use one shared
+        # source-skin shader and remain four-weight GPU-deformed.
+        for region in ["knee_gasket", "shin_segment", "instep_joint",
+                "toe_divider", "heel_rim", "boot_seams"]:
+            if not shader_code.contains(region):
+                _fail(property_name + " missing integrated sculpt-aligned material zone: " + region)
+                return
+        if not shader_code.contains("shin_segment * 0.18") or not shader_code.contains("boot_seams * 0.20"):
+            _fail("boot armor and flexible joints need distinct metallic/roughness response")
+            return
         for required in ["cobalt", "magenta", "EMISSION", "ROUGHNESS", "boot_mode"]:
             if not shader_code.contains(required):
                 _fail(property_name + " missing cohesive hover-suit material: " + required)
