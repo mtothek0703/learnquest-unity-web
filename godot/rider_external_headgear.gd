@@ -182,6 +182,10 @@ func _build_headwear() -> void:
                 _cap_normal(p10, c, radius_x, radius_z, crown_y, cap_height),
                 _cap_normal(p11, c, radius_x, radius_z, crown_y, cap_height),
                 _cap_normal(p01, c, radius_x, radius_z, crown_y, cap_height))
+    # Extend the existing crown into closed cheek/temple sidewalls in ONE
+    # continuous draw call. Eyes and mouth stay uncovered; the full mesh
+    # follows the genuine imported Head BoneAttachment3D.
+    preload("res://rider_external_helmet_contour.gd").new().append_to(cap, c, s, face_sign)
     _mesh("CurvedFlightHelmetShell", cap.commit(), _material(Color(0.075, 0.11, 0.21), 0.42, 0.37))
 
     var visor := SurfaceTool.new()
