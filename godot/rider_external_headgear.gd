@@ -209,10 +209,10 @@ func _build_headwear() -> void:
             points.append(_visor_point(c, s, -0.93 + float(segment) / 24.0 * 1.86, edge))
         _mesh("VisorLightEdge%d" % int(edge), _tube(points, s.x * 0.018, 6), edge_mat)
 
-    var hair_mat := _material(Color(0.22, 0.125, 0.12), 0.02, 0.76)
+    var hair_mat := _material(Color(0.245, 0.145, 0.135), 0.02, 0.81)
     # Restrained warm highlights blend with the continuous underlayer;
     # the previous high-contrast alternating stripes looked like cables.
-    var highlight := _material(Color(0.32, 0.185, 0.155), 0.02, 0.76)
+    var highlight := _material(Color(0.285, 0.165, 0.15), 0.02, 0.81)
     # Rebuild the crown as three broad, closed swept hair volumes that follow
     # the same sculpted rear shell. Seven free-standing round crown tubes and
     # two side tubes previously fragmented the head silhouette in chase view.
@@ -248,13 +248,15 @@ func _build_headwear() -> void:
     var underhair := _material(Color(0.065, 0.048, 0.060), 0.01, 0.85)
     _mesh("SculptedBackHairCurtain", _back_hair_surface(c, s, crown_y, cap_height, radius_x, radius_z),
         underhair)
-    # The previous free-floating nine rear arcs formed a hollow cage around
+    # The previous free-floating rear arcs formed a hollow cage around
     # the head in the actual chase capture. Lay sculpted tapered locks over
     # the SAME continuous closed rear hair volume instead: each follows the
     # underlayer's shoulder flare and taper, rather than making giant loops.
     # No extra rig, physics, textures, collisions or new draw passes.
-    for strand in range(9):
-        var u := (float(strand) + 0.5) / 9.0
+    # Five broad overlapping sculpted locks replace nine narrow striped ribbons.
+    # This reduces accessory draw calls while keeping the closed underlayer.
+    for strand in range(5):
+        var u := (float(strand) + 0.5) / 5.0
         var flow: Array[Vector3] = []
         for segment in range(17):
             var t := float(segment) / 16.0
@@ -267,8 +269,8 @@ func _build_headwear() -> void:
             point.y += s.y * 0.025 * (1.0 - t)
             flow.append(point)
         _mesh("WindSweptBackLock%d" % strand,
-            _tapered_hair_lock(flow, s.x * (0.060 if strand % 2 == 0 else 0.052), 9),
-            highlight if strand % 3 == 0 else hair_mat)
+            _tapered_hair_lock(flow, s.x * (0.105 if strand % 2 == 0 else 0.093), 9),
+            highlight if strand == 2 else hair_mat)
     # One coherent, tapered hairline frames the face while the back curtain
     # gains a real inner/outer volume. These follow the imported Head joint.
     var fringe_mat := _material(Color(0.34, 0.18, 0.15), 0.02, 0.72)
@@ -689,7 +691,9 @@ func _face_point(c: Vector3, s: Vector3, u: float, v: float) -> Vector3:
     var silhouette := sin(latitude)
     var jaw := 0.82 + 0.18 * smoothstep(0.12, 0.67, 1.0 - v)
     var x := cos(longitude) * silhouette * s.x * 0.55 * jaw
-    var z := sin(longitude) * silhouette * s.z * 0.52
+    # Profile QA: compress the forward face shell while keeping skull volume.
+    # All eyes and expression landmarks sample this same surface.
+    var z := sin(longitude) * silhouette * s.z * (0.43 if face_sign * sin(longitude) > 0.0 else 0.50)
     # V124 portrait pass: a wider cheek/jaw and shorter face reads as a\n    # stylized adventurer rather than a long narrow mask. The face-front
     # inverse projection uses the SAME x/jaw mapping, keeping eyes/lids seated.
     var frontness := maxf(0.0, face_sign * sin(longitude))
@@ -699,8 +703,8 @@ func _face_point(c: Vector3, s: Vector3, u: float, v: float) -> Vector3:
     var brow := exp(-pow((v - 0.34) / 0.075, 2.0)) * exp(-pow((absf(x) - s.x * 0.19) / maxf(0.01, s.x * 0.25), 2.0))
     var lips := exp(-pow((v - 0.70) / 0.055, 2.0)) * exp(-pow(x / maxf(0.01, s.x * 0.24), 2.0))
     var chin := exp(-pow((v - 0.79) / 0.10, 2.0)) * exp(-pow(x / maxf(0.01, s.x * 0.27), 2.0))
-    z += face_sign * frontness * s.z * (nose * 0.24 + cheek * 0.09 -
-        eye_socket * 0.06 + brow * 0.055 + lips * 0.045 + chin * 0.065)
+    z += face_sign * frontness * s.z * (nose * 0.20 + cheek * 0.075 -
+        eye_socket * 0.06 + brow * 0.045 + lips * 0.038 + chin * 0.055)
     return Vector3(c.x + x, c.y + cos(latitude) * s.y * 0.48, c.z + z)
 
 func _almond_eye_mesh() -> ArrayMesh:
