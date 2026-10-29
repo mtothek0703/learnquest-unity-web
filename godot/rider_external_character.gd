@@ -16,6 +16,7 @@ var vertical_speed: float = 0.0
 var facial_acting: Node
 var flight_mantle: Node
 var hair_dynamics: Node
+var skinned_hair_motion: Node
 # Runtime-only visual contact: the board bobs after the initial fitting pass.
 # Keep the real skinned soles at the deck without touching gameplay physics.
 var board_contact_offset: float = 0.0
@@ -133,6 +134,8 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     if not bool(skinned_hair.call("install", skinned_meshes, skeleton, hair_headwear)):
         skinned_hair.queue_free()
         push_warning("CC0 weighted rear hair unavailable; Head-attached original preserved")
+    else:
+        skinned_hair_motion = skinned_hair
     # Build a real four-weighted, curved flight jacket from the original
     # humanoid triangles. It shares the imported Skin and skeleton.
     var outfit := preload("res://rider_external_skinned_outfit.gd").new() as Node
@@ -350,6 +353,8 @@ func _process(delta: float) -> void:
         facial_acting.call("animate", steer, turbo, last_jump, elapsed)
     if hair_dynamics != null:
         hair_dynamics.call("set_motion", steer, boost, last_jump, elapsed)
+    if skinned_hair_motion != null:
+        skinned_hair_motion.call("set_motion", steer, boost, last_jump, elapsed)
 
 func fit_to_board() -> bool:
     # Normalize different glTF unit conventions without touching the Skin.
