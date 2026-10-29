@@ -693,7 +693,8 @@ func _face_point(c: Vector3, s: Vector3, u: float, v: float) -> Vector3:
     var x := cos(longitude) * silhouette * s.x * 0.55 * jaw
     # Profile QA: compress the forward face shell while keeping skull volume.
     # All eyes and expression landmarks sample this same surface.
-    var z := sin(longitude) * silhouette * s.z * (0.43 if face_sign * sin(longitude) > 0.0 else 0.50)
+    var profile_blend := smoothstep(-0.20, 0.20, face_sign * sin(longitude))
+    var z := sin(longitude) * silhouette * s.z * lerpf(0.50, 0.43, profile_blend)
     # V124 portrait pass: a wider cheek/jaw and shorter face reads as a\n    # stylized adventurer rather than a long narrow mask. The face-front
     # inverse projection uses the SAME x/jaw mapping, keeping eyes/lids seated.
     var frontness := maxf(0.0, face_sign * sin(longitude))
