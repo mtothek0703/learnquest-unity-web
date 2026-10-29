@@ -98,7 +98,8 @@ func _sculpt(bounds: AABB, depth: float, side: float, spine: int, pelvis: int,
         _point(tool, bounds, depth, side, spine, pelvis, arm, face_sign, 1.0, a0, true)
         _point(tool, bounds, depth, side, spine, pelvis, arm, face_sign, 1.0, a0, false)
         _point(tool, bounds, depth, side, spine, pelvis, arm, face_sign, 1.0, a1, false)
-    tool.generate_normals()
+    # Reuse continuous parametric normals across adjacent unindexed quads;
+    # the previous per-triangle generated normals visibly faceted the armor.
     return tool.commit()
 
 func _point(tool: SurfaceTool, bounds: AABB, depth: float, side: float,
@@ -126,4 +127,6 @@ func _point(tool: SurfaceTool, bounds: AABB, depth: float, side: float,
     var front := maxf(0.0, sin(angle) * face_sign)
     var tint := Color(0.11 + 0.14 * highlight, 0.18 + 0.12 * front, 0.31 + 0.19 * highlight, 1.0)
     tool.set_color(tint)
+    tool.set_normal((Vector3.UP if t < 0.5 else Vector3.DOWN) if center else
+        Vector3(cos(angle), 0.15 - 0.30 * t, sin(angle)).normalized())
     tool.add_vertex(Vector3(x, y, z))
