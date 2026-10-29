@@ -281,19 +281,22 @@ func _process(delta: float) -> void:
     _pose(["neck_01", "Neck"], Quaternion(Vector3.UP, steer * 0.09), blend)
     _pose(["Head"], Quaternion(Vector3.UP, -steer * 0.24) *
         Quaternion(Vector3.RIGHT, -last_jump * 0.12 + boost * 0.07), blend)
+    # Keep the genuine weighted arms in a compact surfing stance rather
+    # than the imported superhero's wide T-pose. Both shoulders, elbows and
+    # wrists articulate on their original joints; wings/board stay untouched.
     for side in [-1, 1]:
         var prefix := "Left" if side < 0 else "Right"
         var sign_side := float(side)
-        var spread := -sign_side * (1.04 + 0.11 * carve -
-            last_jump * (0.35 if ascending else 0.24))
+        var spread := -sign_side * (1.30 + 0.14 * carve -
+            last_jump * (0.45 if ascending else 0.32))
         _pose(["upperarm_l" if side < 0 else "upperarm_r", prefix + "UpperArm", prefix + "Arm"],
             Quaternion(Vector3.FORWARD, spread - steer * 0.13) *
-            Quaternion(Vector3.RIGHT, -0.11 - boost * 0.23), blend)
+            Quaternion(Vector3.RIGHT, -0.20 - boost * 0.30), blend)
         _pose(["lowerarm_l" if side < 0 else "lowerarm_r", prefix + "LowerArm", prefix + "ForeArm", prefix + "Forearm"],
-            Quaternion(Vector3.RIGHT, -0.36 - last_jump * 0.34 - boost * 0.08) *
+            Quaternion(Vector3.RIGHT, -0.55 - last_jump * 0.42 - boost * 0.16) *
             Quaternion(Vector3.FORWARD, sign_side * (0.10 + carve * 0.09)), blend)
         _pose(["hand_l" if side < 0 else "hand_r", prefix + "Hand"],
-            Quaternion(Vector3.RIGHT, 0.14 + boost * 0.11) *
+            Quaternion(Vector3.RIGHT, 0.20 + boost * 0.14) *
             Quaternion(Vector3.UP, -sign_side * steer * 0.12), blend)
         _pose(["thigh_l" if side < 0 else "thigh_r", prefix + "UpperLeg", prefix + "UpLeg", prefix + "Thigh"],
             Quaternion(Vector3.RIGHT, -0.24 - crouch * 0.42 + last_jump * 0.18), blend)
