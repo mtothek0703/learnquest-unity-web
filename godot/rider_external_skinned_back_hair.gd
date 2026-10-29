@@ -9,6 +9,7 @@ var vertex_count: int = 0
 var root_head_weight: float = 0.0
 var tip_head_weight: float = 0.0
 var wind_material: ShaderMaterial
+var weighted_locks: Node
 
 func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D,
         headwear: BoneAttachment3D) -> bool:
@@ -116,6 +117,8 @@ func set_motion(steer: float, boost: float, jump: float, phase: float) -> void:
     wind_material.set_shader_parameter("boost_amount", clampf(boost, 0.0, 1.0))
     wind_material.set_shader_parameter("jump_amount", clampf(jump, 0.0, 1.0))
     wind_material.set_shader_parameter("motion_phase", maxf(phase, 0.0))
+    if weighted_locks != null:
+        weighted_locks.call("set_motion", steer, boost, jump, phase)
 
 func _bind(skin: Skin, rig: Skeleton3D, target: String) -> int:
     for index in range(skin.get_bind_count()):
