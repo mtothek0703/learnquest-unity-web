@@ -136,6 +136,24 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
         push_warning("CC0 weighted rear hair unavailable; Head-attached original preserved")
     else:
         skinned_hair_motion = skinned_hair
+        # The five broad rear sculpted volumes were still rigid Head props.
+        # Replace them atomically with the same ORIGINAL four-weight CC0
+        # Head/Neck/Spine Skin as the continuous hair curtain. Keep the
+        # hidden source volumes for fallback/visual comparisons.
+        var source_body: MeshInstance3D
+        for item in skinned_meshes:
+            if String(item.name).contains("SuperHero"):
+                source_body = item
+                break
+        if source_body != null:
+            var weighted_locks := preload("res://rider_external_weighted_locks.gd").new() as Node
+            weighted_locks.name = "ExternalWeightedRearLocks"
+            skinned_hair.add_child(weighted_locks)
+            if bool(weighted_locks.call("install", source_body, skeleton, hair_headwear, skinned_hair)):
+                skinned_hair.set("weighted_locks", weighted_locks)
+            else:
+                weighted_locks.queue_free()
+                push_warning("CC0 weighted rear locks unavailable; original sculpted locks remain")
     # Build a real four-weighted, curved flight jacket from the original
     # humanoid triangles. It shares the imported Skin and skeleton.
     var outfit := preload("res://rider_external_skinned_outfit.gd").new() as Node
