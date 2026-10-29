@@ -66,7 +66,8 @@ func install(source: MeshInstance3D, rig: Skeleton3D,
                 tool.set_color(Color.WHITE)
                 tool.set_normal(normal)
                 tool.set_bones(binds)
-                tool.set_weights(hair.call("_weights", down) as PackedFloat32Array)
+                var weights: PackedFloat32Array = hair.call("_weights", down)
+                tool.set_weights(weights)
                 tool.add_vertex(point)
                 written += 1
         if written < 150:
