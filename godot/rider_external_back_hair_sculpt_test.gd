@@ -53,7 +53,7 @@ func _check() -> void:
         _fail("five hair streams lost their sculpt-following painted highlights")
         return
     var sculpt := preload("res://rider_external_back_hair_sculpt.gd").new()
-    if sculpt.CHANNELS != 5:
+    if sculpt.channel_count() != 5:
         _fail("the continuous shell must have five flowing channels")
         return
     var region: AABB = headwear.get("head_bounds")
