@@ -97,15 +97,15 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, side: float,
         spine: int, pelvis: int, arm: int, core: bool, t: float, angle: float) -> void:
     var width := bounds.size.x
     var height := bounds.size.y
-    var shoulder_x := bounds.get_center().x + side * width * 0.205
-    var upper_y := bounds.position.y + height * 0.72
-    var taper := 0.73 + 0.27 * sin(PI * t)
-    var radius_x := width * (0.060 if core else 0.078) * taper
-    var radius_z := width * (0.040 if core else 0.052) * taper
-    var y := upper_y - height * (0.105 if core else 0.135) * t
+    var shoulder_x := bounds.get_center().x + side * width * 0.185
+    var upper_y := bounds.position.y + height * 0.715
+    var taper := 0.49 + 0.51 * pow(maxf(0.0, sin(PI * t)), 0.75)
+    var radius_x := width * (0.045 if core else 0.067) * taper
+    var radius_z := width * (0.030 if core else 0.042) * taper
+    var y := upper_y - height * (0.090 if core else 0.115) * t
     var x := shoulder_x + cos(angle) * radius_x
-    var z := back + rear_sign * (width * (0.043 if core else 0.025) +
-        sin(angle) * radius_z + height * 0.042 * t)
+    var z := back + rear_sign * (width * (0.028 if core else 0.018) +
+        sin(angle) * radius_z + height * 0.026 * t)
     # The shoulder joint controls the outside of the nacelle, while the
     # spine/pelvis stabilise its inside and base. Four source-Skin slots,
     # with normalized weights, avoid rigid objects sliding during steering.
@@ -126,12 +126,12 @@ func _attach(body: MeshInstance3D, mesh: ArrayMesh, label: String, core: bool) -
     instance.transform = body.transform
     var material := StandardMaterial3D.new()
     material.cull_mode = BaseMaterial3D.CULL_DISABLED
-    material.metallic = 0.38 if core else 0.24
-    material.roughness = 0.28 if core else 0.44
-    material.albedo_color = Color(0.10, 0.80, 0.96) if core else Color(0.29, 0.14, 0.62)
+    material.metallic = 0.32 if core else 0.18
+    material.roughness = 0.38 if core else 0.67
+    material.albedo_color = Color(0.13, 0.67, 0.79) if core else Color(0.11, 0.19, 0.34)
     material.emission_enabled = true
-    material.emission = Color(0.05, 0.63, 0.92) if core else Color(0.13, 0.035, 0.24)
-    material.emission_energy_multiplier = 1.8 if core else 0.55
+    material.emission = Color(0.025, 0.40, 0.62) if core else Color(0.015, 0.030, 0.065)
+    material.emission_energy_multiplier = 1.05 if core else 0.16
     instance.material_override = material
     body.get_parent().add_child(instance)
     return instance
