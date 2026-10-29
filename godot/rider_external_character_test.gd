@@ -83,6 +83,12 @@ func _check() -> void:
     if absf(scaled_height - 2.72) > 0.035:
         _fail("original skinned character must keep the readable mobile hoverboard proportion")
         return
+    # The portrait, chest and shoulders must not collapse into the former
+    # narrow silhouette, while the real skinned soles still fit the board.
+    if absf(imported.scale.x / imported.scale.y - 1.16) > 0.015 or \
+            absf(imported.scale.z / imported.scale.y - 1.06) > 0.015:
+        _fail("landscape hero width/depth fit must preserve balanced 65-bone proportions")
+        return
     var front_sign := float(headwear.get("face_sign"))
     var expected_facing := PI if front_sign > 0.0 else 0.0
     if absf(imported.rotation.y - expected_facing) > 0.01:
