@@ -200,15 +200,18 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     var pectoral := exp(-pow((y - 0.655) / 0.075, 2.0)) * exp(-pow((x - 0.17) / 0.11, 2.0))
     var deltoid := exp(-pow((y - 0.715) / 0.055, 2.0)) * smoothstep(0.18, 0.32, x)
     var spine_keel := exp(-pow(lateral / 0.065, 2.0)) * exp(-pow((y - 0.61) / 0.13, 2.0))
-    # A shallow underlying skin-following suit, not the former additive
-    # 0.15-unit chest bulge. Distinct local relief remains visible in motion.
-    var depth := 0.012 + 0.031 * chest + 0.031 * shoulder + \
-        0.037 * chest_ridge + 0.027 * collar + 0.029 * pectoral + \
-        0.018 * deltoid + 0.009 * spine_keel
-    # Stronger waist inward shaping counterbalances the shoulder profile.
-    # The signed X displacement is symmetric, preserving left/right poses.
-    var waist_inset := 0.042 * waist * smoothstep(0.12, 0.35, x)
-    var spread := 0.031 * shoulder + 0.022 * deltoid - waist_inset
+    # A real athletic V-silhouette is sculpted into the SAME four-weight
+    # imported triangles: full upper pectorals and deltoids, a tapered waist,
+    # and a controlled central sternum ridge. The prior 0.03-unit shoulder
+    # relief disappeared at mobile chase distance, leaving a thin stick body.
+    # Keep the offset below the 0.18-unit barrel-chest safety limit.
+    var depth := 0.012 + 0.065 * chest + 0.068 * shoulder + \
+        0.043 * chest_ridge + 0.027 * collar + 0.049 * pectoral + \
+        0.032 * deltoid + 0.015 * spine_keel
+    # Shoulder breadth and pectoral depth follow the actual imported Skin;
+    # no rigid shoulder boxes or unweighted cosmetic torso are introduced.
+    var waist_inset := 0.052 * waist * smoothstep(0.12, 0.35, x)
+    var spread := 0.082 * shoulder + 0.048 * deltoid - waist_inset
     return normal * depth + Vector3(signf(lateral) * spread, 0.006 * shoulder, 0.0)
 
 func _jacket_material(bounds: AABB) -> ShaderMaterial:
