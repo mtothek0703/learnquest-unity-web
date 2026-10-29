@@ -90,7 +90,9 @@ func _build_pod(bounds: AABB, back: float, side: float, spine: int,
             _vertex(tool, bounds, back, side, spine, pelvis, arm, core, t0, a0)
             _vertex(tool, bounds, back, side, spine, pelvis, arm, core, t1, a1)
             _vertex(tool, bounds, back, side, spine, pelvis, arm, core, t0, a1)
-    tool.generate_normals()
+    # Analytic cylindrical normals keep neighboring skinned facets smooth.
+    # SurfaceTool.generate_normals() on unindexed triangles made each small
+    # shoulder segment look like a hard-edged polygon in chase camera.
     return tool.commit()
 
 func _vertex(tool: SurfaceTool, bounds: AABB, back: float, side: float,
@@ -115,6 +117,8 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, side: float,
     tool.set_bones(PackedInt32Array([spine, pelvis, arm, spine]))
     tool.set_weights(PackedFloat32Array([spine_weight, pelvis_weight, arm_weight, 0.0]))
     tool.set_uv(Vector2(float(angle) / TAU, t))
+    tool.set_normal(Vector3(cos(angle), 0.08 * sin(PI * t),
+        rear_sign * sin(angle)).normalized())
     tool.add_vertex(Vector3(x, y, z))
 
 func _attach(body: MeshInstance3D, mesh: ArrayMesh, label: String, core: bool) -> MeshInstance3D:
