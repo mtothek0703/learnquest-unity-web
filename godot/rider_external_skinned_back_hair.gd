@@ -45,8 +45,8 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D,
         var arrays: Array = original_curtain.mesh.surface_get_arrays(surface_index)
         var points: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
         var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
-        var colors: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
-        var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+        var colors: PackedColorArray = arrays[Mesh.ARRAY_COLOR] if arrays[Mesh.ARRAY_COLOR] != null else PackedColorArray()
+        var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
         if points.is_empty() or normals.size() != points.size():
             return false
         var count := indices.size() if not indices.is_empty() else points.size()
