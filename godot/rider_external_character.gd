@@ -273,7 +273,11 @@ func _process(delta: float) -> void:
     previous_height = height
     last_jump = move_toward(last_jump, jump, delta * 7.0)
     var boost := 1.0 if turbo else 0.0
-    var blend := 1.0 - exp(-maxf(delta, 0.0) * 9.0)
+    # The first update must fit the imported T-pose directly to the board.
+    # Only subsequent pose transitions are damped; otherwise a short first
+    # frame exposes T-pose arms and makes idle stance depend on startup FPS.
+    var blend := 1.0 if elapsed <= delta + 0.00001 else \
+        1.0 - exp(-maxf(delta, 0.0) * 9.0)
     action_charge = move_toward(action_charge, boost, delta * 6.0)
     _update_action_materials(steer, last_jump)
     # Surf stance: bent knees, articulated ankles, responsive hips, elbows and
