@@ -29,8 +29,8 @@ func _check() -> void:
         _fail("scalp-pivoted hair controller missing")
         return
     var entries: Array = motion.get("locks")
-    if entries.size() < 17:
-        _fail("nine rear locks, temple sweeps and fringe must participate")
+    if entries.size() != 13:
+        _fail("five rear locks, two temple sweeps and six fringe locks must participate")
         return
     var original: Array[Transform3D] = []
     var scalp: Array[Vector3] = []
@@ -54,7 +54,7 @@ func _check() -> void:
         if (part.transform * anchor).distance_to(scalp[i]) > 0.0001:
             _fail("hair root pulled away from original Head attachment")
             return
-    if moving < 17:
+    if moving < 13:
         _fail("action pose must animate rear, side and fringe volumes")
         return
     motion.call("set_motion", -0.85, 1.0, 0.8, 1.2)
