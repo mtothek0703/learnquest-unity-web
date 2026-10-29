@@ -69,6 +69,8 @@ func _capture() -> void:
     adapter.set_process(false)
     var count := 0
     var changed_chase := 0
+    var bleached_hair := 0
+    var sampled_hair := 0
     for pose_name in POSES:
         rider.set("lean", 0.0)
         rider.set("boosting", false)
@@ -110,6 +112,16 @@ func _capture() -> void:
                                     maxf(absf(a.g - b.g), absf(a.b - b.b)))
                                 if diff > 0.08:
                                     changed_chase += 1
+                        # Real chase images caught a shader regression that
+                        # painted the old dark underhair nearly white. Compare
+                        # the same upper-center hair region in both frames.
+                        for y in range(int(size.y * 0.04), int(size.y * 0.15), 4):
+                            for x in range(int(size.x * 0.44), int(size.x * 0.56), 4):
+                                var current := picture.get_pixel(x, y)
+                                var previous := before.get_pixel(x, y)
+                                sampled_hair += 1
+                                if current.get_luminance() - previous.get_luminance() > 0.35:
+                                    bleached_hair += 1
                     count += 1
     # Hold the same original 65-bone action pose, camera and lighting, then
     # change ONLY the weighted curtain's GPU wind parameters. These two
@@ -151,8 +163,9 @@ func _capture() -> void:
                         changed_wind += 1
         count += 1
     wind.call("set_motion", 0.0, 0.0, 0.0, 0.0)
-    if count != 18 or changed_chase < 12 or changed_wind < 8:
-        _fail("expected 18 landscape frames and visible rigid/skinned plus still/wind differences: %d %d" % [changed_chase, changed_wind])
+    if count != 18 or changed_chase < 12 or changed_wind < 8 or \
+            bleached_hair > int(sampled_hair * 0.20):
+        _fail("expected 18 frames, visible wind and no white hair regression: %d %d %d/%d" % [changed_chase, changed_wind, bleached_hair, sampled_hair])
         return
     print("SKINNED BACK HAIR VISUAL QA PASSED: 18 real landscape images, including isolated weighted-hair wind; manual clipping and iPhone FPS still required")
     quit(0)
