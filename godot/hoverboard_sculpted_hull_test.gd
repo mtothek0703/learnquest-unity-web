@@ -68,9 +68,13 @@ func _check() -> void:
             chassis_material.roughness < 0.40:
         _fail("smooth chassis needs readable satin material, not dark mirror metal")
         return
-    var upper_tint: Color = sculpt.call("_shell_color_probe") if sculpt.has_method("_shell_color_probe") else Color("#283956").lerp(Color("#7089a8"), 0.65)
-    if upper_tint.get_luminance() < 0.10:
-        _fail("smooth chassis top lost its readable base color")
+    var upper_point: Vector3 = sculpt.call("_shell_point", 0.5, PI * 0.5)
+    var upper_luminance := -1.0
+    for i in range(points.size()):
+        if points[i].distance_to(upper_point) < 0.0001:
+            upper_luminance = maxf(upper_luminance, colors[i].get_luminance())
+    if upper_luminance < 0.10:
+        _fail("smooth chassis top lost its readable vertex color")
         return
     var nose: float = sculpt.call("_half_width", 0.0)
     var middle: float = sculpt.call("_half_width", 0.52)
