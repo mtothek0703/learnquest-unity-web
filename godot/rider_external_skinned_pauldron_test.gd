@@ -53,7 +53,8 @@ func _check() -> void:
         var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
         var colors: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
         var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
-        if vertices.size() < 2800 or weights.size() != vertices.size() * 4 or bones.size() != weights.size() or colors.size() != vertices.size() or normals.size() != vertices.size():
+        if vertices.size() < 2800 or weights.size() != vertices.size() * 4 or bones.size() != weights.size() or colors.size() != vertices.size() or \
+                normals.size() != vertices.size() or normals[2].dot(normals[7]) < 0.995:
             _fail("missing dense curved mesh, normals, colors or four-weight skin")
             return
         for i in range(vertices.size()):
