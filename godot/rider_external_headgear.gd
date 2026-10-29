@@ -781,7 +781,13 @@ func _ellipsoid(name_text: String, center: Vector3, radii: Vector3, mat: Materia
     # looked like two loose beads. Sculpt the SAME two Head-attached objects
     # into closed, tapered almond volumes with continuous normals. Iris,
     # pupils and catchlights keep their original animation and materials.
-    var shape: Mesh = _almond_eye_mesh() if name_text.begins_with("EyeWhite") else (\n        _iris_lens_mesh() if name_text.begins_with("Iris") and not name_text.begins_with("IrisCatchlight")\n        or name_text.begins_with("Pupil") else SphereMesh.new())
+    var shape: Mesh
+    if name_text.begins_with("EyeWhite"):
+        shape = _almond_eye_mesh()
+    elif (name_text.begins_with("Iris") and not name_text.begins_with("IrisCatchlight")) or name_text.begins_with("Pupil"):
+        shape = _iris_lens_mesh()
+    else:
+        shape = SphereMesh.new()
     if shape is SphereMesh:
         var sphere := shape as SphereMesh
         sphere.radius = 1.0
