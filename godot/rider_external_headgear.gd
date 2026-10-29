@@ -209,8 +209,8 @@ func _build_headwear() -> void:
             points.append(_visor_point(c, s, -0.93 + float(segment) / 24.0 * 1.86, edge))
         _mesh("VisorLightEdge%d" % int(edge), _tube(points, s.x * 0.018, 6), edge_mat)
 
-    var hair_mat := _material(Color(0.26, 0.17, 0.40), 0.06, 0.56)
-    var highlight := _material(Color(0.50, 0.32, 0.65), 0.10, 0.43)
+    var hair_mat := _material(Color(0.22, 0.125, 0.12), 0.02, 0.76)
+    var highlight := _material(Color(0.42, 0.235, 0.19), 0.03, 0.66)
     # Rebuild the crown as three broad, closed swept hair volumes that follow
     # the same sculpted rear shell. Seven free-standing round crown tubes and
     # two side tubes previously fragmented the head silhouette in chase view.
@@ -243,7 +243,7 @@ func _build_headwear() -> void:
     # the front showed swept bangs. Curved back-hair geometry remains cosmetic
     # and follows the real Head bone through this BoneAttachment3D.
     # Dark underlayer gives the bright sculpted locks readable depth in chase view.
-    var underhair := _material(Color(0.10, 0.075, 0.19), 0.05, 0.70)
+    var underhair := _material(Color(0.065, 0.048, 0.060), 0.01, 0.85)
     _mesh("SculptedBackHairCurtain", _back_hair_surface(c, s, crown_y, cap_height, radius_x, radius_z),
         underhair)
     # The previous free-floating nine rear arcs formed a hollow cage around
@@ -269,7 +269,7 @@ func _build_headwear() -> void:
             highlight if strand % 3 == 0 else hair_mat)
     # One coherent, tapered hairline frames the face while the back curtain
     # gains a real inner/outer volume. These follow the imported Head joint.
-    var fringe_mat := _material(Color(0.42, 0.25, 0.57), 0.06, 0.48)
+    var fringe_mat := _material(Color(0.34, 0.18, 0.15), 0.02, 0.72)
     # The previous six thick round tubes looked like beads above the forehead
     # in real 16:9 captures. Sculpt broad, flattened 3D swept bangs instead:
     # curved from the helmet crown to the upper forehead with a tapered tip.
@@ -517,12 +517,12 @@ func _back_hair_point(c: Vector3, s: Vector3, crown_y: float, cap_height: float,
     # split into softly scalloped locks. Avoid a rectangular purple hair slab.
     var angle := (u - 0.5) * PI
     var edge := sin(angle)
-    var width_profile := 1.09 + 0.44 * sin(PI * t) - 0.31 * t
-    var strand_wave := 0.07 * sin(7.0 * angle + 2.5 * t) * sin(PI * t)
+    var width_profile := 1.06 + 0.40 * sin(PI * t) - 0.32 * t
+    var strand_wave := 0.065 * sin(7.0 * angle + 2.5 * t) * sin(PI * t)
     var hem := 0.13 * pow(t, 5.0) * (0.5 + 0.5 * cos(7.0 * angle))
     return Vector3(
-        c.x + (edge * width_profile + strand_wave) * radius_x,
-        crown_y + cap_height * 0.20 - s.y * (0.20 + 1.05 * t - hem),
+        c.x + (edge * width_profile + strand_wave) * radius_x + 0.16 * t * t * radius_x,
+        crown_y + cap_height * 0.20 - s.y * (0.20 + 0.94 * t - hem),
         c.z - face_sign * cos(angle) * radius_z *
             (0.97 + 0.23 * t + 0.07 * sin(5.0 * angle) * sin(PI * t)))
 
