@@ -210,6 +210,14 @@ func _check() -> void:
     if not (yoke.material_override is ShaderMaterial) or yoke.get_child_count() > 0:
         _fail("shoulder bridge must remain a PBR cosmetic surface only")
         return
+    var yoke_shader := (yoke.material_override as ShaderMaterial).shader
+    if yoke_shader == null:
+        _fail("original four-weight yoke has no material")
+        return
+    for region in ["shoulder_plate", "collar_gasket", "plate_recess"]:
+        if not yoke_shader.code.contains(region):
+            _fail("weighted yoke must continue the jacket's material hierarchy: " + region)
+            return
     if active_leg_binds < 100:
         _fail("trailing mantle must actually deform with leg bones")
         return
