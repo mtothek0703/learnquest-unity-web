@@ -153,8 +153,12 @@ func _check() -> void:
             _fail("fringe must be a closed, sculpted 3D ribbon with real normals")
             return
         var fitted_bounds := headwear.get("head_bounds") as AABB
-        if lock.mesh.get_aabb().position.y > fitted_bounds.position.y + fitted_bounds.size.y * 0.78:
-            _fail("fringe tips must reach the upper forehead, not form beads above it")
+        var lowest_fringe := lock.mesh.get_aabb().position.y
+        if lowest_fringe > fitted_bounds.position.y + fitted_bounds.size.y * 0.745:
+            _fail("swept bangs must reach the forehead instead of floating above it")
+            return
+        if lowest_fringe < fitted_bounds.position.y + fitted_bounds.size.y * 0.605:
+            _fail("swept bangs must not obscure the animated eyes")
             return
         if lock.mesh.get_aabb().size.y < headwear.get("head_bounds").size.y * 0.15:
             _fail("fringe has lost its curved crown-to-forehead sweep")
