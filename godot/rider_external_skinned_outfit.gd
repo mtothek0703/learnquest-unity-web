@@ -34,6 +34,7 @@ func _extract_jacket(body: MeshInstance3D) -> ArrayMesh:
     var output := SurfaceTool.new()
     output.begin(Mesh.PRIMITIVE_TRIANGLES)
     var accepted := 0
+    var normal_offset := Callable(self, "_tailored_offset")
     # Clip every weighted source triangle at the ACTUAL jacket waist and collar.
     # The old all-three-vertices filter discarded intersecting triangles,
     # leaving holes and jagged openings around the torso and shoulder.
@@ -69,7 +70,8 @@ func _extract_jacket(body: MeshInstance3D) -> ArrayMesh:
                 for corner in [polygon[0], polygon[corner_index], polygon[corner_index + 1]]:
                     var point: Vector3 = corner["position"]
                     var normal: Vector3 = corner["normal"]
-                    output.set_normal(normal)
+                    output.set_normal(preload("res://rider_sculpted_surface_normals.gd").corrected(
+                        point, normal, bounds, normal_offset))
                     output.set_bones(corner["bones"])
                     output.set_weights(corner["weights"])
                     output.add_vertex(point + _tailored_offset(point, normal, bounds))
