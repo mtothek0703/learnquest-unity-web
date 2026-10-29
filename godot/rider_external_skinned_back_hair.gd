@@ -8,6 +8,7 @@ var original: MeshInstance3D
 var vertex_count: int = 0
 var root_head_weight: float = 0.0
 var tip_head_weight: float = 0.0
+var wind_material: ShaderMaterial
 
 func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D,
         headwear: BoneAttachment3D) -> bool:
@@ -65,6 +66,11 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D,
                 return false
             var down := clampf((original_bounds.end.y - points[index].y) /
                 original_bounds.size.y, 0.0, 1.0)
+            # UVs encode actual sculpted root-to-tip distance. The GPU
+            # keeps the original four-weight Skin; only the loose ends sway.
+            var across := clampf((points[index].x - original_bounds.position.x) /
+                maxf(original_bounds.size.x, 0.001), 0.0, 1.0)
+            tool.set_uv(Vector2(across, down))
             tool.set_bones(bindings)
             tool.set_weights(_weights(down))
             tool.set_normal(body_normal)
@@ -82,7 +88,13 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D,
     new_curtain.skin = source.skin
     new_curtain.skeleton = source.skeleton
     new_curtain.transform = source.transform
-    new_curtain.material_override = original_curtain.material_override
+    var wind_shader := load("res://rider_external_back_hair_wind.gdshader") as Shader
+    if wind_shader == null:
+        return false
+    wind_material = ShaderMaterial.new()
+    wind_material.shader = wind_shader
+    wind_material.set_shader_parameter("wind_back_sign", -float(headwear.get("face_sign")))
+    new_curtain.material_override = wind_material
     source.get_parent().add_child(new_curtain)
     # Only retire the rigid duplicate AFTER the real weighted replacement is
     # installed. All expressive locks, fringe, face and original bones stay.
@@ -93,6 +105,14 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D,
     root_head_weight = _weights(0.0)[0]
     tip_head_weight = _weights(1.0)[0]
     return true
+
+func set_motion(steer: float, boost: float, jump: float, phase: float) -> void:
+    if wind_material == null:
+        return
+    wind_material.set_shader_parameter("steer_amount", clampf(steer, -1.0, 1.0))
+    wind_material.set_shader_parameter("boost_amount", clampf(boost, 0.0, 1.0))
+    wind_material.set_shader_parameter("jump_amount", clampf(jump, 0.0, 1.0))
+    wind_material.set_shader_parameter("motion_phase", maxf(phase, 0.0))
 
 func _bind(skin: Skin, rig: Skeleton3D, target: String) -> int:
     for index in range(skin.get_bind_count()):
