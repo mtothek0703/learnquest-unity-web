@@ -8,6 +8,7 @@ var head_bounds: AABB
 var face_sign: float = -1.0
 var generated_meshes: Array[MeshInstance3D] = []
 var visual_scale: float = 1.0
+var rear_hair_sculpt := preload("res://rider_external_back_hair_sculpt.gd").new()
 
 func set_visual_scale(factor: float) -> void:
     # BoneAttachment3D follows the imported Head and may overwrite its own
@@ -250,6 +251,7 @@ func _build_headwear() -> void:
     # and follows the real Head bone through this BoneAttachment3D.
     # Dark underlayer gives the bright sculpted locks readable depth in chase view.
     var underhair := _material(Color(0.065, 0.048, 0.060), 0.01, 0.85)
+    underhair.vertex_color_use_as_albedo = true
     _mesh("SculptedBackHairCurtain", _back_hair_surface(c, s, crown_y, cap_height, radius_x, radius_z),
         underhair)
     # The previous free-floating rear arcs formed a hollow cage around
@@ -458,8 +460,10 @@ func _back_hair_surface(c: Vector3, s: Vector3, crown_y: float, cap_height: floa
     # The inner shell avoids a paper-thin silhouette in chase/side views.
     var surface := SurfaceTool.new()
     surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-    var rows := 14
-    var columns := 24
+    # Denser shell topology resolves five flowing sculpted channels
+    # without extra draw calls, bones or collision nodes.
+    var rows := 16
+    var columns := 30
     for row in range(rows):
         var t0 := float(row) / float(rows)
         var t1 := float(row + 1) / float(rows)
@@ -480,10 +484,15 @@ func _back_hair_surface(c: Vector3, s: Vector3, crown_y: float, cap_height: floa
                 var nd := _back_hair_normal(c, s, crown_y, cap_height,
                     radius_x, radius_z, t0, u1, outer)
                 if outer:
-                    _quad_smooth(surface, a, b, e, d, na, nb, ne, nd)
+                    _quad_smooth(surface, a, b, e, d, na, nb, ne, nd,
+                        [rear_hair_sculpt.tone(t0, u0, true), rear_hair_sculpt.tone(t1, u0, true),
+                         rear_hair_sculpt.tone(t1, u1, true), rear_hair_sculpt.tone(t0, u1, true)])
                 else:
-                    _quad_smooth(surface, d, e, b, a, nd, ne, nb, na)
+                    _quad_smooth(surface, d, e, b, a, nd, ne, nb, na,
+                        [rear_hair_sculpt.tone(t0, u1, false), rear_hair_sculpt.tone(t1, u1, false),
+                         rear_hair_sculpt.tone(t1, u0, false), rear_hair_sculpt.tone(t0, u0, false)])
         for u in [0.0, 1.0]:
+            surface.set_color(rear_hair_sculpt.tone((t0 + t1) * 0.5, u, false))
             _quad(surface,
                 _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t0, u, true),
                 _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t1, u, true),
@@ -493,6 +502,7 @@ func _back_hair_surface(c: Vector3, s: Vector3, crown_y: float, cap_height: floa
         for column in range(columns):
             var u0 := float(column) / float(columns)
             var u1 := float(column + 1) / float(columns)
+            surface.set_color(rear_hair_sculpt.tone(t, (u0 + u1) * 0.5, false))
             _quad(surface,
                 _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t, u0, true),
                 _back_hair_volume_point(c, s, crown_y, cap_height, radius_x, radius_z, t, u1, true),
@@ -521,7 +531,7 @@ func _back_hair_volume_point(c: Vector3, s: Vector3, crown_y: float, cap_height:
     var thickness := s.z * (0.14 + 0.045 * sin(PI * t))
     point.z += -face_sign * thickness * (0.65 if outer else -0.35)
     point.x += (u - 0.5) * s.x * (0.09 if outer else -0.025)
-    return point
+    return rear_hair_sculpt.sculpt(point, s, face_sign, t, u, outer)
 
 func _back_hair_point(c: Vector3, s: Vector3, crown_y: float, cap_height: float,
         radius_x: float, radius_z: float, t: float, u: float) -> Vector3:
@@ -846,15 +856,18 @@ func _visor_normal(s: Vector3, angle: float) -> Vector3:
         0.0, face_sign * cos(angle) / maxf(s.z * 0.57, 0.001)).normalized()
 
 func _quad_smooth(surface: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3,
-        na: Vector3, nb: Vector3, nc: Vector3, nd: Vector3) -> void:
+        na: Vector3, nb: Vector3, nc: Vector3, nd: Vector3,
+        colors: Array[Color] = []) -> void:
     # Preserve the existing triangle winding and material, but provide
     # coherent analytic normals instead of per-triangle flat shading.
-    for vertex in [
-            {"point": a, "normal": na}, {"point": b, "normal": nb},
-            {"point": c, "normal": nc}, {"point": a, "normal": na},
-            {"point": c, "normal": nc}, {"point": d, "normal": nd}]:
-        surface.set_normal(vertex["normal"])
-        surface.add_vertex(vertex["point"])
+    var corners := [0, 1, 2, 0, 2, 3]
+    var points := [a, b, c, d]
+    var normals := [na, nb, nc, nd]
+    for corner in corners:
+        if colors.size() == 4:
+            surface.set_color(colors[corner])
+        surface.set_normal(normals[corner])
+        surface.add_vertex(points[corner])
 
 func _visor_point(c: Vector3, s: Vector3, angle: float, v: float) -> Vector3:
     return Vector3(c.x + sin(angle) * s.x * 0.51,
