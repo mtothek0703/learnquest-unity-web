@@ -180,7 +180,7 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
     var flare := pow(maxf(0.0, sin(PI * t)), 1.20)
     var scallop := 0.014 * sin(3.0 * PI * t) * sin(PI * t)
     var inner := width * (0.080 + 0.055 * t)
-    var outer := width * (0.155 + 0.095 * flare + 0.055 * t + scallop * 0.35)
+    var outer := width * (0.155 + 0.095 * flare + 0.030 * t + scallop * 0.35)
     var x := center_x + side * lerpf(inner, outer, u)
     var camber := sin(u * PI) * sin(t * PI)
     # Long vertical tailoring reads as an actual split coat rather than
