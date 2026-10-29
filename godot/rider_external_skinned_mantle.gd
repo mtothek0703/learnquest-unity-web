@@ -1,5 +1,5 @@
 extends Node
-## V124 draft: two flowing, four-weight GPU-skinned flight-mantle panels.
+## V124 draft: two compact, swept-back, four-weight GPU-skinned coat fins.
 ## Their shape is sampled from the imported CC0 body bounds, and the original
 ## Skin/inverse binds are reused. No physics, collisions, paid assets or touch edits.
 var panels: Array[MeshInstance3D] = []
@@ -83,7 +83,7 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: f
         body.get_parent().add_child(shoulder_yoke)
         yoke_vertices = yoke_mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
         panels = created
-        mantle_span = bounds.size.y * 0.26
+        mantle_span = bounds.size.y * 0.34
         # Measured on the actual weighted geometry, not a guessed sprite size.
         wing_reach = maxf(absf(created[0].mesh.get_aabb().position.x - bounds.get_center().x),
             absf(created[1].mesh.get_aabb().end.x - bounds.get_center().x))
@@ -118,8 +118,9 @@ func _torso_back(mesh: Mesh, bounds: AABB, back_sign: float) -> float:
 
 func _panel(bounds: AABB, back: float, back_sign: float, side: float, binds: PackedInt32Array) -> ArrayMesh:
     # One connected aero-silhouette instead of new floating decorative props:
-    # broad, tapered swept wings with curved 3D camber, a sculpted trailing
-    # scallop and sealed airfoil thickness. Four real imported bone influences
+    # compact, down-swept coat fins with curved 3D camber, a sculpted trailing
+    # notch and sealed airfoil thickness. Avoid the previous airplane-wing
+    # silhouette that hid the original rigged torso and hair in chase view. Four real imported bone influences
     # bend each wing while the central channel leaves the boots/board visible.
     var tool := SurfaceTool.new()
     tool.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -173,20 +174,23 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
         surface_sign: float) -> void:
     var width := bounds.size.x
     var center_x := bounds.get_center().x
-    # The root stays close to the weighted shoulder yoke. The outer edge
-    # expands into a broad midspan sail, then tapers to a narrow raised tip;
-    # alternating scallops keep the chase silhouette from reading as a skirt.
-    var flare := sin(PI * t * 0.87)
-    var scallop := 0.042 * sin(5.0 * PI * t) * sin(PI * t)
-    var inner := width * (0.07 + 0.15 * t)
-    var outer := width * (0.12 + 0.44 * flare + 0.04 * t + scallop)
+    # The shoulder-root grows into a compact mid-body fin, then folds down
+    # behind the hips. Both sides remain separated around the weighted spine
+    # and original boots, without airplane-wide horizontal sail tips.
+    var flare := pow(maxf(0.0, sin(PI * t)), 0.84)
+    var scallop := 0.014 * sin(3.0 * PI * t) * sin(PI * t)
+    var inner := width * (0.08 + 0.12 * t)
+    var outer := width * (0.13 + 0.31 * flare + 0.10 * t + scallop)
     var x := center_x + side * lerpf(inner, outer, u)
     var camber := sin(u * PI) * sin(t * PI)
-    var y := bounds.position.y + bounds.size.y * (0.72 - 0.26 * t +
-        0.042 * camber + 0.018 * u * t)
-    # Real curved spar and swept depth, not a flat two-sided ribbon.
-    var sweep := 0.045 + 0.16 * t + 0.26 * pow(t, 1.4) + 0.12 * camber
-    var rib := sin(u * PI * 3.0 + t * 3.0) * width * 0.010 * t
+    # Lower trailing fins visually connect shoulder hardware to the skinned
+    # waist instead of cutting across the character at chest height.
+    var y := bounds.position.y + bounds.size.y * (0.74 - 0.34 * t +
+        0.030 * camber + 0.012 * u * t)
+    # A deep rearward sweep preserves airfoil volume but reads as a tailored
+    # split coat in the chase camera rather than flat horizontal wings.
+    var sweep := 0.045 + 0.15 * t + 0.33 * pow(t, 1.4) + 0.08 * camber
+    var rib := sin(u * PI * 3.0 + t * 3.0) * width * 0.008 * t
     # A raised, variable-thickness trailing lip gives the airfoil an
     # actual sculpted edge at chase distance instead of a paper-thin sheet.
     # Thickness remains positive at every boundary, so the sidewalls seal.
