@@ -1,5 +1,5 @@
 extends Node
-## V124: sculpt BOTH articulated sleeves directly from the CC0 humanoid's
+## V124 streamlined silhouette: sculpt BOTH articulated sleeves directly from the CC0 humanoid's
 ## weighted source triangles. No rigid arm cylinders or replacement skeleton.
 ## The original four bone influences and inverse bind matrices remain intact.
 var sleeves: Array[MeshInstance3D] = []
@@ -210,12 +210,12 @@ func _sculpt_offset(point: Vector3, normal: Vector3, bounds: AABB,
     var elbow := exp(-pow((inf.y - 0.48) / 0.20, 2.0))
     var forearm := smoothstep(0.22, 0.72, inf.x - inf.y)
     var wrist := 1.0 - smoothstep(0.22, 0.46, inf.x)
-    var shell := 0.018 + 0.052 * shoulder + 0.028 * elbow + 0.035 * forearm * (1.0 - wrist)
+    var shell := 0.012 + 0.033 * shoulder + 0.024 * elbow + 0.026 * forearm * (1.0 - wrist)
     var lateral := signf(point.x - bounds.get_center().x)
     # Sculpt the outer shoulder into a broad V-shaped silhouette, while the
     # elbow keeps clearance and the wrist returns close to the original hand.
-    return normal * shell + Vector3(lateral * (0.019 * shoulder + 0.009 * elbow),
-        0.009 * shoulder, 0.0)
+    return normal * shell + Vector3(lateral * (0.012 * shoulder + 0.007 * elbow),
+        0.006 * shoulder, 0.0)
 
 func _armor_panel(inf: Vector2) -> float:
     # Stored as COLOR.b, interpolated by GPU; visible broad armor zones rather
