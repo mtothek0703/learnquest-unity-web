@@ -93,6 +93,9 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D,
         return false
     wind_material = ShaderMaterial.new()
     wind_material.shader = wind_shader
+    var source_hair_material := original_curtain.material_override as StandardMaterial3D
+    if source_hair_material != null:
+        wind_material.set_shader_parameter("hair_base_tint", source_hair_material.albedo_color)
     wind_material.set_shader_parameter("wind_back_sign", -float(headwear.get("face_sign")))
     new_curtain.material_override = wind_material
     source.get_parent().add_child(new_curtain)
