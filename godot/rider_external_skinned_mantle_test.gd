@@ -25,7 +25,7 @@ func _check() -> void:
         _fail("real skeleton, source mesh or split mantle missing")
         return
     var headwear := rig.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
-    if headwear == null or float(headwear.get("visual_scale")) < 2.04 or float(headwear.get("visual_scale")) > 2.16:
+    if headwear == null or float(headwear.get("visual_scale")) < 1.89 or float(headwear.get("visual_scale")) > 1.95:
         _fail("integrated rider must use the balanced Head-bone portrait scale")
         return
     var panels: Array = mantle.get("panels")
