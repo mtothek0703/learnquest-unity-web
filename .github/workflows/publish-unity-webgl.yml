@@ -118,6 +118,8 @@ jobs:
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_harness_test.gd 2>&1 | tee /tmp/godot-skinned-harness.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_pauldron_test.gd 2>&1 | tee /tmp/godot-pauldron.log
           grep -Fq 'EXTERNAL PAULDRON TEST PASSED' /tmp/godot-pauldron.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_helmet_contour_test.gd 2>&1 | tee /tmp/helmet-contour.log
+          grep -Fq 'INTEGRATED HELMET TEST PASSED' /tmp/helmet-contour.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_neck_yoke_test.gd 2>&1 | tee /tmp/godot-neck-yoke.log
           grep -Fq 'EXTERNAL SKINNED NECK YOKE TEST PASSED' /tmp/godot-neck-yoke.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_board_contact_test.gd 2>&1 | tee /tmp/godot-board-contact.log
