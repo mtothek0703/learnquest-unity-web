@@ -74,17 +74,20 @@ func _ready() -> void:
             if part.mesh == null or part.mesh.get_surface_count() == 0:
                 built = false
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
     if not built:
         return
     var controller := get_parent().get_parent() as Node3D
     if controller == null:
         return
     var boost := bool(controller.get("boosting"))
+    # Exponential response is time-based: 30/60/120 FPS smartphones show the
+    # same boost and carve glow over the same elapsed time.
+    var response := 1.0 - exp(-12.0 * maxf(delta, 0.0))
     rail_material.emission_energy_multiplier = lerpf(
-        rail_material.emission_energy_multiplier, 3.0 if boost else 1.25, 0.18)
+        rail_material.emission_energy_multiplier, 3.0 if boost else 1.25, response)
     core_material.emission_energy_multiplier = lerpf(
-        core_material.emission_energy_multiplier, 5.0 if boost else 1.6, 0.18)
+        core_material.emission_energy_multiplier, 5.0 if boost else 1.6, response)
     # A turn brightens the outside rail, while the original shared exhaust
     # and boost response stay unchanged. Use existing mobile-safe materials.
     var lean := clampf(float(controller.get("lean")), -1.0, 1.0)
@@ -94,7 +97,7 @@ func _process(_delta: float) -> void:
         var material := rail_materials[i]
         var target_energy := (3.0 if boost else 1.25) + turn_strength * 1.40
         material.emission_energy_multiplier = lerpf(
-            material.emission_energy_multiplier, target_energy, 0.18)
+            material.emission_energy_multiplier, target_energy, response)
         material.emission = Color("#1dbcf5").lerp(Color("#cf4df7"), turn_strength * 0.68)
 
 func _attach(part_name: String, mesh: ArrayMesh, material: Material) -> MeshInstance3D:
