@@ -73,6 +73,12 @@ func _ready() -> void:
         for part in [chassis, grip, keel] + rails + swept_wings + thruster_housings + thruster_cores:
             if part.mesh == null or part.mesh.get_surface_count() == 0:
                 built = false
+    if built:
+        # Volumetric action trails are visual children of the existing board.
+        # They never replace its physics, touch controls or original turbines.
+        var wake := preload("res://hoverboard_boost_wake.gd").new() as Node3D
+        wake.name = "BoostWake"
+        add_child(wake)
 
 func _process(delta: float) -> void:
     if not built:
