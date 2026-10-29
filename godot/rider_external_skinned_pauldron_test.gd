@@ -29,7 +29,7 @@ func _check() -> void:
         return
     var bounds := source.mesh.get_aabb()
     if float(controller.get("shoulder_span")) < bounds.size.x * 0.50 or \
-            float(controller.get("shoulder_span")) > bounds.size.x * 0.54:
+            float(controller.get("shoulder_span")) > bounds.size.x * 0.56:
         _fail("sculpted shoulder silhouette not broad enough")
         return
     var influenced := 0
