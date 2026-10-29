@@ -109,13 +109,13 @@ func _point(tool: SurfaceTool, bounds: AABB, depth: float, side: float,
     var profile := maxf(0.15, pow(maxf(0.0, sin(PI * t)), 0.64))
     if center:
         profile = 0.0
-    var sweep := 0.035 * sin(PI * t)
-    var x := bounds.get_center().x + side * width * (0.205 + sweep + cos(angle) * 0.126 * profile)
-    var y := bounds.position.y + height * (0.785 - t * 0.185)
+    var sweep := 0.012 * sin(PI * t)
+    var x := bounds.get_center().x + side * width * (0.195 + sweep + cos(angle) * 0.107 * profile)
+    var y := bounds.position.y + height * (0.770 - t * 0.150)
     # A curved back-to-front shell follows the actual torso depth, with a
     # raised outer ridge and a subtle aerodynamic taper toward the waist.
-    var ridge := 0.016 * width * pow(absf(cos(angle)), 5.0) * sin(PI * t)
-    var z := depth + sin(angle) * width * (0.135 * profile + 0.012) + ridge * face_sign
+    var ridge := 0.011 * width * pow(absf(cos(angle)), 5.0) * sin(PI * t)
+    var z := depth + sin(angle) * width * (0.115 * profile + 0.008) + ridge * face_sign
     var arm_weight := (0.37 + 0.25 * maxf(0.0, cos(angle))) * (1.0 - 0.25 * t)
     var pelvis_weight := 0.07 + 0.15 * t
     var spine_weight := 1.0 - arm_weight - pelvis_weight
@@ -124,6 +124,6 @@ func _point(tool: SurfaceTool, bounds: AABB, depth: float, side: float,
     tool.set_uv(Vector2(float(angle) / TAU, t))
     var highlight := pow(maxf(0.0, cos(angle)), 2.0)
     var front := maxf(0.0, sin(angle) * face_sign)
-    var tint := Color(0.17 + 0.19 * highlight, 0.17 + 0.18 * front, 0.46 + 0.32 * highlight, 1.0)
+    var tint := Color(0.11 + 0.14 * highlight, 0.18 + 0.12 * front, 0.31 + 0.19 * highlight, 1.0)
     tool.set_color(tint)
     tool.add_vertex(Vector3(x, y, z))
