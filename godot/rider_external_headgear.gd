@@ -555,18 +555,18 @@ func _build_expression(c: Vector3, s: Vector3) -> void:
             base + Vector3(0.0, 0.0, face_sign * s.z * 0.024),
             Vector3(s.x * 0.123, s.y * 0.083, s.z * 0.046), white)
         _ellipsoid("Iris%s" % str(side),
-            base + Vector3(0.0, 0.0, face_sign * s.z * 0.073),
+            base + Vector3(0.0, 0.0, face_sign * s.z * 0.062),
             Vector3(s.x * 0.057, s.y * 0.058, s.z * 0.022), iris)
         _ellipsoid("Pupil%s" % str(side),
-            base + Vector3(0.0, 0.0, face_sign * s.z * 0.094),
+            base + Vector3(0.0, 0.0, face_sign * s.z * 0.073),
             Vector3(s.x * 0.033, s.y * 0.041, s.z * 0.014), pupil)
         # Two small highlights are embedded in each iris, not floating props.
         # They remain visible in the 1280x720 and 1170x540 front cameras.
         _ellipsoid("IrisCatchlight%s_Main" % str(side),
-            base + Vector3(-s.x * 0.012, s.y * 0.016, face_sign * s.z * 0.109),
+            base + Vector3(-s.x * 0.012, s.y * 0.016, face_sign * s.z * 0.083),
             Vector3(s.x * 0.012, s.y * 0.016, s.z * 0.007), eye_glint)
         _ellipsoid("IrisCatchlight%s_Small" % str(side),
-            base + Vector3(s.x * 0.015, -s.y * 0.013, face_sign * s.z * 0.108),
+            base + Vector3(s.x * 0.015, -s.y * 0.013, face_sign * s.z * 0.082),
             Vector3(s.x * 0.006, s.y * 0.008, s.z * 0.005), eye_glint)
         var upper_lid: Array[Vector3] = []
         var lower_lid: Array[Vector3] = []
@@ -721,12 +721,67 @@ func _almond_eye_mesh() -> ArrayMesh:
     surface.generate_normals()
     return surface.commit()
 
+func _iris_lens_mesh() -> ArrayMesh:
+    # Recessed convex iris/pupil lenses replace the previous detached spheres.
+    # Both retain their own nodes for existing gaze/blink animation, but sit
+    # within the actual almond eye profile instead of floating ahead of it.
+    # This is authored procedural geometry; no external textures or draw calls.
+    var surface := SurfaceTool.new()
+    surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+    var rings := 6
+    var sides := 32
+    for ring in range(1, rings + 1):
+        var inner := float(ring - 1) / float(rings)
+        var outer := float(ring) / float(rings)
+        for side in range(sides):
+            var a0 := TAU * float(side) / float(sides)
+            var a1 := TAU * float(side + 1) / float(sides)
+            var p00 := _lens_point(inner, a0)
+            var p01 := _lens_point(inner, a1)
+            var p10 := _lens_point(outer, a0)
+            var p11 := _lens_point(outer, a1)
+            var n0 := Vector3(cos(a0) * outer * 0.35,
+                sin(a0) * outer * 0.35, face_sign).normalized()
+            var n1 := Vector3(cos(a1) * outer * 0.35,
+                sin(a1) * outer * 0.35, face_sign).normalized()
+            if ring == 1:
+                surface.set_normal(Vector3(0.0, 0.0, face_sign))
+                surface.add_vertex(Vector3(0.0, 0.0, face_sign * 0.20))
+                surface.set_normal(n0)
+                surface.add_vertex(p10)
+                surface.set_normal(n1)
+                surface.add_vertex(p11)
+            else:
+                _quad_smooth(surface, p00, p10, p11, p01,
+                    Vector3(cos(a0) * inner * 0.35,
+                        sin(a0) * inner * 0.35, face_sign).normalized(),
+                    n0, n1,
+                    Vector3(cos(a1) * inner * 0.35,
+                        sin(a1) * inner * 0.35, face_sign).normalized())
+    # Close the shallow lens so profile views cannot reveal an open disk.
+    for side in range(sides):
+        var a0 := TAU * float(side) / float(sides)
+        var a1 := TAU * float(side + 1) / float(sides)
+        var front0 := _lens_point(1.0, a0)
+        var front1 := _lens_point(1.0, a1)
+        var rear0 := Vector3(cos(a0), sin(a0), -face_sign * 0.18)
+        var rear1 := Vector3(cos(a1), sin(a1), -face_sign * 0.18)
+        _quad(surface, front0, rear0, rear1, front1)
+        for point in [Vector3(0.0, 0.0, -face_sign * 0.18), rear1, rear0]:
+            surface.set_normal(Vector3(0.0, 0.0, -face_sign))
+            surface.add_vertex(point)
+    return surface.commit()
+
+func _lens_point(radius: float, angle: float) -> Vector3:
+    return Vector3(cos(angle) * radius, sin(angle) * radius,
+        face_sign * 0.20 * (1.0 - radius * radius))
+
 func _ellipsoid(name_text: String, center: Vector3, radii: Vector3, mat: Material) -> void:
     # Eye whites used to be perfect spheres: in the actual front camera they
     # looked like two loose beads. Sculpt the SAME two Head-attached objects
     # into closed, tapered almond volumes with continuous normals. Iris,
     # pupils and catchlights keep their original animation and materials.
-    var shape: Mesh = _almond_eye_mesh() if name_text.begins_with("EyeWhite") else SphereMesh.new()
+    var shape: Mesh = _almond_eye_mesh() if name_text.begins_with("EyeWhite") else (\n        _iris_lens_mesh() if name_text.begins_with("Iris") and not name_text.begins_with("IrisCatchlight")\n        or name_text.begins_with("Pupil") else SphereMesh.new())
     if shape is SphereMesh:
         var sphere := shape as SphereMesh
         sphere.radius = 1.0
