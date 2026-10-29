@@ -71,10 +71,24 @@ void fragment() {
         knee_gasket * 0.64);
     boots = mix(boots, vec3(0.20, 0.29, 0.42), shin_segment * 0.58);
     boots = mix(boots, vec3(0.019, 0.032, 0.065), boot_seams * 0.86);
+    // Match the torso's two physically distinct finishes on the same
+    // original four-weight trousers and boots: woven stretch fabric versus
+    // brushed hard-shell toes/shins. Rest-space UVs are exporter-independent.
+    vec2 textile_uv = vec2((source_vertex.x - rest_center_x) / max(rest_width, 0.001),
+        (source_vertex.y - rest_bottom) / max(rest_height, 0.001));
+    float weave = sin(textile_uv.x * 82.0) * sin(textile_uv.y * 104.0);
+    float carbon_fiber = sin(textile_uv.x * 104.0 + textile_uv.y * 31.0)
+        * sin(textile_uv.y * 110.0 - textile_uv.x * 25.0);
+    float boot_armor = clamp(shin_plate * 0.72 + toe_cap * 0.85
+        + heel_counter * 0.45, 0.0, 1.0);
+    trousers *= 0.986 + 0.014 * weave;
+    boots *= 0.99 + 0.045 * carbon_fiber * boot_armor
+        + 0.010 * weave * (1.0 - boot_armor);
     ALBEDO = mix(trousers, boots, boot_mode);
     METALLIC = mix(0.13, 0.36 + shin_segment * 0.18, boot_mode);
-    ROUGHNESS = mix(0.55 + knee_gasket * 0.12,
-        0.44 - shin_segment * 0.13 + boot_seams * 0.20, boot_mode);
+    ROUGHNESS = mix(0.55 + knee_gasket * 0.12 + weave * 0.018,
+        0.44 - shin_segment * 0.13 + boot_seams * 0.20
+        - carbon_fiber * boot_armor * 0.022, boot_mode);
     float edge = exp(-pow((x - 0.225) * 32.0, 2.0));
     float stripe = exp(-pow((x - 0.28) * 28.0, 2.0)) * thigh;
     float shin_seam = exp(-pow((x - 0.235) * 45.0, 2.0)) * calf;
