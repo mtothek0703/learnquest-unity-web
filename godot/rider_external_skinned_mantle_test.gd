@@ -24,19 +24,23 @@ func _check() -> void:
     if rig == null or rig.get_bone_count() < 60 or mantle == null or source == null:
         _fail("real skeleton, source mesh or split mantle missing")
         return
+    var headwear := rig.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
+    if headwear == null or float(headwear.get("visual_scale")) < 2.20 or float(headwear.get("visual_scale")) > 2.40:
+        _fail("integrated rider must use the balanced Head-bone portrait scale")
+        return
     var panels: Array = mantle.get("panels")
     if panels.size() != 2 or int(mantle.get("generated_vertices")) < 2000:
         _fail("two substantial curved mesh panels required")
         return
-    if float(mantle.get("mantle_span")) < source.mesh.get_aabb().size.y * 0.33 or \
-            float(mantle.get("mantle_span")) > source.mesh.get_aabb().size.y * 0.36:
-        _fail("short skinned flight fins must reveal the lower suit and hoverboard")
+    if float(mantle.get("mantle_span")) < source.mesh.get_aabb().size.y * 0.49 or \
+            float(mantle.get("mantle_span")) > source.mesh.get_aabb().size.y * 0.53:
+        _fail("full-length weighted coat tails must reach the thighs without covering the board")
         return
     # Compact tailored coat-fin redesign must occupy the chase silhouette
     # without hiding the real 65-bone torso, legs, or hoverboard.
     var wing_reach := float(mantle.get("wing_reach"))
     var source_width := source.mesh.get_aabb().size.x
-    if wing_reach < source_width * 0.40 or wing_reach > source_width * 0.54:
+    if wing_reach < source_width * 0.32 or wing_reach > source_width * 0.44:
         _fail("compact coat fins must not become detached airplane wings")
         return
     var active_leg_binds := 0
@@ -146,17 +150,18 @@ func _check() -> void:
         if root_samples < 10 or hem_samples < 10:
             _fail("mantle must have sampled shoulder and wing-tip rows")
             return
-        if mid_max - mid_min < source_width * 0.22:
+        if mid_max - mid_min < source_width * 0.20:
             _fail("swept wing must add a broad, visible sculpted midspan")
             return
-        if mid_max - mid_min < (root_max - root_min) * 3.0:
+        if mid_max - mid_min < (root_max - root_min) * 2.7:
             _fail("sculpted fin must have substantial mid-chord width")
             return
-        if hem_max - hem_min > (mid_max - mid_min) * 0.65:
+        if hem_max - hem_min > (mid_max - mid_min) * 0.35:
             _fail("fin tip must taper rather than become a skirt-like hem")
             return
-        if lowest_y < source.mesh.get_aabb().position.y + source.mesh.get_aabb().size.y * 0.38:
-            _fail("short fins must not conceal the original skinned legs or board")
+        var hem_fraction := (lowest_y - source.mesh.get_aabb().position.y) / source.mesh.get_aabb().size.y
+        if hem_fraction < 0.23 or hem_fraction > 0.31:
+            _fail("long coat hem must reach the thigh but clear the skinned boots and board")
             return
         if airfoil_max_z - airfoil_min_z < source.mesh.get_aabb().size.x * 0.025:
             _fail("flight fins need real front/back airfoil volume, not flat double-sided cloth")
@@ -169,7 +174,7 @@ func _check() -> void:
             _fail("original Head attachment missing")
             return
         var back_sign := -1.0 if float(headgear.get("face_sign")) > 0.0 else 1.0
-        if back_sign * (hem_depth / float(hem_samples) - root_depth / float(root_samples)) < 0.40:
+        if back_sign * (hem_depth / float(hem_samples) - root_depth / float(root_samples)) < 0.37:
             _fail("wing hems must sweep behind the original skinned torso")
             return
         if low_count < 50:
