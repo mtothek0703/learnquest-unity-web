@@ -10,6 +10,9 @@ var rest_rotations: Dictionary = {}
 var elapsed: float = 0.0
 var previous_height: float = 0.0
 var last_jump: float = 0.0
+# Impact compression is visual only: it never changes the collision body.
+var landing_impact: float = 0.0
+var vertical_speed: float = 0.0
 var facial_acting: Node
 var flight_mantle: Node
 var hair_dynamics: Node
@@ -259,23 +262,30 @@ func _process(delta: float) -> void:
     var turbo := bool(rider.get("boosting"))
     var height := maxf(rider.position.y, 0.0)
     var jump := clampf(height / 1.25, 0.0, 1.0)
-    var ascending := height > previous_height + 0.02
+    # The previous 0.02-m/frame jump-direction threshold and delta*9 pose
+    # blend changed animation timing with phone refresh rate. Use metres per
+    # second and an exponential response instead (30/60/120 Hz converge).
+    vertical_speed = (height - previous_height) / maxf(delta, 0.001)
+    var ascending := vertical_speed > 0.08
+    if previous_height > 0.18 and height <= 0.04 and vertical_speed < -0.25:
+        landing_impact = clampf(-vertical_speed * 0.10, 0.0, 0.50)
+    landing_impact *= exp(-maxf(delta, 0.0) * 12.0)
     previous_height = height
     last_jump = move_toward(last_jump, jump, delta * 7.0)
     var boost := 1.0 if turbo else 0.0
-    var blend := minf(1.0, delta * 9.0)
+    var blend := 1.0 - exp(-maxf(delta, 0.0) * 9.0)
     action_charge = move_toward(action_charge, boost, delta * 6.0)
     _update_action_materials(steer, last_jump)
     # Surf stance: bent knees, articulated ankles, responsive hips, elbows and
     # wrists. Every rotation acts on the genuine imported 65-bone skeleton.
     # No board physics, input mapping or game collision logic is changed.
     var carve := absf(steer)
-    var crouch := 0.15 + 0.17 * carve + 0.12 * boost + 0.08 * last_jump
+    var crouch := 0.15 + 0.17 * carve + 0.12 * boost + 0.08 * last_jump + landing_impact * 0.22
     var breathing := sin(elapsed * 2.3) * 0.025
     _pose(["pelvis", "Hips"], Quaternion(Vector3.FORWARD, -steer * 0.18) *
-        Quaternion(Vector3.RIGHT, 0.08 + crouch * 0.27), blend)
+        Quaternion(Vector3.RIGHT, 0.08 + crouch * 0.27 + landing_impact * 0.14), blend)
     _pose(["spine_01", "Spine"], Quaternion(Vector3.FORWARD, steer * 0.10) *
-        Quaternion(Vector3.RIGHT, -0.05 + boost * 0.13 + last_jump * 0.12 + breathing), blend)
+        Quaternion(Vector3.RIGHT, -0.05 + boost * 0.13 + last_jump * 0.12 + breathing - landing_impact * 0.08), blend)
     _pose(["spine_02", "spine_03", "Chest", "UpperChest"], Quaternion(Vector3.UP, -steer * 0.19) *
         Quaternion(Vector3.RIGHT, -0.07 + boost * 0.17 + last_jump * 0.15), blend)
     _pose(["neck_01", "Neck"], Quaternion(Vector3.UP, steer * 0.09), blend)
@@ -287,6 +297,9 @@ func _process(delta: float) -> void:
     for side in [-1, 1]:
         var prefix := "Left" if side < 0 else "Right"
         var sign_side := float(side)
+        # Transfer weight between the actual left/right leg bones when
+        # carving. The inside leg compresses while the outside leg extends.
+        var leg_load := steer * sign_side * 0.14
         var spread := -sign_side * (1.30 + 0.14 * carve -
             last_jump * (0.45 if ascending else 0.32))
         _pose(["upperarm_l" if side < 0 else "upperarm_r", prefix + "UpperArm", prefix + "Arm"],
@@ -299,11 +312,11 @@ func _process(delta: float) -> void:
             Quaternion(Vector3.RIGHT, 0.20 + boost * 0.14) *
             Quaternion(Vector3.UP, -sign_side * steer * 0.12), blend)
         _pose(["thigh_l" if side < 0 else "thigh_r", prefix + "UpperLeg", prefix + "UpLeg", prefix + "Thigh"],
-            Quaternion(Vector3.RIGHT, -0.24 - crouch * 0.42 + last_jump * 0.18), blend)
+            Quaternion(Vector3.RIGHT, -0.24 - crouch * 0.42 + last_jump * 0.18 - leg_load - landing_impact * 0.20), blend)
         _pose(["calf_l" if side < 0 else "calf_r", prefix + "LowerLeg", prefix + "Leg", prefix + "Shin"],
-            Quaternion(Vector3.RIGHT, 0.34 + crouch * 0.50 - last_jump * 0.45), blend)
+            Quaternion(Vector3.RIGHT, 0.34 + crouch * 0.50 - last_jump * 0.45 + leg_load * 1.25 + landing_impact * 0.34), blend)
         _pose(["foot_l" if side < 0 else "foot_r", prefix + "Foot"],
-            Quaternion(Vector3.RIGHT, -0.13 - crouch * 0.12 + last_jump * 0.19), blend)
+            Quaternion(Vector3.RIGHT, -0.13 - crouch * 0.12 + last_jump * 0.19 - leg_load * 0.35 - landing_impact * 0.18), blend)
     if flight_mantle != null:
         flight_mantle.call("set_motion", steer, boost, last_jump)
     if facial_acting != null:
