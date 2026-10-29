@@ -170,8 +170,11 @@ func _check() -> void:
                 _fail("rear lock %d has non-normalized four-bone weights" % i)
                 return
         var original_mat := rigid.material_override as StandardMaterial3D
-        if dye == null or dye.shader != wind.shader or original_mat == null or \
-                not (dye.get_shader_parameter("hair_base_tint") as Color).is_equal_approx(original_mat.albedo_color):
+        if dye == null or dye.shader != wind.shader or original_mat == null:
+            _fail("rear lock %d lost original shader/material" % i)
+            return
+        var lock_tint: Color = dye.get_shader_parameter("hair_base_tint")
+        if not lock_tint.is_equal_approx(original_mat.albedo_color):
             _fail("rear lock %d lost original chestnut color or root-anchored wind shader" % i)
             return
     weighted_controller.call("set_motion", 0.85, 1.0, 0.6, 2.0)
