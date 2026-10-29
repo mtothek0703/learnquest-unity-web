@@ -153,6 +153,17 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
         if not bool(harness.call("install", outfit.get("garment") as MeshInstance3D, harness_face_sign)):
             harness.queue_free()
             push_warning("CC0 four-weight flight harness unavailable")
+    # The open-front, raised-back neck yoke connects the imported Head to the
+    # true four-weight jacket/shoulder silhouette without a rigid collar ring.
+    # It shares the CC0 Skin and is cosmetic only (no touch/physics changes).
+    var neck_yoke := preload("res://rider_external_skinned_neck_yoke.gd").new() as Node
+    neck_yoke.name = "ExternalSkinnedNeckYoke"
+    character.add_child(neck_yoke)
+    var neck_headwear := skeleton.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
+    var neck_face_sign := float(neck_headwear.get("face_sign")) if neck_headwear != null else -1.0
+    if not bool(neck_yoke.call("install", skinned_meshes, skeleton, neck_face_sign)):
+        neck_yoke.queue_free()
+        push_warning("CC0 weighted neck yoke unavailable; original jacket remains")
     # Weighted trousers and boots use the same original four-influence
     # skinning as the body; unlike rigid props, knees/ankles follow the rig.
     var lower := preload("res://rider_external_skinned_lower.gd").new() as Node
