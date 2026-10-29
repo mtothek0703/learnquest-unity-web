@@ -552,21 +552,22 @@ func _build_expression(c: Vector3, s: Vector3) -> void:
     var ink := _material(Color(0.14, 0.075, 0.22), 0.0, 0.76)
     var lid_mat := _material(Color(0.30, 0.14, 0.28), 0.0, 0.66)
     var blush := _material(Color(0.77, 0.36, 0.43), 0.0, 0.79)
-    # After side-by-side V123/V124 portrait QA: calm the oversized cyan irises,\n    # give pupils more expression, strengthen brows, and soften the nose,\n    # cheek marks and smile curvature as one coherent mobile facial design.\n    # Larger eyes and a softer cheek-to-jaw profile remain seated on the same
+    # After side-by-side V123/V124 portrait QA: calm the oversized cyan irises,\n    # give pupils more expression, strengthen brows, and soften the nose,\n    # cheek marks and smile curvature as one coherent mobile facial design.\n    # A more athletic portrait uses smaller almond eyes, restrained facial
+    # accents, a shorter smile and a tapered jaw. All remain on the same
     # continuous Head-bone facial surface; no floating face plane is added.
     var eye_y := head_bounds.position.y + s.y * 0.59
     for side in [-1.0, 1.0]:
-        var eye_x: float = c.x + side * s.x * 0.22
+        var eye_x: float = c.x + side * s.x * 0.225
         var base := _face_front_point(c, s, eye_x, eye_y)
         _ellipsoid("EyeWhite%s" % str(side),
             base + Vector3(0.0, 0.0, face_sign * s.z * 0.024),
-            Vector3(s.x * 0.123, s.y * 0.083, s.z * 0.046), white)
+            Vector3(s.x * 0.106, s.y * 0.069, s.z * 0.042), white)
         _ellipsoid("Iris%s" % str(side),
             base + Vector3(0.0, 0.0, face_sign * s.z * 0.062),
-            Vector3(s.x * 0.057, s.y * 0.058, s.z * 0.022), iris)
+            Vector3(s.x * 0.044, s.y * 0.048, s.z * 0.020), iris)
         _ellipsoid("Pupil%s" % str(side),
             base + Vector3(0.0, 0.0, face_sign * s.z * 0.073),
-            Vector3(s.x * 0.033, s.y * 0.041, s.z * 0.014), pupil)
+            Vector3(s.x * 0.027, s.y * 0.034, s.z * 0.014), pupil)
         # Two small highlights are embedded in each iris, not floating props.
         # They remain visible in the 1280x720 and 1170x540 front cameras.
         _ellipsoid("IrisCatchlight%s_Main" % str(side),
@@ -581,18 +582,18 @@ func _build_expression(c: Vector3, s: Vector3) -> void:
         var cheek: Array[Vector3] = []
         for i in range(17):
             var t := float(i) / 16.0
-            var x := eye_x + (t - 0.5) * s.x * 0.245
+            var x := eye_x + (t - 0.5) * s.x * 0.218
             var arc := sin(t * PI)
-            var upper_y := eye_y + s.y * (0.012 + 0.083 * arc)
-            var lower_y := eye_y - s.y * (0.016 + 0.070 * arc)
+            var upper_y := eye_y + s.y * (0.009 + 0.068 * arc)
+            var lower_y := eye_y - s.y * (0.012 + 0.056 * arc)
             upper_lid.append(_face_front_point(c, s, x, upper_y) +
                 Vector3(0.0, 0.0, face_sign * s.z * 0.069))
             lower_lid.append(_face_front_point(c, s, x, lower_y) +
                 Vector3(0.0, 0.0, face_sign * s.z * 0.058))
-            var brow_y := eye_y + s.y * (0.158 + 0.025 * arc)
+            var brow_y := eye_y + s.y * (0.143 + 0.021 * arc)
             brow.append(_face_front_point(c, s, x, brow_y) +
                 Vector3(0.0, 0.0, face_sign * s.z * 0.027))
-            var cheek_y := eye_y - s.y * (0.170 + 0.015 * arc)
+            var cheek_y := eye_y - s.y * (0.156 + 0.012 * arc)
             cheek.append(_face_front_point(c, s, x, cheek_y) +
                 Vector3(0.0, 0.0, face_sign * s.z * 0.020))
         _mesh("UpperLid%s" % str(side), _tube(upper_lid, s.x * 0.013, 6), lid_mat)
@@ -611,11 +612,11 @@ func _build_expression(c: Vector3, s: Vector3) -> void:
     var lower_lip: Array[Vector3] = []
     for i in range(21):
         var t := float(i) / 20.0
-        var x := c.x + (t - 0.5) * s.x * 0.58
-        var y := head_bounds.position.y + s.y * (0.307 + 0.052 * pow(2.0 * t - 1.0, 2.0))
+        var x := c.x + (t - 0.5) * s.x * 0.47
+        var y := head_bounds.position.y + s.y * (0.313 + 0.028 * pow(2.0 * t - 1.0, 2.0))
         smile.append(_face_front_point(c, s, x, y) +
             Vector3(0.0, 0.0, face_sign * s.z * 0.026))
-        lower_lip.append(_face_front_point(c, s, x, y - s.y * 0.032 * sin(t * PI)) +
+        lower_lip.append(_face_front_point(c, s, x, y - s.y * 0.024 * sin(t * PI)) +
             Vector3(0.0, 0.0, face_sign * s.z * 0.023))
     _mesh("CurvedSmile", _tube(smile, s.x * 0.011, 6), ink)
     _mesh("LowerLipContour", _tube(lower_lip, s.x * 0.008, 6), blush)
@@ -625,7 +626,7 @@ func _face_front_point(c: Vector3, s: Vector3, x: float, y: float) -> Vector3:
     # cheeks and mouth sit on the same curved, jaw-tapered mesh.
     var latitude := acos(clampf((y - c.y) / maxf(s.y * 0.48, 0.001), -0.98, 0.98))
     var v := latitude / PI
-    var jaw := 0.92 + 0.08 * smoothstep(0.12, 0.67, 1.0 - v)
+    var jaw := 0.82 + 0.18 * smoothstep(0.12, 0.67, 1.0 - v)
     var radius := maxf(0.001, sin(latitude) * s.x * 0.55 * jaw)
     var angle := acos(clampf((x - c.x) / radius, -0.985, 0.985))
     if face_sign < 0.0:
@@ -677,16 +678,16 @@ func _face_color(c: Vector3, s: Vector3, u: float, v: float) -> Color:
     var chin_shadow := smoothstep(0.72, 0.94, v)
     var skin := Color(0.94, 0.70, 0.59)
     skin = skin.lerp(Color(0.98, 0.75, 0.60), 0.22 * frontness)
-    skin = skin.lerp(Color(0.88, 0.37, 0.45), cheek * frontness * 0.34)
-    skin = skin.lerp(Color(0.45, 0.29, 0.42), eye_shadow * frontness * 0.21)
-    skin = skin.lerp(Color(0.48, 0.30, 0.40), chin_shadow * 0.20)
+    skin = skin.lerp(Color(0.88, 0.37, 0.45), cheek * frontness * 0.23)
+    skin = skin.lerp(Color(0.45, 0.29, 0.42), eye_shadow * frontness * 0.15)
+    skin = skin.lerp(Color(0.48, 0.30, 0.40), chin_shadow * 0.15)
     return skin
 
 func _face_point(c: Vector3, s: Vector3, u: float, v: float) -> Vector3:
     var latitude := v * PI
     var longitude := u * TAU
     var silhouette := sin(latitude)
-    var jaw := 0.92 + 0.08 * smoothstep(0.12, 0.67, 1.0 - v)
+    var jaw := 0.82 + 0.18 * smoothstep(0.12, 0.67, 1.0 - v)
     var x := cos(longitude) * silhouette * s.x * 0.55 * jaw
     var z := sin(longitude) * silhouette * s.z * 0.52
     # V124 portrait pass: a wider cheek/jaw and shorter face reads as a\n    # stylized adventurer rather than a long narrow mask. The face-front
