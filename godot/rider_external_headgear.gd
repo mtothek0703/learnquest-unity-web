@@ -799,7 +799,11 @@ func _ellipsoid(name_text: String, center: Vector3, radii: Vector3, mat: Materia
     part.mesh = shape
     # Unlike the other procedural ArrayMeshes, the almond eye uses local
     # unit geometry with a separately projected eye-center transform.
-    if name_text.begins_with("EyeWhite"):
+    if shape is ArrayMesh:
+        # All modeled eye lenses use unit-local vertices and a fitted node
+        # transform. Preserve their eye position/radii when the mobile portrait
+        # scales; otherwise the new iris/pupil ArrayMeshes jump to the head
+        # origin and grow to full-head size.
         part.set_meta("local_eye_geometry", true)
     part.material_override = mat
     part.position = center
