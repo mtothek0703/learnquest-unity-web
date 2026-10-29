@@ -174,13 +174,13 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
         surface_sign: float) -> void:
     var width := bounds.size.x
     var center_x := bounds.get_center().x
-    # Full-length split coat tails grow from the real weighted shoulder yoke,
-    # narrow toward the thighs and leave the original skinned legs visible.
+    # Actual fabric drape: narrow four-weight coat panels follow the original
+    # hips and thighs rather than making two puffy aircraft wings.
     # The narrow aerodynamic drape replaces the former horizontal wing shape.
-    var flare := pow(maxf(0.0, sin(PI * t)), 0.84)
+    var flare := pow(maxf(0.0, sin(PI * t)), 1.20)
     var scallop := 0.014 * sin(3.0 * PI * t) * sin(PI * t)
-    var inner := width * (0.085 + 0.09 * t)
-    var outer := width * (0.14 + 0.20 * flare + 0.07 * t + scallop)
+    var inner := width * (0.080 + 0.055 * t)
+    var outer := width * (0.155 + 0.095 * flare + 0.055 * t + scallop * 0.35)
     var x := center_x + side * lerpf(inner, outer, u)
     var camber := sin(u * PI) * sin(t * PI)
     # Long vertical tailoring reads as an actual split coat rather than
@@ -189,13 +189,13 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
         0.025 * camber + 0.012 * u * t)
     # Rear sweep preserves a real 3D drape while bringing the tail back
     # toward the legs, not far outboard of the character's silhouette.
-    var sweep := 0.05 + 0.13 * t + 0.29 * pow(t, 1.4) + 0.06 * camber
-    var rib := sin(u * PI * 3.0 + t * 3.0) * width * 0.008 * t
-    # A raised, variable-thickness trailing lip gives the airfoil an
-    # actual sculpted edge at chase distance instead of a paper-thin sheet.
+    var sweep := 0.055 + 0.14 * t + 0.20 * pow(t, 1.4) + 0.025 * camber
+    var rib := sin(u * PI * 2.0 + t * 1.7) * width * 0.018 * sin(PI * t)
+    # Thin but closed fabric edges with gentle three-dimensional pleats,
+    # not the previous inflated airfoil cross section.
     # Thickness remains positive at every boundary, so the sidewalls seal.
-    var thickness := width * (0.016 + 0.043 * sin(PI * u) * sin(PI * t) +
-        0.016 * sin(PI * t) * u * u)
+    var thickness := width * (0.009 + 0.017 * sin(PI * u) * sin(PI * t) +
+        0.005 * sin(PI * t) * u * u)
     var z := back + back_sign * (sweep + rib + surface_sign * thickness)
     var spine_weight := 0.72 * (1.0 - t) * (1.0 - t)
     var leg_weight := 0.34 * t * t
