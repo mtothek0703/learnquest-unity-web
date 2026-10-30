@@ -131,14 +131,19 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, side: float,
         spine: int, pelvis: int, arm: int, core: bool, t: float, angle: float) -> void:
     var width := bounds.size.x
     var height := bounds.size.y
-    var shoulder_x := bounds.get_center().x + side * width * 0.175
+    # The first isolated, shader-time-frozen chase capture proved the
+    # original glowing cores were almost entirely buried under the mantle
+    # (12 changed 6px samples). Sculpt two narrow, tapered shoulder-light
+    # insets on the OUTER shoulder seam instead of two round rear bulbs.
+    # Keep the retired full nacelles unchanged for fallback/QA.
+    var shoulder_x := bounds.get_center().x + side * width * (0.235 if core else 0.175)
     var upper_y := bounds.position.y + height * 0.715
-    var taper := 0.49 + 0.51 * pow(maxf(0.0, sin(PI * t)), 0.75)
-    var radius_x := width * (0.039 if core else 0.054) * taper
-    var radius_z := width * (0.026 if core else 0.032) * taper
-    var y := upper_y - height * (0.075 if core else 0.095) * t
+    var taper := (0.36 if core else 0.49) + (0.64 if core else 0.51) * pow(maxf(0.0, sin(PI * t)), 0.75)
+    var radius_x := width * (0.023 if core else 0.054) * taper
+    var radius_z := width * (0.013 if core else 0.032) * taper
+    var y := upper_y - height * (0.098 if core else 0.095) * t
     var x := shoulder_x + cos(angle) * radius_x
-    var z := back + rear_sign * (width * (0.028 if core else 0.018) +
+    var z := back + rear_sign * (width * (0.075 if core else 0.018) +
         sin(angle) * radius_z + height * 0.026 * t)
     # The shoulder joint controls the outside of the nacelle, while the
     # spine/pelvis stabilise its inside and base. Four source-Skin slots,
