@@ -109,6 +109,8 @@ jobs:
           echo "Run gameplay integration tests"
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://smoke_test.gd 2>&1 | tee /tmp/godot-gameplay-test.log
           grep -Fq "LEARNQUEST SMOKE TEST PASSED" /tmp/godot-gameplay-test.log || { echo "::error::Gameplay checks did not complete"; exit 1; }
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_body_resculpt_test.gd 2>&1 | tee /tmp/godot-continuous-body-resculpt.log
+          grep -Fq 'CONTINUOUS BODY RESCULPT TEST PASSED' /tmp/godot-continuous-body-resculpt.log
           echo "Gameplay integration tests passed"
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_original_body_skin_test.gd 2>&1 | tee /tmp/godot-original-body-skin.log
           grep -Fq "ORIGINAL BODY SKIN TEST PASSED" /tmp/godot-original-body-skin.log
