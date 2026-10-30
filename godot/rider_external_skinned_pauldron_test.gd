@@ -25,14 +25,16 @@ func _check() -> void:
         return
     var parts: Array = controller.get("shells")
     if parts.size() != 2 or int(controller.get("generated_vertices")) < 5500:
-        _fail("need two substantial closed shoulder volumes")
+        _fail("need two substantial closed, low-profile shoulder caps")
         return
     var bounds := source.mesh.get_aabb()
-    if float(controller.get("shoulder_span")) < bounds.size.x * 0.49 or \
-            float(controller.get("shoulder_span")) > bounds.size.x * 0.53:
+    if float(controller.get("shoulder_span")) < bounds.size.x * 0.46 or \
+            float(controller.get("shoulder_span")) > bounds.size.x * 0.49:
         _fail("sculpted shoulder silhouette not broad enough")
         return
     var influenced := 0
+    var midsection_hits := 0
+    var tapered_end_hits := 0
     for part in parts:
         var shell := part as MeshInstance3D
         if shell == null or shell.mesh == null or shell.skin != source.skin or shell.skeleton != source.skeleton:
@@ -42,9 +44,9 @@ func _check() -> void:
             _fail("skinned shoulder not installed beside original source mesh")
             return
         var shell_bounds := shell.mesh.get_aabb()
-        if shell_bounds.size.x < bounds.size.x * 0.12 or shell_bounds.size.x > bounds.size.x * 0.14 or \
-                shell_bounds.size.z < bounds.size.x * 0.13 or shell_bounds.size.z > bounds.size.x * 0.17 or \
-                shell_bounds.size.y > bounds.size.y * 0.16:
+        if shell_bounds.size.x < bounds.size.x * 0.108 or shell_bounds.size.x > bounds.size.x * 0.125 or \
+                shell_bounds.size.z < bounds.size.x * 0.12 or shell_bounds.size.z > bounds.size.x * 0.16 or \
+                shell_bounds.size.y > bounds.size.y * 0.13:
             _fail("shoulder shell must be a curved 3D volume, not a flat plate")
             return
         var arrays: Array = shell.mesh.surface_get_arrays(0)
@@ -57,7 +59,16 @@ func _check() -> void:
                 normals.size() != vertices.size() or normals[2].dot(normals[7]) < 0.995:
             _fail("missing dense curved mesh, normals, colors or four-weight skin")
             return
+        var center_x := shell_bounds.get_center().x
         for i in range(vertices.size()):
+            # The new cap is a tapered deltoid, not a uniform inflated tube.
+            # Test the real 3D mesh in imported rest space, not shader colors.
+            var normalized_y := (vertices[i].y - shell_bounds.position.y) / maxf(shell_bounds.size.y, 0.0001)
+            var radial_x := absf(vertices[i].x - center_x)
+            if normalized_y > 0.30 and normalized_y < 0.70 and radial_x > bounds.size.x * 0.042:
+                midsection_hits += 1
+            if (normalized_y < 0.05 or normalized_y > 0.95) and radial_x > bounds.size.x * 0.042:
+                tapered_end_hits += 1
             var sum_weight := 0.0
             for slot in range(4):
                 var index := bones[i * 4 + slot]
@@ -71,6 +82,9 @@ func _check() -> void:
             if absf(sum_weight - 1.0) > 0.002:
                 _fail("weights do not sum to one")
                 return
+    if midsection_hits < 200 or tapered_end_hits > midsection_hits / 3:
+        _fail("deltoid caps must swell through the shoulder and taper toward both ends")
+        return
     if influenced < 2000:
         _fail("shoulder shell must follow actual upper-arm bones")
         return
