@@ -223,6 +223,19 @@ func _check() -> void:
     if garment.mesh.get_aabb().size.x < imported_bounds.size.x * 0.28:
         _fail("tailored jacket silhouette collapsed")
         return
+    # The old height-only jacket duplicated the CC0 forearms and hands,
+    # producing bright inflated bulbs in actual 1280x720 chase screenshots.
+    # Every new jacket vertex must be torso-dominant after clipping against
+    # original imported arm-bone influences; never remove the source arms.
+    var arm_binds: Dictionary = {}
+    for bind_index in range(garment.skin.get_bind_count()):
+        if String(garment.skin.get_bind_name(bind_index)) in [
+                "upperarm_l", "upperarm_r", "lowerarm_l", "lowerarm_r",
+                "hand_l", "hand_r"]:
+            arm_binds[bind_index] = true
+    if arm_binds.size() < 4:
+        _fail("original imported arm bind names missing")
+        return
     var vertex_count := 0
     for surface in range(garment.mesh.get_surface_count()):
         var arrays: Array = garment.mesh.surface_get_arrays(surface)
@@ -234,12 +247,18 @@ func _check() -> void:
             return
         for i in range(vertices.size()):
             var total := 0.0
+            var arm_weight := 0.0
             for j in range(4):
                 var index := bones[i * 4 + j]
                 if index < 0 or index >= garment.skin.get_bind_count():
                     _fail("jacket bone index outside original Skin")
                     return
                 total += weights[i * 4 + j]
+                if arm_binds.has(index):
+                    arm_weight += weights[i * 4 + j]
+            if arm_weight > 0.56:
+                _fail("jacket still duplicates arm-dominant triangles instead of fitting torso")
+                return
             if absf(total - 1.0) > 0.04:
                 _fail("jacket weights must stay normalized")
                 return
