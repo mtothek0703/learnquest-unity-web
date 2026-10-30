@@ -88,7 +88,7 @@ func _capture() -> void:
                         _fail("cannot write comparison frame")
                         return
                     if variant == "before":
-                        baseline = image.duplicate()
+                        baseline = image.duplicate() as Image
                     elif view == "chase":
                         # A green renderer test alone previously accepted fins
                         # that changed ZERO chase-view pixels. Compare actual
