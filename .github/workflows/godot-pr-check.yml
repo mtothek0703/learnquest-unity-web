@@ -190,6 +190,17 @@ jobs:
             --script res://rider_external_body_resculpt_visual_capture_test.gd 2>&1 | tee /tmp/body-sculpt-visual.log
           grep -Fq 'CONTINUOUS BODY VISUAL QA PASSED' /tmp/body-sculpt-visual.log
           test "$(find /tmp/learnquest-body-sculpt-qa -name '*.png' | wc -l)" -eq 24
+      - name: Capture 16 pose-locked skinned sleeve silhouette comparisons
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-sleeves-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_SLEEVES_OUTPUT=/tmp/learnquest-sleeves-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_skinned_sleeves_visual_capture_test.gd 2>&1 | tee /tmp/sleeves-visual.log
+          grep -Fq 'SKINNED SLEEVE VISUAL QA PASSED' /tmp/sleeves-visual.log
+          test "$(find /tmp/learnquest-sleeves-qa -name '*.png' | wc -l)" -eq 16
       - name: Capture 12 true skinned portrait versus rigid face landscape frames
         shell: bash
         run: |
@@ -393,6 +404,13 @@ jobs:
           name: learnquest-v124-action-silhouette-before-after
           path: /tmp/learnquest-action-qa/*.png
           if-no-files-found: error
+      - name: Upload V124 skinned sleeve layer and full-rider comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-skinned-sleeve-silhouette
+          path: /tmp/learnquest-sleeves-qa/*.png
+          if-no-files-found: error
       - name: Upload V124 isolated original-source body sculpt comparison
         if: always()
         uses: actions/upload-artifact@v4
@@ -488,6 +506,7 @@ jobs:
             /tmp/skinned-face.log
             /tmp/skinned-hair.log
             /tmp/closed-head.log
+            /tmp/sleeves-visual.log
             /tmp/skinned-upper-jacket.log
             /tmp/skinned-armwear.log
             /tmp/web-export.log
