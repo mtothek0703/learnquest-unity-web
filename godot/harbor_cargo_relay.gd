@@ -13,6 +13,9 @@ var travel_speed := 14.0
 var elapsed := 0.0
 var completed_deliveries := 0
 var missed_deliveries := 0
+var delivery_streak := 0
+var best_delivery_streak := 0
+var perfect_convoy := false
 var stations: Array[Node3D] = []
 var portals: Array[MeshInstance3D] = []
 var cargo: Array[MeshInstance3D] = []
@@ -55,7 +58,7 @@ func _ready() -> void:
         var portal := MeshInstance3D.new()
         portal.name = "Illuminated cargo transfer ring"
         portal.mesh = ring
-        portal.material_override = cyan if side < 0.0 else magenta
+        portal.material_override = _material(Color("#64f5fa") if side < 0.0 else Color("#ff8ee4"), true)
         portal.position = Vector3(side * LANE_X, 2.05, 0.0)
         portal.rotation.x = PI * 0.5
         station.add_child(portal)
@@ -80,10 +83,26 @@ func reset_course() -> void:
     elapsed = 0.0
     completed_deliveries = 0
     missed_deliveries = 0
+    delivery_streak = 0
+    best_delivery_streak = 0
+    perfect_convoy = false
     for index in range(stations.size()):
         stations[index].position.z = START_Z - float(index) * SPACING
         stations[index].set_meta("passed", false)
         stations[index].visible = true
+    _refresh_gate_guidance()
+
+func _refresh_gate_guidance() -> void:
+    # Existing 3D dock rings brighten as the uninterrupted cargo convoy grows.
+    # Each ring owns a duplicated material: no new draw calls or collisions.
+    for index in range(stations.size()):
+        if bool(stations[index].get_meta("passed")):
+            continue
+        var ring := portals[index]
+        var glow := ring.material_override as StandardMaterial3D
+        if glow != null:
+            glow.emission_energy_multiplier = 2.1 + 0.32 * float(delivery_streak)
+        ring.scale = Vector3.ONE * (1.0 + 0.035 * float(delivery_streak))
 
 func check_delivery(rider_x: float) -> Dictionary:
     if not running:
@@ -95,9 +114,20 @@ func check_delivery(rider_x: float) -> Dictionary:
         station.visible = false
         if absf(rider_x - float(station.get_meta("lane_x"))) <= 1.30:
             completed_deliveries += 1
-            return {"delivered": true, "xp": 30, "energy": 12, "count": completed_deliveries}
+            delivery_streak += 1
+            best_delivery_streak = maxi(best_delivery_streak, delivery_streak)
+            # The fifth consecutive delivery completes the optional mastery
+            # objective. No bonus is paid before the full level finishes.
+            perfect_convoy = delivery_streak == DELIVERY_COUNT
+            _refresh_gate_guidance()
+            return {"delivered": true, "xp": 30 + 10 * (delivery_streak - 1),
+                "energy": 12, "count": completed_deliveries,
+                "streak": delivery_streak, "perfect_convoy": perfect_convoy,
+                "turbo_seconds": (2.0 + 0.5 * float(delivery_streak - 3)) if delivery_streak >= 3 else 0.0}
         missed_deliveries += 1
-        return {"missed": true}
+        delivery_streak = 0
+        _refresh_gate_guidance()
+        return {"missed": true, "streak": 0}
     return {}
 
 func _process(delta: float) -> void:

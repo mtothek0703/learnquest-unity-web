@@ -86,7 +86,7 @@ func _check() -> void:
     if int(active_harbor.call("get_cargo_deliveries")) != 3:
         _fail("the real world must count three delivered cargo checkpoints")
         return
-    if int(game.get("xp")) != 90 or int(game.get("power")) != 36:
+    if int(game.get("xp")) != 120 or int(game.get("power")) != 36:
         _fail("the game must apply exactly three XP and energy payouts")
         return
     game.set("distance", game.get("mission_target"))
@@ -102,5 +102,51 @@ func _check() -> void:
     if int(active_harbor.call("get_cargo_deliveries")) != 0:
         _fail("a new round must reset the cargo mission")
         return
-    print("HARBOR CARGO RELAY TEST PASSED: five 3D delivery gates, lane rewards, safe miss, pause, reset and mission star")
+    # V128: five uninterrupted cargo deliveries unlock a distinct mastery star,
+    # escalating XP and existing Turbo; missing a dock breaks the streak.
+    active_relay.set("running", true)
+    for index in range(5):
+        active_stations[index].position.z = 0.3
+        hero.position.x = -3.1 if index % 2 == 0 else 3.1
+        game.call("_update_harbor_cargo_relay")
+        if int(active_harbor.call("get_cargo_streak")) != index + 1:
+            _fail("five uninterrupted real docks must increase convoy streak")
+            return
+        if index == 0 and (active_relay.get("portals")[1] as MeshInstance3D).scale.x <= 1.0:
+            _fail("next illuminated 3D dock must visually react to the convoy streak")
+            return
+    if int(game.get("xp")) != 250 or int(game.get("power")) != 60 or float(game.get("turbo_left")) < 2.99:
+        _fail("five perfect deliveries must grant 250 XP, 60 energy and 3s Turbo")
+        return
+    if not bool(active_harbor.call("get_cargo_perfect_convoy")):
+        _fail("five consecutive deliveries must complete the perfect convoy")
+        return
+    if not (game.get("hud") as Label).text.contains("SERIE: 5/5"):
+        _fail("landscape race HUD must show five-dock mastery progress")
+        return
+    game.set("distance", game.get("mission_target"))
+    game.call("_finish_run")
+    reward = game.get("reward_label") as Label
+    if int(game.get("total_stars")) != 9 or reward == null or not reward.text.contains("PERFEKTER FRACHTKONVOI"):
+        _fail("full round must award a separate perfect convoy bonus star")
+        return
+    game.call("_reset_run")
+    active_relay.set("running", true)
+    if bool(active_harbor.call("get_cargo_perfect_convoy")) or int(active_harbor.call("get_cargo_streak")) != 0:
+        _fail("next round must reset perfect convoy progress")
+        return
+    for index in range(5):
+        active_stations[index].position.z = 0.3
+        hero.position.x = 0.0 if index == 2 else (-3.1 if index % 2 == 0 else 3.1)
+        game.call("_update_harbor_cargo_relay")
+    if bool(active_harbor.call("get_cargo_perfect_convoy")) or int(active_harbor.call("get_cargo_streak")) != 2:
+        _fail("missing the third dock must break mastery despite four total deliveries")
+        return
+    game.set("distance", game.get("mission_target"))
+    game.call("_finish_run")
+    reward = game.get("reward_label") as Label
+    if int(game.get("total_stars")) != 13 or reward == null or not reward.text.contains("HAFEN-FRACHTRELAIS") or reward.text.contains("PERFEKTER FRACHTKONVOI"):
+        _fail("broken convoy must grant only the original regular cargo star")
+        return
+    print("HARBOR CARGO RELAY TEST PASSED: five 3D docks, 250 XP perfect convoy, Turbo, miss reset and full-round mastery star")
     quit(0)
