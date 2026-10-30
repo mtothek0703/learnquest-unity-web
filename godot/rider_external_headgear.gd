@@ -636,13 +636,19 @@ func _build_expression(c: Vector3, s: Vector3) -> void:
     _mesh("CurvedSmile", _tube(smile, s.x * 0.011, 6), ink)
     _mesh("LowerLipContour", _tube(lower_lip, s.x * 0.008, 6), blush)
 
+func _face_jaw(v: float) -> float:
+    # Sculpt the original 360-degree head with a broad upper cranium and a
+    # deliberately tapered but still readable athletic jaw. This exact curve
+    # is shared by the inverse eye/feature projection and the skinned surface.
+    return 0.80 + 0.20 * (1.0 - smoothstep(0.40, 0.91, v))
+
 func _face_front_point(c: Vector3, s: Vector3, x: float, y: float) -> Vector3:
-    # Match the widened, less elongated face silhouette exactly: eyes, lids,
-    # cheeks and mouth sit on the same curved, jaw-tapered mesh.
+    # Facial landmarks project onto the same continuous sculpted anatomy,
+    # avoiding floating eyes, eyebrows and lips after the profile redesign.
     var latitude := acos(clampf((y - c.y) / maxf(s.y * 0.48, 0.001), -0.98, 0.98))
     var v := latitude / PI
-    var jaw := 0.82 + 0.18 * smoothstep(0.12, 0.67, 1.0 - v)
-    var radius := maxf(0.001, sin(latitude) * s.x * 0.55 * jaw)
+    var temple := 1.0 - 0.05 * exp(-pow((v - 0.33) / 0.11, 2.0))
+    var radius := maxf(0.001, sin(latitude) * s.x * 0.55 * _face_jaw(v) * temple)
     var angle := acos(clampf((x - c.x) / radius, -0.985, 0.985))
     if face_sign < 0.0:
         angle = TAU - angle
@@ -699,26 +705,35 @@ func _face_color(c: Vector3, s: Vector3, u: float, v: float) -> Color:
     return skin
 
 func _face_point(c: Vector3, s: Vector3, u: float, v: float) -> Vector3:
+    # V124 coherent organic portrait resculpt. The same 360-degree surface is
+    # later converted to four-weight GPU Skin on the ORIGINAL 65-bone rig.
+    # Unlike a flat mask, these volumes define a forehead, recessed orbital
+    # sockets, two cheekbones, a nose bridge/tip/alar wings, lips and chin.
     var latitude := v * PI
     var longitude := u * TAU
     var silhouette := sin(latitude)
-    var jaw := 0.82 + 0.18 * smoothstep(0.12, 0.67, 1.0 - v)
-    var x := cos(longitude) * silhouette * s.x * 0.55 * jaw
-    # Profile QA: compress the forward face shell while keeping skull volume.
-    # All eyes and expression landmarks sample this same surface.
-    var profile_blend := smoothstep(-0.20, 0.20, face_sign * sin(longitude))
-    var z := sin(longitude) * silhouette * s.z * lerpf(0.50, 0.43, profile_blend)
-    # V124 portrait pass: a wider cheek/jaw and shorter face reads as a\n    # stylized adventurer rather than a long narrow mask. The face-front
-    # inverse projection uses the SAME x/jaw mapping, keeping eyes/lids seated.
+    var temple := 1.0 - 0.05 * exp(-pow((v - 0.33) / 0.11, 2.0))
+    var x := cos(longitude) * silhouette * s.x * 0.55 * _face_jaw(v) * temple
     var frontness := maxf(0.0, face_sign * sin(longitude))
-    var nose := exp(-pow(x / maxf(0.01, s.x * 0.12), 2.0)) * exp(-pow((v - 0.52) / 0.13, 2.0))
-    var cheek := exp(-pow((absf(x) - s.x * 0.27) / maxf(0.01, s.x * 0.16), 2.0)) * exp(-pow((v - 0.56) / 0.18, 2.0))
-    var eye_socket := exp(-pow((absf(x) - s.x * 0.22) / maxf(0.01, s.x * 0.13), 2.0)) * exp(-pow((v - 0.43) / 0.11, 2.0))
-    var brow := exp(-pow((v - 0.34) / 0.075, 2.0)) * exp(-pow((absf(x) - s.x * 0.19) / maxf(0.01, s.x * 0.25), 2.0))
-    var lips := exp(-pow((v - 0.70) / 0.055, 2.0)) * exp(-pow(x / maxf(0.01, s.x * 0.24), 2.0))
-    var chin := exp(-pow((v - 0.79) / 0.10, 2.0)) * exp(-pow(x / maxf(0.01, s.x * 0.27), 2.0))
-    z += face_sign * frontness * s.z * (nose * 0.20 + cheek * 0.075 -
-        eye_socket * 0.06 + brow * 0.045 + lips * 0.038 + chin * 0.055)
+    var profile_blend := smoothstep(-0.20, 0.20, face_sign * sin(longitude))
+    # Preserve rounded skull volume behind the face while increasing the
+    # forward cheek/nose profile. Eye and mouth landmarks use this very mesh.
+    var z := sin(longitude) * silhouette * s.z * lerpf(0.51, 0.46, profile_blend)
+    var abs_x := absf(x)
+    var bridge := exp(-pow(x / maxf(0.01, s.x * 0.105), 2.0)) * exp(-pow((v - 0.47) / 0.16, 2.0))
+    var tip := exp(-pow(x / maxf(0.01, s.x * 0.13), 2.0)) * exp(-pow((v - 0.59) / 0.067, 2.0))
+    var alar := exp(-pow((abs_x - s.x * 0.11) / maxf(0.01, s.x * 0.075), 2.0)) * exp(-pow((v - 0.60) / 0.055, 2.0))
+    var cheek := exp(-pow((abs_x - s.x * 0.285) / maxf(0.01, s.x * 0.115), 2.0)) * exp(-pow((v - 0.565) / 0.13, 2.0))
+    var socket := exp(-pow((abs_x - s.x * 0.22) / maxf(0.01, s.x * 0.12), 2.0)) * exp(-pow((v - 0.425) / 0.095, 2.0))
+    var brow := exp(-pow((abs_x - s.x * 0.19) / maxf(0.01, s.x * 0.22), 2.0)) * exp(-pow((v - 0.335) / 0.065, 2.0))
+    var philtrum := exp(-pow(x / maxf(0.01, s.x * 0.075), 2.0)) * exp(-pow((v - 0.655) / 0.042, 2.0))
+    var lip := exp(-pow(x / maxf(0.01, s.x * 0.23), 2.0)) * exp(-pow((v - 0.704) / 0.044, 2.0))
+    var chin := exp(-pow(x / maxf(0.01, s.x * 0.265), 2.0)) * exp(-pow((v - 0.80) / 0.095, 2.0))
+    var jaw_corner := exp(-pow((abs_x - s.x * 0.36) / maxf(0.01, s.x * 0.10), 2.0)) * exp(-pow((v - 0.76) / 0.11, 2.0))
+    z += face_sign * frontness * s.z * (
+        0.22 * bridge + 0.17 * tip + 0.075 * alar + 0.135 * cheek -
+        0.095 * socket + 0.077 * brow + 0.025 * philtrum +
+        0.047 * lip + 0.075 * chin - 0.026 * jaw_corner)
     return Vector3(c.x + x, c.y + cos(latitude) * s.y * 0.48, c.z + z)
 
 func _almond_eye_mesh() -> ArrayMesh:
