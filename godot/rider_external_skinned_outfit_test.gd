@@ -39,7 +39,8 @@ func _check() -> void:
     # The entire jacket must share a sculpt-aligned PBR panel language, not
     # return to a uniform neon shell or rely on unskinned floating decals.
     for region in ["armor_field", "collar_lip", "chest_panel_seam",
-            "waist_gasket", "side_joint", "stitched_panel"]:
+            "waist_gasket", "side_joint", "stitched_panel",
+            "rear_scapular_panel", "rear_spine_track"]:
         if not shader_code.contains(region):
             _fail("missing integrated skinned jacket material zone: " + region)
             return
@@ -60,7 +61,9 @@ func _check() -> void:
     # not just recolor the original narrow body or attach rigid shoulder boxes.
     var imported_bounds := source.mesh.get_aabb()
     if absf(float(material.get_shader_parameter("rest_height")) - imported_bounds.size.y) > 0.001 or \
-            absf(float(material.get_shader_parameter("rest_width")) - imported_bounds.size.x) > 0.001:
+            absf(float(material.get_shader_parameter("rest_width")) - imported_bounds.size.x) > 0.001 or \
+            absf(float(material.get_shader_parameter("rest_center_z")) - imported_bounds.get_center().z) > 0.001 or \
+            absf(float(material.get_shader_parameter("rest_depth")) - imported_bounds.size.z) > 0.001:
         _fail("jacket color panels must be fitted to the actual CC0 rest bounds")
         return
     var test_bounds := AABB(Vector3(-0.7, 0.0, -0.35), Vector3(1.4, 3.0, 0.7))
