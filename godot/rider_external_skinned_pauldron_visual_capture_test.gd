@@ -165,7 +165,7 @@ func _capture() -> void:
                                 _fail("weighted nacelle removal is not visibly distinguishable in chase camera: %d samples" % changed_samples)
                                 return
                             print("REAR SHOULDER PROFILE QA %dx%d %s: %d changed samples (6px grid)" % [size.x, size.y, view, changed_samples])
-                    var profile_variant := variant
+                    var profile_variant: String = String(variant)
                     if layer == "rear_profile":
                         profile_variant = "with_oversized_nacelles" if variant == "with_pauldrons" else "integrated_cores_only"
                     if image.save_png("%s/%dx%d_%s_%s_%s.png" % [
