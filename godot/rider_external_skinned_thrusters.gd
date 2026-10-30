@@ -7,6 +7,10 @@ var cores: Array[MeshInstance3D] = []
 var generated_vertices: int = 0
 var rear_sign: float = 1.0
 var shoulder_span: float = 0.0
+# The fitted source-Skin jacket, sleeves and mantle should own the chase
+# silhouette. Keep the original full nacelles for reversible QA/fallback,
+# but show only their smaller luminous cores when all three are installed.
+var integrated_rear_profile: bool = false
 
 func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: float) -> bool:
     if rig == null:
@@ -43,8 +47,36 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: f
         var left_bounds: AABB = nacelles[0].mesh.get_aabb()
         var right_bounds: AABB = nacelles[1].mesh.get_aabb()
         shoulder_span = maxf(left_bounds.end.x, right_bounds.end.x) - minf(left_bounds.position.x, right_bounds.position.x)
+        update_visibility_profile(body)
         return nacelles.size() == 2 and cores.size() == 2
     return false
+
+# Reversible, asset-safe art-direction gate. On incomplete imports keep the
+# complete original weighted nacelles; never expose floating cores by mistake.
+# Re-evaluating also allows deterministic fallback regression and A/B QA.
+func update_visibility_profile(body: MeshInstance3D) -> void:
+    var jacket := get_parent().get_node_or_null("ExternalSkinnedFlightSuit") as Node
+    var sleeves := get_parent().get_node_or_null("ExternalSkinnedFlightSleeves") as Node
+    var mantle := get_parent().get_node_or_null("ExternalSkinnedFlightMantle") as Node
+    var complete := body != null and body.skin != null and jacket != null and sleeves != null and mantle != null
+    if complete:
+        var garment := jacket.get("garment") as MeshInstance3D
+        complete = garment != null and garment.visible and garment.skin == body.skin and garment.skeleton == body.skeleton
+    if complete:
+        var arms: Array = sleeves.get("sleeves")
+        var tails: Array = mantle.get("panels")
+        complete = arms.size() == 2 and tails.size() == 2
+        for piece in arms + tails:
+            var skinned := piece as MeshInstance3D
+            if skinned == null or not skinned.visible or skinned.skin != body.skin or skinned.skeleton != body.skeleton:
+                complete = false
+                break
+    integrated_rear_profile = complete
+    for nacelle in nacelles:
+        nacelle.visible = not complete
+    # The compact cores remain a visible, bone-weighted accent in either mode.
+    for core in cores:
+        core.visible = true
 
 func _bind(skin: Skin, rig: Skeleton3D, bone_name_text: String) -> int:
     for i in range(skin.get_bind_count()):
