@@ -1530,7 +1530,7 @@ func _refresh_hud() -> void:
                 if orbit_active:
                     hud.text += "\nORBIT-WÄCHTER %d/%d  %s" % [orbit_hp, ORBIT_HEALTH, "PLASMA!" if orbit_warning_left > 0.0 else "ATTACKE LADEN"]
             if world_choice == 3:
-                hud.text += "\nSPRUNGTORE: %d/%d  WINDSTROM: %d/%d  KETTE: %d/4" % [mini(int(glacier_zone.get("completed_gates")), GLACIER_BONUS_TARGET), GLACIER_BONUS_TARGET, mini(int(glacier_zone.call("get_aurora_stream_count")), AURORA_SLIPSTREAM_TARGET), AURORA_SLIPSTREAM_TARGET, int(glacier_zone.call("get_aurora_streak"))]
+                hud.text += "\nAURORA-SPRUNGTORE: %d/%d  WINDSTROM: %d/%d  KETTE: %d/4" % [mini(int(glacier_zone.get("completed_gates")), GLACIER_BONUS_TARGET), GLACIER_BONUS_TARGET, mini(int(glacier_zone.call("get_aurora_stream_count")), AURORA_SLIPSTREAM_TARGET), AURORA_SLIPSTREAM_TARGET, int(glacier_zone.call("get_aurora_streak"))]
                 if frost_active:
                     hud.text += "\nFROST-DRACHE %d/%d  %s" % [frost_hp, FROST_HEALTH, "EISWELLE!" if frost_warning_left > 0.0 else "ATTACKE LADEN"]
     if progress_bar != null:
