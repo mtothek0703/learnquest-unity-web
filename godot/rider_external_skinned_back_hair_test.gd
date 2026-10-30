@@ -93,7 +93,10 @@ func _check() -> void:
     var wind := new_hair.material_override as ShaderMaterial
     if wind == null or wind.shader == null or \
             not wind.shader.code.contains("smoothstep(0.14, 0.98, UV.y)") or \
-            not wind.shader.code.contains("hair_dye = COLOR"):
+            not wind.shader.code.contains("hair_dye = COLOR") or \
+            not wind.shader.code.contains("fiber_sheen") or \
+            not wind.shader.code.contains("plum_copper") or \
+            not wind.shader.code.contains("EMISSION = plum_copper"):
         _fail("weighted hair needs a root-anchored one-pass vertex-color wind shader")
         return
     if controller.get("wind_material") != wind:
