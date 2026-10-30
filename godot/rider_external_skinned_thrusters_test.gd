@@ -99,6 +99,13 @@ func _check() -> void:
                 pod_bounds.size.y > source_bounds.size.y * 0.13:
             _fail("shoulder nacelle is oversized for a mobile character")
             return
+        if String(mesh.name).contains("Core"):
+            # Narrow, anatomically connected original-Skin light insets must
+            # sit at the outer shoulder seam, not form buried round bulbs.
+            if pod_bounds.size.x > source_bounds.size.x * 0.07 or \
+                    absf(pod_bounds.get_center().x - source_bounds.get_center().x) < source_bounds.size.x * 0.20:
+                _fail("active shoulder lights must be slim outer-seam inserts")
+                return
         var mat := mesh.material_override as StandardMaterial3D
         if mat == null or not mat.emission_enabled or \
                 mat.emission_energy_multiplier > (1.10 if String(mesh.name).contains("Core") else 0.20):
