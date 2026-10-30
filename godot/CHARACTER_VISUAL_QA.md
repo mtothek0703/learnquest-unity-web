@@ -257,3 +257,31 @@ Der erfolgreiche [Godot-Lauf 41026082540](https://github.com/mtothek0703/learnqu
 **Befund:** Bereits die echten skinierten Jacken-/Ärmel-/Beinlagen verdecken fast die gesamte ursprüngliche anatomische Neumodellierung. Die äußeren Mantel-/Schulter-/Harness-Overlays verändern zusätzlich 1,819 % der Front- und 2,634 % der Verfolgerpixel (`skin_layers` vs. `complete_rider`, jeweils sculpted). Das ist ein **Überdeckungsbefund**, keine Wertung dieser Prozentzahlen als Grafikqualität. In der Frontdiagnose `skin_layers` fehlen absichtlich starre Augen-/Gesichtsaufsätze; die unvollständige Gesichtsoptik ist kein spielbarer Vorschlag.
 
 **Konsequenz:** Nicht noch einmal den verdeckten Quellkörper sculpten. Zuerst die bereits skinnierte Jacken-/Ärmel-/Hosenoberfläche als kohärente, sichtbar geformte Gesamtsilhouette neu modellieren, danach Schulter-/Mantel-Overlays gezielt aufräumen. Identische Front-/Chase-Bilder gegen V123 und manuelle Clipping-/iPhone-FPS-Abnahme bleiben verpflichtend. **DRAFT / NO MERGE.**
+
+## 30.10.2026 — skinnierte Schulterkappen, isolierter 16-Bild-Vergleich (DRAFT)
+
+Die aus der originalen CC0-Skinbindung erzeugten linken und rechten Schulterkappen
+wurden geometrisch gestrafft: Deltoid-Volumen und Quertiefe verkleinert,
+Oberkante schräg an die skinierten Ärmel angepasst, vordere Schutzlippe
+modelliert. Das ist eine echte Änderung an den triangulierten 3D-Oberflächen,
+kein Material-/Farb-Meilenstein. Originales 65-Knochen-Rig, Skin, Gameplay
+und Smartphone-Touch bleiben unangetastet.
+
+Der neue Godot-Test `rider_external_skinned_pauldron_visual_capture_test.gd`
+speichert 16 Bilder bei **1280×720 und 1170×540**, Front und Verfolger,
+jeweils `skin_layers` und `complete_rider` mit `without_pauldrons`/
+`with_pauldrons`. Alle 65 Knochen und die globale Figurentransformation
+werden vor jeder Aufnahme auf die identische Pose zurückgesetzt. Die
+`skin_layers`-Variante blendet Mantel, Thruster, Harness und andere
+Rüstungslagen aus, **nicht** die original skinierten Ärmel.
+
+**Prüfung nach erfolgreicher CI:** Die Frontansicht darf keine offenen
+Ärmel-Schulter-Spalten zeigen. Die Chase-Ansicht muss gegenüber den vorherigen
+bauchigen Kappen schmaler/lesbarer sein; die beiden Deltoidkappen müssen
+sichtbar bleiben, dürfen nicht die Hände, den Hals oder die Haare verdecken.
+Anschließend echte V123-gegen-DRAFT-Front-/Chase-Bilder bei gleicher Pose
+prüfen. Keine Pixelprozentzahl als Beweis höherer Kunstqualität behandeln.
+
+**Freigabesperre:** Ohne vollständige Godot-CI, manuelle Bewegungs-Clipping-QA,
+echte iPhone-Safari-Querformat-FPS und eine ganze Touch-Runde nach genau drei
+Englischaufgaben kein Merge und keine neue Skyway-URL. PR #111 bleibt DRAFT.
