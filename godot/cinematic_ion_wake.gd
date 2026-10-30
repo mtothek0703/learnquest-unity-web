@@ -53,6 +53,14 @@ func _ready() -> void:
             spark.name = "Moving ion spark %d" % index
             spark.mesh = spark_mesh
             spark.material_override = spark_material
+            # Initialize to the same safe idle dimensions as _process().
+            # Previously each radius-1 sphere rendered at scale 1 until its
+            # first process tick, forming enormous cream-colored foreground
+            # blobs that hid the board in pose-locked chase screenshots and
+            # could flash during the first frame on a slow mobile device.
+            var initial_progress := float(index) / float(SPARKS_PER_SIDE)
+            spark.position = _plasma_point(side, initial_progress, 0.0, 0.1) + Vector3(0.0, 0.07, 0.0)
+            spark.scale = Vector3.ONE * (0.055 * (1.0 - initial_progress * 0.65))
             root.add_child(spark)
             sparks.append(spark)
 
