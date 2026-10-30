@@ -206,16 +206,23 @@ func _blend_arm_corner(a: Dictionary, b: Dictionary, t: float) -> Dictionary:
 # Return displacement in the imported mesh's REST space only.
 func _sculpt_offset(point: Vector3, normal: Vector3, bounds: AABB,
         inf: Vector2) -> Vector3:
+    # The former 3-cm deltoid and 1-cm side sweep vanished beneath the
+    # weighted shoulder plates in landscape chase views. This continuous
+    # rest-space displacement gives the REAL imported arm triangles a broader
+    # shoulder-to-elbow taper and a distinct forearm, without rigid cylinders.
     var shoulder := smoothstep(0.32, 0.90, inf.y)
     var elbow := exp(-pow((inf.y - 0.48) / 0.20, 2.0))
     var forearm := smoothstep(0.22, 0.72, inf.x - inf.y)
     var wrist := 1.0 - smoothstep(0.22, 0.46, inf.x)
-    var shell := 0.012 + 0.033 * shoulder + 0.024 * elbow + 0.026 * forearm * (1.0 - wrist)
+    var forearm_clearance := forearm * (1.0 - wrist)
+    var shell := 0.014 + 0.054 * shoulder + 0.027 * elbow + 0.032 * forearm_clearance
     var lateral := signf(point.x - bounds.get_center().x)
-    # Sculpt the outer shoulder into a broad V-shaped silhouette, while the
-    # elbow keeps clearance and the wrist returns close to the original hand.
-    return normal * shell + Vector3(lateral * (0.012 * shoulder + 0.007 * elbow),
-        0.006 * shoulder, 0.0)
+    # Side expansion creates a true readable shoulder contour in both
+    # front/chase cameras; the articulated elbow remains narrower and the
+    # wrist fades into the original skinned hand, avoiding a floating cuff.
+    var side_sweep := 0.032 * shoulder + 0.012 * elbow + 0.010 * forearm_clearance
+    return normal * shell + Vector3(lateral * side_sweep,
+        0.010 * shoulder, 0.0)
 
 func _armor_panel(inf: Vector2) -> float:
     # Stored as COLOR.b, interpolated by GPU; visible broad armor zones rather
