@@ -96,7 +96,7 @@ func _check() -> void:
             not wind.shader.code.contains("hair_dye = COLOR") or \
             not wind.shader.code.contains("fiber_sheen") or \
             not wind.shader.code.contains("plum_copper") or \
-            not wind.shader.code.contains("EMISSION = plum_copper"):
+            not wind.shader.code.contains("SPECULAR = 0.40 + 0.14"):
         _fail("weighted hair needs a root-anchored one-pass vertex-color wind shader")
         return
     if controller.get("wind_material") != wind:
