@@ -46,7 +46,8 @@ func _capture() -> void:
     var city := preload("res://neon_environment.gd").new() as Node3D
     stage.add_child(city)
     var boss := preload("res://neon_conductor.gd").new() as Node3D
-    boss.position = Vector3(0.0, 0.7, -21.0)
+    boss.position = Vector3(0.0, 0.7, -17.5)
+    boss.scale = Vector3.ONE * 1.5
     stage.add_child(boss)
     await process_frame
     var captures := 0
@@ -55,10 +56,10 @@ func _capture() -> void:
         for view in VIEWS:
             if view == "chase":
                 camera.position = Vector3(0.0, 5.2, 10.5)
-                camera.look_at(Vector3(0.0, 3.0, -21.0), Vector3.UP)
+                camera.look_at(Vector3(0.0, 3.5, -17.5), Vector3.UP)
             else:
                 camera.position = Vector3(5.0, 7.0, 10.5)
-                camera.look_at(Vector3(0.0, 3.0, -21.0), Vector3.UP)
+                camera.look_at(Vector3(0.0, 3.5, -17.5), Vector3.UP)
             var baseline: Image
             for state in ["before", "after"]:
                 boss.visible = state == "after"
