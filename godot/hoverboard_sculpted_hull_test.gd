@@ -262,6 +262,52 @@ func _check() -> void:
     if sculpt.find_children("*", "CollisionObject3D", true, false).size() > 0:
         _fail("turn lighting must not add new collision objects")
         return
+    # Experimental articulated board fins: closed curved meshes, distinct
+    # starboard/port response and identical elapsed-time response at 30/60 FPS.
+    var vanes := sculpt.get_node_or_null("ArticulatedCarveFins") as Node3D
+    if vanes == null or not bool(vanes.get("ready_to_animate")):
+        _fail("two procedural articulated aerofoil fins are missing")
+        return
+    var hinges: Array = vanes.get("fins")
+    if hinges.size() != 2:
+        _fail("both independently hinged fins are required")
+        return
+    for hinge in hinges:
+        var aerofoil := (hinge as Node3D).get_node_or_null("ClosedSweptAerofoil") as MeshInstance3D
+        var edge := (hinge as Node3D).get_node_or_null("CurvedSignalEdge") as MeshInstance3D
+        if aerofoil == null or edge == null or aerofoil.mesh == null or edge.mesh == null:
+            _fail("articulated fins need closed curved volume and emissive edge")
+            return
+        var arrays: Array = aerofoil.mesh.surface_get_arrays(0)
+        var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+        var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+        if vertices.size() < 1500 or normals.size() != vertices.size():
+            _fail("carve fin must be a smooth, substantial 3D aerofoil")
+            return
+    var starboard_angle_30 := 0.0
+    for fps in [30, 60]:
+        for hinge in hinges:
+            (hinge as Node3D).rotation.z = 0.0
+        for frame in range(3 if fps == 30 else 6):
+            vanes.call("update_state", 0.9, true, 1.0 / float(fps))
+        var port_angle := absf((hinges[0] as Node3D).rotation.z)
+        var starboard_angle := absf((hinges[1] as Node3D).rotation.z)
+        if starboard_angle < port_angle + 0.16:
+            _fail("right carve must physically deploy the starboard fin")
+            return
+        if fps == 30:
+            starboard_angle_30 = starboard_angle
+        elif absf(starboard_angle - starboard_angle_30) > 0.003:
+            _fail("fin animation changes with mobile frame rate")
+            return
+    for frame in range(12):
+        vanes.call("update_state", -0.9, false, 0.016)
+    if absf((hinges[0] as Node3D).rotation.z) <= absf((hinges[1] as Node3D).rotation.z) + 0.12:
+        _fail("left carve must reverse the deployed aerofoil")
+        return
+    if not vanes.find_children("*", "CollisionObject3D", true, false).is_empty():
+        _fail("articulated board art must never change collision or touch controls")
+        return
     if rider.get_node_or_null("ImportedRider/OriginalBodySkinRig/OriginalBodySkeleton13") == null:
         _fail("original 13-bone skinned character must remain")
         return
