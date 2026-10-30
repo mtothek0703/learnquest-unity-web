@@ -270,6 +270,12 @@ func check_cargo_delivery(rider_x: float) -> Dictionary:
 func get_cargo_deliveries() -> int:
     return int(cargo_relay.get("completed_deliveries"))
 
+func get_cargo_streak() -> int:
+    return int(cargo_relay.get("delivery_streak"))
+
+func get_cargo_perfect_convoy() -> bool:
+    return bool(cargo_relay.get("perfect_convoy"))
+
 func _process(delta: float) -> void:
     if cargo_relay != null:
         cargo_relay.set("running", running)
