@@ -308,6 +308,33 @@ func _check() -> void:
                 fin_tip.y < wing_tip.y + 0.17:
             _fail("carve fin tip is buried behind the sculpted board wing")
             return
+        # The actual triangle mesh must have continuous, outward-facing
+        # surface normals on both mirrored fins. A previous unindexed mesh
+        # generated per-face normals and visibly faceted in the chase view.
+        for ring_angle in [PI * 0.5, PI * 1.5]:
+            var point: Vector3 = vanes.call("_fin_point", side, 0.5, ring_angle)
+            var expected: Vector3 = vanes.call("_fin_normal", side, 0.5, ring_angle)
+            if not expected.is_finite() or expected.length_squared() < 0.99:
+                _fail("carve fin analytic normal is invalid")
+                return
+            var shared_count := 0
+            var first_normal := Vector3.ZERO
+            for index in range(vertices.size()):
+                if vertices[index].distance_to(point) > 0.0001:
+                    continue
+                var normal: Vector3 = normals[index]
+                if not normal.is_finite() or normal.length_squared() < 0.99 or \
+                        normal.dot(expected) < 0.99:
+                    _fail("carve fin has a wrong or faceted shell normal")
+                    return
+                if shared_count > 0 and normal.dot(first_normal) < 0.999:
+                    _fail("coincident fin vertices have discontinuous shading")
+                    return
+                first_normal = normal
+                shared_count += 1
+            if shared_count < 3:
+                _fail("carve fin smooth shading needs shared triangle vertices")
+                return
     var starboard_angle_30 := 0.0
     for fps in [30, 60]:
         for hinge in hinges:
