@@ -45,8 +45,8 @@ func _helix_mesh(phase: float) -> ArrayMesh:
                 Vector2(t1, 1.0), Vector2(t0, 0.0),
                 Vector2(t1, 1.0), Vector2(t0, 1.0)]:
             var t: float = corner.x
-            var angle: float = phase + TAU * 2.5 * t
-            var radius: float = lerpf(1.08, 1.40, corner.y)
+            var angle: float = phase + TAU * 1.65 * t
+            var radius: float = lerpf(1.20, 1.34, corner.y)
             var point: Vector3 = Vector3(cos(angle) * radius,
                 2.05 + sin(angle) * radius, -4.6 + 9.2 * t)
             tool.set_color(Color("#55dfff").lerp(Color("#f2a8ff"), t))
@@ -68,7 +68,8 @@ func _ready() -> void:
     var cyan := _material(Color("#72ffe4"))
     var violet := _material(Color("#bc9aff"))
     var gold := _material(Color("#fff1ad"))
-    var wind_material := _material(Color("#7bf5ff"))
+    var wind_material := _material(Color("#367bb5"))
+    wind_material.emission_energy_multiplier = 0.80
     wind_material.vertex_color_use_as_albedo = true
     wind_material.cull_mode = BaseMaterial3D.CULL_DISABLED
     var helix_meshes := [_helix_mesh(0.0), _helix_mesh(PI)]
