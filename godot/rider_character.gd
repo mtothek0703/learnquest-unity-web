@@ -5,6 +5,13 @@ extends Node3D
 @export_file("*.glb", "*.gltf", "*.tscn") var character_asset_path: String = "res://models/rider.gltf"
 @export var model_scale: float = 1.0
 @export var model_vertical_offset: float = 0.0
+# V124 opt-in: new true skinned humanoid is validated before replacing visuals.
+# Default remains V123 until actual before/after QA and mobile review.
+@export var prefer_cc0_rigged_hero: bool = false
+@export_file("*.glb", "*.gltf") var cc0_hero_asset_path: String = "res://models/quaternius_hero.glb"
+var external_hero: Node3D
+var external_pose: Node
+
 
 @onready var legacy_rider: Node3D = $LegacyRider
 var lean: float = 0.0
@@ -21,6 +28,8 @@ var hair_strands: Array[Node3D] = []
 
 func _ready() -> void:
     _try_load_character_asset()
+    if prefer_cc0_rigged_hero:
+        _try_load_cc0_hero()
     # Aerial windstreams and landing shards animate independently of the model.
     var aerial := preload("res://rider_aerial_choreography.gd").new() as Node3D
     aerial.name = "Cinematic aerial choreography"
@@ -721,3 +730,31 @@ func restore_fallback() -> void:
     var old_body := legacy_rider.get_node_or_null("Animated racer rig")
     if old_body != null:
         old_body.visible = true
+
+
+# V124: never let a missing, malformed or non-skinned external asset replace
+# the functioning original. Imported Skeleton3D and Skin are preserved.
+func _try_load_cc0_hero() -> void:
+    if not ResourceLoader.exists(cc0_hero_asset_path):
+        return
+    var packed := load(cc0_hero_asset_path) as PackedScene
+    if packed == null:
+        return
+    var model := packed.instantiate() as Node3D
+    if model == null:
+        return
+    model.name = "ExternalRiggedHero"
+    add_child(model)
+    var controller := preload("res://rider_external_character.gd").new() as Node
+    controller.name = "ExternalHeroPose"
+    add_child(controller)
+    if not bool(controller.call("configure", self, model)) or not bool(controller.call("fit_to_board")):
+        controller.queue_free()
+        model.queue_free()
+        return
+    external_hero = model
+    external_pose = controller
+    # Hide the old *visual* character only; its original skeleton and all
+    # V123 regressions remain available, while the hoverboard stays visible.
+    if is_instance_valid(active_model):
+        active_model.visible = false

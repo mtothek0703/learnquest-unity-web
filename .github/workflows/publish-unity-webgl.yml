@@ -82,7 +82,7 @@ jobs:
           set -euo pipefail
           mkdir -p "$GITHUB_WORKSPACE/_site/godot"
           echo "Import Godot project and capture errors"
-          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path godot --quit 2>&1 | tee /tmp/godot-import.log
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --import 2>&1 | tee /tmp/godot-import.log
           echo "Export self-contained Godot browser build"
           /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --export-release "Web" "$GITHUB_WORKSPACE/_site/godot/index.html" 2>&1 | tee /tmp/godot-export.log
           test -s _site/godot/index.html
@@ -109,10 +109,42 @@ jobs:
           echo "Run gameplay integration tests"
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://smoke_test.gd 2>&1 | tee /tmp/godot-gameplay-test.log
           grep -Fq "LEARNQUEST SMOKE TEST PASSED" /tmp/godot-gameplay-test.log || { echo "::error::Gameplay checks did not complete"; exit 1; }
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_body_resculpt_test.gd 2>&1 | tee /tmp/godot-continuous-body-resculpt.log
+          grep -Fq 'CONTINUOUS BODY RESCULPT TEST PASSED' /tmp/godot-continuous-body-resculpt.log
           echo "Gameplay integration tests passed"
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_original_body_skin_test.gd 2>&1 | tee /tmp/godot-original-body-skin.log
           grep -Fq "ORIGINAL BODY SKIN TEST PASSED" /tmp/godot-original-body-skin.log
           echo "Original glTF body skinning regression passed"
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_v124_integrated_silhouette_test.gd 2>&1 | tee /tmp/integrated-hero-silhouette.log
+          grep -Fq 'INTEGRATED HERO SILHOUETTE TEST PASSED' /tmp/integrated-hero-silhouette.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_portrait_normals_test.gd 2>&1 | tee /tmp/godot-portrait-normals.log
+          grep -Fq "EXTERNAL PORTRAIT NORMALS TEST PASSED" /tmp/godot-portrait-normals.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_back_hair_sculpt_test.gd 2>&1 | tee /tmp/godot-back-hair-sculpt.log
+          grep -Fq 'CONTINUOUS BACK HAIR SCULPT TEST PASSED' /tmp/godot-back-hair-sculpt.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_back_hair_test.gd 2>&1 | tee /tmp/godot-true-skinned-hair.log
+          grep -Fq 'TRUE SKINNED BACK HAIR TEST PASSED' /tmp/godot-true-skinned-hair.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_portrait_test.gd 2>&1 | tee /tmp/true-skinned-portrait.log
+          grep -Fq 'TRUE SKINNED PORTRAIT TEST PASSED' /tmp/true-skinned-portrait.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_athletic_portrait_sculpt_test.gd 2>&1 | tee /tmp/athletic-portrait-sculpt.log
+          grep -Fq 'ATHLETIC PORTRAIT SCULPT TEST PASSED' /tmp/athletic-portrait-sculpt.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_athletic_pose_test.gd 2>&1 | tee /tmp/athletic-pose.log
+          grep -Fq 'EXTERNAL ATHLETIC POSE TEST PASSED' /tmp/athletic-pose.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_follow_through_test.gd 2>&1 | tee /tmp/follow-through.log
+          grep -Fq 'EXTERNAL FOLLOW-THROUGH TEST PASSED' /tmp/follow-through.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_hair_finish_test.gd 2>&1 | tee /tmp/weighted-hair-finish.log
+          grep -Fq 'WEIGHTED HAIR FINISH TEST PASSED' /tmp/weighted-hair-finish.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_harness_test.gd 2>&1 | tee /tmp/godot-skinned-harness.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_pauldron_test.gd 2>&1 | tee /tmp/godot-pauldron.log
+          grep -Fq 'EXTERNAL PAULDRON TEST PASSED' /tmp/godot-pauldron.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_helmet_contour_test.gd 2>&1 | tee /tmp/helmet-contour.log
+          grep -Fq 'INTEGRATED HELMET TEST PASSED' /tmp/helmet-contour.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_neck_yoke_test.gd 2>&1 | tee /tmp/godot-neck-yoke.log
+          grep -Fq 'EXTERNAL SKINNED NECK YOKE TEST PASSED' /tmp/godot-neck-yoke.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_board_contact_test.gd 2>&1 | tee /tmp/godot-board-contact.log
+          grep -Fq 'RIDER BOARD CONTACT TEST PASSED' /tmp/godot-board-contact.log
+          grep -Fq 'EXTERNAL SKINNED HARNESS TEST PASSED' /tmp/godot-skinned-harness.log
+          echo "CC0 original-Skin 360-degree flight harness regression passed"
+          echo "Sculpted Head-bone portrait smooth-normal regression passed"
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_costume_skin_follow_test.gd 2>&1 | tee /tmp/godot-costume-skin-follow.log
           grep -Fq "COSTUME SKIN FOLLOW TEST PASSED" /tmp/godot-costume-skin-follow.log
           echo "Shared head, hair and costume skeleton pose regression passed"
@@ -156,6 +188,8 @@ jobs:
           grep -Fq 'SKINNED GLOVE TEST PASSED' /tmp/godot-skinned-gloves.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://hoverboard_sculpted_hull_test.gd 2>&1 | tee /tmp/godot-sculpted-hoverboard.log
           grep -Fq 'SCULPTED HOVERBOARD TEST PASSED' /tmp/godot-sculpted-hoverboard.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://hoverboard_boost_wake_test.gd 2>&1 | tee /tmp/boost-wake.log
+          grep -Fq 'VOLUMETRIC BOOST WAKE TEST PASSED' /tmp/boost-wake.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://powerup_vfx_test.gd 2>&1 | tee /tmp/godot-powerup-vfx.log
           grep -Fq 'POWERUP VFX TEST PASSED' /tmp/godot-powerup-vfx.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://cinematic_city_districts_test.gd 2>&1 | tee /tmp/godot-city-districts.log
@@ -191,6 +225,27 @@ jobs:
             --script res://rider_visual_capture_test.gd 2>&1 | tee /tmp/godot-visual-capture.log
           grep -Fq 'VISUAL CAPTURE TEST PASSED' /tmp/godot-visual-capture.log
           test "$(find /tmp/learnquest-visual-qa -name '*.png' | wc -l)" -eq 20
+          mkdir -p /tmp/learnquest-body-sculpt-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_BODY_SCULPT_OUTPUT=/tmp/learnquest-body-sculpt-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_body_resculpt_visual_capture_test.gd 2>&1 | tee /tmp/body-sculpt-visual.log
+          grep -Fq 'CONTINUOUS BODY VISUAL QA PASSED' /tmp/body-sculpt-visual.log
+          test "$(find /tmp/learnquest-body-sculpt-qa -name '*.png' | wc -l)" -eq 16
+          mkdir -p /tmp/learnquest-skinned-hair-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_SKINNED_HAIR_OUTPUT=/tmp/learnquest-skinned-hair-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_skinned_back_hair_visual_capture_test.gd 2>&1 | tee /tmp/godot-skinned-hair-visual.log
+          grep -Fq 'SKINNED BACK HAIR VISUAL QA PASSED' /tmp/godot-skinned-hair-visual.log
+          test "$(find /tmp/learnquest-skinned-hair-qa -name '*.png' | wc -l)" -eq 18
+          mkdir -p /tmp/learnquest-wake-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_WAKE_OUTPUT=/tmp/learnquest-wake-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://hoverboard_boost_wake_visual_capture_test.gd 2>&1 | tee /tmp/godot-boost-wake-visual.log
+          grep -Fq 'BOOST WAKE VISUAL QA PASSED' /tmp/godot-boost-wake-visual.log
+          test "$(find /tmp/learnquest-wake-qa -name '*.png' | wc -l)" -eq 8
           mkdir -p /tmp/learnquest-powerup-qa
           LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_POWERUP_OUTPUT=/tmp/learnquest-powerup-qa \
             timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
@@ -323,6 +378,13 @@ jobs:
             /tmp/godot-canyon-geodes-visual.log
           if-no-files-found: ignore
 
+      - name: Upload V124 volumetric boost wake before-after landscape frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-boost-wake-before-after
+          path: /tmp/learnquest-wake-qa/*.png
+          if-no-files-found: ignore
       - name: Upload actual rendered landscape QA images
         if: always()
         uses: actions/upload-artifact@v4

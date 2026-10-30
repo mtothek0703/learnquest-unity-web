@@ -23,15 +23,69 @@ jobs:
           curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
           unzip -q /tmp/godot.zip -d /tmp
           chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+      - name: Fetch and verify pinned CC0 humanoid for V124
+        run: python3 .github/scripts/fetch_quaternius_hero.py
       - name: Import and test game without publishing
         shell: bash
         run: |
           set -euo pipefail
-          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path godot --quit 2>&1 | tee /tmp/import.log
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --import 2>&1 | tee /tmp/import.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://smoke_test.gd 2>&1 | tee /tmp/gameplay.log
           grep -Fq 'LEARNQUEST SMOKE TEST PASSED' /tmp/gameplay.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_original_body_skin_test.gd 2>&1 | tee /tmp/original-body-skin.log
           grep -Fq 'ORIGINAL BODY SKIN TEST PASSED' /tmp/original-body-skin.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_character_test.gd 2>&1 | tee /tmp/quaternius-rig.log
+          grep -Fq 'QUATERNIUS RIG TEST PASSED' /tmp/quaternius-rig.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_body_resculpt_test.gd 2>&1 | tee /tmp/continuous-body-resculpt.log
+          grep -Fq 'CONTINUOUS BODY RESCULPT TEST PASSED' /tmp/continuous-body-resculpt.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_board_contact_test.gd 2>&1 | tee /tmp/board-contact.log
+          grep -Fq 'RIDER BOARD CONTACT TEST PASSED' /tmp/board-contact.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_headgear_test.gd 2>&1 | tee /tmp/quaternius-headgear.log
+          grep -Fq 'EXTERNAL HEADGEAR TEST PASSED' /tmp/quaternius-headgear.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_portrait_test.gd 2>&1 | tee /tmp/true-skinned-portrait.log
+          grep -Fq 'TRUE SKINNED PORTRAIT TEST PASSED' /tmp/true-skinned-portrait.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_athletic_portrait_sculpt_test.gd 2>&1 | tee /tmp/athletic-portrait-sculpt.log
+          grep -Fq 'ATHLETIC PORTRAIT SCULPT TEST PASSED' /tmp/athletic-portrait-sculpt.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_back_hair_sculpt_test.gd 2>&1 | tee /tmp/quaternius-back-hair-sculpt.log
+          grep -Fq 'CONTINUOUS BACK HAIR SCULPT TEST PASSED' /tmp/quaternius-back-hair-sculpt.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_back_hair_test.gd 2>&1 | tee /tmp/quaternius-true-skinned-hair.log
+          grep -Fq 'TRUE SKINNED BACK HAIR TEST PASSED' /tmp/quaternius-true-skinned-hair.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_hair_finish_test.gd 2>&1 | tee /tmp/weighted-hair-finish.log
+          grep -Fq 'WEIGHTED HAIR FINISH TEST PASSED' /tmp/weighted-hair-finish.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_v124_integrated_silhouette_test.gd 2>&1 | tee /tmp/integrated-hero-silhouette.log
+          grep -Fq 'INTEGRATED HERO SILHOUETTE TEST PASSED' /tmp/integrated-hero-silhouette.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_portrait_normals_test.gd 2>&1 | tee /tmp/quaternius-portrait-normals.log
+          grep -Fq 'EXTERNAL PORTRAIT NORMALS TEST PASSED' /tmp/quaternius-portrait-normals.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_hair_dynamics_test.gd 2>&1 | tee /tmp/quaternius-hair-motion.log
+          grep -Fq 'EXTERNAL HAIR DYNAMICS TEST PASSED' /tmp/quaternius-hair-motion.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_expression_test.gd 2>&1 | tee /tmp/quaternius-expression.log
+          grep -Fq 'EXTERNAL EXPRESSION TEST PASSED' /tmp/quaternius-expression.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_silhouette_material_test.gd 2>&1 | tee /tmp/silhouette-material.log
+          grep -Fq 'EXTERNAL SILHOUETTE MATERIAL TEST PASSED' /tmp/silhouette-material.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_helmet_contour_test.gd 2>&1 | tee /tmp/helmet-contour.log
+          grep -Fq 'INTEGRATED HELMET TEST PASSED' /tmp/helmet-contour.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_neck_yoke_test.gd 2>&1 | tee /tmp/quaternius-neck-yoke.log
+          grep -Fq 'EXTERNAL SKINNED NECK YOKE TEST PASSED' /tmp/quaternius-neck-yoke.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_outfit_test.gd 2>&1 | tee /tmp/quaternius-outfit.log
+          grep -Fq 'EXTERNAL SKINNED OUTFIT TEST PASSED' /tmp/quaternius-outfit.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_armor_test.gd 2>&1 | tee /tmp/quaternius-armor.log
+          grep -Fq 'EXTERNAL SKINNED ARMOR TEST PASSED' /tmp/quaternius-armor.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_harness_test.gd 2>&1 | tee /tmp/quaternius-harness.log
+          grep -Fq 'EXTERNAL SKINNED HARNESS TEST PASSED' /tmp/quaternius-harness.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_athletic_pose_test.gd 2>&1 | tee /tmp/quaternius-pose.log
+          grep -Fq 'EXTERNAL ATHLETIC POSE TEST PASSED' /tmp/quaternius-pose.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_follow_through_test.gd 2>&1 | tee /tmp/quaternius-follow-through.log
+          grep -Fq 'EXTERNAL FOLLOW-THROUGH TEST PASSED' /tmp/quaternius-follow-through.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_sleeves_test.gd 2>&1 | tee /tmp/quaternius-sleeves.log
+          grep -Fq 'EXTERNAL SKINNED SLEEVES TEST PASSED' /tmp/quaternius-sleeves.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_lower_test.gd 2>&1 | tee /tmp/quaternius-lower.log
+          grep -Fq 'EXTERNAL SKINNED LOWER TEST PASSED' /tmp/quaternius-lower.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_mantle_test.gd 2>&1 | tee /tmp/quaternius-mantle.log
+          grep -Fq 'EXTERNAL SKINNED MANTLE TEST PASSED' /tmp/quaternius-mantle.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_thrusters_test.gd 2>&1 | tee /tmp/quaternius-thrusters.log
+          grep -Fq 'EXTERNAL SKINNED THRUSTERS TEST PASSED' /tmp/quaternius-thrusters.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_pauldron_test.gd 2>&1 | tee /tmp/quaternius-pauldron.log
+          grep -Fq 'EXTERNAL PAULDRON TEST PASSED' /tmp/quaternius-pauldron.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_costume_skin_follow_test.gd 2>&1 | tee /tmp/costume-skin-follow.log
           grep -Fq 'COSTUME SKIN FOLLOW TEST PASSED' /tmp/costume-skin-follow.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_sculpted_skinned_suit_test.gd 2>&1 | tee /tmp/sculpted-suit.log
@@ -68,6 +122,8 @@ jobs:
           grep -Fq 'SKINNED GLOVE TEST PASSED' /tmp/skinned-gloves.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://hoverboard_sculpted_hull_test.gd 2>&1 | tee /tmp/sculpted-hoverboard.log
           grep -Fq 'SCULPTED HOVERBOARD TEST PASSED' /tmp/sculpted-hoverboard.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://hoverboard_boost_wake_test.gd 2>&1 | tee /tmp/boost-wake.log
+          grep -Fq 'VOLUMETRIC BOOST WAKE TEST PASSED' /tmp/boost-wake.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://powerup_vfx_test.gd 2>&1 | tee /tmp/powerup-vfx.log
           grep -Fq 'POWERUP VFX TEST PASSED' /tmp/powerup-vfx.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://cinematic_city_districts_test.gd 2>&1 | tee /tmp/city-districts.log
@@ -112,6 +168,105 @@ jobs:
             --script res://rider_visual_capture_test.gd 2>&1 | tee /tmp/visual-capture.log
           grep -Fq 'VISUAL CAPTURE TEST PASSED' /tmp/visual-capture.log
           test "$(find /tmp/learnquest-visual-qa -name '*.png' | wc -l)" -eq 20
+      - name: Render real V123/V124 rigged hero landscape comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-quaternius-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_QUATERNIUS_OUTPUT=/tmp/learnquest-quaternius-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_character_visual_capture_test.gd 2>&1 | tee /tmp/quaternius-visual.log
+          grep -Fq 'QUATERNIUS VISUAL QA PASSED' /tmp/quaternius-visual.log
+          test "$(find /tmp/learnquest-quaternius-qa -name '*.png' | wc -l)" -eq 24
+      - name: Capture 16 pose-locked original versus sculpted 65-bone source-body frames
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-body-sculpt-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_BODY_SCULPT_OUTPUT=/tmp/learnquest-body-sculpt-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_body_resculpt_visual_capture_test.gd 2>&1 | tee /tmp/body-sculpt-visual.log
+          grep -Fq 'CONTINUOUS BODY VISUAL QA PASSED' /tmp/body-sculpt-visual.log
+          test "$(find /tmp/learnquest-body-sculpt-qa -name '*.png' | wc -l)" -eq 16
+      - name: Capture 12 true skinned portrait versus rigid face landscape frames
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-skinned-portrait-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_PORTRAIT_OUTPUT=/tmp/learnquest-skinned-portrait-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_skinned_portrait_visual_capture_test.gd 2>&1 | tee /tmp/skinned-portrait-visual.log
+          grep -Fq 'TRUE SKINNED PORTRAIT VISUAL QA PASSED' /tmp/skinned-portrait-visual.log
+          test "$(find /tmp/learnquest-skinned-portrait-qa -name '*.png' | wc -l)" -eq 12
+      - name: Compare rigid versus genuinely skinned rear hair in 16 landscape frames
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-skinned-hair-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_SKINNED_HAIR_OUTPUT=/tmp/learnquest-skinned-hair-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_skinned_back_hair_visual_capture_test.gd 2>&1 | tee /tmp/skinned-hair-visual.log
+          grep -Fq 'SKINNED BACK HAIR VISUAL QA PASSED' /tmp/skinned-hair-visual.log
+          test "$(find /tmp/learnquest-skinned-hair-qa -name '*.png' | wc -l)" -eq 18
+      - name: Render 32 real V123/V124 neutral and action silhouette frames
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-action-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_ACTION_OUTPUT=/tmp/learnquest-action-qa \
+            timeout 150s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_action_visual_capture_test.gd 2>&1 | tee /tmp/action-visual.log
+          grep -Fq 'EXTERNAL ACTION SILHOUETTE QA PASSED' /tmp/action-visual.log
+          test "$(find /tmp/learnquest-action-qa -name '*.png' | wc -l)" -eq 32
+      - name: Render actual V123/V124 skinned hoverboot close-ups at two landscape ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-boots-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_BOOT_OUTPUT=/tmp/learnquest-boots-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_boot_visual_capture_test.gd 2>&1 | tee /tmp/boot-visual.log
+          grep -Fq 'SKINNED BOOT VISUAL QA PASSED' /tmp/boot-visual.log
+          test "$(find /tmp/learnquest-boots-qa -name '*.png' | wc -l)" -eq 8
+      - name: Render actual V124 twin-turbine before-after landscape frames
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-turbine-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_TURBINE_OUTPUT=/tmp/learnquest-turbine-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://hoverboard_turbine_visual_capture_test.gd 2>&1 | tee /tmp/turbine-visual.log
+          grep -Fq 'TURBINE VISUAL QA PASSED' /tmp/turbine-visual.log
+          test "$(find /tmp/learnquest-turbine-qa -name '*.png' | wc -l)" -eq 8
+      - name: Render V124 paired 3D boost wakes in both phone landscape ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-wake-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_WAKE_OUTPUT=/tmp/learnquest-wake-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://hoverboard_boost_wake_visual_capture_test.gd 2>&1 | tee /tmp/boost-wake-visual.log
+          grep -Fq 'BOOST WAKE VISUAL QA PASSED' /tmp/boost-wake-visual.log
+          test "$(find /tmp/learnquest-wake-qa -name '*.png' | wc -l)" -eq 8
+      - name: Render actual V124 neutral versus action face and pose frames
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-expression-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_EXPRESSION_OUTPUT=/tmp/learnquest-expression-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_expression_visual_capture_test.gd 2>&1 | tee /tmp/expression-visual.log
+          grep -Fq 'EXTERNAL EXPRESSION VISUAL QA PASSED' /tmp/expression-visual.log
+          test "$(find /tmp/learnquest-expression-qa -name '*.png' | wc -l)" -eq 8
       - name: Render all four power-up silhouettes for 16:9 QA
         shell: bash
         run: |
@@ -189,6 +344,69 @@ jobs:
             --script res://harbor_cargo_relay_visual_capture_test.gd 2>&1 | tee /tmp/harbor-relay-visual.log
           grep -Fq 'HARBOR CARGO RELAY VISUAL QA PASSED' /tmp/harbor-relay-visual.log
           test "$(find /tmp/learnquest-relay-qa -name '*.png' | wc -l)" -eq 8
+      - name: Upload V124 skinned hoverboot close-up comparison frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-hoverboots-before-after
+          path: /tmp/learnquest-boots-qa/*.png
+          if-no-files-found: ignore
+      - name: Upload V124 true skinned portrait comparison frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-skinned-portrait-before-after
+          path: /tmp/learnquest-skinned-portrait-qa/*.png
+          if-no-files-found: ignore
+      - name: Upload genuine skinned versus rigid hair landscape comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-skinned-hair-before-after
+          path: /tmp/learnquest-skinned-hair-qa/*.png
+          if-no-files-found: ignore
+      - name: Upload V124 volumetric boost wake before-after landscape frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-boost-wake-before-after
+          path: /tmp/learnquest-wake-qa/*.png
+          if-no-files-found: ignore
+      - name: Upload V124 twin-turbine before-after landscape frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-board-turbines-before-after
+          path: /tmp/learnquest-turbine-qa/*.png
+          if-no-files-found: ignore
+      - name: Upload V124 neutral/action expression frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-expression-neutral-action
+          path: /tmp/learnquest-expression-qa/*.png
+          if-no-files-found: ignore
+      - name: Upload V124 neutral and action silhouette comparison frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-action-silhouette-before-after
+          path: /tmp/learnquest-action-qa/*.png
+          if-no-files-found: error
+      - name: Upload V124 isolated original-source body sculpt comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-source-body-sculpt-before-after
+          path: /tmp/learnquest-body-sculpt-qa/*.png
+          if-no-files-found: error
+      - name: Upload V124 CC0 humanoid before-after frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-quaternius-before-after
+          path: /tmp/learnquest-quaternius-qa/*.png
+          if-no-files-found: ignore
       - name: Upload V123 Star Harbor cargo relay comparison frames
         if: always()
         uses: actions/upload-artifact@v4
@@ -254,6 +472,15 @@ jobs:
             /tmp/import.log
             /tmp/gameplay.log
             /tmp/original-body-skin.log
+            /tmp/quaternius-rig.log
+            /tmp/board-contact.log
+            /tmp/quaternius-headgear.log
+            /tmp/quaternius-portrait-normals.log
+            /tmp/quaternius-outfit.log
+            /tmp/quaternius-thrusters.log
+            /tmp/quaternius-visual.log
+            /tmp/action-visual.log
+            /tmp/turbine-visual.log
             /tmp/costume-skin-follow.log
             /tmp/sculpted-suit.log
             /tmp/suit-visibility.log

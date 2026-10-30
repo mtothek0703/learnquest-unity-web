@@ -7,6 +7,28 @@ func _fail(message: String) -> void:
     push_error("SCULPTED HOVERBOARD TEST FAILED: " + message)
     quit(1)
 
+# Compare all coincident vertices in the real unindexed render mesh.
+# At least three copies must agree to rule out per-triangle flat shading.
+func _smooth_at(mesh: Mesh, point: Vector3, expected: Vector3) -> bool:
+    var arrays: Array = mesh.surface_get_arrays(0)
+    var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+    var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+    if normals.size() != vertices.size():
+        return false
+    var count := 0
+    var first := Vector3.ZERO
+    for i in range(vertices.size()):
+        if vertices[i].distance_to(point) > 0.0001:
+            continue
+        var normal: Vector3 = normals[i]
+        if normal.length_squared() < 0.95 or normal.dot(expected) < 0.75:
+            return false
+        if count > 0 and normal.dot(first) < 0.995:
+            return false
+        first = normal
+        count += 1
+    return count >= 3
+
 func _check() -> void:
     var rider := preload("res://rider_character.tscn").instantiate() as Node3D
     root.add_child(rider)
@@ -39,6 +61,21 @@ func _check() -> void:
     if points.size() < 3000 or colors.size() != points.size():
         _fail("chassis needs substantial shaded custom geometry")
         return
+    # The smooth-shaded chassis must remain legible in the dark chase camera.
+    # Highly metallic dark material lost the old faceted specular highlights.
+    var chassis_material := chassis.material_override as StandardMaterial3D
+    if chassis_material == null or chassis_material.metallic > 0.50 or \
+            chassis_material.roughness < 0.40:
+        _fail("smooth chassis needs readable satin material, not dark mirror metal")
+        return
+    var upper_point: Vector3 = sculpt.call("_shell_point", 0.5, PI * 0.5)
+    var upper_luminance := -1.0
+    for i in range(points.size()):
+        if points[i].distance_to(upper_point) < 0.0001:
+            upper_luminance = maxf(upper_luminance, colors[i].get_luminance())
+    if upper_luminance < 0.10:
+        _fail("smooth chassis top lost its readable vertex color")
+        return
     var nose: float = sculpt.call("_half_width", 0.0)
     var middle: float = sculpt.call("_half_width", 0.52)
     var tail: float = sculpt.call("_half_width", 1.0)
@@ -67,9 +104,86 @@ func _check() -> void:
     for side in [-1.0, 1.0]:
         var inner: Vector3 = sculpt.call("_wing_point", side, 0.52, PI)
         var outer: Vector3 = sculpt.call("_wing_point", side, 0.52, 0.0)
-        if absf(outer.x - inner.x) < 0.5 or absf(outer.x) < 1.35:
-            _fail("swept wing does not provide a distinct wider 3D silhouette")
+        if absf(outer.x - inner.x) < 0.42 or absf(outer.x) < 1.17 or absf(outer.x) > 1.23:
+            _fail("compact stabilizer must be substantial but not an oversized side wing")
             return
+        var wing := sculpt.get_node_or_null(
+            "PortSculptedAeroWing" if side < 0.0 else "StarboardSculptedAeroWing") as MeshInstance3D
+        var wing_arrays: Array = wing.mesh.surface_get_arrays(0)
+        var wing_vertices: PackedVector3Array = wing_arrays[Mesh.ARRAY_VERTEX]
+        var wing_colors: PackedColorArray = wing_arrays[Mesh.ARRAY_COLOR]
+        if wing_vertices.size() < 1800 or wing_colors.size() != wing_vertices.size():
+            _fail("side stabilizers need closed end caps and shaded color data")
+            return
+        var satin := wing.material_override as StandardMaterial3D
+        if satin == null or satin.roughness < 0.55 or satin.metallic > 0.40:
+            _fail("side stabilizers must use satin composite, not glossy purple")
+            return
+        for t in [0.15, 0.5, 0.85]:
+            var mirrored: Vector3 = sculpt.call("_wing_point", -side, t, 0.0)
+            var sample: Vector3 = sculpt.call("_wing_point", side, t, 0.0)
+            if absf(mirrored.x + sample.x) > 0.001 or absf(mirrored.y - sample.y) > 0.001:
+                _fail("integrated stabilizers lost their mirrored 3D sweep")
+                return
+    # V124: two closed, curved, symmetric propulsion housings and emissive
+    # exhaust toruses, attached to the existing hoverboard (not touch/collision).
+    var port_engine := sculpt.get_node_or_null("PortSculptedTurbine") as MeshInstance3D
+    var starboard_engine := sculpt.get_node_or_null("StarboardSculptedTurbine") as MeshInstance3D
+    var port_halo := sculpt.get_node_or_null("PortExhaustHalo") as MeshInstance3D
+    var starboard_halo := sculpt.get_node_or_null("StarboardExhaustHalo") as MeshInstance3D
+    for part in [port_engine, starboard_engine, port_halo, starboard_halo]:
+        if part == null or part.mesh == null or not part.visible:
+            _fail("missing sculpted propulsion volume or exhaust")
+            return
+        var geometry: Array = part.mesh.surface_get_arrays(0)
+        var points3d: PackedVector3Array = geometry[Mesh.ARRAY_VERTEX]
+        var normals3d: PackedVector3Array = geometry[Mesh.ARRAY_NORMAL]
+        if points3d.size() < 1000 or normals3d.size() != points3d.size():
+            _fail("propulsion geometry must be a smooth shaded 3D surface")
+            return
+    # The actual unindexed mesh vertices must now share smooth analytic
+    # normals across triangle boundaries. Flat generated normals previously
+    # made the chassis, traction deck, wings and turbines look faceted.
+    var deck := sculpt.get_node("ContouredTractionDeck") as MeshInstance3D
+    var port_wing := sculpt.get_node("PortSculptedAeroWing") as MeshInstance3D
+    var starboard_wing := sculpt.get_node("StarboardSculptedAeroWing") as MeshInstance3D
+    var normal_cases: Array[Dictionary] = [
+        {"mesh": chassis.mesh, "point": sculpt.call("_shell_point", 0.5, PI * 0.5)},
+        {"mesh": deck.mesh, "point": sculpt.call("_grip_point", 0.5, 0.0)},
+        {"mesh": port_wing.mesh, "point": sculpt.call("_wing_point", -1.0, 0.5, PI * 0.5)},
+        {"mesh": starboard_wing.mesh, "point": sculpt.call("_wing_point", 1.0, 0.5, PI * 0.5)},
+        {"mesh": port_engine.mesh, "point": sculpt.call("_thruster_point", -1.0, 0.5, PI * 0.5)},
+        {"mesh": starboard_engine.mesh, "point": sculpt.call("_thruster_point", 1.0, 0.5, PI * 0.5)}
+    ]
+    for sample_case in normal_cases:
+        if not _smooth_at(sample_case["mesh"], sample_case["point"], Vector3.UP):
+            _fail("swept board geometry has faceted, discontinuous or inward-facing surface normals")
+            return
+    # End caps need their own hard outward normals, unlike the curved sides.
+    var front_cap: Vector3 = sculpt.call("_shell_point", 0.0, 0.0)
+    if not _smooth_at(chassis.mesh, Vector3(0.0, front_cap.y, -1.37),
+            Vector3.FORWARD):
+        _fail("front chassis end cap is not closed with an outward normal")
+        return
+    for t in [0.0, 0.45, 0.80, 1.0]:
+        var port: Vector3 = sculpt.call("_thruster_point", -1.0, t, 0.0)
+        var starboard: Vector3 = sculpt.call("_thruster_point", 1.0, t, PI)
+        if absf(port.x + starboard.x) > 0.001 or absf(port.y - starboard.y) > 0.001:
+            _fail("twin turbines are not mirrored around the board centerline")
+            return
+    var engine_mid_top: Vector3 = sculpt.call("_thruster_point", 1.0, 0.5, PI * 0.5)
+    var engine_mid_bottom: Vector3 = sculpt.call("_thruster_point", 1.0, 0.5, PI * 1.5)
+    var engine_tip_top: Vector3 = sculpt.call("_thruster_point", 1.0, 0.0, PI * 0.5)
+    var engine_front: Vector3 = sculpt.call("_thruster_point", 1.0, 0.0, 0.0)
+    var engine_back: Vector3 = sculpt.call("_thruster_point", 1.0, 1.0, 0.0)
+    if engine_mid_top.y - engine_mid_bottom.y < 0.40 or engine_mid_top.y - engine_tip_top.y < 0.08 or engine_back.z - engine_front.z < 1.0:
+        _fail("propulsion housing lacks a swept, three-dimensional tapered body")
+        return
+    var halo_outer: Vector3 = sculpt.call("_exhaust_halo_point", 1.0, 0.0, 0.0)
+    var halo_inner: Vector3 = sculpt.call("_exhaust_halo_point", 1.0, 0.0, PI)
+    if halo_outer.x - halo_inner.x < 0.04 or halo_outer.z < engine_back.z:
+        _fail("exhaust halo is not a separate volumetric rear torus")
+        return
     var retired_prisms := 0
     for child in board.get_children():
         if child is MeshInstance3D and child.mesh is PrismMesh:
@@ -100,8 +214,56 @@ func _check() -> void:
     if light == null or light.emission_energy_multiplier <= 1.25:
         _fail("boost must visibly intensify the curved light rails")
         return
+    var exhaust_light := sculpt.get("core_material") as StandardMaterial3D
+    if exhaust_light == null or not exhaust_light.emission_enabled or exhaust_light.emission_energy_multiplier <= 1.6:
+        _fail("boost must brighten both sculpted exhaust halos")
+        return
+    # Both physical rails already existed. Their independent emission now
+    # communicates steer direction without adding draw calls or touch input.
+    var side_materials: Array = sculpt.get("rail_materials")
+    if side_materials.size() != 2 or side_materials[0] == side_materials[1]:
+        _fail("port/starboard rails need distinct materials for carve feedback")
+        return
+    var port_light := side_materials[0] as StandardMaterial3D
+    var starboard_light := side_materials[1] as StandardMaterial3D
+    if port_light == null or starboard_light == null or \
+            starboard_light.emission_energy_multiplier <= port_light.emission_energy_multiplier + 0.10:
+        _fail("right carve must brighten the right-hand existing rail")
+        return
+    legacy.set("lean", -0.85)
+    legacy.set("boosting", false)
+    for frame in range(16):
+        sculpt.call("_process", 0.016)
+    if port_light.emission_energy_multiplier <= starboard_light.emission_energy_multiplier + 0.35:
+        _fail("left carve must switch the dominant rail and recover from boost")
+        return
+    if port_light.emission == starboard_light.emission:
+        _fail("opposite rail emissions must use visibly distinct turn colors")
+        return
+    # The same 0.1-second lighting transition must look identical at
+    # 30 and 60 FPS; fixed per-frame interpolation previously drifted.
+    legacy.set("lean", 0.75)
+    legacy.set("boosting", true)
+    var energy_30 := 0.0
+    for fps in [30, 60]:
+        port_light.emission_energy_multiplier = 1.25
+        starboard_light.emission_energy_multiplier = 1.25
+        var frames := 3 if fps == 30 else 6
+        for frame in range(frames):
+            sculpt.call("_process", 1.0 / float(fps))
+        if fps == 30:
+            energy_30 = starboard_light.emission_energy_multiplier
+        elif absf(starboard_light.emission_energy_multiplier - energy_30) > 0.015:
+            _fail("hoverboard glow must have frame-rate-independent response on phones")
+            return
+    if starboard_light.emission_energy_multiplier <= port_light.emission_energy_multiplier + 0.25:
+        _fail("frame-rate-independent lighting must preserve steer direction")
+        return
+    if sculpt.find_children("*", "CollisionObject3D", true, false).size() > 0:
+        _fail("turn lighting must not add new collision objects")
+        return
     if rider.get_node_or_null("ImportedRider/OriginalBodySkinRig/OriginalBodySkeleton13") == null:
         _fail("original 13-bone skinned character must remain")
         return
-    print("SCULPTED HOVERBOARD TEST PASSED: 360-degree tapered hull, swept wings, contoured deck, dynamic rails, original hover/lean and untouched collisions")
+    print("SCULPTED HOVERBOARD TEST PASSED: continuous hull, paired 3D turbines and boost exhaust, swept wings, hover/lean, original rig and untouched collisions")
     quit(0)
