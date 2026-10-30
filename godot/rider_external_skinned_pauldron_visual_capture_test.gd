@@ -1,6 +1,7 @@
 extends SceneTree
-## Experimental CC0 shoulder redesign: 16 pose-locked OpenGL frames isolate
-## the compact, original-Skin deltoid caps from other costume overlays.
+## Experimental CC0 shoulder redesign: 32 pose-locked OpenGL frames isolate
+## the real weighted sleeves, retired shoulder caps, rear housings and luminous
+## thruster cores independently. Diagnose occlusion before changing art assets.
 ## A successful render is not a V123 aesthetic or physical-device sign-off.
 const SIZES := [Vector2i(1280, 720), Vector2i(1170, 540)]
 const VIEWS := ["front", "chase"]
@@ -114,7 +115,7 @@ func _capture() -> void:
         for view in VIEWS:
             camera.position = Vector3(0, 2.0, -5.2) if view == "front" else Vector3(0, 2.25, 5.4)
             camera.look_at(Vector3(0, 1.8, 0), Vector3.UP)
-            for layer in ["skin_layers", "complete_rider", "rear_profile"]:
+            for layer in ["skin_layers", "complete_rider", "rear_profile", "core_isolation"]:
                 var rear_baseline: Image
                 for variant in ["without_pauldrons", "with_pauldrons"]:
                     for item in visibility.keys():
@@ -133,6 +134,11 @@ func _capture() -> void:
                             enabled = variant == "with_pauldrons" and layer != "rear_profile"
                         if layer == "rear_profile" and nacelles.has(mesh):
                             enabled = variant == "with_pauldrons"
+                        # A separate A/B pair reveals whether the conspicuous
+                        # glowing shoulder bulbs are the actual weighted cores.
+                        # Keep all other layers identical and pose-locked.
+                        if layer == "core_isolation" and cores.has(mesh):
+                            enabled = variant == "with_pauldrons"
                         mesh.visible = enabled
                     for frame in range(5):
                         hero.global_transform = locked_hero
@@ -147,7 +153,7 @@ func _capture() -> void:
                     if image.is_empty() or image.get_width() != size.x or image.get_height() != size.y:
                         _fail("invalid smartphone landscape framebuffer")
                         return
-                    if layer == "rear_profile":
+                    if layer in ["rear_profile", "core_isolation"]:
                         if variant == "without_pauldrons":
                             rear_baseline = image.duplicate() as Image
                         else:
@@ -164,10 +170,12 @@ func _capture() -> void:
                             if view == "chase" and changed_samples < 24:
                                 _fail("weighted nacelle removal is not visibly distinguishable in chase camera: %d samples" % changed_samples)
                                 return
-                            print("REAR SHOULDER PROFILE QA %dx%d %s: %d changed samples (6px grid)" % [size.x, size.y, view, changed_samples])
+                            print("%s QA %dx%d %s: %d changed samples (6px grid)" % [layer, size.x, size.y, view, changed_samples])
                     var profile_variant: String = String(variant)
                     if layer == "rear_profile":
                         profile_variant = "with_oversized_nacelles" if variant == "with_pauldrons" else "integrated_cores_only"
+                    elif layer == "core_isolation":
+                        profile_variant = "with_weighted_cores" if variant == "with_pauldrons" else "without_weighted_cores"
                     if image.save_png("%s/%dx%d_%s_%s_%s.png" % [
                             folder, size.x, size.y, view, layer, profile_variant]) != OK:
                         _fail("could not save actual skinned shoulder frame")
@@ -175,8 +183,8 @@ func _capture() -> void:
                     count += 1
     for item in visibility.keys():
         (item as MeshInstance3D).visible = bool(visibility[item])
-    if count != 24:
-        _fail("expected twenty-four 16:9/19.5:9 paired shoulder and nacelle frames")
+    if count != 32:
+        _fail("expected thirty-two 16:9/19.5:9 paired shoulder, nacelle and core frames")
         return
-    print("SKINNED PAULDRON VISUAL QA PASSED: 24 pose-locked front/chase original-Skin, full-rider and shoulder-profile frames; manual visual gate remains open")
+    print("SKINNED PAULDRON VISUAL QA PASSED: 32 pose-locked front/chase original-Skin, full-rider, rear-profile and core-isolation frames; manual visual gate remains open")
     quit(0)

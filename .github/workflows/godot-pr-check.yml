@@ -201,7 +201,7 @@ jobs:
             --script res://rider_external_skinned_sleeves_visual_capture_test.gd 2>&1 | tee /tmp/sleeves-visual.log
           grep -Fq 'SKINNED SLEEVE VISUAL QA PASSED' /tmp/sleeves-visual.log
           test "$(find /tmp/learnquest-sleeves-qa -name '*.png' | wc -l)" -eq 16
-      - name: Capture 16 pose-locked compact shoulder-cap A/B comparisons
+      - name: Capture 32 pose-locked shoulder and luminous-core A/B comparisons
         shell: bash
         run: |
           set -euo pipefail
@@ -211,7 +211,7 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://rider_external_skinned_pauldron_visual_capture_test.gd 2>&1 | tee /tmp/pauldron-visual.log
           grep -Fq 'SKINNED PAULDRON VISUAL QA PASSED' /tmp/pauldron-visual.log
-          test "$(find /tmp/learnquest-pauldron-qa -name '*.png' | wc -l)" -eq 24
+          test "$(find /tmp/learnquest-pauldron-qa -name '*.png' | wc -l)" -eq 32
       - name: Capture 12 true skinned portrait versus rigid face landscape frames
         shell: bash
         run: |
