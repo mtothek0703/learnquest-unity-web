@@ -68,6 +68,16 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
             return false
     for i in range(skeleton.get_bone_count()):
         rest_rotations[i] = skeleton.get_bone_pose_rotation(i)
+    # First reshape the ACTUAL four-weight imported body mesh, so every
+    # downstream jacket/leg/shoulder panel is sampled from the same coherent
+    # anatomical silhouette. This is a runtime mesh copy: the CC0 GLB and
+    # its 65-bone Skeleton3D / Skin inverse binds are never edited.
+    var body_sculpt := preload("res://rider_external_body_resculpt.gd").new() as Node
+    body_sculpt.name = "ExternalContinuousBodySculpt"
+    character.add_child(body_sculpt)
+    if not bool(body_sculpt.call("install", skinned_meshes)):
+        body_sculpt.queue_free()
+        push_warning("CC0 continuous body sculpt unavailable; original weighted body preserved")
     # Recolor the EXISTING skinned body, not an unrigged duplicate shell.
     # Lightweight procedural materials preserve original mesh + skin data.
     var suit_shader := load("res://rider_quaternius_suit.gdshader") as Shader
