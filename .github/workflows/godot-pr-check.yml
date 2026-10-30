@@ -211,7 +211,7 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://rider_external_skinned_pauldron_visual_capture_test.gd 2>&1 | tee /tmp/pauldron-visual.log
           grep -Fq 'SKINNED PAULDRON VISUAL QA PASSED' /tmp/pauldron-visual.log
-          test "$(find /tmp/learnquest-pauldron-qa -name '*.png' | wc -l)" -eq 16
+          test "$(find /tmp/learnquest-pauldron-qa -name '*.png' | wc -l)" -eq 24
       - name: Capture 12 true skinned portrait versus rigid face landscape frames
         shell: bash
         run: |
