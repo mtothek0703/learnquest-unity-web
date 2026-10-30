@@ -234,4 +234,6 @@ func _jacket_material(bounds: AABB) -> ShaderMaterial:
     material.set_shader_parameter("rest_height", bounds.size.y)
     material.set_shader_parameter("rest_center_x", bounds.get_center().x)
     material.set_shader_parameter("rest_width", bounds.size.x)
+    material.set_shader_parameter("rest_center_z", bounds.get_center().z)
+    material.set_shader_parameter("rest_depth", bounds.size.z)
     return material
