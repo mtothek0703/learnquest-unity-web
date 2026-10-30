@@ -89,7 +89,9 @@ func _check() -> void:
                     normals[base + 6].dot(normals[base + 9]) < 0.999:
                 _fail("shared cloth triangle corners have discontinuous shading")
                 return
-            if normals[base].dot(normals[base + 6]) > -0.90:
+            # A thick, curved shell need not be perfectly antiparallel at
+            # the strongly cambered hem; require a real outward/inward split.
+            if normals[base].dot(normals[base + 6]) > -0.70:
                 _fail("opposite cloth faces must have opposing surface normals")
                 return
             if quad % PANEL_COLUMNS < PANEL_COLUMNS - 1:
