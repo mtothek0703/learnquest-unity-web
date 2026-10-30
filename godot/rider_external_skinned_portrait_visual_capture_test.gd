@@ -92,6 +92,15 @@ func _capture() -> void:
     var head_id := rig.find_bone("Head")
     var locked_head := rig.get_bone_pose_rotation(head_id)
     var locked_hero := hero.global_transform
+    # Freeze every original imported bone, not just the Head. Some Godot
+    # renderer/attachment callbacks can settle a queued pose a frame later
+    # even after the rider process tree has been disabled. Reapplying this
+    # single captured rest/action pose BEFORE EACH render makes the rigid
+    # versus weighted face comparison deterministic without weakening the
+    # original drift assertions or touching game-time animation.
+    var locked_bones: Array[Transform3D] = []
+    for bone in range(rig.get_bone_count()):
+        locked_bones.append(rig.get_bone_pose(bone))
     var count := 0
     for size in SIZES:
         viewport.size = size
@@ -108,15 +117,20 @@ func _capture() -> void:
                 rigid.visible = variant == "rigid"
                 skinned.visible = variant == "skinned"
                 for frame in range(5):
+                    hero.global_transform = locked_hero
+                    for bone in range(locked_bones.size()):
+                        rig.set_bone_pose(bone, locked_bones[bone])
                     await process_frame
                 await RenderingServer.frame_post_draw
                 var hero_now := hero.global_transform
-                if rig.get_bone_pose_rotation(head_id).angle_to(locked_head) > 0.003 or \
-                        hero_now.origin.distance_to(locked_hero.origin) > 0.003 or \
-                        hero_now.basis.x.distance_to(locked_hero.basis.x) > 0.003 or \
-                        hero_now.basis.y.distance_to(locked_hero.basis.y) > 0.003 or \
-                        hero_now.basis.z.distance_to(locked_hero.basis.z) > 0.003:
-                    _fail("rig/hero pose drifted between rigid and skinned comparison frames")
+                var head_drift := rig.get_bone_pose_rotation(head_id).angle_to(locked_head)
+                var position_drift := hero_now.origin.distance_to(locked_hero.origin)
+                var basis_drift := maxf(hero_now.basis.x.distance_to(locked_hero.basis.x),
+                    maxf(hero_now.basis.y.distance_to(locked_hero.basis.y),
+                    hero_now.basis.z.distance_to(locked_hero.basis.z)))
+                if head_drift > 0.003 or position_drift > 0.003 or basis_drift > 0.003:
+                    _fail("rig/hero pose drift after explicit lock (head=%.5f position=%.5f basis=%.5f)" % [
+                        head_drift, position_drift, basis_drift])
                     return
                 var img := viewport.get_texture().get_image()
                 if img.is_empty() or img.get_width() != size.x or img.get_height() != size.y:
