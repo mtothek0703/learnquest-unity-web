@@ -243,3 +243,17 @@ bloß für einen besseren Pixelwert versteckt werden. **Diese Bilder sind nur
 Diagnostik** und keine Freigabe des Grafik-Meilensteins. V123-Baseline,
 Clipping in Bewegung, iPhone-FPS und vollständige Touch-Levelrunde bleiben
 offen. Keine Veröffentlichung dieses DRAFT-Branches.
+
+
+### Ergebnis der 24 echten, eingefrorenen OpenGL-Bilder (30.10.2026)
+
+Der erfolgreiche [Godot-Lauf 41026082540](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41026082540) lieferte 24 PNGs. Ein identischer 1280×720-Vorher/Nachher-Vergleich mit >25 RGB-Kanal-Differenz pro Pixel ergibt:
+
+| Sicht | `source_only` | `skin_layers` | `complete_rider` |
+|---|---:|---:|---:|
+| Front | 0,399 % | 0,004 % | 0,014 % |
+| Verfolger | 0,368 % | 0,000 % (gerundet) | 0,076 % |
+
+**Befund:** Bereits die echten skinierten Jacken-/Ärmel-/Beinlagen verdecken fast die gesamte ursprüngliche anatomische Neumodellierung. Die äußeren Mantel-/Schulter-/Harness-Overlays verändern zusätzlich 1,819 % der Front- und 2,634 % der Verfolgerpixel (`skin_layers` vs. `complete_rider`, jeweils sculpted). Das ist ein **Überdeckungsbefund**, keine Wertung dieser Prozentzahlen als Grafikqualität. In der Frontdiagnose `skin_layers` fehlen absichtlich starre Augen-/Gesichtsaufsätze; die unvollständige Gesichtsoptik ist kein spielbarer Vorschlag.
+
+**Konsequenz:** Nicht noch einmal den verdeckten Quellkörper sculpten. Zuerst die bereits skinnierte Jacken-/Ärmel-/Hosenoberfläche als kohärente, sichtbar geformte Gesamtsilhouette neu modellieren, danach Schulter-/Mantel-Overlays gezielt aufräumen. Identische Front-/Chase-Bilder gegen V123 und manuelle Clipping-/iPhone-FPS-Abnahme bleiben verpflichtend. **DRAFT / NO MERGE.**
