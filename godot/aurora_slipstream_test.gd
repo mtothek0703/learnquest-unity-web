@@ -20,17 +20,22 @@ func _check() -> void:
     var stations: Array = course.get("stations")
     var arches: Array = course.get("arches")
     var cores: Array = course.get("cores")
-    if stations.size() != 4 or arches.size() != 4 or cores.size() != 4:
+    var helices: Array = course.get("helices")
+    if stations.size() != 4 or arches.size() != 4 or cores.size() != 4 or helices.size() != 8:
         _fail("four complete 3D moving wind tunnels are required")
         return
     for index in range(4):
-        if stations[index].get_child_count() != 6:
-            _fail("each tunnel needs three real 3D hoops, a core and two wind guides")
+        if stations[index].get_child_count() != 8:
+            _fail("each tunnel needs three 3D hoops, two continuous helices, a core and two wind guides")
             return
         var ring := arches[index] as MeshInstance3D
         var core := cores[index] as MeshInstance3D
         if ring == null or not ring.mesh is TorusMesh or core == null or not core.mesh is SphereMesh:
             _fail("wind tunnel is not volumetric 3D geometry")
+            return
+        if not (helices[index * 2] as MeshInstance3D).mesh is ArrayMesh or \
+                (helices[index * 2] as MeshInstance3D).mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() < 300:
+            _fail("actual continuous sculpted helical 3D wind ribbons are required")
             return
         if not (ring.material_override as StandardMaterial3D).emission_enabled:
             _fail("moving tunnel must be visibly illuminated")
