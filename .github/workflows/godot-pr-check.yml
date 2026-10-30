@@ -190,7 +190,7 @@ jobs:
             --script res://rider_external_body_resculpt_visual_capture_test.gd 2>&1 | tee /tmp/body-sculpt-visual.log
           grep -Fq 'CONTINUOUS BODY VISUAL QA PASSED' /tmp/body-sculpt-visual.log
           test "$(find /tmp/learnquest-body-sculpt-qa -name '*.png' | wc -l)" -eq 24
-      - name: Capture 24 time-frozen skinned sleeve and original-source isolation frames
+      - name: Capture 44 time-frozen sleeve, source and five costume-family landscape frames
         shell: bash
         run: |
           set -euo pipefail
@@ -200,7 +200,7 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://rider_external_skinned_sleeves_visual_capture_test.gd 2>&1 | tee /tmp/sleeves-visual.log
           grep -Fq 'SKINNED SLEEVE VISUAL QA PASSED' /tmp/sleeves-visual.log
-          test "$(find /tmp/learnquest-sleeves-qa -name '*.png' | wc -l)" -eq 24
+          test "$(find /tmp/learnquest-sleeves-qa -name '*.png' | wc -l)" -eq 44
       - name: Capture 32 pose-locked shoulder and luminous-core A/B comparisons
         shell: bash
         run: |
