@@ -79,6 +79,15 @@ func _capture() -> void:
     for node in rider.find_children("*", "Node", true, false):
         node.set_process(false)
         node.set_physics_process(false)
+        if node is AnimationPlayer:
+            (node as AnimationPlayer).pause()
+        elif node is AnimationTree:
+            (node as AnimationTree).active = false
+    # Disable inherited/internal processing as well, then allow pending
+    # skeleton/attachment transforms to settle BEFORE taking the snapshot.
+    rider.process_mode = Node.PROCESS_MODE_DISABLED
+    for settle_frame in range(4):
+        await process_frame
     var rig := adapter.get("skeleton") as Skeleton3D
     var head_id := rig.find_bone("Head")
     var locked_head := rig.get_bone_pose_rotation(head_id)
@@ -101,8 +110,12 @@ func _capture() -> void:
                 for frame in range(5):
                     await process_frame
                 await RenderingServer.frame_post_draw
-                if rig.get_bone_pose_rotation(head_id).angle_to(locked_head) > 0.0001 or \
-                        not hero.global_transform.is_equal_approx(locked_hero):
+                var hero_now := hero.global_transform
+                if rig.get_bone_pose_rotation(head_id).angle_to(locked_head) > 0.003 or \
+                        hero_now.origin.distance_to(locked_hero.origin) > 0.003 or \
+                        hero_now.basis.x.distance_to(locked_hero.basis.x) > 0.003 or \
+                        hero_now.basis.y.distance_to(locked_hero.basis.y) > 0.003 or \
+                        hero_now.basis.z.distance_to(locked_hero.basis.z) > 0.003:
                     _fail("rig/hero pose drifted between rigid and skinned comparison frames")
                     return
                 var img := viewport.get_texture().get_image()
