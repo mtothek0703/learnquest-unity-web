@@ -149,7 +149,8 @@ func _panel(bounds: AABB, back: float, back_sign: float, side: float, binds: Pac
         var u1 := float(column + 1) / float(COLUMNS)
         _edge(tool, bounds, back, back_sign, side, binds, Vector2(u1, 0.0), Vector2(u0, 0.0))
         _edge(tool, bounds, back, back_sign, side, binds, Vector2(u0, 1.0), Vector2(u1, 1.0))
-    tool.generate_normals()
+    # Face normals are analytic and shared at identical (u, t); sealed
+    # sidewalls retain flat normals instead of smoothing across the lip.
     return tool.commit()
 
 func _quad(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
@@ -160,43 +161,59 @@ func _quad(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
 
 func _edge(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
         side: float, binds: PackedInt32Array, a: Vector2, b: Vector2) -> void:
-    # Bridge both weighted surface contours with actual perimeter triangles.
-    # Preserve four original Skin influences on both sides of each wall.
-    _vertex(tool, bounds, back, back_sign, side, a.x, a.y, binds, 1.0)
-    _vertex(tool, bounds, back, back_sign, side, b.x, b.y, binds, 1.0)
-    _vertex(tool, bounds, back, back_sign, side, b.x, b.y, binds, -1.0)
-    _vertex(tool, bounds, back, back_sign, side, a.x, a.y, binds, 1.0)
-    _vertex(tool, bounds, back, back_sign, side, b.x, b.y, binds, -1.0)
-    _vertex(tool, bounds, back, back_sign, side, a.x, a.y, binds, -1.0)
+    # Seal the perimeter with a deliberate flat wall normal, independent of
+    # the smoothly shaded cloth faces. Keep the original four Skin weights.
+    var start := _mantle_point(bounds, back, back_sign, side, a.x, a.y, 1.0)
+    var along := _mantle_point(bounds, back, back_sign, side, b.x, b.y, 1.0) - start
+    var through := _mantle_point(bounds, back, back_sign, side, a.x, a.y, -1.0) - start
+    var wall_normal := along.cross(through).normalized()
+    _vertex(tool, bounds, back, back_sign, side, a.x, a.y, binds, 1.0, wall_normal)
+    _vertex(tool, bounds, back, back_sign, side, b.x, b.y, binds, 1.0, wall_normal)
+    _vertex(tool, bounds, back, back_sign, side, b.x, b.y, binds, -1.0, wall_normal)
+    _vertex(tool, bounds, back, back_sign, side, a.x, a.y, binds, 1.0, wall_normal)
+    _vertex(tool, bounds, back, back_sign, side, b.x, b.y, binds, -1.0, wall_normal)
+    _vertex(tool, bounds, back, back_sign, side, a.x, a.y, binds, -1.0, wall_normal)
 
-func _vertex(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
-        side: float, u: float, t: float, binds: PackedInt32Array,
-        surface_sign: float) -> void:
+# Evaluate the same curved, closed drape for both surfaces and every
+# shared vertex. This avoids independent per-triangle normals (the old
+# generate_normals() created faceted highlights in the chase camera).
+func _mantle_point(bounds: AABB, back: float, back_sign: float,
+        side: float, u: float, t: float, surface_sign: float) -> Vector3:
     var width := bounds.size.x
     var center_x := bounds.get_center().x
-    # Actual fabric drape: narrow four-weight coat panels follow the original
-    # hips and thighs rather than making two puffy aircraft wings.
-    # The narrow aerodynamic drape replaces the former horizontal wing shape.
     var flare := pow(maxf(0.0, sin(PI * t)), 1.20)
     var scallop := 0.014 * sin(3.0 * PI * t) * sin(PI * t)
     var inner := width * (0.070 + 0.045 * t)
     var outer := width * (0.135 + 0.075 * flare + 0.018 * t + scallop * 0.35)
     var x := center_x + side * lerpf(inner, outer, u)
     var camber := sin(u * PI) * sin(t * PI)
-    # Long vertical tailoring reads as an actual split coat rather than
-    # outboard aero-wings. The hem stops above the real skinned boot cuffs.
     var y := bounds.position.y + bounds.size.y * (0.76 - 0.39 * t +
         0.025 * camber + 0.012 * u * t)
-    # Rear sweep preserves a real 3D drape while bringing the tail back
-    # toward the legs, not far outboard of the character's silhouette.
     var sweep := 0.040 + 0.10 * t + 0.12 * pow(t, 1.4) + 0.025 * camber
     var rib := sin(u * PI * 2.0 + t * 1.7) * width * 0.018 * sin(PI * t)
-    # Thin but closed fabric edges with gentle three-dimensional pleats,
-    # not the previous inflated airfoil cross section.
-    # Thickness remains positive at every boundary, so the sidewalls seal.
     var thickness := width * (0.009 + 0.017 * sin(PI * u) * sin(PI * t) +
         0.005 * sin(PI * t) * u * u)
     var z := back + back_sign * (sweep + rib + surface_sign * thickness)
+    return Vector3(x, y, z)
+
+func _mantle_normal(bounds: AABB, back: float, back_sign: float,
+        side: float, u: float, t: float, surface_sign: float) -> Vector3:
+    var h := 0.001
+    var tangent_u := _mantle_point(bounds, back, back_sign, side,
+        clampf(u + h, 0.0, 1.0), t, surface_sign) - \
+        _mantle_point(bounds, back, back_sign, side,
+        clampf(u - h, 0.0, 1.0), t, surface_sign)
+    var tangent_t := _mantle_point(bounds, back, back_sign, side,
+        u, clampf(t + h, 0.0, 1.0), surface_sign) - \
+        _mantle_point(bounds, back, back_sign, side,
+        u, clampf(t - h, 0.0, 1.0), surface_sign)
+    # Front/back are emitted with opposite triangle winding.
+    return (tangent_t.cross(tangent_u) if surface_sign > 0.0 else
+        tangent_u.cross(tangent_t)).normalized()
+
+func _vertex(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
+        side: float, u: float, t: float, binds: PackedInt32Array,
+        surface_sign: float, wall_normal: Vector3 = Vector3.ZERO) -> void:
     var spine_weight := 0.72 * (1.0 - t) * (1.0 - t)
     var leg_weight := 0.34 * t * t
     var pelvis_weight := 1.0 - spine_weight - leg_weight
@@ -205,7 +222,9 @@ func _vertex(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
     tool.set_bones(binds)
     tool.set_weights(PackedFloat32Array([spine_weight, pelvis_weight, left_weight, right_weight]))
     tool.set_uv(Vector2(u, t))
-    tool.add_vertex(Vector3(x, y, z))
+    tool.set_normal(wall_normal if wall_normal.length_squared() > 0.5 else
+        _mantle_normal(bounds, back, back_sign, side, u, t, surface_sign))
+    tool.add_vertex(_mantle_point(bounds, back, back_sign, side, u, t, surface_sign))
 
 func _sculpt_yoke(body: MeshInstance3D) -> ArrayMesh:
     var bounds := body.mesh.get_aabb()
