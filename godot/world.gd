@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V128"
+const VERSION_LABEL := "V130"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -611,7 +611,10 @@ func _update_neon_signals() -> void:
     if bool(result.get("hit", false)):
         xp += int(result.get("xp", 0))
         power = mini(100, power + int(result.get("energy", 0)))
-        if bool(result.get("overdrive", false)):
+        turbo_left = maxf(turbo_left, float(result.get("turbo_seconds", 0.0)))
+        if bool(result.get("perfect_chain", false)):
+            info_label.text = "PERFEKTE NEON-KETTE! +25 ENERGIE +2,5s TURBO"
+        elif bool(result.get("overdrive", false)):
             info_label.text = "NEON-OVERDRIVE! DREIERKETTE +30 ENERGIE"
         else:
             info_label.text = "SIGNAL ERWISCHT! KOMBO x%d  +%d XP" % [int(result.get("streak", 0)), int(result.get("xp", 0))]
@@ -1044,12 +1047,14 @@ func _finish_run() -> void:
     if completed:
         rounds_finished += 1
         round_number += 1
-        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 0 and int(skyway_zone.call("get_signal_count")) >= NEON_SIGNAL_TARGET else 0) + (1 if world_choice == 0 and neon_defeated else 0) + (1 if world_choice == 1 and guardian_defeated else 0) + (1 if world_choice == 1 and int(canyon_zone.get("completed_routes")) >= CANYON_ROUTE_TARGET else 0) + (1 if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET else 0) + (1 if world_choice == 2 and orbit_defeated else 0) + (1 if world_choice == 2 and int(harbor_zone.call("get_cargo_deliveries")) >= HARBOR_RELAY_TARGET else 0) + (1 if world_choice == 2 and bool(harbor_zone.call("get_cargo_perfect_convoy")) else 0) + (1 if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET else 0) + (1 if world_choice == 3 and frost_defeated else 0) + (1 if world_choice == 3 and int(glacier_zone.call("get_aurora_stream_count")) >= AURORA_SLIPSTREAM_TARGET else 0) + (1 if world_choice == 3 and bool(glacier_zone.call("get_aurora_perfect_line")) else 0)
+        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 0 and int(skyway_zone.call("get_signal_count")) >= NEON_SIGNAL_TARGET else 0) + (1 if world_choice == 0 and neon_defeated else 0) + (1 if world_choice == 0 and bool(skyway_zone.call("get_signal_perfect_run")) else 0) + (1 if world_choice == 1 and guardian_defeated else 0) + (1 if world_choice == 1 and int(canyon_zone.get("completed_routes")) >= CANYON_ROUTE_TARGET else 0) + (1 if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET else 0) + (1 if world_choice == 2 and orbit_defeated else 0) + (1 if world_choice == 2 and int(harbor_zone.call("get_cargo_deliveries")) >= HARBOR_RELAY_TARGET else 0) + (1 if world_choice == 2 and bool(harbor_zone.call("get_cargo_perfect_convoy")) else 0) + (1 if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET else 0) + (1 if world_choice == 3 and frost_defeated else 0) + (1 if world_choice == 3 and int(glacier_zone.call("get_aurora_stream_count")) >= AURORA_SLIPSTREAM_TARGET else 0) + (1 if world_choice == 3 and bool(glacier_zone.call("get_aurora_perfect_line")) else 0)
         total_stars += stars_earned
         total_reward_xp += xp
         reward_label.text = "+%d STERNE  |  +%d XP\nGESAMT: %d STERNE" % [stars_earned, xp, total_stars]
         if world_choice == 0 and int(skyway_zone.call("get_signal_count")) >= NEON_SIGNAL_TARGET:
             reward_label.text += "\nNEON-SIGNALKETTE: +1 BONUSSTERN!"
+        if world_choice == 0 and bool(skyway_zone.call("get_signal_perfect_run")):
+            reward_label.text += "\nPERFEKTE NEON-SIGNALRUNDE: +1 BONUSSTERN!"
         if world_choice == 0 and neon_defeated:
             reward_label.text += "\nNEON-DIRIGENT BESIEGT: +1 BONUSSTERN!"
         if world_choice == 1 and guardian_defeated:
@@ -1526,7 +1531,7 @@ func _refresh_hud() -> void:
         if phase == "race":
             hud.text += "\n%s  RUNDE %d  ZIEL %dm  SCHILD %ds  BOOST %ds" % [WORLD_NAMES[world_choice], round_number, int(mission_target), ceili(shield_left), ceili(turbo_left)]
             if world_choice == 0:
-                hud.text += "\nNEON-SIGNALE %d/%d  SERIE x%d  LEUCHTSPUR FOLGEN" % [mini(int(skyway_zone.call("get_signal_count")), NEON_SIGNAL_TARGET), NEON_SIGNAL_TARGET, int(skyway_zone.call("get_signal_streak"))]
+                hud.text += "\nNEON-SIGNALE %d/%d  KETTE %d/6  %s" % [mini(int(skyway_zone.call("get_signal_count")), NEON_SIGNAL_TARGET), NEON_SIGNAL_TARGET, int(skyway_zone.call("get_signal_streak")), "PERFEKT!" if bool(skyway_zone.call("get_signal_perfect_run")) else "TORE TREFFEN"]
                 if neon_active:
                     hud.text += "\nNEON-DIRIGENT %d/%d  %s" % [neon_hp, NEON_BOSS_HEALTH, "PINKER SWEEP!" if neon_warning_left > 0.0 else "ATTACKE LADEN"]
             if world_choice == 1:

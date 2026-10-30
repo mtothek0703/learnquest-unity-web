@@ -86,6 +86,8 @@ jobs:
           grep -Fq 'HARBOR CARGO RELAY TEST PASSED' /tmp/harbor-relay.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://neon_signal_chain_test.gd 2>&1 | tee /tmp/neon-signal-chain.log
           grep -Fq 'NEON SIGNAL CHAIN TEST PASSED' /tmp/neon-signal-chain.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://neon_perfect_chain_test.gd 2>&1 | tee /tmp/neon-perfect-chain.log
+          grep -Fq 'NEON PERFECT CHAIN TEST PASSED' /tmp/neon-perfect-chain.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://neon_conductor_test.gd 2>&1 | tee /tmp/neon-conductor.log
           grep -Fq 'NEON CONDUCTOR TEST PASSED' /tmp/neon-conductor.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://aurora_slipstream_test.gd 2>&1 | tee /tmp/aurora-slipstream.log

@@ -16,6 +16,8 @@ var completed_signals := 0
 var missed_signals := 0
 var streak := 0
 var best_streak := 0
+# All six correctly steered gates in a single uninterrupted streak.
+var perfect_chain := false
 var gates: Array[Node3D] = []
 var rings: Array[MeshInstance3D] = []
 var beacons: Array[MeshInstance3D] = []
@@ -106,10 +108,23 @@ func reset_course() -> void:
     missed_signals = 0
     streak = 0
     best_streak = 0
+    perfect_chain = false
     for index in range(gates.size()):
         gates[index].position.z = START_Z - float(index) * SPACING
         gates[index].set_meta("passed", false)
         gates[index].visible = true
+    _refresh_gate_guidance()
+
+func _refresh_gate_guidance() -> void:
+    # Real 3D arches grow/brighter as a flawless streak builds. The ring
+    # materials are unique per gate, so this changes no draw calls or physics.
+    for index in range(gates.size()):
+        if bool(gates[index].get_meta("passed")):
+            continue
+        var glow := rings[index].material_override as StandardMaterial3D
+        if glow != null:
+            glow.emission_energy_multiplier = 2.0 + 0.24 * float(streak)
+        rings[index].scale = Vector3.ONE * (1.0 + 0.03 * float(streak))
 
 func check_signal(rider_x: float) -> Dictionary:
     if not running:
@@ -125,16 +140,21 @@ func check_signal(rider_x: float) -> Dictionary:
             streak += 1
             best_streak = maxi(best_streak, streak)
             var overdrive := streak == 3
+            perfect_chain = streak == SIGNAL_COUNT
+            _refresh_gate_guidance()
             return {
                 "hit": true,
                 "xp": 20 + mini(streak, 4) * 5,
-                "energy": 12 + (18 if overdrive else 0),
+                "energy": 12 + (18 if overdrive else 0) + (25 if perfect_chain else 0),
                 "overdrive": overdrive,
+                "perfect_chain": perfect_chain,
+                "turbo_seconds": 2.5 if perfect_chain else 0.0,
                 "streak": streak,
                 "count": completed_signals
             }
         missed_signals += 1
         streak = 0
+        _refresh_gate_guidance()
         return {"missed": true, "streak": 0}
     return {}
 
