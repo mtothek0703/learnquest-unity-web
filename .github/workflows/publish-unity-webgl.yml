@@ -125,6 +125,10 @@ jobs:
           grep -Fq 'TRUE SKINNED PORTRAIT TEST PASSED' /tmp/true-skinned-portrait.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_athletic_portrait_sculpt_test.gd 2>&1 | tee /tmp/athletic-portrait-sculpt.log
           grep -Fq 'ATHLETIC PORTRAIT SCULPT TEST PASSED' /tmp/athletic-portrait-sculpt.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_athletic_pose_test.gd 2>&1 | tee /tmp/athletic-pose.log
+          grep -Fq 'EXTERNAL ATHLETIC POSE TEST PASSED' /tmp/athletic-pose.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_follow_through_test.gd 2>&1 | tee /tmp/follow-through.log
+          grep -Fq 'EXTERNAL FOLLOW-THROUGH TEST PASSED' /tmp/follow-through.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_hair_finish_test.gd 2>&1 | tee /tmp/weighted-hair-finish.log
           grep -Fq 'WEIGHTED HAIR FINISH TEST PASSED' /tmp/weighted-hair-finish.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_harness_test.gd 2>&1 | tee /tmp/godot-skinned-harness.log

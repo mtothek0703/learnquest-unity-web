@@ -72,6 +72,8 @@ jobs:
           grep -Fq 'EXTERNAL SKINNED HARNESS TEST PASSED' /tmp/quaternius-harness.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_athletic_pose_test.gd 2>&1 | tee /tmp/quaternius-pose.log
           grep -Fq 'EXTERNAL ATHLETIC POSE TEST PASSED' /tmp/quaternius-pose.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_follow_through_test.gd 2>&1 | tee /tmp/quaternius-follow-through.log
+          grep -Fq 'EXTERNAL FOLLOW-THROUGH TEST PASSED' /tmp/quaternius-follow-through.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_sleeves_test.gd 2>&1 | tee /tmp/quaternius-sleeves.log
           grep -Fq 'EXTERNAL SKINNED SLEEVES TEST PASSED' /tmp/quaternius-sleeves.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_lower_test.gd 2>&1 | tee /tmp/quaternius-lower.log

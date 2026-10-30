@@ -25,6 +25,9 @@ var board_contact_active: bool = false
 # boots, trousers and shoulders; no new render passes or collision nodes.
 var action_materials: Array[ShaderMaterial] = []
 var action_charge: float = 0.0
+# A time-based torso follow-through creates readable opposing shoulder/head
+# motion without altering the original 65-bone Skin or gameplay steering.
+var torso_follow: float = 0.0
 
 func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     rider = owner_rider
@@ -313,6 +316,12 @@ func _process(delta: float) -> void:
     _follow_board_contact()
     elapsed += delta
     var steer := clampf(float(rider.get("lean")), -1.0, 1.0)
+    # The board and legs answer touch immediately; the real spine follows
+    # with frame-rate-independent inertia. Head and arms counter-rotate
+    # briefly into a carve before settling into the same stable surf pose.
+    torso_follow = lerpf(torso_follow, steer,
+        1.0 - exp(-maxf(delta, 0.0) * 7.5))
+    var turn_lead := clampf(steer - torso_follow, -1.0, 1.0)
     var turbo := bool(rider.get("boosting"))
     var height := maxf(rider.position.y, 0.0)
     var jump := clampf(height / 1.25, 0.0, 1.0)
@@ -342,13 +351,16 @@ func _process(delta: float) -> void:
     var breathing := sin(elapsed * 2.3) * 0.025
     _pose(["pelvis", "Hips"], Quaternion(Vector3.FORWARD, -steer * 0.18) *
         Quaternion(Vector3.RIGHT, 0.08 + crouch * 0.27 + landing_impact * 0.14), blend)
-    _pose(["spine_01", "Spine"], Quaternion(Vector3.FORWARD, steer * 0.10) *
+    _pose(["spine_01", "Spine"], Quaternion(Vector3.FORWARD, torso_follow * 0.10) *
         Quaternion(Vector3.RIGHT, -0.05 + boost * 0.13 + last_jump * 0.12 + breathing - landing_impact * 0.08), blend)
-    _pose(["spine_02", "spine_03", "Chest", "UpperChest"], Quaternion(Vector3.UP, -steer * 0.19) *
+    _pose(["spine_02", "spine_03", "Chest", "UpperChest"],
+        Quaternion(Vector3.UP, -torso_follow * 0.19) *
+        Quaternion(Vector3.FORWARD, -turn_lead * 0.07) *
         Quaternion(Vector3.RIGHT, -0.07 + boost * 0.17 + last_jump * 0.15), blend)
-    _pose(["neck_01", "Neck"], Quaternion(Vector3.UP, steer * 0.09), blend)
-    _pose(["Head"], Quaternion(Vector3.UP, -steer * 0.24) *
-        Quaternion(Vector3.RIGHT, -last_jump * 0.12 + boost * 0.07), blend)
+    _pose(["neck_01", "Neck"],
+        Quaternion(Vector3.UP, steer * 0.09 + turn_lead * 0.10), blend)
+    _pose(["Head"], Quaternion(Vector3.UP, -steer * 0.24 - turn_lead * 0.16) *
+        Quaternion(Vector3.RIGHT, -last_jump * 0.12 + boost * 0.07 + landing_impact * 0.12), blend)
     # Keep the genuine weighted arms in a compact surfing stance rather
     # than the imported superhero's wide T-pose. Both shoulders, elbows and
     # wrists articulate on their original joints; wings/board stay untouched.
@@ -358,16 +370,24 @@ func _process(delta: float) -> void:
         # Transfer weight between the actual left/right leg bones when
         # carving. The inside leg compresses while the outside leg extends.
         var leg_load := steer * sign_side * 0.14
-        var spread := -sign_side * (1.30 + 0.14 * carve -
+        var outside := maxf(0.0, steer * sign_side)
+        var inside := maxf(0.0, -steer * sign_side)
+        # The outside arm opens for balance, the inside elbow tucks into the
+        # turn; this is real imported shoulder/elbow/wrist articulation.
+        var spread := -sign_side * (1.30 + 0.14 * carve +
+            0.30 * outside - 0.12 * inside -
             last_jump * (0.45 if ascending else 0.32))
         _pose(["upperarm_l" if side < 0 else "upperarm_r", prefix + "UpperArm", prefix + "Arm"],
-            Quaternion(Vector3.FORWARD, spread - steer * 0.13) *
-            Quaternion(Vector3.RIGHT, -0.20 - boost * 0.30), blend)
+            Quaternion(Vector3.FORWARD, spread - torso_follow * 0.13) *
+            Quaternion(Vector3.RIGHT, -0.20 - boost * 0.30 + landing_impact * 0.14), blend)
         _pose(["lowerarm_l" if side < 0 else "lowerarm_r", prefix + "LowerArm", prefix + "ForeArm", prefix + "Forearm"],
-            Quaternion(Vector3.RIGHT, -0.55 - last_jump * 0.42 - boost * 0.16) *
-            Quaternion(Vector3.FORWARD, sign_side * (0.10 + carve * 0.09)), blend)
+            Quaternion(Vector3.RIGHT, -0.55 - last_jump * 0.42 - boost * 0.16 -
+                inside * 0.21 + outside * 0.08) *
+            Quaternion(Vector3.FORWARD, sign_side * (0.10 + carve * 0.09 +
+                turn_lead * 0.10)), blend)
         _pose(["hand_l" if side < 0 else "hand_r", prefix + "Hand"],
-            Quaternion(Vector3.RIGHT, 0.20 + boost * 0.14) *
+            Quaternion(Vector3.RIGHT, 0.20 + boost * 0.14 +
+                outside * 0.10 - inside * 0.08) *
             Quaternion(Vector3.UP, -sign_side * steer * 0.12), blend)
         _pose(["thigh_l" if side < 0 else "thigh_r", prefix + "UpperLeg", prefix + "UpLeg", prefix + "Thigh"],
             Quaternion(Vector3.RIGHT, -0.24 - crouch * 0.42 + last_jump * 0.18 - leg_load - landing_impact * 0.20), blend)
