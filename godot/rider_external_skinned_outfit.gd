@@ -200,6 +200,17 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     var pectoral := exp(-pow((y - 0.655) / 0.075, 2.0)) * exp(-pow((x - 0.17) / 0.11, 2.0))
     var deltoid := exp(-pow((y - 0.715) / 0.055, 2.0)) * smoothstep(0.18, 0.32, x)
     var spine_keel := exp(-pow(lateral / 0.065, 2.0)) * exp(-pow((y - 0.61) / 0.13, 2.0))
+    # The chase camera sees the BACK of the actual CC0 jacket. Sculpt two
+    # continuous scapular ridges and a tapered rear shoulder sweep into the
+    # imported four-weight triangles, not rigid floating shoulder armor.
+    # Source model faces -Z; outward +Z normals identify its dorsal surface.
+    var dorsal := smoothstep(0.18, 0.70, normal.z)
+    var scapula := dorsal * exp(-pow((y - 0.685) / 0.09, 2.0)) * \
+        exp(-pow((x - 0.24) / 0.14, 2.0))
+    var dorsal_shoulder := dorsal * exp(-pow((y - 0.735) / 0.060, 2.0)) * \
+        smoothstep(0.17, 0.30, x)
+    var spine_channel := dorsal * exp(-pow(lateral / 0.09, 2.0)) * \
+        exp(-pow((y - 0.62) / 0.13, 2.0))
     # A real athletic V-silhouette is sculpted into the SAME four-weight
     # imported triangles: full upper pectorals and deltoids, a tapered waist,
     # and a controlled central sternum ridge. The prior 0.03-unit shoulder
@@ -207,11 +218,13 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     # Keep the offset below the 0.18-unit barrel-chest safety limit.
     var depth := 0.012 + 0.065 * chest + 0.068 * shoulder + \
         0.043 * chest_ridge + 0.027 * collar + 0.049 * pectoral + \
-        0.032 * deltoid + 0.015 * spine_keel
+        0.032 * deltoid + 0.015 * spine_keel + \
+        0.052 * scapula + 0.032 * dorsal_shoulder + 0.016 * spine_channel
     # Shoulder breadth and pectoral depth follow the actual imported Skin;
     # no rigid shoulder boxes or unweighted cosmetic torso are introduced.
     var waist_inset := 0.052 * waist * smoothstep(0.12, 0.35, x)
-    var spread := 0.082 * shoulder + 0.048 * deltoid - waist_inset
+    var spread := 0.082 * shoulder + 0.048 * deltoid - waist_inset + \
+        0.045 * dorsal_shoulder
     return normal * depth + Vector3(signf(lateral) * spread, 0.006 * shoulder, 0.0)
 
 func _jacket_material(bounds: AABB) -> ShaderMaterial:
