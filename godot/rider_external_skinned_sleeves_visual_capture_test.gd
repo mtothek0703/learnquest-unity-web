@@ -63,8 +63,9 @@ func _capture() -> void:
         _fail("original 65-bone Skin and weighted sleeves required")
         return
     var sleeves: Array = controller.get("sleeves")
-    if sleeves.size() != 2:
-        _fail("both original-Skin sleeves required")
+    var original := hero.find_child("SuperHero_Male", true, false) as MeshInstance3D
+    if sleeves.size() != 2 or original == null or original.skin == null:
+        _fail("both original-Skin sleeves and imported source mesh required")
         return
     rider.set("lean", 0.65)
     rider.set("boosting", true)
@@ -81,6 +82,9 @@ func _capture() -> void:
         elif node is AnimationTree:
             (node as AnimationTree).active = false
     rider.process_mode = Node.PROCESS_MODE_DISABLED
+    # Lock shader TIME as well as the skeleton. Previous cross-run
+    # comparisons drifted even when the sleeve geometry was unchanged.
+    Engine.time_scale = 0.0
     for frame in range(4):
         await process_frame
     var locked_hero := hero.global_transform
@@ -97,8 +101,11 @@ func _capture() -> void:
         for view in VIEWS:
             camera.position = Vector3(0, 2.0, -5.2) if view == "front" else Vector3(0, 2.25, 5.4)
             camera.look_at(Vector3(0, 1.8, 0), Vector3.UP)
-            for layer in ["skin_layers", "complete_rider"]:
-                for variant in ["without_sleeves", "with_sleeves"]:
+            for layer in ["skin_layers", "complete_rider", "source_isolation"]:
+                var variants := ["without_sleeves", "with_sleeves"]
+                if layer == "source_isolation":
+                    variants = ["source_only", "costume_only"]
+                for variant in variants:
                     for item in visibility.keys():
                         var mesh := item as MeshInstance3D
                         var enabled := bool(visibility[item])
@@ -108,7 +115,13 @@ func _capture() -> void:
                                     enabled = false
                                     break
                             enabled = enabled and mesh.skin != null
-                        if variant == "without_sleeves" and sleeves.has(mesh):
+                        if layer == "source_isolation":
+                            # Diagnose whether the bright pink shoulder/hand
+                            # blobs belong to the imported CC0 body or to
+                            # separately modeled costume/hand accessories.
+                            enabled = mesh == original if variant == "source_only" else \
+                                (mesh != original and bool(visibility[item]))
+                        elif variant == "without_sleeves" and sleeves.has(mesh):
                             enabled = false
                         mesh.visible = enabled
                     for frame in range(5):
@@ -131,8 +144,9 @@ func _capture() -> void:
                     count += 1
     for item in visibility.keys():
         (item as MeshInstance3D).visible = bool(visibility[item])
-    if count != 16:
-        _fail("expected sixteen 16:9/19.5:9 paired sleeve frames")
+    Engine.time_scale = 1.0
+    if count != 24:
+        _fail("expected twenty-four 16:9/19.5:9 sleeve and source-isolation frames")
         return
-    print("SKINNED SLEEVE VISUAL QA PASSED: 16 pose-locked front/chase original-Skin layer/full-rider frames; manual visual gate remains open")
+    print("SKINNED SLEEVE VISUAL QA PASSED: 24 pose-locked, shader-time-frozen front/chase sleeve and imported-source isolation frames; manual visual gate remains open")
     quit(0)
