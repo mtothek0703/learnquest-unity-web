@@ -60,6 +60,34 @@ func _capture() -> void:
     if rig == null or rig.get_node_or_null("ExternalHeroHeadgear") == null:
         _fail("real Head-bone helmet/hair must appear in V124 comparison frames")
         return
+    # Lock both actual characters at the SAME rest/hover pose before the
+    # paired capture. Previously the V123 animation kept running while the
+    # V124 image was taken, so position/pose drift polluted A/B differences.
+    rider.set("lean", 0.0)
+    rider.set("boosting", false)
+    for frame in range(6):
+        await process_frame
+    var locked_old := old.global_transform
+    var locked_hero := hero.global_transform
+    var bone_locks: Dictionary = {}
+    for skeleton_node in rider.find_children("*", "Skeleton3D", true, false):
+        var skeleton := skeleton_node as Skeleton3D
+        var poses: Array[Transform3D] = []
+        for bone_id in range(skeleton.get_bone_count()):
+            poses.append(skeleton.get_bone_pose(bone_id))
+        bone_locks[skeleton] = poses
+    rider.set_process(false)
+    rider.set_physics_process(false)
+    for node in rider.find_children("*", "Node", true, false):
+        node.set_process(false)
+        node.set_physics_process(false)
+        if node is AnimationPlayer:
+            (node as AnimationPlayer).pause()
+        elif node is AnimationTree:
+            (node as AnimationTree).active = false
+    rider.process_mode = Node.PROCESS_MODE_DISABLED
+    for frame in range(4):
+        await process_frame
     var count := 0
     for size in SIZES:
         viewport.size = size
@@ -85,9 +113,20 @@ func _capture() -> void:
             for variant in ["before", "after"]:
                 old.visible = variant == "before"
                 hero.visible = variant == "after"
+                old.global_transform = locked_old
+                hero.global_transform = locked_hero
+                for skeleton_node in bone_locks.keys():
+                    var skeleton := skeleton_node as Skeleton3D
+                    var poses: Array = bone_locks[skeleton]
+                    for bone_id in range(poses.size()):
+                        skeleton.set_bone_pose(bone_id, poses[bone_id])
                 for frame in range(5):
                     await process_frame
                 await RenderingServer.frame_post_draw
+                if old.global_transform.origin.distance_to(locked_old.origin) > 0.003 or \
+                        hero.global_transform.origin.distance_to(locked_hero.origin) > 0.003:
+                    _fail("V123/V124 pose drift invalidates identical-camera visual comparison")
+                    return
                 var image := viewport.get_texture().get_image()
                 if image.is_empty() or image.get_width() != size.x or image.get_height() != size.y:
                     _fail("invalid landscape framebuffer")
@@ -100,5 +139,5 @@ func _capture() -> void:
     if count != 24:
         _fail("expected twenty-four actual wide/detail/profile landscape before/after images")
         return
-    print("QUATERNIUS VISUAL QA PASSED: 24 real V123/V124 wide/detail/profile landscape PNGs (manual quality review still required)")
+    print("QUATERNIUS VISUAL QA PASSED: 24 pose-locked V123/V124 wide/detail/profile landscape PNGs (manual quality review still required)")
     quit(0)
