@@ -10,6 +10,7 @@ var jump_gates: Array[Node3D] = []
 var completed_gates := 0
 var missed_gates := 0
 var crystal_sentinels: Node3D
+var aurora_slipstream: Node3D
 
 func _ready() -> void:
     _build_glacier()
@@ -168,8 +169,14 @@ func _build_glacier() -> void:
     crystal_sentinels = preload("res://cinematic_glacier_sentinels.gd").new() as Node3D
     crystal_sentinels.name = "Cinematic Aurora crystal sentinels"
     add_child(crystal_sentinels)
+    # Optional dynamic wind tunnels are independent of existing jump gates.
+    aurora_slipstream = preload("res://aurora_slipstream.gd").new() as Node3D
+    aurora_slipstream.name = "Playable Aurora slipstream course"
+    add_child(aurora_slipstream)
 
 func reset_course() -> void:
+    if aurora_slipstream != null:
+        aurora_slipstream.call("reset_course")
     completed_gates = 0
     missed_gates = 0
     for index in range(jump_gates.size()):
@@ -178,6 +185,14 @@ func reset_course() -> void:
         gate.set_meta("passed", false)
         gate.set_meta("cleared", false)
         gate.visible = true
+
+func check_aurora_stream(rider_x: float) -> Dictionary:
+    if aurora_slipstream == null:
+        return {}
+    return aurora_slipstream.call("check_stream", rider_x)
+
+func get_aurora_stream_count() -> int:
+    return int(aurora_slipstream.get("caught_streams")) if aurora_slipstream != null else 0
 
 func check_jump_gates(rider_x: float, rider_y: float) -> int:
     # The game calls this during a race, after updating the actual jump height.
@@ -198,6 +213,9 @@ func check_jump_gates(rider_x: float, rider_y: float) -> int:
     return result
 
 func _process(delta: float) -> void:
+    if aurora_slipstream != null:
+        aurora_slipstream.set("running", running)
+        aurora_slipstream.set("travel_speed", travel_speed)
     elapsed += delta
     for index in range(aurora_ribbons.size()):
         var silk := aurora_ribbons[index]
