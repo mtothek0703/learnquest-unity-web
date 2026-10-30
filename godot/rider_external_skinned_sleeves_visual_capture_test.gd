@@ -1,9 +1,11 @@
 extends SceneTree
-## Experimental CC0 sleeves: 16 pose-locked OpenGL frames distinguish genuine
-## skinned sleeve geometry from other costume overlays in both phone ratios.
+## Experimental CC0 sleeves: pose-locked OpenGL frames distinguish original
+## imported body, weighted sleeves, and individually isolated costume families
+## in both phone ratios. Every family is composited over the same source body.
 ## A successful render is not a V123 aesthetic or physical-device sign-off.
 const SIZES := [Vector2i(1280, 720), Vector2i(1170, 540)]
 const VIEWS := ["front", "chase"]
+const COSTUME_GROUPS := ["suit_sleeves", "shoulder_thrusters", "pauldrons", "head_hair", "other_costume"]
 
 func _initialize() -> void:
     call_deferred("_capture")
@@ -11,6 +13,23 @@ func _initialize() -> void:
 func _fail(reason: String) -> void:
     push_error("SKINNED SLEEVE VISUAL QA FAILED: " + reason)
     quit(1)
+
+# Classify by the actual scene-tree owner, not material color or arbitrary
+# mesh names. A pink silhouette can then be traced to its generator without
+# modifying a single gameplay mesh, skin weight or collision shape.
+func _costume_group(mesh: MeshInstance3D, original: MeshInstance3D) -> String:
+    if mesh == original:
+        return "source"
+    var path := String(mesh.get_path())
+    if path.contains("ExternalSkinnedShoulderThrusters"):
+        return "shoulder_thrusters"
+    if path.contains("ExternalSkinnedFlightPauldrons"):
+        return "pauldrons"
+    if path.contains("ExternalSkinnedFlightSuit") or path.contains("ExternalSkinnedFlightSleeves"):
+        return "suit_sleeves"
+    if path.contains("ExternalHeroHeadgear") or path.contains("ExternalSkinnedBackHair") or path.contains("ExternalTrueSkinnedPortrait"):
+        return "head_hair"
+    return "other_costume"
 
 func _capture() -> void:
     var folder := OS.get_environment("LEARNQUEST_SLEEVES_OUTPUT")
@@ -101,10 +120,12 @@ func _capture() -> void:
         for view in VIEWS:
             camera.position = Vector3(0, 2.0, -5.2) if view == "front" else Vector3(0, 2.25, 5.4)
             camera.look_at(Vector3(0, 1.8, 0), Vector3.UP)
-            for layer in ["skin_layers", "complete_rider", "source_isolation"]:
+            for layer in ["skin_layers", "complete_rider", "source_isolation", "costume_groups"]:
                 var variants := ["without_sleeves", "with_sleeves"]
                 if layer == "source_isolation":
                     variants = ["source_only", "costume_only"]
+                elif layer == "costume_groups":
+                    variants = COSTUME_GROUPS
                 for variant in variants:
                     for item in visibility.keys():
                         var mesh := item as MeshInstance3D
@@ -116,11 +137,16 @@ func _capture() -> void:
                                     break
                             enabled = enabled and mesh.skin != null
                         if layer == "source_isolation":
-                            # Diagnose whether the bright pink shoulder/hand
-                            # blobs belong to the imported CC0 body or to
-                            # separately modeled costume/hand accessories.
+                            # Imported body versus every generated attachment.
                             enabled = mesh == original if variant == "source_only" else \
                                 (mesh != original and bool(visibility[item]))
+                        elif layer == "costume_groups":
+                            # Always keep the identical imported CC0 body as
+                            # a reference. Add exactly ONE costume family.
+                            # Unlike raw costume-only renders, each pair can
+                            # be compared pixel-for-pixel to source_only.
+                            enabled = mesh == original or (bool(visibility[item]) and \
+                                _costume_group(mesh, original) == variant)
                         elif variant == "without_sleeves" and sleeves.has(mesh):
                             enabled = false
                         mesh.visible = enabled
@@ -145,8 +171,8 @@ func _capture() -> void:
     for item in visibility.keys():
         (item as MeshInstance3D).visible = bool(visibility[item])
     Engine.time_scale = 1.0
-    if count != 24:
-        _fail("expected twenty-four 16:9/19.5:9 sleeve and source-isolation frames")
+    if count != 44:
+        _fail("expected forty-four 16:9/19.5:9 sleeve, source and isolated costume-family frames")
         return
-    print("SKINNED SLEEVE VISUAL QA PASSED: 24 pose-locked, shader-time-frozen front/chase sleeve and imported-source isolation frames; manual visual gate remains open")
+    print("SKINNED SLEEVE VISUAL QA PASSED: 44 pose-locked, shader-time-frozen front/chase frames, including five independent costume-family overlays; manual visual gate remains open")
     quit(0)
