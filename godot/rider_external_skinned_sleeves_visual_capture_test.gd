@@ -20,14 +20,20 @@ func _fail(reason: String) -> void:
 func _costume_group(mesh: MeshInstance3D, original: MeshInstance3D) -> String:
     if mesh == original:
         return "source"
+    # Most generated MeshInstance3Ds are parented beside the imported body,
+    # NOT beneath their controller nodes. The actual mesh names must therefore
+    # take priority over ancestry, or all bright shoulder props get mislabeled.
+    var name_text := String(mesh.name)
     var path := String(mesh.get_path())
-    if path.contains("ExternalSkinnedShoulderThrusters"):
+    if name_text.contains("SkinnedThrusterCore") or name_text.contains("SkinnedShoulderNacelle"):
         return "shoulder_thrusters"
-    if path.contains("ExternalSkinnedFlightPauldrons"):
+    if name_text.contains("SkinnedFlightPauldron"):
         return "pauldrons"
-    if path.contains("ExternalSkinnedFlightSuit") or path.contains("ExternalSkinnedFlightSleeves"):
+    if name_text.contains("WeightedFlightSleeve") or name_text == "TrueSkinnedTailoredJacket" or \
+            name_text.contains("SkinnedArmor") or path.contains("IntegratedSkinnedArmor"):
         return "suit_sleeves"
-    if path.contains("ExternalHeroHeadgear") or path.contains("ExternalSkinnedBackHair") or path.contains("ExternalTrueSkinnedPortrait"):
+    if name_text.contains("Hair") or name_text.contains("Portrait") or \
+            path.contains("ExternalHeroHeadgear") or path.contains("ExternalSkinnedBackHair"):
         return "head_hair"
     return "other_costume"
 
