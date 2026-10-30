@@ -14,6 +14,7 @@ var cinematic_mantas: Node3D
 var cinematic_searchlights: Node3D
 var cinematic_districts: Node3D
 var cinematic_lightfields: Node3D
+var signal_chain: Node3D
 var rand := RandomNumberGenerator.new()
 
 func _ready() -> void:
@@ -53,6 +54,10 @@ func _ready() -> void:
     cinematic_lightfields = preload("res://cinematic_city_lightfields.gd").new() as Node3D
     cinematic_lightfields.name = "Cinematic atmospheric lightfields"
     add_child(cinematic_lightfields)
+    # Playable Neon City signal gates use the already verified three-lane controls.
+    signal_chain = preload("res://neon_signal_chain.gd").new() as Node3D
+    signal_chain.name = "Playable Neon City signal chain"
+    add_child(signal_chain)
 
 func material(tint: Color, glow: bool = false) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
@@ -294,7 +299,21 @@ func _build_sunset_landmark() -> void:
             ribbon.rotation_degrees.y = 90
             arch.scale = Vector3(1.0, 1.5, 1.0)
 
+func reset_signals() -> void:
+    signal_chain.call("reset_course")
+
+func check_neon_signal(rider_x: float) -> Dictionary:
+    return signal_chain.call("check_signal", rider_x)
+
+func get_signal_count() -> int:
+    return int(signal_chain.get("completed_signals"))
+
+func get_signal_streak() -> int:
+    return int(signal_chain.get("streak"))
+
 func _process(delta: float) -> void:
+    signal_chain.set("running", running)
+    signal_chain.set("travel_speed", travel_speed)
     cinematic_bridges.set("running", running)
     cinematic_bridges.set("travel_speed", travel_speed)
     cinematic_traffic.set("running", running)
