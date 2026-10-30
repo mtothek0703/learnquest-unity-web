@@ -68,6 +68,34 @@ func _check() -> void:
         var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
         var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
         var uv: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
+        var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+        if normals.size() != vertices.size():
+            _fail("every weighted coat vertex needs an explicit surface normal")
+            return
+        # Each 20x12 quad emits six front and six reverse-wound back
+        # vertices. The same UV must have the same smooth analytic normal,
+        # rather than a fresh flat normal for every triangle.
+        const PANEL_ROWS = 20
+        const PANEL_COLUMNS = 12
+        for quad in range(PANEL_ROWS * PANEL_COLUMNS):
+            var base := quad * 12
+            for offset in range(12):
+                var normal: Vector3 = normals[base + offset]
+                if not normal.is_finite() or absf(normal.length() - 1.0) > 0.015:
+                    _fail("non-unit or non-finite skinned cloth normal")
+                    return
+            if normals[base].dot(normals[base + 3]) < 0.999 or \
+                    normals[base + 2].dot(normals[base + 4]) < 0.999 or \
+                    normals[base + 6].dot(normals[base + 9]) < 0.999:
+                _fail("shared cloth triangle corners have discontinuous shading")
+                return
+            if normals[base].dot(normals[base + 6]) > -0.90:
+                _fail("opposite cloth faces must have opposing surface normals")
+                return
+            if quad % PANEL_COLUMNS < PANEL_COLUMNS - 1:
+                if normals[base + 2].dot(normals[base + 12 + 1]) < 0.995:
+                    _fail("adjacent weighted cloth quads must shade smoothly")
+                    return
         if vertices.size() < 1000 or bones.size() != vertices.size() * 4 or weights.size() != vertices.size() * 4 or uv.size() != vertices.size():
             _fail("panel lacks four-weight skinning or UV wind surface")
             return
@@ -85,8 +113,14 @@ func _check() -> void:
             var a: Vector3 = vertices[index]
             var b: Vector3 = vertices[index + 1]
             var c: Vector3 = vertices[index + 2]
-            if (b - a).cross(c - a).length() < 0.0000001:
+            var wall_cross := (b - a).cross(c - a)
+            if wall_cross.length() < 0.0000001:
                 _fail("degenerate flight-wing sidewall triangle")
+                return
+            if normals[index].dot(wall_cross.normalized()) < 0.97 or \
+                    normals[index].dot(normals[index + 1]) < 0.999 or \
+                    normals[index].dot(normals[index + 2]) < 0.999:
+                _fail("sealed mantle wall must retain a sharp consistent flat normal")
                 return
             wall_triangles += 1
         if wall_triangles != EDGE_TRIANGLES:
@@ -265,5 +299,5 @@ func _check() -> void:
     if rider.get_node_or_null("LegacyRider") == null:
         _fail("legacy fallback and existing hoverboard must remain")
         return
-    print("EXTERNAL SKINNED MANTLE TEST PASSED: %d four-weight vertices, swept wing reach %.3f, closed airfoils and weighted shoulder yoke" % [int(mantle.get("generated_vertices")), wing_reach])
+    print("EXTERNAL SKINNED MANTLE TEST PASSED: %d four-weight vertices, smooth drape normals, sealed hard hems, wing reach %.3f and weighted shoulder yoke" % [int(mantle.get("generated_vertices")), wing_reach])
     quit(0)
