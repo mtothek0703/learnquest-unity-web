@@ -158,9 +158,22 @@ func _check() -> void:
         Vector3(0.45, 1.3, 0.0), Vector3.RIGHT, sample_bounds, Vector2(0.99, 0.48))
     var wrist_shape: Vector3 = controller.call("_sculpt_offset",
         Vector3(0.45, 1.0, 0.0), Vector3.RIGHT, sample_bounds, Vector2(0.20, 0.02))
-    if shoulder_shape.x < 0.052 or shoulder_shape.x > 0.075 or \
-            elbow_shape.x < 0.035 or wrist_shape.x > 0.055:
-        _fail("slim skinned sleeves must preserve shoulder relief, elbow flex and wrist taper")
+    var forearm_shape: Vector3 = controller.call("_sculpt_offset",
+        Vector3(0.45, 1.15, 0.0), Vector3.RIGHT, sample_bounds, Vector2(0.92, 0.12))
+    var mirrored_shoulder: Vector3 = controller.call("_sculpt_offset",
+        Vector3(-0.45, 1.5, 0.0), Vector3.LEFT, sample_bounds, Vector2(1.0, 0.96))
+    if shoulder_shape.x < 0.090 or shoulder_shape.x > 0.135 or \
+            elbow_shape.x < 0.045 or elbow_shape.x > 0.080 or \
+            forearm_shape.x < wrist_shape.x + 0.020 or wrist_shape.x > 0.055:
+        _fail("weighted sleeve geometry must create a broad deltoid, articulated elbow and tapered wrist")
+        return
+    if absf(shoulder_shape.x + mirrored_shoulder.x) > 0.001 or \
+            absf(shoulder_shape.y - mirrored_shoulder.y) > 0.001:
+        _fail("the two weighted shoulder silhouettes must remain symmetric")
+        return
+    if not shoulder_shape.is_finite() or not elbow_shape.is_finite() or \
+            not forearm_shape.is_finite():
+        _fail("arm sculpt produced nonfinite rest-space geometry")
         return
     var shoulder_panel: float = controller.call("_armor_panel", Vector2(1.0, 0.96))
     var elbow_panel: float = controller.call("_armor_panel", Vector2(1.0, 0.48))
