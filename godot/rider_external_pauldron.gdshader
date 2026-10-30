@@ -24,9 +24,12 @@ void fragment() {
     vec3 cobalt = vec3(0.18, 0.39, 0.82);
     vec3 pink = vec3(0.92, 0.24, 0.63);
     vec3 shell = mix(navy, dye.rgb, 0.85);
-    shell = mix(shell, purple, upper * 0.52);
+    shell = mix(shell, purple, upper * 0.68);
     shell = mix(shell, cobalt, rib * 0.40);
     shell = mix(shell, navy, lower * 0.38);
+    // The shoulder ridge continues the vivid chest V into both silhouettes.
+    float hero_shoulder_crest = upper * (1.0 - smoothstep(0.27, 0.68, panel_uv.x));
+    shell = mix(shell, pink, hero_shoulder_crest * 0.31);
     ALBEDO = shell;
     METALLIC = 0.38 + upper * 0.18;
     ROUGHNESS = 0.36 + lower * 0.12;

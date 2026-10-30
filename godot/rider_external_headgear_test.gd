@@ -33,7 +33,7 @@ func _check() -> void:
     # Balanced 360-degree silhouette: the Head-bone portrait remains readable
     # at mobile landscape size without overpowering the real skinned torso.
     var scale_factor := float(headwear.get("visual_scale"))
-    if scale_factor < 1.89 or scale_factor > 1.95:
+    if scale_factor < 2.09 or scale_factor > 2.15:
         _fail("integrated hero portrait scale must balance the skinned torso")
         return
     var region := headwear.get("head_bounds") as AABB

@@ -50,6 +50,19 @@ func _check() -> void:
         if textile_code.contains("texture(") or textile_code.contains("sampler2D"):
             _fail("textile treatment must remain procedural and asset-free: " + path)
             return
+    # The art-direction pass must span torso, arms, legs, mantle and real
+    # skinned shoulder armor, rather than passing on a single tint edit.
+    var crest_checks := {
+        "res://rider_external_jacket.gdshader": "hero_chest_crest",
+        "res://rider_external_sleeves.gdshader": "hero_arm_panel",
+        "res://rider_external_lower.gdshader": "hero_leg_panel",
+        "res://rider_external_pauldron.gdshader": "hero_shoulder_crest",
+    }
+    for path in crest_checks:
+        var crest_shader := load(path) as Shader
+        if crest_shader == null or not crest_shader.code.contains(crest_checks[path]):
+            _fail("integrated hero crest missing from weighted costume: " + path)
+            return
     var rider := preload("res://rider_character.tscn").instantiate() as Node3D
     rider.set("prefer_cc0_rigged_hero", true)
     root.add_child(rider)

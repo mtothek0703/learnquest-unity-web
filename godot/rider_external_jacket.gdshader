@@ -29,14 +29,14 @@ void fragment() {
     float flank_armor = smoothstep(0.12, 0.24, x) * (1.0 - smoothstep(0.37, 0.46, x));
     float shoulder = smoothstep(0.18, 0.29, x) * smoothstep(0.65, 0.73, y);
     float waist = 1.0 - smoothstep(0.47, 0.53, y);
-    vec3 deep_navy = vec3(0.055, 0.085, 0.20);
-    vec3 royal_violet = vec3(0.30, 0.16, 0.54);
-    vec3 cobalt = vec3(0.13, 0.42, 0.80);
+    vec3 deep_navy = vec3(0.075, 0.105, 0.24);
+    vec3 royal_violet = vec3(0.43, 0.21, 0.72);
+    vec3 cobalt = vec3(0.22, 0.48, 0.90);
     vec3 electric_pink = vec3(0.90, 0.24, 0.54);
     vec3 cyan = vec3(0.07, 0.72, 0.97);
     vec3 cloth = mix(deep_navy, royal_violet, 0.18);
     cloth = mix(cloth, cobalt, flank_armor * torso * 0.82);
-    cloth = mix(cloth, deep_navy, center_armor * torso * 0.94);
+    cloth = mix(cloth, deep_navy, center_armor * torso * 0.62);
     // Shaped pectoral zones follow the actual four-weight jacket relief.
     float pectoral_panel = exp(-pow((x - 0.19) * 11.0, 2.0))
         * exp(-pow((y - 0.655) * 12.0, 2.0));
@@ -77,6 +77,14 @@ void fragment() {
     float zipper = exp(-pow(x * 66.0, 2.0)) * torso;
     float chevron = exp(-pow((y - 0.686 + x * 0.36) * 45.0, 2.0)) * torso;
     float piping = exp(-pow((x - 0.265) * 45.0, 2.0)) * torso;
+    // Readable hero crest across the genuine four-weight chest, not an
+    // unskinned decal. The broad magenta V remains visible at chase distance.
+    float hero_chest_crest = smoothstep(0.08, 0.16, x)
+        * (1.0 - smoothstep(0.29, 0.38, x))
+        * exp(-pow((y - 0.653) * 9.0, 2.0));
+    float hero_v_band = exp(-pow((y - 0.69 + x * 0.34) * 24.0, 2.0)) * torso;
+    cloth = mix(cloth, electric_pink,
+        clamp(hero_chest_crest * 0.64 + hero_v_band * 0.46, 0.0, 0.82));
     ALBEDO = cloth;
     METALLIC = clamp(0.13 + armor_field * 0.43 + collar_lip * 0.22, 0.0, 0.76);
     ROUGHNESS = clamp(0.56 - armor_field * 0.23 + waist_gasket * 0.18

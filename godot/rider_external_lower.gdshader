@@ -35,8 +35,8 @@ void fragment() {
     float heel_counter = exp(-pow((y - 0.069) * 30.0, 2.0)) * (1.0 - forward_surface);
     float sole_edge = exp(-pow((y - 0.045) * 72.0, 2.0));
     float toe_cap = exp(-pow((y - 0.088) * 21.0, 2.0));
-    vec3 cobalt = vec3(0.15, 0.37, 0.77);
-    vec3 violet = vec3(0.40, 0.22, 0.67);
+    vec3 cobalt = vec3(0.22, 0.47, 0.86);
+    vec3 violet = vec3(0.50, 0.29, 0.80);
     vec3 midnight = vec3(0.045, 0.075, 0.18);
     vec3 magenta = vec3(0.92, 0.20, 0.53);
     vec3 titanium = vec3(0.36, 0.49, 0.70);
@@ -84,6 +84,11 @@ void fragment() {
     trousers *= 0.986 + 0.014 * weave;
     boots *= 0.99 + 0.045 * carbon_fiber * boot_armor
         + 0.010 * weave * (1.0 - boot_armor);
+    // Distinct cobalt upper legs, violet knee breaks and bright toe guards:
+    // a single original-Skin pass, readable above the traction deck.
+    float hero_leg_panel = thigh * outside * (1.0 - knee);
+    trousers = mix(trousers, vec3(0.39, 0.34, 0.83), hero_leg_panel * 0.42);
+    boots = mix(boots, vec3(0.47, 0.62, 0.86), toe_cap * 0.28);
     ALBEDO = mix(trousers, boots, boot_mode);
     METALLIC = mix(0.13, 0.36 + shin_segment * 0.18, boot_mode);
     ROUGHNESS = mix(0.55 + knee_gasket * 0.12 + weave * 0.018,

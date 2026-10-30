@@ -33,13 +33,13 @@ void fragment() {
     float fold = 0.5 + 0.5 * sin(cloth_uv.x * 8.0 + cloth_uv.y * 3.0);
     float root = 1.0 - smoothstep(0.08, 0.28, cloth_uv.y);
     vec3 midnight = vec3(0.035, 0.052, 0.11);
-    vec3 cobalt = vec3(0.075, 0.20, 0.38);
-    vec3 violet = vec3(0.16, 0.12, 0.27);
+    vec3 cobalt = vec3(0.18, 0.31, 0.59);
+    vec3 violet = vec3(0.34, 0.20, 0.52);
     vec3 cyan = vec3(0.035, 0.72, 0.98);
-    vec3 magenta = vec3(0.46, 0.16, 0.31);
+    vec3 magenta = vec3(0.72, 0.23, 0.51);
     vec3 shell = mix(midnight, cobalt, chord * (0.58 + fold * 0.12));
     shell = mix(shell, violet, central_spar * 0.22);
-    shell = mix(shell, magenta, trailing * (0.19 + 0.05 * tip));
+    shell = mix(shell, magenta, trailing * (0.36 + 0.12 * tip));
     shell = mix(shell, midnight, root * 0.56);
     ALBEDO = shell;
     // Matte, flexible cloth with a restrained satin seam: the previous

@@ -29,12 +29,12 @@ void fragment() {
     float center = 1.0 - smoothstep(0.05, 0.18, x);
     float outer = smoothstep(0.13, 0.31, x);
     vec3 midnight = vec3(0.085, 0.12, 0.27);
-    vec3 cobalt = vec3(0.19, 0.44, 0.86);
-    vec3 violet = vec3(0.47, 0.27, 0.77);
+    vec3 cobalt = vec3(0.23, 0.50, 0.93);
+    vec3 violet = vec3(0.53, 0.30, 0.86);
     vec3 magenta = vec3(0.88, 0.25, 0.55);
     vec3 titanium = vec3(0.32, 0.45, 0.64);
     vec3 cloth = mix(midnight, cobalt, 0.28 + torso * 0.52 + thigh * 0.30);
-    cloth = mix(cloth, violet, torso * center * 0.56 + thigh * outer * 0.28);
+    cloth = mix(cloth, violet, torso * center * 0.68 + thigh * outer * 0.38);
     cloth = mix(cloth, magenta, shoulder * 0.60);
     cloth = mix(cloth, titanium, boots * 0.70);
     // Real source hands/neck remain visible; the weighted jacket, sleeves and

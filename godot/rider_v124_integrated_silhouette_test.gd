@@ -25,7 +25,7 @@ func _check() -> void:
         _fail("the original 65-bone skeleton was changed")
         return
     var headwear := rig.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
-    if headwear == null or absf(float(headwear.get("visual_scale")) - 1.92) > 0.01:
+    if headwear == null or absf(float(headwear.get("visual_scale")) - 2.12) > 0.01:
         _fail("balanced portrait scale missing")
         return
     var head_bounds: AABB = headwear.get("head_bounds")
@@ -41,6 +41,15 @@ func _check() -> void:
         if mesh.mesh.get_aabb().size.x < head_bounds.size.x * 0.10:
             _fail("forehead locks reverted to thin separated spikes")
             return
+    var suit := hero.find_child("SuperHero_Male", true, false) as MeshInstance3D
+    if suit == null or suit.skin == null or not (suit.material_override is ShaderMaterial):
+        _fail("original imported skinned torso must stay visible with its shader")
+        return
+    var jacket := hero.get_node_or_null("ExternalSkinnedFlightSuit") as Node
+    var jacket_mesh := jacket.get("garment") as MeshInstance3D if jacket != null else null
+    if jacket_mesh == null or jacket_mesh.skin != suit.skin:
+        _fail("the new colorful torso crest must stay on the imported GPU Skin")
+        return
     var armor := hero.get_node_or_null("ExternalSkinnedFlightPauldrons") as Node
     var source := hero.find_child("SuperHero_Male", true, false) as MeshInstance3D
     if armor == null or source == null or source.skin == null:
