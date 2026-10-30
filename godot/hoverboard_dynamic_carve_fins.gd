@@ -26,7 +26,12 @@ func _ready() -> void:
     for side in [-1.0, 1.0]:
         var hinge := Node3D.new()
         hinge.name = "PortArticulatedVane" if side < 0.0 else "StarboardArticulatedVane"
-        hinge.position = Vector3(side * 0.80, 0.425, 0.0)
+        # The former hinge was buried inside the 1.2-unit sculpted side wing:
+        # zero visible pixels changed in the actual rear chase camera. Mount
+        # this closed aerofoil on the outboard upper chine, slightly aft, so
+        # the deployed wing and emissive edge contribute to the board outline.
+        # Visual only: the animated board root and collisions stay unchanged.
+        hinge.position = Vector3(side * 1.09, 0.59, 0.22)
         add_child(hinge)
         var aerofoil := MeshInstance3D.new()
         aerofoil.name = "ClosedSweptAerofoil"
