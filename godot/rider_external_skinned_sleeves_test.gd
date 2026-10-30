@@ -162,6 +162,10 @@ func _check() -> void:
         Vector3(0.45, 1.15, 0.0), Vector3.RIGHT, sample_bounds, Vector2(0.92, 0.12))
     var mirrored_shoulder: Vector3 = controller.call("_sculpt_offset",
         Vector3(-0.45, 1.5, 0.0), Vector3.LEFT, sample_bounds, Vector2(1.0, 0.96))
+    var shoulder_front: Vector3 = controller.call("_sculpt_offset",
+        Vector3(0.45, 1.5, 0.43), Vector3.RIGHT, sample_bounds, Vector2(1.0, 0.96))
+    var shoulder_back: Vector3 = controller.call("_sculpt_offset",
+        Vector3(0.45, 1.5, -0.43), Vector3.RIGHT, sample_bounds, Vector2(1.0, 0.96))
     if shoulder_shape.x < 0.090 or shoulder_shape.x > 0.135 or \
             elbow_shape.x < 0.045 or elbow_shape.x > 0.080 or \
             forearm_shape.x < wrist_shape.x + 0.020 or wrist_shape.x > 0.055:
@@ -170,6 +174,15 @@ func _check() -> void:
     if absf(shoulder_shape.x + mirrored_shoulder.x) > 0.001 or \
             absf(shoulder_shape.y - mirrored_shoulder.y) > 0.001:
         _fail("the two weighted shoulder silhouettes must remain symmetric")
+        return
+    # A genuine rounded cap must be thicker and higher at its center than
+    # at both front/back seams, rather than a broad flat magenta rectangle.
+    if shoulder_shape.x - shoulder_front.x < 0.009 or \
+            shoulder_shape.x - shoulder_back.x < 0.009 or \
+            shoulder_shape.y - shoulder_front.y < 0.009 or \
+            shoulder_shape.y - shoulder_back.y < 0.009 or \
+            absf(shoulder_front.x - shoulder_back.x) > 0.001:
+        _fail("original-skinned deltoid crest lacks a symmetric curved shoulder profile")
         return
     if not shoulder_shape.is_finite() or not elbow_shape.is_finite() or \
             not forearm_shape.is_finite():

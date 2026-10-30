@@ -215,14 +215,20 @@ func _sculpt_offset(point: Vector3, normal: Vector3, bounds: AABB,
     var forearm := smoothstep(0.22, 0.72, inf.x - inf.y)
     var wrist := 1.0 - smoothstep(0.22, 0.46, inf.x)
     var forearm_clearance := forearm * (1.0 - wrist) * (1.0 - 0.75 * elbow)
-    var shell := 0.014 + 0.054 * shoulder + 0.027 * elbow + 0.032 * forearm_clearance
+    # Rounded, source-skinned deltoid crest: maximum volume at the center
+    # of each shoulder, tapering smoothly toward its front/back seams. This
+    # reshapes actual weighted CC0 triangles, not a rigid magenta pauldron.
+    # Bounds-relative depth makes the contour independent of source scale.
+    var depth := clampf((point.z - bounds.get_center().z) /
+        maxf(0.001, bounds.size.z * 0.5), -1.0, 1.0)
+    var cap_crest := shoulder * exp(-pow(depth / 0.68, 2.0))
+    var shell := 0.014 + 0.054 * shoulder + 0.027 * elbow + 0.032 * forearm_clearance + 0.010 * cap_crest
     var lateral := signf(point.x - bounds.get_center().x)
-    # Side expansion creates a true readable shoulder contour in both
-    # front/chase cameras; the articulated elbow remains narrower and the
-    # wrist fades into the original skinned hand, avoiding a floating cuff.
-    var side_sweep := 0.032 * shoulder + 0.012 * elbow + 0.010 * forearm_clearance
+    # The shoulder stays connected to the arm, with a raised, softly
+    # convex top rather than a flat shoulder slab in the chase camera.
+    var side_sweep := 0.032 * shoulder + 0.012 * elbow + 0.010 * forearm_clearance + 0.006 * cap_crest
     return normal * shell + Vector3(lateral * side_sweep,
-        0.010 * shoulder, 0.0)
+        0.010 * shoulder + 0.014 * cap_crest, 0.0)
 
 func _armor_panel(inf: Vector2) -> float:
     # Stored as COLOR.b, interpolated by GPU; visible broad armor zones rather
