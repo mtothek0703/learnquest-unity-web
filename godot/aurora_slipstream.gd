@@ -15,6 +15,9 @@ var travel_speed := 14.0
 var elapsed := 0.0
 var caught_streams := 0
 var missed_streams := 0
+var current_streak := 0
+var best_streak := 0
+var perfect_line := false
 var stations: Array[Node3D] = []
 var arches: Array[MeshInstance3D] = []
 var cores: Array[MeshInstance3D] = []
@@ -122,6 +125,9 @@ func reset_course() -> void:
     elapsed = 0.0
     caught_streams = 0
     missed_streams = 0
+    current_streak = 0
+    best_streak = 0
+    perfect_line = false
     for index in range(stations.size()):
         var station := stations[index]
         station.position = Vector3(float(index % 3 - 1) * LANE_X,
@@ -140,12 +146,19 @@ func check_stream(rider_x: float) -> Dictionary:
         station.visible = false
         if absf(rider_x - station.position.x) <= 1.30:
             caught_streams += 1
+            current_streak += 1
+            best_streak = maxi(best_streak, current_streak)
+            perfect_line = best_streak == STREAM_COUNT
+            # Consecutive catches strengthen the existing Turbo, not a fifth ability.
             return {
-                "caught": true, "xp": 35, "energy": 15,
-                "turbo_seconds": 2.5, "count": caught_streams
+                "caught": true, "xp": 35 + 10 * (current_streak - 1),
+                "energy": 15, "turbo_seconds": 2.5 + 0.5 * (current_streak - 1),
+                "count": caught_streams, "streak": current_streak,
+                "perfect_line": perfect_line
             }
         missed_streams += 1
-        return {"missed": true}
+        current_streak = 0
+        return {"missed": true, "streak": 0}
     return {}
 
 func _process(delta: float) -> void:
