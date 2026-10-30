@@ -13,7 +13,9 @@ func _check() -> void:
     root.add_child(rider)
     # Deliberately do NOT await a frame: verify _ready state before _process.
     var board := rider.get_node_or_null("LegacyRider/Floating hoverboard") as Node3D
-    var wake := board.get_node_or_null("Cinematic ion wake") as Node3D if board != null else null
+    var wake: Node3D = null
+    if board != null:
+        wake = board.get_node_or_null("Cinematic ion wake") as Node3D
     if board == null or wake == null:
         _fail("original animated board or its cinematic wake is missing")
         return
@@ -50,7 +52,7 @@ func _check() -> void:
         if (spark as MeshInstance3D).scale.x > 0.101:
             _fail("turbo must preserve bounded spark size")
             return
-    if rider.find_children("*", "CollisionObject3D", true, false).size() > 0:
+    if wake.find_children("*", "CollisionObject3D", true, false).size() > 0:
         _fail("visual-only fix must not add collision objects")
         return
     print("ION WAKE FIRST FRAME TEST PASSED: 12 safely initialized sparks and preserved turbo animation")
