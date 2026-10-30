@@ -72,6 +72,7 @@ func _capture() -> void:
                     (hinge as Node3D).rotation.z = 0.0
                 var lean := 0.9 if state == "right_carve" else (-0.9 if state == "left_carve" else 0.0)
                 vanes.call("update_state", lean, state != "neutral", 1.0)
+                var baseline: Image
                 for variant in ["before", "after"]:
                     vanes.visible = variant == "after"
                     for frame in range(3):
@@ -86,6 +87,28 @@ func _capture() -> void:
                     if image.save_png(path) != OK:
                         _fail("cannot write comparison frame")
                         return
+                    if variant == "before":
+                        baseline = image.duplicate()
+                    elif view == "chase":
+                        # A green renderer test alone previously accepted fins
+                        # that changed ZERO chase-view pixels. Compare actual
+                        # rendered A/B pixels, not just mesh visibility flags.
+                        var changed_samples := 0
+                        for py in range(0, size.y, 3):
+                            for px in range(0, size.x, 3):
+                                var old_pixel: Color = baseline.get_pixel(px, py)
+                                var new_pixel: Color = image.get_pixel(px, py)
+                                var difference := maxf(absf(old_pixel.r - new_pixel.r),
+                                    maxf(absf(old_pixel.g - new_pixel.g),
+                                        absf(old_pixel.b - new_pixel.b)))
+                                if difference > 0.10:
+                                    changed_samples += 1
+                        print("CARVE FIN CHASE A/B: %s %s = %d/9 sampled changed pixels" % [
+                            str(size), state, changed_samples])
+                        if changed_samples < 18:
+                            _fail("carve fins are still visually occluded in chase camera: "
+                                + str(size) + " " + state)
+                            return
                     count += 1
     vanes.visible = true
     if count != 24:
