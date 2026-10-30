@@ -38,6 +38,20 @@ func _check() -> void:
     if legacy == null or board == null:
         _fail("original animated hoverboard is missing")
         return
+    # Ion sparks must be small from the first render, not only after the
+    # first _process tick; otherwise they hide the chase-view board in QA.
+    var ion_wake := board.get_node_or_null("Cinematic ion wake") as Node3D
+    if ion_wake == null:
+        _fail("original cinematic ion wake is missing")
+        return
+    var initial_sparks := ion_wake.find_children("Moving ion spark *", "MeshInstance3D", true, false)
+    if initial_sparks.size() != 12:
+        _fail("expected twelve original ion sparks")
+        return
+    for spark in initial_sparks:
+        if (spark as MeshInstance3D).scale.x > 0.11:
+            _fail("oversized first-frame ion spark obscures the board")
+            return
     var sculpt := board.get_node_or_null("SculptedHoverboardChassis") as Node3D
     if sculpt == null or not bool(sculpt.get("built")):
         _fail("new sculpted board did not initialize")
