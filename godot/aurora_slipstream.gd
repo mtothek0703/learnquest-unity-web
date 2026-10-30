@@ -18,6 +18,7 @@ var missed_streams := 0
 var stations: Array[Node3D] = []
 var arches: Array[MeshInstance3D] = []
 var cores: Array[MeshInstance3D] = []
+var helices: Array[MeshInstance3D] = []
 
 func _material(tint: Color) -> StandardMaterial3D:
     var material := StandardMaterial3D.new()
@@ -28,6 +29,30 @@ func _material(tint: Color) -> StandardMaterial3D:
     material.emission = tint
     material.emission_energy_multiplier = 1.8
     return material
+
+func _helix_mesh(phase: float) -> ArrayMesh:
+    # Two continuous curved 3D ribbon surfaces spiral through the full
+    # tunnel depth. Unlike flat neon hoops, their changing silhouette
+    # communicates a moving air current from a chase camera.
+    var tool := SurfaceTool.new()
+    tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+    for step in range(64):
+        var t0 := float(step) / 64.0
+        var t1 := float(step + 1) / 64.0
+        # Each segment has two triangles between inner and outer spiral
+        # radii. Repeated vertices allow stable mobile-compatible normals.
+        for corner in [Vector2(t0, 0.0), Vector2(t1, 0.0),
+                Vector2(t1, 1.0), Vector2(t0, 0.0),
+                Vector2(t1, 1.0), Vector2(t0, 1.0)]:
+            var t := corner.x
+            var angle := phase + TAU * 2.5 * t
+            var radius := lerpf(1.08, 1.40, corner.y)
+            var point := Vector3(cos(angle) * radius,
+                2.05 + sin(angle) * radius, -4.6 + 9.2 * t)
+            tool.set_color(Color("#55dfff").lerp(Color("#f2a8ff"), t))
+            tool.add_vertex(point)
+    tool.generate_normals()
+    return tool.commit()
 
 func _ready() -> void:
     var ring_mesh := TorusMesh.new()
@@ -43,6 +68,10 @@ func _ready() -> void:
     var cyan := _material(Color("#72ffe4"))
     var violet := _material(Color("#bc9aff"))
     var gold := _material(Color("#fff1ad"))
+    var wind_material := _material(Color("#7bf5ff"))
+    wind_material.vertex_color_use_as_albedo = true
+    wind_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+    var helix_meshes := [_helix_mesh(0.0), _helix_mesh(PI)]
     for index in range(STREAM_COUNT):
         var station := Node3D.new()
         station.name = "Moving Aurora wind tunnel %d" % index
@@ -65,6 +94,13 @@ func _ready() -> void:
             station.add_child(ring)
             if depth == 1:
                 arches.append(ring)
+        for strand in range(2):
+            var spiral := MeshInstance3D.new()
+            spiral.name = "Continuous sculpted wind helix %d" % strand
+            spiral.mesh = helix_meshes[strand]
+            spiral.material_override = wind_material
+            station.add_child(spiral)
+            helices.append(spiral)
         var core := MeshInstance3D.new()
         core.name = "Pulsating Aurora wind core"
         core.mesh = core_mesh
@@ -131,3 +167,5 @@ func _process(delta: float) -> void:
                 float(target_lane) * LANE_X, delta * 5.5)
         cores[index].scale.y = 0.54 * (1.0 + 0.18 * sin(elapsed * 4.0 + float(index)))
         arches[index].rotation.z = 0.12 * sin(elapsed * 1.5 + float(index))
+        helices[index * 2].rotation.z += delta * 0.45
+        helices[index * 2 + 1].rotation.z -= delta * 0.45
