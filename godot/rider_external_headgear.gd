@@ -718,7 +718,7 @@ func _face_point(c: Vector3, s: Vector3, u: float, v: float) -> Vector3:
     var profile_blend := smoothstep(-0.20, 0.20, face_sign * sin(longitude))
     # Preserve rounded skull volume behind the face while increasing the
     # forward cheek/nose profile. Eye and mouth landmarks use this very mesh.
-    var z := sin(longitude) * silhouette * s.z * lerpf(0.51, 0.46, profile_blend)
+    var z := sin(longitude) * silhouette * s.z * lerpf(0.51, 0.445, profile_blend)
     var abs_x := absf(x)
     var bridge := exp(-pow(x / maxf(0.01, s.x * 0.105), 2.0)) * exp(-pow((v - 0.47) / 0.16, 2.0))
     var tip := exp(-pow(x / maxf(0.01, s.x * 0.13), 2.0)) * exp(-pow((v - 0.59) / 0.067, 2.0))
@@ -731,7 +731,7 @@ func _face_point(c: Vector3, s: Vector3, u: float, v: float) -> Vector3:
     var chin := exp(-pow(x / maxf(0.01, s.x * 0.265), 2.0)) * exp(-pow((v - 0.80) / 0.095, 2.0))
     var jaw_corner := exp(-pow((abs_x - s.x * 0.36) / maxf(0.01, s.x * 0.10), 2.0)) * exp(-pow((v - 0.76) / 0.11, 2.0))
     z += face_sign * frontness * s.z * (
-        0.22 * bridge + 0.17 * tip + 0.075 * alar + 0.135 * cheek -
+        0.16 * bridge + 0.14 * tip + 0.075 * alar + 0.12 * cheek -
         0.095 * socket + 0.077 * brow + 0.025 * philtrum +
         0.047 * lip + 0.075 * chin - 0.026 * jaw_corner)
     return Vector3(c.x + x, c.y + cos(latitude) * s.y * 0.48, c.z + z)
