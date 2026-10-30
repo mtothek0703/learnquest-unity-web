@@ -2,6 +2,8 @@ extends Node
 ## V124 draft: paired sculpted shoulder armor that moves with the original
 ## 65-bone CC0 GPU Skin. This is a connected visual silhouette pass, not a
 ## gameplay collision, rigid primitive, new asset or finished graphics milestone.
+## Narrow deltoid caps now hug the true skinned sleeves: reduced front/back
+## bulk, sloped upper rim and a raised leading lip replace inflated cylinders.
 const ROWS := 20
 const SEGMENTS := 24
 var shells: Array[MeshInstance3D] = []
@@ -107,17 +109,18 @@ func _point(tool: SurfaceTool, bounds: AABB, depth: float, side: float,
         angle: float, center: bool) -> void:
     var width := bounds.size.x
     var height := bounds.size.y
-    var profile := maxf(0.15, pow(maxf(0.0, sin(PI * t)), 0.64))
+    var profile := maxf(0.10, pow(maxf(0.0, sin(PI * t)), 0.86))
     if center:
         profile = 0.0
-    var sweep := 0.012 * sin(PI * t)
-    var x := bounds.get_center().x + side * width * (0.178 + sweep + cos(angle) * 0.064 * profile)
-    var y := bounds.position.y + height * (0.765 - t * 0.125)
+    var sweep := 0.010 * sin(PI * t)
+    var x := bounds.get_center().x + side * width * (0.168 + sweep + cos(angle) * 0.057 * profile)
+    var y := bounds.position.y + height * (0.756 - t * 0.108 + 0.008 * cos(angle) * sin(PI * t))
     # A curved back-to-front shell follows the actual torso depth, with a
     # raised outer ridge and a subtle aerodynamic taper toward the waist.
-    var ridge := 0.011 * width * pow(absf(cos(angle)), 5.0) * sin(PI * t)
-    var z := depth + sin(angle) * width * (0.071 * profile + 0.008) + ridge * face_sign
-    var arm_weight := (0.37 + 0.25 * maxf(0.0, cos(angle))) * (1.0 - 0.25 * t)
+    var ridge := 0.007 * width * pow(absf(cos(angle)), 4.0) * sin(PI * t)
+    var front_lip := 0.010 * width * maxf(0.0, sin(angle) * face_sign) * profile
+    var z := depth + sin(angle) * width * (0.058 * profile + 0.008) + (ridge + front_lip) * face_sign
+    var arm_weight := (0.42 + 0.22 * maxf(0.0, cos(angle))) * (1.0 - 0.22 * t)
     var pelvis_weight := 0.07 + 0.15 * t
     var spine_weight := 1.0 - arm_weight - pelvis_weight
     tool.set_bones(PackedInt32Array([spine, pelvis, arm, spine]))
