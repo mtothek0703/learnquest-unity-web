@@ -182,15 +182,18 @@ func _mantle_point(bounds: AABB, back: float, back_sign: float,
     var width := bounds.size.x
     var center_x := bounds.get_center().x
     var flare := pow(maxf(0.0, sin(PI * t)), 1.20)
+    # Broader shoulder-to-thigh midspan and deeper longitudinal fabric folds
+    # restore a readable chase silhouette without widening the tapered hem.
+    # The same original four-weight Skin continues to drive every vertex.
     var scallop := 0.014 * sin(3.0 * PI * t) * sin(PI * t)
     var inner := width * (0.070 + 0.045 * t)
-    var outer := width * (0.135 + 0.075 * flare + 0.018 * t + scallop * 0.35)
+    var outer := width * (0.135 + 0.092 * flare + 0.018 * t + scallop * 0.35)
     var x := center_x + side * lerpf(inner, outer, u)
     var camber := sin(u * PI) * sin(t * PI)
     var y := bounds.position.y + bounds.size.y * (0.76 - 0.39 * t +
         0.025 * camber + 0.012 * u * t)
     var sweep := 0.040 + 0.10 * t + 0.12 * pow(t, 1.4) + 0.025 * camber
-    var rib := sin(u * PI * 2.0 + t * 1.7) * width * 0.018 * sin(PI * t)
+    var rib := sin(u * PI * 2.0 + t * 1.7) * width * 0.026 * sin(PI * t)
     var thickness := width * (0.009 + 0.017 * sin(PI * u) * sin(PI * t) +
         0.005 * sin(PI * t) * u * u)
     var z := back + back_sign * (sweep + rib + surface_sign * thickness)
