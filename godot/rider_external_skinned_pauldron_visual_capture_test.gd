@@ -130,16 +130,30 @@ func _capture() -> void:
                         # Explicitly enable the RETIRED geometry only in
                         # the comparison variant. Otherwise both captures
                         # would silently show the same integrated sleeves.
+                        # Keep each diagnostic pair CAUSALLY isolated. The
+                        # former core_isolation pair also toggled both retired
+                        # pauldron caps, making its pixel delta impossible to
+                        # attribute to the glowing cores alone.
                         if pauldrons.has(mesh):
-                            enabled = variant == "with_pauldrons" and layer != "rear_profile"
+                            enabled = variant == "with_pauldrons" and layer in ["skin_layers", "complete_rider"]
                         if layer == "rear_profile" and nacelles.has(mesh):
                             enabled = variant == "with_pauldrons"
-                        # A separate A/B pair reveals whether the conspicuous
-                        # glowing shoulder bulbs are the actual weighted cores.
-                        # Keep all other layers identical and pose-locked.
-                        if layer == "core_isolation" and cores.has(mesh):
-                            enabled = variant == "with_pauldrons"
+                        if layer == "core_isolation":
+                            if nacelles.has(mesh):
+                                enabled = false
+                            elif cores.has(mesh):
+                                enabled = variant == "with_pauldrons"
                         mesh.visible = enabled
+                        if layer == "core_isolation":
+                            if pauldrons.has(mesh) and mesh.visible:
+                                _fail("core-only A/B is contaminated by retired shoulder caps")
+                                return
+                            if nacelles.has(mesh) and mesh.visible:
+                                _fail("core-only A/B is contaminated by large nacelles")
+                                return
+                            if cores.has(mesh) and mesh.visible != (variant == "with_pauldrons"):
+                                _fail("core-only A/B must toggle exactly the two weighted luminous cores")
+                                return
                     for frame in range(5):
                         hero.global_transform = locked_hero
                         for bone in range(locked_bones.size()):
