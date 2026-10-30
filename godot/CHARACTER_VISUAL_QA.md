@@ -222,3 +222,24 @@ Vergleiche V112-Release und V113-PR bei exakt gleicher 1280×720-/1170×540-Verf
 - Run `godot --headless --path godot --script res://rider_external_skinned_portrait_test.gd` after importing the pinned CC0 model. The regression checks the original 65 bones and Skin identity, actual weighted vertices, chin-to-neck gradient, retained material, no duplicate draw call and no collision objects. Both PR and future release workflows require it.
 - For actual pixel QA, run `rider_external_skinned_portrait_visual_capture_test.gd` with an OpenGL renderer and `LEARNQUEST_PORTRAIT_OUTPUT` set to a writable directory. The PR workflow produces **12 real PNGs** at 1280x720 and 1170x540, each with matching front/detail and two profile cameras for `rigid` and `skinned`. Compare nose, chin, eye/lip alignment and neck continuity during the same carve/boost pose. Verify the jaw does not detach from animated lips or intersect the collar.
 - **Not a premium-graphics milestone:** A four-weight face fixes a genuine rigging inconsistency but does not by itself deliver a commercially polished hero. Manual image inspection, iPhone landscape FPS, full uninterrupted touch-controlled level after exactly three English tasks, and visible overall V123-to-V124 quality improvement remain required. PR #111 stays DRAFT; do not merge or release without those gates.
+
+
+## 30.10.2026 — 65-Bone Outfit-Überdeckung isolieren (PR #111 DRAFT)
+
+Der reproduzierbare Test `rider_external_body_resculpt_visual_capture_test.gd`
+zeichnet nun **24** echte OpenGL-Querformatbilder (1280×720 und 1170×540;
+Front und Verfolger; vor/nach Body-Sculpt) in drei **identisch eingefrorenen**
+Varianten auf:
+
+- `source_only`: importierter, tatsächlich 65-Bone-skinnierter CC0-Körper;
+- `skin_layers`: gewichtete Körper-/Jacken-/Ärmel-/Haar-Oberflächen ohne
+  große Schulter-/Mantel-/Harness-Überlagerungen;
+- `complete_rider`: vollständige Figur mit allen bisherigen Overlays.
+
+Vergleiche zuerst `skin_layers` gegen `complete_rider` bei identischer
+Verfolgerkamera. Wenn die schlichte Skinned-Silhouette besser lesbar ist,
+müssen die überdeckenden Schalen organisch ersetzt werden; sie dürfen nicht
+bloß für einen besseren Pixelwert versteckt werden. **Diese Bilder sind nur
+Diagnostik** und keine Freigabe des Grafik-Meilensteins. V123-Baseline,
+Clipping in Bewegung, iPhone-FPS und vollständige Touch-Levelrunde bleiben
+offen. Keine Veröffentlichung dieses DRAFT-Branches.

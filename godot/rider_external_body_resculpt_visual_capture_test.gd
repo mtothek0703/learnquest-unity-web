@@ -102,10 +102,23 @@ func _capture() -> void:
         for view in VIEWS:
             camera.position = Vector3(0, 2.0, -5.2) if view == "front" else Vector3(0, 2.25, 5.4)
             camera.look_at(Vector3(0, 1.8, 0), Vector3.UP)
-            for mode in ["source_only", "complete_rider"]:
+            for mode in ["source_only", "skin_layers", "complete_rider"]:
                 for item in visibility.keys():
                     var mesh := item as MeshInstance3D
-                    mesh.visible = bool(visibility[item]) if mode == "complete_rider" else mesh == body
+                    if mode == "source_only":
+                        mesh.visible = mesh == body
+                    elif mode == "skin_layers":
+                        # Diagnostic A/B: retain genuine source-weighted cloth,
+                        # face and sleeves, but remove the bulky overlaid armor,
+                        # harness and mantle. No runtime art is modified.
+                        var overlay := false
+                        for keyword in ["Pauldron", "Mantle", "Thruster", "Harness", "Armor"]:
+                            if String(mesh.name).contains(keyword):
+                                overlay = true
+                                break
+                        mesh.visible = bool(visibility[item]) and mesh.skin != null and not overlay
+                    else:
+                        mesh.visible = bool(visibility[item])
                 for variant in ["original", "sculpted"]:
                     body.mesh = before if variant == "original" else after
                     for frame in range(5):
@@ -130,8 +143,8 @@ func _capture() -> void:
     body.mesh = after
     for item in visibility.keys():
         (item as MeshInstance3D).visible = bool(visibility[item])
-    if count != 16:
-        _fail("expected sixteen actual original/sculpted landscape frames")
+    if count != 24:
+        _fail("expected 24 actual original/sculpted landscape frames across three outfit layers")
         return
-    print("CONTINUOUS BODY VISUAL QA PASSED: 16 real pose-locked source-only/full-rider landscape PNGs; visual approval pending")
+    print("CONTINUOUS BODY VISUAL QA PASSED: 24 pose-locked source-only/skinned-layers/full-rider landscape PNGs; visual approval pending")
     quit(0)

@@ -179,7 +179,7 @@ jobs:
             --script res://rider_external_character_visual_capture_test.gd 2>&1 | tee /tmp/quaternius-visual.log
           grep -Fq 'QUATERNIUS VISUAL QA PASSED' /tmp/quaternius-visual.log
           test "$(find /tmp/learnquest-quaternius-qa -name '*.png' | wc -l)" -eq 24
-      - name: Capture 16 pose-locked original versus sculpted 65-bone source-body frames
+      - name: Capture 24 pose-locked source, skinned outfit and complete hero comparison frames
         shell: bash
         run: |
           set -euo pipefail
@@ -189,7 +189,7 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://rider_external_body_resculpt_visual_capture_test.gd 2>&1 | tee /tmp/body-sculpt-visual.log
           grep -Fq 'CONTINUOUS BODY VISUAL QA PASSED' /tmp/body-sculpt-visual.log
-          test "$(find /tmp/learnquest-body-sculpt-qa -name '*.png' | wc -l)" -eq 16
+          test "$(find /tmp/learnquest-body-sculpt-qa -name '*.png' | wc -l)" -eq 24
       - name: Capture 12 true skinned portrait versus rigid face landscape frames
         shell: bash
         run: |

@@ -231,7 +231,7 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://rider_external_body_resculpt_visual_capture_test.gd 2>&1 | tee /tmp/body-sculpt-visual.log
           grep -Fq 'CONTINUOUS BODY VISUAL QA PASSED' /tmp/body-sculpt-visual.log
-          test "$(find /tmp/learnquest-body-sculpt-qa -name '*.png' | wc -l)" -eq 16
+          test "$(find /tmp/learnquest-body-sculpt-qa -name '*.png' | wc -l)" -eq 24
           mkdir -p /tmp/learnquest-skinned-hair-qa
           LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_SKINNED_HAIR_OUTPUT=/tmp/learnquest-skinned-hair-qa \
             timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
