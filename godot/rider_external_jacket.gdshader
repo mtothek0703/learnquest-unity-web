@@ -13,6 +13,8 @@ uniform float rest_bottom = 0.0;
 uniform float rest_height = 3.0;
 uniform float rest_center_x = 0.0;
 uniform float rest_width = 1.0;
+uniform float rest_center_z = 0.0;
+uniform float rest_depth = 1.0;
 varying vec3 rest_vertex;
 
 void vertex() {
@@ -43,6 +45,17 @@ void fragment() {
     cloth = mix(cloth, cobalt, pectoral_panel * 0.30);
     cloth = mix(cloth, electric_pink, shoulder * 0.28);
     cloth = mix(cloth, deep_navy, waist * 0.65);
+    // A coherent chase-view back: wide sapphire scapular panels are placed
+    // directly on the real weighted jacket, aligned with its new dorsal relief.
+    // Rest-space depth avoids view-dependent decals and additional draw calls.
+    float rear = smoothstep(0.02, 0.22,
+        (rest_vertex.z - rest_center_z) / max(rest_depth, 0.001));
+    float rear_scapular_panel = rear * exp(-pow((y - 0.685) * 12.0, 2.0))
+        * exp(-pow((x - 0.24) * 9.0, 2.0));
+    float rear_spine_track = rear * exp(-pow(x * 31.0, 2.0))
+        * smoothstep(0.51, 0.59, y) * (1.0 - smoothstep(0.74, 0.78, y));
+    cloth = mix(cloth, cobalt, rear_scapular_panel * 0.62);
+    cloth = mix(cloth, deep_navy, rear_spine_track * 0.84);
     // Broad readable panel layout plus restrained material weave.
     // The material grain follows normalized imported rest-space proportions,
     // not arbitrary exporter units. Wide woven cloth and fine diagonal carbon
@@ -90,7 +103,8 @@ void fragment() {
     ROUGHNESS = clamp(0.56 - armor_field * 0.23 + waist_gasket * 0.18
         + stitched_panel * 0.12 + weave * (1.0 - armor_field) * 0.025
         - carbon_fiber * armor_field * 0.021, 0.24, 0.82);
-    EMISSION = cyan * (zipper * 0.70 + chevron * 0.38 + piping * 0.24)
+    EMISSION = cyan * (zipper * 0.70 + chevron * 0.38 + piping * 0.24
+        + rear_spine_track * 0.42)
         + electric_pink * shoulder * 0.14;
     float silhouette_rim = pow(1.0 - abs(dot(normalize(NORMAL), normalize(VIEW))), 2.6);
     ALBEDO = min(ALBEDO * (1.0 + silhouette_rim * 0.18), vec3(1.0));
