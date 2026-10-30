@@ -24,6 +24,21 @@ func _check() -> void:
         _fail("original rig/source or new shoulder assembly missing")
         return
     var parts: Array = controller.get("shells")
+    # The weighted arm surface, not the synthetic caps, is now the default
+    # visible shoulder. Keep caps available only for controlled A/B QA.
+    var sleeves_controller := hero.get_node_or_null("ExternalSkinnedFlightSleeves") as Node
+    if sleeves_controller == null or not bool(controller.get("sleeve_integration_active")):
+        _fail("two real skinned sleeves must replace the redundant outer shoulder caps")
+        return
+    var actual_sleeves: Array = sleeves_controller.get("sleeves")
+    if actual_sleeves.size() != 2 or (actual_sleeves[0] as MeshInstance3D).skin != source.skin or \
+            (actual_sleeves[1] as MeshInstance3D).skin != source.skin:
+        _fail("integrated sleeves must share the imported 65-bone Skin")
+        return
+    for cap in parts:
+        if (cap as MeshInstance3D).visible:
+            _fail("redundant parametric shoulder cap still occludes the source-weighted sleeve")
+            return
     if parts.size() != 2 or int(controller.get("generated_vertices")) < 5500:
         _fail("need two substantial closed, low-profile shoulder caps")
         return
@@ -111,5 +126,5 @@ func _check() -> void:
             thruster_fraction < 0.44 or thruster_fraction > 0.49:
         _fail("compact mantle and recessed thrusters must fit the skinned shoulders together")
         return
-    print("EXTERNAL PAULDRON TEST PASSED: %d vertices, two closed original-skinned sculpted shoulders and animated arms" % int(controller.get("generated_vertices")))
+    print("EXTERNAL PAULDRON TEST PASSED: %d vertices, two QA-only shoulder caps retired behind real four-weight sleeves; animated arms" % int(controller.get("generated_vertices")))
     quit(0)
