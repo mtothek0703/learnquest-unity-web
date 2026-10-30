@@ -53,7 +53,24 @@ void fragment() {
     base *= 1.0 - tip * 0.075;
     base += original_dye * directional * (0.08 + 0.10 * fibers)
         * (1.0 - root * 0.75);
-    ALBEDO = min(base, original_dye * 1.28);
+    // Root-to-tip pigment and narrow fiber sheen are applied directly to
+    // the REAL skinned hair curtain and five weighted locks. The previous
+    // dark-on-dark double tint disappeared in the chase camera; bounded
+    // plum/copper glints restore strand separation without white bleaching.
+    float fiber_sheen = pow(0.5 + 0.5 * sin(hair_uv.x * 23.0
+        + hair_uv.y * 5.5 + broad * 1.7), 5.0);
+    float colored_length = smoothstep(0.18, 0.42, hair_uv.y)
+        * (1.0 - smoothstep(0.90, 1.0, hair_uv.y));
+    vec3 dyed_chestnut = max(base, hair_base_tint.rgb * (0.60 + 0.18 * broad));
+    vec3 plum_copper = mix(vec3(0.20, 0.075, 0.25),
+        vec3(0.27, 0.12, 0.20), fibers);
+    vec3 highlight = plum_copper * fiber_sheen * colored_length
+        * (0.22 + 0.12 * boost_amount);
+    ALBEDO = min(dyed_chestnut + highlight, vec3(0.27, 0.18, 0.29));
+    // A restrained emissive response makes the actual weighted hair readable
+    // during Turbo in dark worlds; no extra lights, particles or draw calls.
+    EMISSION = plum_copper * fiber_sheen * colored_length
+        * (0.018 + 0.035 * boost_amount);
     METALLIC = 0.012;
     ROUGHNESS = clamp(0.64 + root * 0.14 - broad * 0.10
         - fibers * 0.045 + tip * 0.06, 0.45, 0.84);
