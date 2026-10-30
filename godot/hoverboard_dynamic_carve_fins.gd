@@ -57,6 +57,25 @@ func _fin_point(side: float, t: float, angle: float) -> Vector3:
         0.014 + 0.018 * t + thickness * sin(angle),
         lerpf(-0.62, 0.87, t))
 
+# Analytic normals are shared by coincident triangle vertices. The old
+# SurfaceTool.generate_normals() gave every unindexed triangle a separate
+# flat normal, producing distracting faceted highlights during steering.
+# Preserve hard end-cap normals; only the swept shell is smooth.
+func _fin_normal(side: float, t: float, angle: float) -> Vector3:
+    var h := 0.001
+    var tangent_t := _fin_point(side, clampf(t + h, 0.0, 1.0), angle) - \
+        _fin_point(side, clampf(t - h, 0.0, 1.0), angle)
+    var tangent_ring := _fin_point(side, t, angle + h) - \
+        _fin_point(side, t, angle - h)
+    return (tangent_ring.cross(tangent_t) * side).normalized()
+
+func _emit_fin(tool: SurfaceTool, side: float, t: float, angle: float) -> void:
+    var upper := maxf(0.0, sin(angle))
+    tool.set_color(Color("#1c2e4b").lerp(Color("#6886a3"),
+        0.16 + 0.50 * upper + 0.12 * sin(PI * t)))
+    tool.set_normal(_fin_normal(side, t, angle))
+    tool.add_vertex(_fin_point(side, t, angle))
+
 func _make_aerofoil(side: float) -> ArrayMesh:
     var tool := SurfaceTool.new()
     tool.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -68,10 +87,7 @@ func _make_aerofoil(side: float) -> ArrayMesh:
             var v := TAU * float(j + 1) / float(SECTION_SEGMENTS)
             for sample in [Vector2(a, u), Vector2(b, u), Vector2(b, v),
                 Vector2(a, u), Vector2(b, v), Vector2(a, v)]:
-                var upper := maxf(0.0, sin(sample.y))
-                tool.set_color(Color("#1c2e4b").lerp(Color("#6886a3"),
-                    0.16 + 0.50 * upper + 0.12 * sin(PI * sample.x)))
-                tool.add_vertex(_fin_point(side, sample.x, sample.y))
+                _emit_fin(tool, side, sample.x, sample.y)
     # Both ends are capped; unlike a decal, the aerofoil has real thickness.
     for end in [0.0, 1.0]:
         var center := _fin_point(side, end, 0.0).lerp(_fin_point(side, end, PI), 0.5)
@@ -82,8 +98,8 @@ func _make_aerofoil(side: float) -> ArrayMesh:
                 _fin_point(side, end, v if end == 0.0 else u),
                 _fin_point(side, end, u if end == 0.0 else v)]:
                 tool.set_color(Color("#253956"))
+                tool.set_normal(Vector3.FORWARD if end == 0.0 else Vector3.BACK)
                 tool.add_vertex(point)
-    tool.generate_normals()
     return tool.commit()
 
 func _make_edge(side: float) -> ArrayMesh:
