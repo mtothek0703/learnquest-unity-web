@@ -63,9 +63,13 @@ func _capture() -> void:
         _fail("original 65-bone Skin and weighted sleeves required")
         return
     var pauldrons: Array = controller.get("shells")
-    if pauldrons.size() != 2:
-        _fail("both original-Skin shoulder caps required")
+    if pauldrons.size() != 2 or not bool(controller.get("sleeve_integration_active")):
+        _fail("both original-Skin shoulder QA caps and integrated sleeves required")
         return
+    for cap in pauldrons:
+        if (cap as MeshInstance3D).visible:
+            _fail("duplicate caps must be hidden in the default rider before A/B comparison")
+            return
     rider.set("lean", 0.65)
     rider.set("boosting", true)
     adapter.call("_process", 0.28)
@@ -108,8 +112,11 @@ func _capture() -> void:
                                     enabled = false
                                     break
                             enabled = enabled and mesh.skin != null
-                        if variant == "without_pauldrons" and pauldrons.has(mesh):
-                            enabled = false
+                        # Explicitly enable the RETIRED geometry only in
+                        # the comparison variant. Otherwise both captures
+                        # would silently show the same integrated sleeves.
+                        if pauldrons.has(mesh):
+                            enabled = variant == "with_pauldrons"
                         mesh.visible = enabled
                     for frame in range(5):
                         hero.global_transform = locked_hero
