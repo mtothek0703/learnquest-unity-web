@@ -312,7 +312,8 @@ func _create_neon_conductor() -> void:
     # energy fins and a three-beat lane sweep, using existing touch steering.
     neon_conductor = preload("res://neon_conductor.gd").new() as Node3D
     neon_conductor.name = "Neon City Circuit Conductor Boss"
-    neon_conductor.position = Vector3(0.0, 0.7, -21.0)
+    neon_conductor.position = Vector3(0.0, 0.7, -17.5)
+    neon_conductor.scale = Vector3.ONE * 1.5
     add_child(neon_conductor)
     neon_conductor.visible = false
     neon_beam = MeshInstance3D.new()
