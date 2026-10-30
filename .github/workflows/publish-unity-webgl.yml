@@ -121,6 +121,8 @@ jobs:
           grep -Fq 'CONTINUOUS BACK HAIR SCULPT TEST PASSED' /tmp/godot-back-hair-sculpt.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_back_hair_test.gd 2>&1 | tee /tmp/godot-true-skinned-hair.log
           grep -Fq 'TRUE SKINNED BACK HAIR TEST PASSED' /tmp/godot-true-skinned-hair.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_portrait_test.gd 2>&1 | tee /tmp/true-skinned-portrait.log
+          grep -Fq 'TRUE SKINNED PORTRAIT TEST PASSED' /tmp/true-skinned-portrait.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_hair_finish_test.gd 2>&1 | tee /tmp/weighted-hair-finish.log
           grep -Fq 'WEIGHTED HAIR FINISH TEST PASSED' /tmp/weighted-hair-finish.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_external_skinned_harness_test.gd 2>&1 | tee /tmp/godot-skinned-harness.log
