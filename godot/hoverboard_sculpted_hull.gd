@@ -18,6 +18,7 @@ var wing_material: StandardMaterial3D
 # Separate materials for existing port/starboard meshes make carve direction
 # visible from the chase camera; no additional geometry or collision bodies.
 var rail_materials: Array[StandardMaterial3D] = []
+var carve_fins: Node3D
 
 func _ready() -> void:
     var shell_material := StandardMaterial3D.new()
@@ -79,6 +80,9 @@ func _ready() -> void:
         var wake := preload("res://hoverboard_boost_wake.gd").new() as Node3D
         wake.name = "BoostWake"
         add_child(wake)
+        carve_fins = preload("res://hoverboard_dynamic_carve_fins.gd").new() as Node3D
+        carve_fins.name = "ArticulatedCarveFins"
+        add_child(carve_fins)
 
 func _process(delta: float) -> void:
     if not built:
@@ -105,6 +109,8 @@ func _process(delta: float) -> void:
         material.emission_energy_multiplier = lerpf(
             material.emission_energy_multiplier, target_energy, response)
         material.emission = Color("#1dbcf5").lerp(Color("#cf4df7"), turn_strength * 0.68)
+    if carve_fins != null:
+        carve_fins.call("update_state", lean, boost, delta)
 
 func _attach(part_name: String, mesh: ArrayMesh, material: Material) -> MeshInstance3D:
     if mesh == null or mesh.get_surface_count() == 0:
