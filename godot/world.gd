@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V124"
+const VERSION_LABEL := "V125"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -17,6 +17,8 @@ const HARBOR_RELAY_TARGET := 3
 const GLACIER_BONUS_TARGET := 3
 const CANYON_ROUTE_TARGET := 3
 const NEON_SIGNAL_TARGET := 4
+const NEON_BOSS_HEALTH := 3
+const NEON_BOSS_SPAWN_FRACTION := 0.57
 const SHIELD_COST := 30
 const MEGA_JUMP_COST := 30
 const ATTACK_COST := 45
@@ -70,6 +72,16 @@ var canyon_zone: Node3D
 var harbor_zone: Node3D
 var glacier_zone: Node3D
 var harbor_crystals := 0
+var neon_conductor: Node3D
+var neon_beam: MeshInstance3D
+var neon_hp := NEON_BOSS_HEALTH
+var neon_active := false
+var neon_defeated := false
+var neon_attack_timer := 0.0
+var neon_warning_left := 0.0
+var neon_sweep_lane := -1
+var neon_sweep_direction := 1
+var neon_sweep_step := 0
 var guardian: Node3D
 var guardian_beam: MeshInstance3D
 var guardian_hp := GUARDIAN_HEALTH
@@ -265,6 +277,7 @@ func _create_world() -> void:
     glacier_zone.name = "LearnQuest Aurora Glacier world"
     add_child(glacier_zone)
     glacier_zone.visible = false
+    _create_neon_conductor()
     _create_guardian()
     _create_orbit_sentinel()
     _create_frost_warden()
@@ -293,6 +306,75 @@ func _create_world() -> void:
         cube(crystal, Vector3.ZERO, Vector3(1.4, 2.2, 1.4), Color("#39e5ff") if i % 2 == 0 else Color("#fd47c1"), true).rotation_degrees = Vector3(27, 45, 15)
     _create_run_items()
     _apply_world_theme()
+
+func _create_neon_conductor() -> void:
+    # Fourth distinct boss: original sculpted circuit body with articulated
+    # energy fins and a three-beat lane sweep, using existing touch steering.
+    neon_conductor = preload("res://neon_conductor.gd").new() as Node3D
+    neon_conductor.name = "Neon City Circuit Conductor Boss"
+    neon_conductor.position = Vector3(0.0, 0.7, -21.0)
+    add_child(neon_conductor)
+    neon_conductor.visible = false
+    neon_beam = MeshInstance3D.new()
+    neon_beam.name = "Neon conductor telegraphed sweep lane"
+    var mesh := BoxMesh.new()
+    mesh.size = Vector3(1.75, 0.13, 34.0)
+    neon_beam.mesh = mesh
+    neon_beam.material_override = mat(Color("#ff4dce"), true)
+    neon_beam.position = Vector3(-3.1, 0.10, -13.0)
+    add_child(neon_beam)
+    neon_beam.visible = false
+
+func _update_neon_conductor(delta: float) -> void:
+    if world_choice != 0 or phase != "race" or not started or quiz_active or neon_defeated:
+        return
+    if not neon_active:
+        if distance < mission_target * NEON_BOSS_SPAWN_FRACTION:
+            return
+        neon_active = true
+        neon_conductor.visible = true
+        neon_conductor.set("active", true)
+        neon_attack_timer = 2.0
+        info_label.text = "BOSS: NEON-DIRIGENT! SUPER-ATTACKE LADEN!"
+        feedback_time = 2.0
+    if neon_warning_left > 0.0:
+        neon_warning_left -= delta
+        if neon_warning_left <= 0.0:
+            neon_warning_left = 0.0
+            neon_beam.visible = false
+            # Each beat sweeps one lane; Shield or a timed jump protects the
+            # player. No extra touch gesture or mid-race quiz is introduced.
+            if lane == neon_sweep_lane and rider.position.y <= 0.9 and shield_left <= 0.0 and hit_cooldown <= 0.0:
+                lives -= 1
+                hit_cooldown = 1.4
+                info_label.text = "NEON-PULS GETROFFEN! NOCH %d LEBEN" % lives
+                feedback_time = 1.4
+                if lives <= 0:
+                    _finish_run()
+                    return
+            else:
+                info_label.text = "NEON-PULS AUSGEWICHEN!"
+                feedback_time = 1.0
+            neon_sweep_step += 1
+            if neon_sweep_step < 3:
+                neon_sweep_lane += neon_sweep_direction
+                neon_warning_left = 0.95
+                neon_beam.position.x = float(neon_sweep_lane) * 3.1
+                neon_beam.visible = true
+            else:
+                neon_sweep_step = 0
+                neon_sweep_direction *= -1
+                neon_attack_timer = 3.0
+        return
+    neon_attack_timer -= delta
+    if neon_attack_timer <= 0.0:
+        neon_sweep_lane = -1 if neon_sweep_direction > 0 else 1
+        neon_sweep_step = 0
+        neon_warning_left = 1.30
+        neon_beam.position.x = float(neon_sweep_lane) * 3.1
+        neon_beam.visible = true
+        info_label.text = "NEON-SWEEP! PINKER SPUR AUSWEICHEN!"
+        feedback_time = 1.3
 
 func _create_guardian() -> void:
     # Original, sculpted 3D boss model; no external downloads.
@@ -690,6 +772,17 @@ func _reset_run() -> void:
     mega_jump_active = false
     guardian_hp = GUARDIAN_HEALTH
     harbor_crystals = 0
+    neon_hp = NEON_BOSS_HEALTH
+    neon_active = false
+    neon_defeated = false
+    neon_attack_timer = 0.0
+    neon_warning_left = 0.0
+    neon_sweep_lane = -1
+    neon_sweep_direction = 1
+    neon_sweep_step = 0
+    neon_conductor.visible = false
+    neon_conductor.set("active", false)
+    neon_beam.visible = false
     skyway_zone.call("reset_signals")
     harbor_zone.call("reset_cargo_relay")
     glacier_zone.call("reset_course")
@@ -788,7 +881,21 @@ func _use_super_attack() -> void:
             item.visible = false
             cleared += 1
     xp += cleared * 20
-    if guardian_active and not guardian_defeated:
+    if neon_active and not neon_defeated:
+        neon_hp -= 1
+        neon_conductor.call("take_hit")
+        if neon_hp <= 0:
+            neon_defeated = true
+            neon_active = false
+            neon_conductor.visible = false
+            neon_conductor.set("active", false)
+            neon_beam.visible = false
+            neon_warning_left = 0.0
+            xp += 120
+            info_label.text = "NEON-DIRIGENT BESIEGT! +120 XP UND BONUSSTERN!"
+        else:
+            info_label.text = "NEON-DIRIGENT GETROFFEN! NOCH %d KERN-PUNKTE" % neon_hp
+    elif guardian_active and not guardian_defeated:
         guardian_hp -= 1
         guardian.call("take_hit")
         if guardian_hp <= 0:
@@ -907,12 +1014,14 @@ func _finish_run() -> void:
     if completed:
         rounds_finished += 1
         round_number += 1
-        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 0 and int(skyway_zone.call("get_signal_count")) >= NEON_SIGNAL_TARGET else 0) + (1 if world_choice == 1 and guardian_defeated else 0) + (1 if world_choice == 1 and int(canyon_zone.get("completed_routes")) >= CANYON_ROUTE_TARGET else 0) + (1 if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET else 0) + (1 if world_choice == 2 and orbit_defeated else 0) + (1 if world_choice == 2 and int(harbor_zone.call("get_cargo_deliveries")) >= HARBOR_RELAY_TARGET else 0) + (1 if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET else 0) + (1 if world_choice == 3 and frost_defeated else 0)
+        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 0 and int(skyway_zone.call("get_signal_count")) >= NEON_SIGNAL_TARGET else 0) + (1 if world_choice == 0 and neon_defeated else 0) + (1 if world_choice == 1 and guardian_defeated else 0) + (1 if world_choice == 1 and int(canyon_zone.get("completed_routes")) >= CANYON_ROUTE_TARGET else 0) + (1 if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET else 0) + (1 if world_choice == 2 and orbit_defeated else 0) + (1 if world_choice == 2 and int(harbor_zone.call("get_cargo_deliveries")) >= HARBOR_RELAY_TARGET else 0) + (1 if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET else 0) + (1 if world_choice == 3 and frost_defeated else 0)
         total_stars += stars_earned
         total_reward_xp += xp
         reward_label.text = "+%d STERNE  |  +%d XP\nGESAMT: %d STERNE" % [stars_earned, xp, total_stars]
         if world_choice == 0 and int(skyway_zone.call("get_signal_count")) >= NEON_SIGNAL_TARGET:
             reward_label.text += "\nNEON-SIGNALKETTE: +1 BONUSSTERN!"
+        if world_choice == 0 and neon_defeated:
+            reward_label.text += "\nNEON-DIRIGENT BESIEGT: +1 BONUSSTERN!"
         if world_choice == 1 and guardian_defeated:
             reward_label.text += "\nKRISTALL-WÄCHTER BESIEGT: +1 BONUSSTERN!"
         if world_choice == 1 and int(canyon_zone.get("completed_routes")) >= CANYON_ROUTE_TARGET:
@@ -930,6 +1039,9 @@ func _finish_run() -> void:
     else:
         reward_label.text = "NOCH %dm BIS ZUM ZIEL\nVERSUCHE ES ERNEUT!" % maxi(0, int(mission_target - distance))
     phase = "results"
+    neon_conductor.visible = false
+    neon_conductor.set("active", false)
+    neon_beam.visible = false
     guardian.visible = false
     guardian.set("active", false)
     guardian_beam.visible = false
@@ -1379,6 +1491,8 @@ func _refresh_hud() -> void:
             hud.text += "\n%s  RUNDE %d  ZIEL %dm  SCHILD %ds  BOOST %ds" % [WORLD_NAMES[world_choice], round_number, int(mission_target), ceili(shield_left), ceili(turbo_left)]
             if world_choice == 0:
                 hud.text += "\nNEON-SIGNALE %d/%d  SERIE x%d  LEUCHTSPUR FOLGEN" % [mini(int(skyway_zone.call("get_signal_count")), NEON_SIGNAL_TARGET), NEON_SIGNAL_TARGET, int(skyway_zone.call("get_signal_streak"))]
+                if neon_active:
+                    hud.text += "\nNEON-DIRIGENT %d/%d  %s" % [neon_hp, NEON_BOSS_HEALTH, "PINKER SWEEP!" if neon_warning_left > 0.0 else "ATTACKE LADEN"]
             if world_choice == 1:
                 hud.text += "\nKRISTALL-PFADE %d/%d  LINKS: ENERGIE  RECHTS: XP" % [mini(int(canyon_zone.get("completed_routes")), CANYON_ROUTE_TARGET), CANYON_ROUTE_TARGET]
             if guardian_active and world_choice == 1:
@@ -1474,7 +1588,9 @@ func _process(delta: float) -> void:
         mega_jump_visual.rotation.y += delta * 3.0
     speed = 25.0 if turbo_left > 0 else 14.0
     distance += delta * speed
-    _update_guardian(delta)
+    _update_neon_conductor(delta)
+    if started:
+        _update_guardian(delta)
     if started:
         _update_orbit_sentinel(delta)
     if started:
