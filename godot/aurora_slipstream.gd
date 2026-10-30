@@ -44,10 +44,10 @@ func _helix_mesh(phase: float) -> ArrayMesh:
         for corner in [Vector2(t0, 0.0), Vector2(t1, 0.0),
                 Vector2(t1, 1.0), Vector2(t0, 0.0),
                 Vector2(t1, 1.0), Vector2(t0, 1.0)]:
-            var t := corner.x
-            var angle := phase + TAU * 2.5 * t
-            var radius := lerpf(1.08, 1.40, corner.y)
-            var point := Vector3(cos(angle) * radius,
+            var t: float = corner.x
+            var angle: float = phase + TAU * 2.5 * t
+            var radius: float = lerpf(1.08, 1.40, corner.y)
+            var point: Vector3 = Vector3(cos(angle) * radius,
                 2.05 + sin(angle) * radius, -4.6 + 9.2 * t)
             tool.set_color(Color("#55dfff").lerp(Color("#f2a8ff"), t))
             tool.add_vertex(point)
