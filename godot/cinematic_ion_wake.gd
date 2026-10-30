@@ -53,6 +53,13 @@ func _ready() -> void:
             spark.name = "Moving ion spark %d" % index
             spark.mesh = spark_mesh
             spark.material_override = spark_material
+            # The first rendered frame must use the same safe spark size and
+            # position as the idle animation. Previously twelve radius-one
+            # spheres could flash at full scale before _process ran, obscuring
+            # the hoverboard and character in the mobile chase camera.
+            var initial_progress := float(index) / float(SPARKS_PER_SIDE)
+            spark.position = _plasma_point(side, initial_progress, 0.0, 0.1) + Vector3(0.0, 0.07, 0.0)
+            spark.scale = Vector3.ONE * (0.055 * (1.0 - initial_progress * 0.65))
             root.add_child(spark)
             sparks.append(spark)
 
