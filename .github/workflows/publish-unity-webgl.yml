@@ -82,7 +82,7 @@ jobs:
           set -euo pipefail
           mkdir -p "$GITHUB_WORKSPACE/_site/godot"
           echo "Import Godot project and capture errors"
-          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path godot --quit 2>&1 | tee /tmp/godot-import.log
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --import 2>&1 | tee /tmp/godot-import.log
           echo "Export self-contained Godot browser build"
           /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --export-release "Web" "$GITHUB_WORKSPACE/_site/godot/index.html" 2>&1 | tee /tmp/godot-export.log
           test -s _site/godot/index.html
