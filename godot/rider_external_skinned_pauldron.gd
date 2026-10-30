@@ -9,6 +9,11 @@ const SEGMENTS := 24
 var shells: Array[MeshInstance3D] = []
 var generated_vertices: int = 0
 var shoulder_span: float = 0.0
+# Keep the former caps as reversible QA geometry. When the actual imported
+# upper/lower-arm triangles have already been sculpted into a continuous
+# four-weight sleeve, drawing these two synthetic shells on top occludes the
+# real deltoid and creates a double silhouette in chase view.
+var sleeve_integration_active: bool = false
 
 func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: float) -> bool:
     if rig == null:
@@ -50,6 +55,20 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: f
         var left_bounds := shells[0].mesh.get_aabb()
         var right_bounds := shells[1].mesh.get_aabb()
         shoulder_span = right_bounds.end.x - left_bounds.position.x
+        # Do not hide anything unless BOTH original-Skin sleeves are present.
+        # This avoids leaving shoulder gaps on failed imports or legacy rigs.
+        var sleeve_controller := get_parent().get_node_or_null("ExternalSkinnedFlightSleeves") as Node
+        if sleeve_controller != null:
+            var source_sleeves: Array = sleeve_controller.get("sleeves")
+            sleeve_integration_active = source_sleeves.size() == 2
+            for sleeve in source_sleeves:
+                var piece := sleeve as MeshInstance3D
+                if piece == null or piece.mesh == null or piece.skin != body.skin or \
+                        piece.skeleton != body.skeleton or not piece.visible:
+                    sleeve_integration_active = false
+        if sleeve_integration_active:
+            for shell in shells:
+                shell.visible = false
         return shells.size() == 2
     return false
 
