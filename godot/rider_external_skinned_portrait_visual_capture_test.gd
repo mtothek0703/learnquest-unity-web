@@ -69,6 +69,20 @@ func _capture() -> void:
     rider.set("lean", 0.75)
     rider.set("boosting", true)
     adapter.call("_process", 0.28)
+    # Lock the exact same hero/board pose for BOTH face variants. The first
+    # capture revealed that live rider updates shifted the entire avatar
+    # between images, producing meaningless 6-18% whole-frame differences.
+    for frame in range(8):
+        await process_frame
+    rider.set_process(false)
+    rider.set_physics_process(false)
+    for node in rider.find_children("*", "Node", true, false):
+        node.set_process(false)
+        node.set_physics_process(false)
+    var rig := adapter.get("skeleton") as Skeleton3D
+    var head_id := rig.find_bone("Head")
+    var locked_head := rig.get_bone_pose_rotation(head_id)
+    var locked_hero := hero.global_transform
     var count := 0
     for size in SIZES:
         viewport.size = size
@@ -87,6 +101,10 @@ func _capture() -> void:
                 for frame in range(5):
                     await process_frame
                 await RenderingServer.frame_post_draw
+                if rig.get_bone_pose_rotation(head_id).angle_to(locked_head) > 0.0001 or \
+                        not hero.global_transform.is_equal_approx(locked_hero):
+                    _fail("rig/hero pose drifted between rigid and skinned comparison frames")
+                    return
                 var img := viewport.get_texture().get_image()
                 if img.is_empty() or img.get_width() != size.x or img.get_height() != size.y:
                     _fail("invalid OpenGL portrait framebuffer")
