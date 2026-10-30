@@ -99,6 +99,11 @@ func _capture() -> void:
         elif node is AnimationTree:
             (node as AnimationTree).active = false
     rider.process_mode = Node.PROCESS_MODE_DISABLED
+    # The mantle shader uses TIME for wind. Without freezing engine time,
+    # its animated edges change between the A/B screenshots even when the
+    # skeleton and visibility are pose-locked. Engine.time_scale also freezes
+    # shader TIME, while process_frame still allows framebuffer updates.
+    Engine.time_scale = 0.0
     for frame in range(4):
         await process_frame
     var locked_hero := hero.global_transform
@@ -200,5 +205,6 @@ func _capture() -> void:
     if count != 32:
         _fail("expected thirty-two 16:9/19.5:9 paired shoulder, nacelle and core frames")
         return
-    print("SKINNED PAULDRON VISUAL QA PASSED: 32 pose-locked front/chase original-Skin, full-rider, rear-profile and core-isolation frames; manual visual gate remains open")
+    Engine.time_scale = 1.0
+    print("SKINNED PAULDRON VISUAL QA PASSED: 32 pose-locked and shader-time-frozen front/chase original-Skin, full-rider, rear-profile and core-isolation frames; manual visual gate remains open")
     quit(0)
