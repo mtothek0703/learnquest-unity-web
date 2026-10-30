@@ -51,18 +51,20 @@ func _capture() -> void:
         _fail("cargo relay gates are missing from the actual Harbor scene")
         return
     var stations: Array = relay.get("stations")
-    stations[0].position.z = -10.0
-    stations[1].position.z = -36.0
+    # Keep the first real gate prominent in both wide views. Previous oblique
+    # capture occasionally yielded 39/40 samples; do not lower the QA bar.
+    stations[0].position.z = -7.0
+    stations[1].position.z = -24.0
     var captures := 0
     for size in SIZES:
         viewport.size = size
         for view in VIEWS:
             if view == "chase":
-                camera.position = Vector3(0.0, 5.2, 14.0)
-                camera.look_at(Vector3(0.0, 2.4, -17.0), Vector3.UP)
+                camera.position = Vector3(0.0, 5.2, 12.0)
+                camera.look_at(Vector3(0.0, 2.4, -12.0), Vector3.UP)
             else:
-                camera.position = Vector3(6.0, 8.2, 14.0)
-                camera.look_at(Vector3(0.0, 2.7, -17.0), Vector3.UP)
+                camera.position = Vector3(5.0, 7.0, 12.0)
+                camera.look_at(Vector3(0.0, 2.7, -12.0), Vector3.UP)
             var baseline: Image
             for state in ["before", "after"]:
                 relay.visible = state == "after"

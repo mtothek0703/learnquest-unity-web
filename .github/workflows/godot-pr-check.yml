@@ -82,6 +82,8 @@ jobs:
           grep -Fq 'HARBOR DRYDOCKS TEST PASSED' /tmp/harbor-drydocks.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://harbor_cargo_relay_test.gd 2>&1 | tee /tmp/harbor-relay.log
           grep -Fq 'HARBOR CARGO RELAY TEST PASSED' /tmp/harbor-relay.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://neon_signal_chain_test.gd 2>&1 | tee /tmp/neon-signal-chain.log
+          grep -Fq 'NEON SIGNAL CHAIN TEST PASSED' /tmp/neon-signal-chain.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_skinned_lower_body_test.gd 2>&1 | tee /tmp/skinned-lower-body.log
           grep -Fq 'SKINNED LOWER BODY TEST PASSED' /tmp/skinned-lower-body.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_aero_silhouette_test.gd 2>&1 | tee /tmp/aero-silhouette.log
