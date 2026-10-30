@@ -31,6 +31,20 @@ func _extract_jacket(body: MeshInstance3D) -> ArrayMesh:
     var height := bounds.size.y
     if height < 0.5:
         return null
+    # The original height-only cut included the entire upper/forearms in
+    # the torso jacket. Those duplicated weighted arm triangles formed the
+    # oversized pink/cyan hand bulbs in the real chase-camera A/B images.
+    # Clip on the imported ARM BONE WEIGHT field instead of world X/Y:
+    # this follows each 65-bone arm through steering and jumping.
+    var arm_binds: Dictionary = {}
+    for bind_index in range(body.skin.get_bind_count()):
+        if String(body.skin.get_bind_name(bind_index)) in [
+                "upperarm_l", "upperarm_r", "lowerarm_l", "lowerarm_r",
+                "hand_l", "hand_r"]:
+            arm_binds[bind_index] = true
+    if arm_binds.size() < 4:
+        push_warning("Cannot safely trim jacket arm duplicates without original arm Skin binds")
+        return null
     var output := SurfaceTool.new()
     output.begin(Mesh.PRIMITIVE_TRIANGLES)
     var accepted := 0
@@ -61,9 +75,10 @@ func _extract_jacket(body: MeshInstance3D) -> ArrayMesh:
                     else triangle * 3 + corner_index)
             var polygon: Array[Dictionary] = []
             for vertex_id in ids:
-                polygon.append(_source_corner(verts, normals, bones, weights, vertex_id))
+                polygon.append(_source_corner(verts, normals, bones, weights, vertex_id, arm_binds))
             polygon = _clip_to_height(polygon, waist_y, true)
             polygon = _clip_to_height(polygon, collar_y, false)
+            polygon = _clip_to_arm_influence(polygon, 0.48)
             if polygon.size() < 3:
                 continue
             for corner_index in range(1, polygon.size() - 1):
@@ -87,15 +102,21 @@ func _extract_jacket(body: MeshInstance3D) -> ArrayMesh:
     return output.commit()
 
 func _source_corner(vertices: PackedVector3Array, normals: PackedVector3Array,
-        bones: PackedInt32Array, weights: PackedFloat32Array, index: int) -> Dictionary:
+        bones: PackedInt32Array, weights: PackedFloat32Array, index: int,
+        arm_binds: Dictionary) -> Dictionary:
     var start := index * 4
+    var arm_weight := 0.0
+    for slot in range(4):
+        if arm_binds.has(bones[start + slot]):
+            arm_weight += weights[start + slot]
     return {
         "position": vertices[index],
         "normal": normals[index].normalized(),
         "bones": PackedInt32Array([bones[start], bones[start + 1],
             bones[start + 2], bones[start + 3]]),
         "weights": PackedFloat32Array([weights[start], weights[start + 1],
-            weights[start + 2], weights[start + 3]])
+            weights[start + 2], weights[start + 3]]),
+        "arm_influence": arm_weight
     }
 
 func _clip_to_height(polygon: Array[Dictionary], plane_y: float,
@@ -114,6 +135,29 @@ func _clip_to_height(polygon: Array[Dictionary], plane_y: float,
             if absf(dy) > 0.0000001:
                 clipped.append(_interpolate_corner(previous, current,
                     clampf((plane_y - previous_point.y) / dy, 0.0, 1.0)))
+        if current_inside:
+            clipped.append(current)
+        previous = current
+    return _deduplicate_polygon(clipped)
+
+# Keep the body-weighted side of the shoulder seam. Intersections retain
+# the strongest four ORIGINAL skin binds through _interpolate_corner.
+func _clip_to_arm_influence(polygon: Array[Dictionary],
+        maximum: float) -> Array[Dictionary]:
+    var clipped: Array[Dictionary] = []
+    if polygon.is_empty():
+        return clipped
+    var previous: Dictionary = polygon[polygon.size() - 1]
+    for current in polygon:
+        var previous_weight := float(previous.get("arm_influence", 0.0))
+        var current_weight := float(current.get("arm_influence", 0.0))
+        var previous_inside := previous_weight <= maximum
+        var current_inside := current_weight <= maximum
+        if previous_inside != current_inside:
+            var delta := current_weight - previous_weight
+            if absf(delta) > 0.000001:
+                clipped.append(_interpolate_corner(previous, current,
+                    clampf((maximum - previous_weight) / delta, 0.0, 1.0)))
         if current_inside:
             clipped.append(current)
         previous = current
@@ -176,7 +220,9 @@ func _interpolate_corner(a: Dictionary, b: Dictionary, t: float) -> Dictionary:
         "position": (a["position"] as Vector3).lerp(b["position"], t),
         "normal": normal,
         "bones": out_bones,
-        "weights": out_weights
+        "weights": out_weights,
+        "arm_influence": lerpf(float(a.get("arm_influence", 0.0)),
+            float(b.get("arm_influence", 0.0)), t)
     }
 
 func _is_jacket_vertex(point: Vector3, bottom: float, height: float) -> bool:
