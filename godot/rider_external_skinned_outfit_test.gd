@@ -228,9 +228,13 @@ func _check() -> void:
     # Every new jacket vertex must be torso-dominant after clipping against
     # original imported arm-bone influences; never remove the source arms.
     var arm_binds: Dictionary = {}
+    var rig := adapter.get("skeleton") as Skeleton3D
     for bind_index in range(garment.skin.get_bind_count()):
-        if String(garment.skin.get_bind_name(bind_index)) in [
-                "upperarm_l", "upperarm_r", "lowerarm_l", "lowerarm_r",
+        var bone_name := String(garment.skin.get_bind_name(bind_index))
+        var bone_id := garment.skin.get_bind_bone(bind_index)
+        if bone_name.is_empty() and rig != null and bone_id >= 0 and bone_id < rig.get_bone_count():
+            bone_name = String(rig.get_bone_name(bone_id))
+        if bone_name in ["upperarm_l", "upperarm_r", "lowerarm_l", "lowerarm_r",
                 "hand_l", "hand_r"]:
             arm_binds[bind_index] = true
     if arm_binds.size() < 4:
