@@ -86,6 +86,8 @@ jobs:
           grep -Fq 'NEON SIGNAL CHAIN TEST PASSED' /tmp/neon-signal-chain.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://neon_conductor_test.gd 2>&1 | tee /tmp/neon-conductor.log
           grep -Fq 'NEON CONDUCTOR TEST PASSED' /tmp/neon-conductor.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://aurora_slipstream_test.gd 2>&1 | tee /tmp/aurora-slipstream.log
+          grep -Fq 'AURORA SLIPSTREAM TEST PASSED' /tmp/aurora-slipstream.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_skinned_lower_body_test.gd 2>&1 | tee /tmp/skinned-lower-body.log
           grep -Fq 'SKINNED LOWER BODY TEST PASSED' /tmp/skinned-lower-body.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_aero_silhouette_test.gd 2>&1 | tee /tmp/aero-silhouette.log
@@ -304,6 +306,7 @@ jobs:
             /tmp/harbor-drydocks.log
             /tmp/harbor-relay.log
             /tmp/neon-conductor.log
+            /tmp/aurora-slipstream.log
             /tmp/neon-conductor-visual.log
             /tmp/harbor-relay-visual.log
             /tmp/harbor-drydocks-visual.log
