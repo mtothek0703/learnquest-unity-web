@@ -107,9 +107,9 @@ func _check() -> void:
     if int(active_glacier.call("get_aurora_stream_count")) != 3:
         _fail("three real catches must complete the optional Aurora mission")
         return
-    if int(game.get("xp")) != 105 or int(game.get("power")) != 45 or \
-            float(game.get("turbo_left")) < 2.49:
-        _fail("actual game must grant three unique payouts and activate existing Turbo")
+    if int(game.get("xp")) != 135 or int(game.get("power")) != 45 or \
+            float(game.get("turbo_left")) < 3.49:
+        _fail("actual game must grant escalating chain XP and activate existing Turbo")
         return
     var hud := game.get("hud") as Label
     if hud == null or not hud.text.contains("WINDSTROM: 3/3"):

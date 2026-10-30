@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V126"
+const VERSION_LABEL := "V127"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -676,9 +676,12 @@ func _update_aurora_slipstream() -> void:
         # A successful aerial-current interception starts real existing Turbo,
         # without spending the player's stored power or adding a fifth ability.
         turbo_left = maxf(turbo_left, float(result.get("turbo_seconds", 0.0)))
-        info_label.text = "AURORA-WINDSTROM! TURBO + ENERGIE"
+        if bool(result.get("perfect_line", false)):
+            info_label.text = "PERFEKTE AURORA-LINIE! 4/4 - BONUSSTERN!"
+        else:
+            info_label.text = "WIND-KETTE %d/4! TURBO + ENERGIE" % int(result.get("streak", 1))
     else:
-        info_label.text = "WINDSTROM VERPASST! NAECHSTEN ABFANGEN"
+        info_label.text = "WIND-KETTE UNTERBROCHEN! NAECHSTEN ABFANGEN"
     feedback_time = 1.5
     _refresh_hud()
 
@@ -1034,7 +1037,7 @@ func _finish_run() -> void:
     if completed:
         rounds_finished += 1
         round_number += 1
-        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 0 and int(skyway_zone.call("get_signal_count")) >= NEON_SIGNAL_TARGET else 0) + (1 if world_choice == 0 and neon_defeated else 0) + (1 if world_choice == 1 and guardian_defeated else 0) + (1 if world_choice == 1 and int(canyon_zone.get("completed_routes")) >= CANYON_ROUTE_TARGET else 0) + (1 if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET else 0) + (1 if world_choice == 2 and orbit_defeated else 0) + (1 if world_choice == 2 and int(harbor_zone.call("get_cargo_deliveries")) >= HARBOR_RELAY_TARGET else 0) + (1 if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET else 0) + (1 if world_choice == 3 and frost_defeated else 0) + (1 if world_choice == 3 and int(glacier_zone.call("get_aurora_stream_count")) >= AURORA_SLIPSTREAM_TARGET else 0)
+        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 0 and int(skyway_zone.call("get_signal_count")) >= NEON_SIGNAL_TARGET else 0) + (1 if world_choice == 0 and neon_defeated else 0) + (1 if world_choice == 1 and guardian_defeated else 0) + (1 if world_choice == 1 and int(canyon_zone.get("completed_routes")) >= CANYON_ROUTE_TARGET else 0) + (1 if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET else 0) + (1 if world_choice == 2 and orbit_defeated else 0) + (1 if world_choice == 2 and int(harbor_zone.call("get_cargo_deliveries")) >= HARBOR_RELAY_TARGET else 0) + (1 if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET else 0) + (1 if world_choice == 3 and frost_defeated else 0) + (1 if world_choice == 3 and int(glacier_zone.call("get_aurora_stream_count")) >= AURORA_SLIPSTREAM_TARGET else 0) + (1 if world_choice == 3 and bool(glacier_zone.call("get_aurora_perfect_line")) else 0)
         total_stars += stars_earned
         total_reward_xp += xp
         reward_label.text = "+%d STERNE  |  +%d XP\nGESAMT: %d STERNE" % [stars_earned, xp, total_stars]
@@ -1058,6 +1061,8 @@ func _finish_run() -> void:
             reward_label.text += "\nFROST-DRACHE BESIEGT: +1 BONUSSTERN!"
         if world_choice == 3 and int(glacier_zone.call("get_aurora_stream_count")) >= AURORA_SLIPSTREAM_TARGET:
             reward_label.text += "\nAURORA-WINDSTROM: +1 BONUSSTERN!"
+        if world_choice == 3 and bool(glacier_zone.call("get_aurora_perfect_line")):
+            reward_label.text += "\nPERFEKTE AURORA-LINIE: +1 BONUSSTERN!"
     else:
         reward_label.text = "NOCH %dm BIS ZUM ZIEL\nVERSUCHE ES ERNEUT!" % maxi(0, int(mission_target - distance))
     phase = "results"
@@ -1525,7 +1530,7 @@ func _refresh_hud() -> void:
                 if orbit_active:
                     hud.text += "\nORBIT-WÄCHTER %d/%d  %s" % [orbit_hp, ORBIT_HEALTH, "PLASMA!" if orbit_warning_left > 0.0 else "ATTACKE LADEN"]
             if world_choice == 3:
-                hud.text += "\nAURORA-SPRUNGTORE: %d/%d  WINDSTROM: %d/%d" % [mini(int(glacier_zone.get("completed_gates")), GLACIER_BONUS_TARGET), GLACIER_BONUS_TARGET, mini(int(glacier_zone.call("get_aurora_stream_count")), AURORA_SLIPSTREAM_TARGET), AURORA_SLIPSTREAM_TARGET]
+                hud.text += "\nSPRUNGTORE: %d/%d  WINDSTROM: %d/%d  KETTE: %d/4" % [mini(int(glacier_zone.get("completed_gates")), GLACIER_BONUS_TARGET), GLACIER_BONUS_TARGET, mini(int(glacier_zone.call("get_aurora_stream_count")), AURORA_SLIPSTREAM_TARGET), AURORA_SLIPSTREAM_TARGET, int(glacier_zone.call("get_aurora_streak"))]
                 if frost_active:
                     hud.text += "\nFROST-DRACHE %d/%d  %s" % [frost_hp, FROST_HEALTH, "EISWELLE!" if frost_warning_left > 0.0 else "ATTACKE LADEN"]
     if progress_bar != null:

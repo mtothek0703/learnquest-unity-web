@@ -194,6 +194,12 @@ func check_aurora_stream(rider_x: float) -> Dictionary:
 func get_aurora_stream_count() -> int:
     return int(aurora_slipstream.get("caught_streams")) if aurora_slipstream != null else 0
 
+func get_aurora_perfect_line() -> bool:
+    return bool(aurora_slipstream.get("perfect_line")) if aurora_slipstream != null else false
+
+func get_aurora_streak() -> int:
+    return int(aurora_slipstream.get("current_streak")) if aurora_slipstream != null else 0
+
 func check_jump_gates(rider_x: float, rider_y: float) -> int:
     # The game calls this during a race, after updating the actual jump height.
     # Each gate is scored exactly once; steering and jumping both matter.
