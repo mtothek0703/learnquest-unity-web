@@ -179,6 +179,17 @@ jobs:
             --script res://rider_external_character_visual_capture_test.gd 2>&1 | tee /tmp/quaternius-visual.log
           grep -Fq 'QUATERNIUS VISUAL QA PASSED' /tmp/quaternius-visual.log
           test "$(find /tmp/learnquest-quaternius-qa -name '*.png' | wc -l)" -eq 24
+      - name: Capture 16 pose-locked original versus sculpted 65-bone source-body frames
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-body-sculpt-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_BODY_SCULPT_OUTPUT=/tmp/learnquest-body-sculpt-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_body_resculpt_visual_capture_test.gd 2>&1 | tee /tmp/body-sculpt-visual.log
+          grep -Fq 'CONTINUOUS BODY VISUAL QA PASSED' /tmp/body-sculpt-visual.log
+          test "$(find /tmp/learnquest-body-sculpt-qa -name '*.png' | wc -l)" -eq 16
       - name: Capture 12 true skinned portrait versus rigid face landscape frames
         shell: bash
         run: |
@@ -381,6 +392,13 @@ jobs:
         with:
           name: learnquest-v124-action-silhouette-before-after
           path: /tmp/learnquest-action-qa/*.png
+          if-no-files-found: error
+      - name: Upload V124 isolated original-source body sculpt comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-source-body-sculpt-before-after
+          path: /tmp/learnquest-body-sculpt-qa/*.png
           if-no-files-found: error
       - name: Upload V124 CC0 humanoid before-after frames
         if: always()
