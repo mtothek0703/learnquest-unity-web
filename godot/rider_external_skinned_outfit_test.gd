@@ -95,6 +95,38 @@ func _check() -> void:
     if opposite.x > -0.035 or absf(shoulder.x + opposite.x) > 0.002:
         _fail("weighted shoulder expansion must be balanced on both sides")
         return
+    # The rear silhouette must be visibly different in the actual chase
+    # camera: sculpted source-skin scapulae and shoulder sweep, not added
+    # primitive shoulder boxes. The original CC0 forward direction is -Z.
+    var dorsal_point := Vector3(0.34, 2.14, -0.30)
+    var rear_normal := Vector3(0.0, 0.0, 1.0)
+    var front_normal := Vector3(0.0, 0.0, -1.0)
+    var dorsal_offset: Vector3 = outfit.call("_tailored_offset",
+        dorsal_point, rear_normal, test_bounds)
+    var ventral_offset: Vector3 = outfit.call("_tailored_offset",
+        dorsal_point, front_normal, test_bounds)
+    var opposite_dorsal: Vector3 = outfit.call("_tailored_offset",
+        Vector3(-dorsal_point.x, dorsal_point.y, dorsal_point.z),
+        rear_normal, test_bounds)
+    if not dorsal_offset.is_finite() or not opposite_dorsal.is_finite():
+        _fail("rear skinned jacket relief produced nonfinite vertices")
+        return
+    if dorsal_offset.z < absf(ventral_offset.z) + 0.045 or \
+            dorsal_offset.x < ventral_offset.x + 0.018:
+        _fail("rear scapular relief and broad shoulder contour are not geometric")
+        return
+    if absf(dorsal_offset.x + opposite_dorsal.x) > 0.001 or \
+            absf(dorsal_offset.z - opposite_dorsal.z) > 0.001:
+        _fail("rear jacket sculpt must remain mirrored on the same original Skin")
+        return
+    var waist_point := Vector3(0.34, 1.44, -0.30)
+    var rear_waist: Vector3 = outfit.call("_tailored_offset",
+        waist_point, rear_normal, test_bounds)
+    var front_waist: Vector3 = outfit.call("_tailored_offset",
+        waist_point, front_normal, test_bounds)
+    if rear_waist.z > absf(front_waist.z) + 0.012:
+        _fail("rear scapular contour must taper out before the skinned waist")
+        return
     # The garment must keep EVERY intersecting source triangle instead of
     # dropping the neckline/waist triangles and exposing the naked CC0 torso.
     # Synthetic clipping also exercises interpolation of real skin influences.
