@@ -115,6 +115,7 @@ func _capture() -> void:
             camera.position = Vector3(0, 2.0, -5.2) if view == "front" else Vector3(0, 2.25, 5.4)
             camera.look_at(Vector3(0, 1.8, 0), Vector3.UP)
             for layer in ["skin_layers", "complete_rider", "rear_profile"]:
+                var rear_baseline: Image
                 for variant in ["without_pauldrons", "with_pauldrons"]:
                     for item in visibility.keys():
                         var mesh := item as MeshInstance3D
@@ -146,6 +147,24 @@ func _capture() -> void:
                     if image.is_empty() or image.get_width() != size.x or image.get_height() != size.y:
                         _fail("invalid smartphone landscape framebuffer")
                         return
+                    if layer == "rear_profile":
+                        if variant == "without_pauldrons":
+                            rear_baseline = image.duplicate() as Image
+                        else:
+                            if rear_baseline == null:
+                                _fail("missing pose-locked integrated shoulder baseline")
+                                return
+                            var changed_samples := 0
+                            for pixel_y in range(0, size.y, 6):
+                                for pixel_x in range(0, size.x, 6):
+                                    var a: Color = rear_baseline.get_pixel(pixel_x, pixel_y)
+                                    var b: Color = image.get_pixel(pixel_x, pixel_y)
+                                    if maxf(absf(a.r - b.r), maxf(absf(a.g - b.g), absf(a.b - b.b))) > 0.10:
+                                        changed_samples += 1
+                            if view == "chase" and changed_samples < 24:
+                                _fail("weighted nacelle removal is not visibly distinguishable in chase camera: %d samples" % changed_samples)
+                                return
+                            print("REAR SHOULDER PROFILE QA %dx%d %s: %d changed samples (6px grid)" % [size.x, size.y, view, changed_samples])
                     var profile_variant := variant
                     if layer == "rear_profile":
                         profile_variant = "with_oversized_nacelles" if variant == "with_pauldrons" else "integrated_cores_only"
