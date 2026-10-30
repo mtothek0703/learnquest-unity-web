@@ -69,7 +69,7 @@ func _check() -> void:
     var code := materials[0].shader.code
     for required in ["hair_dye = COLOR", "hair_base_tint.rgb",
         "float broad =", "float fibers =", "float directional =",
-        "ALBEDO = min(base, original_dye * 1.28)",
+        "ALBEDO = min(dyed_chestnut + highlight", "float fiber_sheen =", "plum_copper", "SPECULAR = 0.40 + 0.14",
         "ROUGHNESS = clamp(", "METALLIC =", "SPECULAR =",
         "smoothstep(0.14, 0.98, UV.y)"]:
         if not code.contains(required):
