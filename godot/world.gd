@@ -647,9 +647,16 @@ func _update_harbor_cargo_relay() -> void:
     if bool(delivery.get("delivered", false)):
         xp += int(delivery.get("xp", 0))
         power = mini(100, power + int(delivery.get("energy", 0)))
-        info_label.text = "HAFEN-FRACHT GELIEFERT! +30 XP, +12 ENERGIE"
+        # Three consecutive docks activate the existing Turbo ability without
+        # interrupting the race or adding a new mobile gesture.
+        turbo_left = maxf(turbo_left, float(delivery.get("turbo_seconds", 0.0)))
+        if bool(delivery.get("perfect_convoy", false)):
+            info_label.text = "PERFEKTER FRACHTKONVOI! 5/5 - BONUSSTERN!"
+        else:
+            info_label.text = "FRACHT-SERIE %d/5! +%d XP, +12 ENERGIE" % [
+                int(delivery.get("streak", 1)), int(delivery.get("xp", 30))]
     else:
-        info_label.text = "FRACHTTOR VERPASST! NAECHSTEN DOCK ANFLIEGEN"
+        info_label.text = "FRACHT-SERIE UNTERBROCHEN! NAECHSTEN DOCK ANFLIEGEN"
     feedback_time = 1.6
     _refresh_hud()
 
@@ -1037,7 +1044,7 @@ func _finish_run() -> void:
     if completed:
         rounds_finished += 1
         round_number += 1
-        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 0 and int(skyway_zone.call("get_signal_count")) >= NEON_SIGNAL_TARGET else 0) + (1 if world_choice == 0 and neon_defeated else 0) + (1 if world_choice == 1 and guardian_defeated else 0) + (1 if world_choice == 1 and int(canyon_zone.get("completed_routes")) >= CANYON_ROUTE_TARGET else 0) + (1 if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET else 0) + (1 if world_choice == 2 and orbit_defeated else 0) + (1 if world_choice == 2 and int(harbor_zone.call("get_cargo_deliveries")) >= HARBOR_RELAY_TARGET else 0) + (1 if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET else 0) + (1 if world_choice == 3 and frost_defeated else 0) + (1 if world_choice == 3 and int(glacier_zone.call("get_aurora_stream_count")) >= AURORA_SLIPSTREAM_TARGET else 0) + (1 if world_choice == 3 and bool(glacier_zone.call("get_aurora_perfect_line")) else 0)
+        var stars_earned: int = clampi(lives, 1, 3) + (1 if world_choice == 0 and int(skyway_zone.call("get_signal_count")) >= NEON_SIGNAL_TARGET else 0) + (1 if world_choice == 0 and neon_defeated else 0) + (1 if world_choice == 1 and guardian_defeated else 0) + (1 if world_choice == 1 and int(canyon_zone.get("completed_routes")) >= CANYON_ROUTE_TARGET else 0) + (1 if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET else 0) + (1 if world_choice == 2 and orbit_defeated else 0) + (1 if world_choice == 2 and int(harbor_zone.call("get_cargo_deliveries")) >= HARBOR_RELAY_TARGET else 0) + (1 if world_choice == 2 and bool(harbor_zone.call("get_cargo_perfect_convoy")) else 0) + (1 if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET else 0) + (1 if world_choice == 3 and frost_defeated else 0) + (1 if world_choice == 3 and int(glacier_zone.call("get_aurora_stream_count")) >= AURORA_SLIPSTREAM_TARGET else 0) + (1 if world_choice == 3 and bool(glacier_zone.call("get_aurora_perfect_line")) else 0)
         total_stars += stars_earned
         total_reward_xp += xp
         reward_label.text = "+%d STERNE  |  +%d XP\nGESAMT: %d STERNE" % [stars_earned, xp, total_stars]
@@ -1055,6 +1062,8 @@ func _finish_run() -> void:
             reward_label.text += "\nORBIT-WÄCHTER BESIEGT: +1 BONUSSTERN!"
         if world_choice == 2 and int(harbor_zone.call("get_cargo_deliveries")) >= HARBOR_RELAY_TARGET:
             reward_label.text += "\nHAFEN-FRACHTRELAIS: +1 BONUSSTERN!"
+        if world_choice == 2 and bool(harbor_zone.call("get_cargo_perfect_convoy")):
+            reward_label.text += "\nPERFEKTER FRACHTKONVOI: +1 BONUSSTERN!"
         if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET:
             reward_label.text += "\nAURORA-SPRUNG-MISSION: +1 BONUSSTERN!"
         if world_choice == 3 and frost_defeated:
@@ -1526,7 +1535,7 @@ func _refresh_hud() -> void:
                 hud.text += "\nKRISTALL-WÄCHTER %d/%d  %s" % [guardian_hp, GUARDIAN_HEALTH, "LASER!" if guardian_warning_left > 0.0 else "ANGRIFF LADEN"]
             if world_choice == 2:
                 hud.text += "\nHAFEN-MISSION: %d/%d ENERGIEKRISTALLE" % [mini(harbor_crystals, HARBOR_BONUS_TARGET), HARBOR_BONUS_TARGET]
-                hud.text += "\nFRACHT-RELAIS %d/%d  LEUCHTENDES DOCK ANSTEUERN" % [mini(int(harbor_zone.call("get_cargo_deliveries")), HARBOR_RELAY_TARGET), HARBOR_RELAY_TARGET]
+                hud.text += "\nFRACHT-RELAIS %d/%d  SERIE: %d/5  DOCK ANSTEUERN" % [mini(int(harbor_zone.call("get_cargo_deliveries")), HARBOR_RELAY_TARGET), HARBOR_RELAY_TARGET, int(harbor_zone.call("get_cargo_streak"))]
                 if orbit_active:
                     hud.text += "\nORBIT-WÄCHTER %d/%d  %s" % [orbit_hp, ORBIT_HEALTH, "PLASMA!" if orbit_warning_left > 0.0 else "ATTACKE LADEN"]
             if world_choice == 3:
