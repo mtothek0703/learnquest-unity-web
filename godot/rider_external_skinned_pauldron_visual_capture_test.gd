@@ -70,6 +70,19 @@ func _capture() -> void:
         if (cap as MeshInstance3D).visible:
             _fail("duplicate caps must be hidden in the default rider before A/B comparison")
             return
+    var thrusters := hero.get_node_or_null("ExternalSkinnedShoulderThrusters") as Node
+    if thrusters == null or not bool(thrusters.get("integrated_rear_profile")):
+        _fail("recessed source-skin shoulder profile missing")
+        return
+    var nacelles: Array = thrusters.get("nacelles")
+    var cores: Array = thrusters.get("cores")
+    if nacelles.size() != 2 or cores.size() != 2:
+        _fail("reversible full-size shoulder housings and compact cores missing")
+        return
+    for nacelle in nacelles:
+        if (nacelle as MeshInstance3D).visible:
+            _fail("the integrated rider must not hide its true skinned jacket behind nacelles")
+            return
     rider.set("lean", 0.65)
     rider.set("boosting", true)
     adapter.call("_process", 0.28)
@@ -101,7 +114,7 @@ func _capture() -> void:
         for view in VIEWS:
             camera.position = Vector3(0, 2.0, -5.2) if view == "front" else Vector3(0, 2.25, 5.4)
             camera.look_at(Vector3(0, 1.8, 0), Vector3.UP)
-            for layer in ["skin_layers", "complete_rider"]:
+            for layer in ["skin_layers", "complete_rider", "rear_profile"]:
                 for variant in ["without_pauldrons", "with_pauldrons"]:
                     for item in visibility.keys():
                         var mesh := item as MeshInstance3D
@@ -116,6 +129,8 @@ func _capture() -> void:
                         # the comparison variant. Otherwise both captures
                         # would silently show the same integrated sleeves.
                         if pauldrons.has(mesh):
+                            enabled = variant == "with_pauldrons" and layer != "rear_profile"
+                        if layer == "rear_profile" and nacelles.has(mesh):
                             enabled = variant == "with_pauldrons"
                         mesh.visible = enabled
                     for frame in range(5):
@@ -131,15 +146,18 @@ func _capture() -> void:
                     if image.is_empty() or image.get_width() != size.x or image.get_height() != size.y:
                         _fail("invalid smartphone landscape framebuffer")
                         return
+                    var profile_variant := variant
+                    if layer == "rear_profile":
+                        profile_variant = "with_oversized_nacelles" if variant == "with_pauldrons" else "integrated_cores_only"
                     if image.save_png("%s/%dx%d_%s_%s_%s.png" % [
-                            folder, size.x, size.y, view, layer, variant]) != OK:
+                            folder, size.x, size.y, view, layer, profile_variant]) != OK:
                         _fail("could not save actual skinned shoulder frame")
                         return
                     count += 1
     for item in visibility.keys():
         (item as MeshInstance3D).visible = bool(visibility[item])
-    if count != 16:
-        _fail("expected sixteen 16:9/19.5:9 paired shoulder frames")
+    if count != 24:
+        _fail("expected twenty-four 16:9/19.5:9 paired shoulder and nacelle frames")
         return
-    print("SKINNED PAULDRON VISUAL QA PASSED: 16 pose-locked front/chase original-Skin layer/full-rider frames; manual visual gate remains open")
+    print("SKINNED PAULDRON VISUAL QA PASSED: 24 pose-locked front/chase original-Skin, full-rider and shoulder-profile frames; manual visual gate remains open")
     quit(0)
