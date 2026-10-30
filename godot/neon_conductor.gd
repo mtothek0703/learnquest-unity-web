@@ -45,7 +45,7 @@ func _hull_mesh() -> ArrayMesh:
     for level in range(24):
         var t := float(level) / 24.0
         for segment in range(32):
-            var tint := Color("#152a57").lerp(Color("#b59ce8"), 0.12 + 0.65 * t)
+            var tint := Color("#355a9c").lerp(Color("#e2c8ff"), 0.20 + 0.66 * t)
             if segment % 8 == 0:
                 tint = tint.lerp(Color("#5ceeff"), 0.45)
             _quad(tool, _hull_point(level, segment), _hull_point(level + 1, segment),
@@ -68,7 +68,7 @@ func _fin_mesh() -> ArrayMesh:
         for across in range(8):
             var t := float(step) / 28.0
             var v := float(across) / 8.0
-            var tint := Color("#233d83").lerp(Color("#ff87e6"), 0.18 + 0.50 * t + 0.25 * v)
+            var tint := Color("#345eb1").lerp(Color("#ffa5ed"), 0.20 + 0.52 * t + 0.25 * v)
             if across == 0 or across == 7:
                 tint = tint.lerp(Color("#68f7ff"), 0.70)
             _quad(tool, _fin_point(step, across), _fin_point(step + 1, across),
