@@ -56,8 +56,8 @@ func _check() -> void:
         _fail("genuine source Skin or weighted shoulders missing")
         return
     var shoulder_width := float(armor.get("shoulder_span")) / source.mesh.get_aabb().size.x
-    if shoulder_width < 0.49 or shoulder_width > 0.53:
-        _fail("fitted shoulder silhouette must be more compact than the previous shells")
+    if shoulder_width < 0.46 or shoulder_width > 0.49:
+        _fail("compact shoulder caps must fit the revised articulated sleeve silhouette")
         return
     for shell in armor.get("shells"):
         var weighted := shell as MeshInstance3D
