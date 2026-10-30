@@ -58,7 +58,7 @@ func _ready() -> void:
         var portal := MeshInstance3D.new()
         portal.name = "Illuminated cargo transfer ring"
         portal.mesh = ring
-        portal.material_override = (cyan if side < 0.0 else magenta).duplicate()
+        portal.material_override = _material(Color("#64f5fa") if side < 0.0 else Color("#ff8ee4"), true)
         portal.position = Vector3(side * LANE_X, 2.05, 0.0)
         portal.rotation.x = PI * 0.5
         station.add_child(portal)
