@@ -284,6 +284,16 @@ func _check() -> void:
         if vertices.size() < 1500 or normals.size() != vertices.size():
             _fail("carve fin must be a smooth, substantial 3D aerofoil")
             return
+        # Previously the entire vane sat inside the old side wing: the
+        # OpenGL chase-camera A/B image changed exactly zero pixels.
+        var side := -1.0 if (hinge as Node3D).name.begins_with("Port") else 1.0
+        var wing_tip: Vector3 = sculpt.call("_wing_point", side, 0.5, 0.0)
+        var fin_tip: Vector3 = (hinge as Node3D).position + \
+            vanes.call("_fin_point", side, 0.5, 0.0)
+        if absf(fin_tip.x) < absf(wing_tip.x) + 0.12 or \
+                fin_tip.y < wing_tip.y + 0.17:
+            _fail("carve fin tip is buried behind the sculpted board wing")
+            return
     var starboard_angle_30 := 0.0
     for fps in [30, 60]:
         for hinge in hinges:
