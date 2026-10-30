@@ -267,6 +267,17 @@ jobs:
             --script res://hoverboard_turbine_visual_capture_test.gd 2>&1 | tee /tmp/turbine-visual.log
           grep -Fq 'TURBINE VISUAL QA PASSED' /tmp/turbine-visual.log
           test "$(find /tmp/learnquest-turbine-qa -name '*.png' | wc -l)" -eq 8
+      - name: Render articulated carve fins at 16:9 and 19.5:9
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-carve-fin-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_CARVE_FIN_OUTPUT=/tmp/learnquest-carve-fin-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://hoverboard_carve_fins_visual_capture_test.gd 2>&1 | tee /tmp/carve-fins-visual.log
+          grep -Fq 'CARVE FIN VISUAL QA PASSED' /tmp/carve-fins-visual.log
+          test "$(find /tmp/learnquest-carve-fin-qa -name '*.png' | wc -l)" -eq 24
       - name: Render V124 paired 3D boost wakes in both phone landscape ratios
         shell: bash
         run: |
@@ -393,6 +404,13 @@ jobs:
         with:
           name: learnquest-v124-boost-wake-before-after
           path: /tmp/learnquest-wake-qa/*.png
+          if-no-files-found: ignore
+      - name: Upload 24 articulated carve fin before-after landscape frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-draft-carve-fins-24-landscape-frames
+          path: /tmp/learnquest-carve-fin-qa/*.png
           if-no-files-found: ignore
       - name: Upload V124 twin-turbine before-after landscape frames
         if: always()
