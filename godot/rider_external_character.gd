@@ -123,6 +123,16 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     else:
         headgear.queue_free()
         push_warning("CC0 hero headwear could not fit imported Head bone")
+    # Replace the Head-attached sculpted 360-degree face with an actual
+    # four-weight GPU-skinned surface sharing the original 65-bone CC0 Skin.
+    # The expressive eye/lid/brow nodes remain on the Head attachment.
+    var skinned_portrait := preload("res://rider_external_skinned_portrait.gd").new() as Node
+    skinned_portrait.name = "ExternalTrueSkinnedPortrait"
+    character.add_child(skinned_portrait)
+    var portrait_headwear := skeleton.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
+    if not bool(skinned_portrait.call("install", skinned_meshes, skeleton, portrait_headwear)):
+        skinned_portrait.queue_free()
+        push_warning("CC0 weighted portrait unavailable; Head-attached sculpted face preserved")
     # The long rear hair curtain is no longer a rigid Head-bone shell.
     # Convert its actual sculpted triangles to the imported four-weight Skin
     # in original rest coordinates; keep animated loose locks and facial
