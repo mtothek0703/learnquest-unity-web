@@ -120,6 +120,25 @@ func _capture() -> void:
     for node in hero.find_children("*", "MeshInstance3D", true, false):
         var mesh := node as MeshInstance3D
         visibility[mesh] = mesh.visible
+    # Record actual VISIBLE mesh attribution. Retired/hidden fallback shells
+    # are not evidence of the pink objects seen in the production chase view.
+    var group_counts: Dictionary = {}
+    var shoulder_names: Array[String] = []
+    for group in COSTUME_GROUPS:
+        group_counts[group] = 0
+    for item in visibility.keys():
+        var mesh := item as MeshInstance3D
+        if mesh == original or not bool(visibility[item]):
+            continue
+        var group := _costume_group(mesh, original)
+        group_counts[group] = int(group_counts[group]) + 1
+        if group in ["shoulder_thrusters", "pauldrons"]:
+            shoulder_names.append(String(mesh.name))
+    print("COSTUME GROUP INVENTORY (visible meshes): ", group_counts)
+    print("VISIBLE SHOULDER MESHES: ", shoulder_names)
+    if int(group_counts["shoulder_thrusters"]) < 2 or int(group_counts["suit_sleeves"]) < 2:
+        _fail("weighted shoulder cores or flight suit not found for isolation")
+        return
     var count := 0
     for size in SIZES:
         viewport.size = size
