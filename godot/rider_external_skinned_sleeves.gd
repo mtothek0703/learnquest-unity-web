@@ -214,7 +214,7 @@ func _sculpt_offset(point: Vector3, normal: Vector3, bounds: AABB,
     var elbow := exp(-pow((inf.y - 0.48) / 0.20, 2.0))
     var forearm := smoothstep(0.22, 0.72, inf.x - inf.y)
     var wrist := 1.0 - smoothstep(0.22, 0.46, inf.x)
-    var forearm_clearance := forearm * (1.0 - wrist)
+    var forearm_clearance := forearm * (1.0 - wrist) * (1.0 - 0.75 * elbow)
     var shell := 0.014 + 0.054 * shoulder + 0.027 * elbow + 0.032 * forearm_clearance
     var lateral := signf(point.x - bounds.get_center().x)
     # Side expansion creates a true readable shoulder contour in both
