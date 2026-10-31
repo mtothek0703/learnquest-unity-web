@@ -23,6 +23,12 @@ func sculpt(point: Vector3, size: Vector3, face_sign: float,
         0.018 * taper * sin(TAU * (1.5 * u + 0.30 * t)))
     var result := point
     result.z -= face_sign * depth * (1.0 if outer else 0.16)
+    # Pull the loose lower curtain toward the neck instead of letting its
+    # five channels form a wide rectangular shelf over the shoulder armor.
+    # The scalp/upper half is untouched; both side edges taper symmetrically
+    # toward the center and the weighted source-Skin remains unchanged.
+    var tip_inset := 0.08 * smoothstep(0.50, 1.0, t)
+    result.x += size.x * (0.5 - u) * tip_inset
     result.x += size.x * 0.024 * taper * sin(TAU * (u + 0.27 * t))
     result.y += size.y * 0.018 * taper * cos(TAU * float(CHANNELS) * u)
     return result
