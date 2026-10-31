@@ -101,7 +101,10 @@ func _extract_jacket(body: MeshInstance3D) -> ArrayMesh:
             var torso_half_width := bounds.size.x * 0.24
             polygon = _clip_to_lateral(polygon, bounds.get_center().x - torso_half_width, true)
             polygon = _clip_to_lateral(polygon, bounds.get_center().x + torso_half_width, false)
-            polygon = _clip_to_arm_influence(polygon, 0.48)
+            # Keep the torso-dominant skin only: the separate weighted sleeves
+            # already cover the shoulder transition. A 48% arm allowance
+            # retained inflated forearm/hand duplicates in the chase view.
+            polygon = _clip_to_arm_influence(polygon, 0.28)
             if polygon.size() < 3:
                 continue
             for corner_index in range(1, polygon.size() - 1):
