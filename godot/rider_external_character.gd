@@ -236,8 +236,18 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     var sleeves := preload("res://rider_external_skinned_sleeves.gd").new() as Node
     sleeves.name = "ExternalSkinnedFlightSleeves"
     character.add_child(sleeves)
-    if not bool(sleeves.call("install", skinned_meshes, skeleton)):
+    var sleeves_installed := bool(sleeves.call("install", skinned_meshes, skeleton))
+    if not sleeves_installed:
         push_warning("CC0 weighted sleeves unavailable; original arms remain")
+    elif outfit.get("garment") is MeshInstance3D and not neck_yoke.is_queued_for_deletion():
+        # The real four-weight jacket + sleeves already bridge the neck and
+        # deltoids. The extra full-volume yoke reads as an inflated blue ring
+        # in the 1280x720 front camera; retire only this redundant overlay.
+        # Keep its original Skin mesh for isolated QA and fallback if either
+        # fitted garment piece is unavailable.
+        var redundant_collar := neck_yoke.get("collar") as MeshInstance3D
+        if redundant_collar != null:
+            redundant_collar.visible = false
     # Broad split flight-mantle panels inherit four real bone weights each,
     # adding a readable chase silhouette without rigid props or collisions.
     var mantle := preload("res://rider_external_skinned_mantle.gd").new() as Node
