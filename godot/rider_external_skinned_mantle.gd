@@ -257,8 +257,12 @@ func _sculpt_yoke(body: MeshInstance3D) -> ArrayMesh:
                 var normal := normals[index].normalized()
                 var x := (point.x - bounds.get_center().x) / bounds.size.x
                 var shoulder := smoothstep(0.075, 0.28, absf(x))
-                var offset := normal * (0.050 + shoulder * 0.025)
-                offset.x += (1.0 if x >= 0.0 else -1.0) * shoulder * 0.022
+                # The isolated 1280x720 chase frame exposed this yoke as
+                # a broad rigid-looking shoulder box, hiding the skinned
+                # jacket and the mantle roots. Keep its real four-weight
+                # source triangles but use a close-fitting seam relief.
+                var offset := normal * (0.018 + shoulder * 0.010)
+                offset.x += (1.0 if x >= 0.0 else -1.0) * shoulder * 0.006
                 output.set_normal(normal)
                 output.set_bones(PackedInt32Array([
                     bones[index * 4], bones[index * 4 + 1],
@@ -275,4 +279,4 @@ func _sculpt_yoke(body: MeshInstance3D) -> ArrayMesh:
 func _is_yoke(point: Vector3, bounds: AABB) -> bool:
     var height := (point.y - bounds.position.y) / bounds.size.y
     var width := absf(point.x - bounds.get_center().x) / bounds.size.x
-    return height >= 0.615 and height <= 0.785 and width <= 0.36
+    return height >= 0.635 and height <= 0.770 and width <= 0.285
