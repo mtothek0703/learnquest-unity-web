@@ -228,6 +228,14 @@ func _check() -> void:
     if yoke.skeleton != source.skeleton or yoke.get_parent() != source.get_parent():
         _fail("shoulder yoke must follow the same original Skeleton3D")
         return
+    var sleeves_node := hero.get_node_or_null("ExternalSkinnedFlightSleeves") as Node
+    if sleeves_node == null:
+        _fail("integrated original-skin sleeves missing")
+        return
+    var sleeve_parts: Array = sleeves_node.get("sleeves")
+    if sleeve_parts.size() != 2 or yoke.visible:
+        _fail("redundant shoulder yoke must retire behind two real skinned sleeves")
+        return
     var yoke_arrays: Array = yoke.mesh.surface_get_arrays(0)
     var yoke_points: PackedVector3Array = yoke_arrays[Mesh.ARRAY_VERTEX]
     var yoke_weights: PackedFloat32Array = yoke_arrays[Mesh.ARRAY_WEIGHTS]
