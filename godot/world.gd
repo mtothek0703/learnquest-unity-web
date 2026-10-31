@@ -1585,7 +1585,15 @@ func _refresh_hud() -> void:
             if world_choice == 0:
                 hud.text += "\nNEON-SIGNALE %d/%d  KETTE %d/6  PRAEZ %d/6  %s" % [mini(int(skyway_zone.call("get_signal_count")), NEON_SIGNAL_TARGET), NEON_SIGNAL_TARGET, int(skyway_zone.call("get_signal_streak")), int(skyway_zone.call("get_signal_precision_count")), "PERFEKT!" if bool(skyway_zone.call("get_signal_perfect_run")) else "TORE TREFFEN"]
                 if neon_active:
-                    hud.text += "\nNEON-DIRIGENT %d/%d  AUSWEICH %d/3  %s" % [neon_hp, NEON_BOSS_HEALTH, mini(neon_dodge_streak, 3), "PINKER SWEEP!" if neon_warning_left > 0.0 else "ATTACKE LADEN"]
+                    if mobile_hud_layout:
+                        # Short enough for the narrow 16:9/19.5:9 phone HUD.
+                        hud.text += "\nBOSS %d/%d  AUSWEICH %d/3  %s" % [
+                            neon_hp, NEON_BOSS_HEALTH, mini(neon_dodge_streak, 3),
+                            "SWEEP!" if neon_warning_left > 0.0 else "ANGRIFF"]
+                    else:
+                        hud.text += "\nNEON-DIRIGENT %d/%d  AUSWEICH %d/3  %s" % [
+                            neon_hp, NEON_BOSS_HEALTH, mini(neon_dodge_streak, 3),
+                            "PINKER SWEEP!" if neon_warning_left > 0.0 else "ATTACKE LADEN"]
             if world_choice == 1:
                 hud.text += "\nKRISTALL-PFADE %d/%d  WECHSEL: %d/4  LINKS: ENERGIE  RECHTS: XP" % [
                     mini(int(canyon_zone.get("completed_routes")), CANYON_ROUTE_TARGET),
