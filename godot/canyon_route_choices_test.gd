@@ -113,5 +113,54 @@ func _check() -> void:
     if int(game.get("total_stars")) != 4:
         _fail("three lives plus one optional route star must total four")
         return
-    print("CANYON ROUTES TEST PASSED: four playable forks, distinct rewards, pause/reset, three-task rule and mission star")
+    # V132 candidate: four alternating route choices create a real slalom
+    # challenge without changing the original left/right base rewards.
+    game.call("_reset_run")
+    active_routes.set("running", true)
+    var baseline_xp := int(game.get("xp"))
+    for index in range(4):
+        active_junctions[index].position.z = 0.3
+        hero.position.x = -3.1 if index % 2 == 0 else 3.1
+        game.call("_update_canyon_routes")
+        if int(active_canyon.call("get_switchback_chain")) != index + 1:
+            _fail("alternating four junctions must build a visible switchback streak")
+            return
+        if index == 0 and (active_routes.get("portals")[3] as MeshInstance3D).scale.x <= 1.0:
+            _fail("the next opposite portal must enlarge as a 3D route cue")
+            return
+    if not bool(active_canyon.call("get_switchback_mastery")) or \
+            int(game.get("xp")) != baseline_xp + 15 + 40 + 15 + 40 + 50 or \
+            float(game.get("turbo_left")) < 2.49:
+        _fail("four alternating routes must grant exactly +50 mastery XP and 2.5s Turbo")
+        return
+    if not (game.get("hud") as Label).text.contains("WECHSEL: 4/4"):
+        _fail("mobile landscape HUD must display the completed four-fork streak")
+        return
+    game.set("distance", game.get("mission_target"))
+    game.call("_finish_run")
+    reward = game.get("reward_label") as Label
+    if reward == null or not reward.text.contains("KRISTALL-SLALOM"):
+        _fail("completed slalom must appear in the real result screen")
+        return
+    game.call("_reset_run")
+    active_routes.set("running", true)
+    if bool(active_canyon.call("get_switchback_mastery")) or \
+            int(active_canyon.call("get_switchback_chain")) != 0:
+        _fail("a new level must clear the switchback mastery state")
+        return
+    for index in range(3):
+        active_junctions[index].position.z = 0.3
+        hero.position.x = -3.1
+        game.call("_update_canyon_routes")
+    if int(active_canyon.call("get_switchback_chain")) != 1 or \
+            bool(active_canyon.call("get_switchback_mastery")):
+        _fail("repeating one side must reset the alternating streak")
+        return
+    active_junctions[3].position.z = 0.3
+    hero.position.x = 0.0
+    game.call("_update_canyon_routes")
+    if int(active_canyon.call("get_switchback_chain")) != 0:
+        _fail("skipping a fork must reset the streak without damaging the player")
+        return
+    print("CANYON ROUTES TEST PASSED: four playable forks, distinct rewards, pause/reset, three-task rule, mission star and alternating switchback mastery")
     quit(0)

@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V131"
+const VERSION_LABEL := "V132"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -634,7 +634,12 @@ func _update_canyon_routes() -> void:
     else:
         xp += int(result.get("xp", 0))
         power = mini(100, power + int(result.get("energy", 0)))
-        if str(result.get("choice", "")) == "energy":
+        turbo_left = maxf(turbo_left, float(result.get("turbo_seconds", 0.0)))
+        if bool(result.get("perfect_switchback", false)):
+            info_label.text = "KRISTALL-SLALOM! 4 WECHSEL +50 XP +2,5s TURBO"
+        elif int(result.get("switchback_chain", 0)) > 1:
+            info_label.text = "WECHSEL-KOMBO %d/4! NAECHSTES LEUCHTTOR" % int(result.get("switchback_chain"))
+        elif str(result.get("choice", "")) == "energy":
             info_label.text = "ENERGIE-PFAD! +20 ENERGIE, +15 XP"
         else:
             info_label.text = "XP-PFAD! +40 XP"
@@ -1064,6 +1069,8 @@ func _finish_run() -> void:
             reward_label.text += "\nKRISTALL-WÄCHTER BESIEGT: +1 BONUSSTERN!"
         if world_choice == 1 and int(canyon_zone.get("completed_routes")) >= CANYON_ROUTE_TARGET:
             reward_label.text += "\nKRISTALL-PFAD-MISSION: +1 BONUSSTERN!"
+        if world_choice == 1 and bool(canyon_zone.call("get_switchback_mastery")):
+            reward_label.text += "\nKRISTALL-SLALOM: 4 WECHSEL +50 XP +2,5s TURBO"
         if world_choice == 2 and harbor_crystals >= HARBOR_BONUS_TARGET:
             reward_label.text += "\nHAFEN-MISSION ERFÜLLT: +1 BONUSSTERN!"
         if world_choice == 2 and orbit_defeated:
@@ -1540,7 +1547,9 @@ func _refresh_hud() -> void:
                 if neon_active:
                     hud.text += "\nNEON-DIRIGENT %d/%d  %s" % [neon_hp, NEON_BOSS_HEALTH, "PINKER SWEEP!" if neon_warning_left > 0.0 else "ATTACKE LADEN"]
             if world_choice == 1:
-                hud.text += "\nKRISTALL-PFADE %d/%d  LINKS: ENERGIE  RECHTS: XP" % [mini(int(canyon_zone.get("completed_routes")), CANYON_ROUTE_TARGET), CANYON_ROUTE_TARGET]
+                hud.text += "\nKRISTALL-PFADE %d/%d  WECHSEL: %d/4  LINKS: ENERGIE  RECHTS: XP" % [
+                    mini(int(canyon_zone.get("completed_routes")), CANYON_ROUTE_TARGET),
+                    CANYON_ROUTE_TARGET, int(canyon_zone.call("get_switchback_chain"))]
             if guardian_active and world_choice == 1:
                 hud.text += "\nKRISTALL-WÄCHTER %d/%d  %s" % [guardian_hp, GUARDIAN_HEALTH, "LASER!" if guardian_warning_left > 0.0 else "ANGRIFF LADEN"]
             if world_choice == 2:
