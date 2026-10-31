@@ -53,6 +53,10 @@ func _capture() -> void:
     var rider := preload("res://rider_character.tscn").instantiate() as Node3D
     stage.add_child(rider)
     await process_frame
+    # Freeze the entire rider subtree only for this A/B renderer. Without
+    # this, the board bobs and the 65-bone pose changes between paired frames,
+    # falsely inflating pixel differences unrelated to the geometry under test.
+    rider.process_mode = Node.PROCESS_MODE_DISABLED
     var board := rider.get_node_or_null("LegacyRider/Floating hoverboard/SculptedHoverboardChassis") as Node3D
     if board == null or not bool(board.get("built")):
         _fail("original hoverboard and sculpted upgrade must exist")
