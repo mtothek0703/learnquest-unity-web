@@ -31,6 +31,18 @@ func _check() -> void:
     if mesh.mesh.get_surface_count() != 1:
         _fail("collar must use one continuous mobile-friendly mesh")
         return
+    # The complete skinned flight suit replaces the old inflatable collar
+    # silhouette. Keep its genuine 65-bone mesh available as a fallback and
+    # in isolated visual QA, but not as a duplicate visible production layer.
+    var suit := hero.get_node_or_null("ExternalSkinnedFlightSuit") as Node
+    var sleeves_node := hero.get_node_or_null("ExternalSkinnedFlightSleeves") as Node
+    if suit == null or not (suit.get("garment") is MeshInstance3D) or sleeves_node == null:
+        _fail("cannot retire redundant collar without fitted jacket and sleeves")
+        return
+    var sleeves: Array = sleeves_node.get("sleeves")
+    if sleeves.size() != 2 or mesh.visible:
+        _fail("redundant neck ring must be hidden behind two original-Skin sleeves")
+        return
     var arrays: Array = mesh.mesh.surface_get_arrays(0)
     var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
     var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
