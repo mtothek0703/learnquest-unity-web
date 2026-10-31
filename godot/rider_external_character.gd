@@ -384,8 +384,13 @@ func _process(delta: float) -> void:
         var inside := maxf(0.0, -steer * sign_side)
         # The outside arm opens for balance, the inside elbow tucks into the
         # turn; this is real imported shoulder/elbow/wrist articulation.
-        var spread := -sign_side * (1.30 + 0.14 * carve +
-            0.30 * outside - 0.12 * inside -
+        # Bring the imported CC0 arms closer to the board-riding torso.
+        # The previous broad carve pose reopened the bulky jacket/shoulder
+        # silhouette even after its duplicate geometry was trimmed. Keep
+        # outside-arm balance and inside-arm tuck, but reduce their extreme
+        # reach and lower both arms a little further from the source T-pose.
+        var spread := -sign_side * (1.42 + 0.12 * carve +
+            0.24 * outside - 0.10 * inside -
             last_jump * (0.45 if ascending else 0.32))
         _pose(["upperarm_l" if side < 0 else "upperarm_r", prefix + "UpperArm", prefix + "Arm"],
             Quaternion(Vector3.FORWARD, spread - torso_follow * 0.13) *
