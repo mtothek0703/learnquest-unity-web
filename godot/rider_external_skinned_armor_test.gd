@@ -75,6 +75,18 @@ func _check() -> void:
     if colored_vertices < 90:
         _fail("missing integrated two-tone armor geometry")
         return
+    # Regression: the back shield must not duplicate the body's side faces.
+    # The old predicate treated any normal sum <= +0.38 as rear-facing,
+    # including sideways and slightly forward-facing triangles.
+    for value in [-0.2, 0.0, 0.2, 0.38]:
+        if bool(armor.call("_faces_panel", value, false)):
+            _fail("side/forward jacket triangles leaked into rear armor")
+            return
+    if not bool(armor.call("_faces_panel", -0.5, false)) or \
+            bool(armor.call("_faces_panel", -0.5, true)) or \
+            not bool(armor.call("_faces_panel", 0.5, true)):
+        _fail("front/rear armor facing discrimination is broken")
+        return
     var center_depth := float(armor.call("_panel_relief", 0.5, 0.5, true))
     var edge_depth := float(armor.call("_panel_relief", 0.01, 0.01, true))
     if center_depth <= edge_depth + 0.02 or center_depth >= 0.055:
