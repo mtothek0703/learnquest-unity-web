@@ -22,6 +22,11 @@ Earlier chase/turbine frames show two broad, semi-transparent, striped wake shee
 - Second step: `cinematic_ion_wake.gd` now exposes `set_streamlined_mode()`; `hover_hero.gd` enables it only if the sculpted chassis and BoostWake actually exist. Four old broad ribbon meshes and twelve sparks remain present as a **safe fallback**, but are hidden when the modern helix jets are active. The old engine light remains available. The new regression checks this exact hierarchy and conditional visibility.
 - This second-step code requires its own **fresh CI and actual off/neutral/left/right image comparison** before any quality claim. Still DRAFT, never merge while visual hold remains.
 
+## Second render inspection — cleanup results
+- [Full Godot CI 41252140678](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41252140678) **SUCCESS** on the version with old ion ribbons/sparks and primitive flames/contrails hidden. [16 original landscape frames, artifact 13062275093](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41252140678/artifacts/13062275093) inspected.
+- In the actual 1280×720 chase image the former enormous striped exhaust sheets and twelve drifting bright dots are gone. Three distinct luminous helix strands per engine are visible. This is a substantial **local board-silhouette cleanup**, not yet a high-end full-character approval.
+- The inspection exposed two additional disconnected cyan rear spheres, visible even in the `off` control. They were identified as older `hover_hero.gd` rear flare primitives, not the new helix. The last cleanup now hides them only when the sculpted chassis and modern wake are ready; nodes remain as fallback and regression checks their presence/visibility. **Fresh final CI and visual QA required.**
+
 ## Quality gates
 - GitHub Actions full Godot headless suite, import, web export, and landscape visual capture must pass before this can be called technically verified.
 - Inspect real 1280×720 and 1170×540 chase/oblique frames against the prior artifact, with attention to wake occlusion and rider silhouette. **No visual acceptance yet.**
