@@ -80,6 +80,25 @@ func _check() -> void:
     if tip_inset < size.x * 0.055 or tip_inset > size.x * 0.09:
         _fail("lower hair must taper symmetrically toward neck, not flare over shoulders")
         return
+    # Verify the actual 3D lower silhouette: five hair tips hang below
+    # their adjacent grooves, with corresponding rearward depth relief.
+    # This is geometry, not a painted stripe or an unverified screenshot.
+    var ridge_tip: Vector3 = sculpt.sculpt(Vector3.ZERO, size, facing, 0.98, 0.1, true)
+    var groove_tip: Vector3 = sculpt.sculpt(Vector3.ZERO, size, facing, 0.98, 0.2, true)
+    if groove_tip.y - ridge_tip.y < size.y * 0.022 or \
+            absf(groove_tip.z - ridge_tip.z) < size.z * 0.012:
+        _fail("lower hair hem needs modeled five-lobed tips and shoulder-clearing grooves")
+        return
+    var scalp_ridge: Vector3 = sculpt.sculpt(Vector3.ZERO, size, facing, 0.0, 0.1, true)
+    var scalp_groove: Vector3 = sculpt.sculpt(Vector3.ZERO, size, facing, 0.0, 0.2, true)
+    if absf(scalp_ridge.y - scalp_groove.y) > size.y * 0.001:
+        _fail("new hem must not deform original scalp/root attachment")
+        return
+    var lock_ridge: Vector3 = headwear.call("_rear_lock_curve", Vector3.ZERO, size, 2, 1.0)
+    var lock_upper: Vector3 = headwear.call("_rear_lock_curve", Vector3.ZERO, size, 2, 0.0)
+    if lock_ridge.y - lock_upper.y < size.y * 0.005:
+        _fail("five weighted outer locks must follow the new sculpted hem")
+        return
     var upper_left: Vector3 = sculpt.sculpt(Vector3.ZERO, size, facing, 0.25, 0.0, true)
     var upper_right: Vector3 = sculpt.sculpt(Vector3.ZERO, size, facing, 0.25, 1.0, true)
     if absf(upper_left.x - upper_right.x) > size.x * 0.001:

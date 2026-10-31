@@ -441,6 +441,9 @@ func _rear_lock_curve(point: Vector3, size: Vector3, strand: int, t: float) -> V
     point.x += size.x * (0.5 - across) * 0.08 * smoothstep(0.50, 1.0, root_to_tip)
     point.y += size.y * (0.035 * sin(root_to_tip * TAU * 1.5 + phase) * swing +
         0.027 * sin(phase * 1.7) * pow(root_to_tip, 3.0))
+    # Match the five actual weighted locks to the new five-lobed underhair
+    # hem. The locks stay long at the ridges and clear the shoulder grooves.
+    point.y += size.y * 0.025 * smoothstep(0.58, 1.0, root_to_tip)
     point.z -= face_sign * size.z * (0.15 +
         0.055 * sin(PI * root_to_tip) * cos(phase + root_to_tip * TAU))
     return point

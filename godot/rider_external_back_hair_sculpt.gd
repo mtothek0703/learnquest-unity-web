@@ -31,6 +31,14 @@ func sculpt(point: Vector3, size: Vector3, face_sign: float,
     result.x += size.x * (0.5 - u) * tip_inset
     result.x += size.x * 0.024 * taper * sin(TAU * (u + 0.27 * t))
     result.y += size.y * 0.018 * taper * cos(TAU * float(CHANNELS) * u)
+    # A five-lobed, physically sculpted lower hem replaces the ruler-straight
+    # edge seen in chase QA. Groove valleys lift clear of shoulder armor while
+    # the five central hair streams retain longer pointed tips. Root stays
+    # exactly fixed, preserving original Head/Neck/Spine skin and scalp seam.
+    var hem := smoothstep(0.58, 1.0, t)
+    var groove := 0.5 + 0.5 * cos(TAU * float(CHANNELS) * u)
+    result.y += size.y * hem * (0.025 + 0.035 * groove)
+    result.z -= face_sign * size.z * hem * (0.020 + 0.018 * groove)
     return result
 
 func tone(t: float, u: float, outer: bool) -> Color:
