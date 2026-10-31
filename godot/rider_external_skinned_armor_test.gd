@@ -89,7 +89,7 @@ func _check() -> void:
         return
     var center_depth := float(armor.call("_panel_relief", 0.5, 0.5, true))
     var edge_depth := float(armor.call("_panel_relief", 0.01, 0.01, true))
-    if center_depth <= edge_depth + 0.02 or center_depth >= 0.055:
+    if center_depth <= edge_depth + 0.02 or center_depth >= 0.040:
         _fail("new chest facets must have a shallow sculpted bevel, not barrel-shaped protrusions")
         return
     var left := (panels[0] as MeshInstance3D).mesh.get_aabb()
@@ -117,6 +117,14 @@ func _check() -> void:
         var high_width := float(armor.call("_profile_edge", jacket_bounds, spec, true, high_y)) - float(armor.call("_profile_edge", jacket_bounds, spec, false, high_y))
         if low_width <= 0.0 or high_width < low_width * 1.25:
             _fail("original-skinned anatomical armor must widen continuously toward shoulders")
+            return
+        # The former 0.37-wide pectoral and 0.24-wide rear shoulder
+        # envelopes covered the articulated sleeve/arm silhouette in the
+        # phone chase view. Require a real geometric taper on both sides,
+        # not merely a different color or shader setting.
+        var max_fraction := 0.31 if bool(spec["front"]) else 0.44
+        if high_width > jacket_bounds.size.x * max_fraction:
+            _fail("skinned armor shoulder profile still creates broad wings")
             return
     # Synthetic triangle crosses a CURVED left profile. The binary clipping
     # intersection must lie on that profile, retaining normalized source Skin.
