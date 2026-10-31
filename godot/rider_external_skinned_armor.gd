@@ -152,7 +152,7 @@ func _profile_edge(bounds: AABB, spec: Dictionary, right_edge: bool, y: float) -
         # The previous monotonically widening plate looked like a broad
         # horizontal shelf behind the head in the actual chase camera.
         var neckline_inset := smoothstep(0.70, 0.98, t)
-        var spine_width := 0.105 + 0.105 * shoulder - 0.055 * neckline_inset
+        var spine_width := 0.105 + 0.105 * shoulder - 0.070 * neckline_inset
         x_fraction = spine_width if right_edge else -spine_width
     else:
         # Keep the weighted chest panels full across the pectorals, but
@@ -160,7 +160,7 @@ func _profile_edge(bounds: AABB, spec: Dictionary, right_edge: bool, y: float) -
         # This is a CURVED cut through the original skinned jacket triangles,
         # not a second rigid shoulder prop or a material-only adjustment.
         var neckline_inset := smoothstep(0.70, 0.98, t)
-        var outer := 0.16 + 0.16 * shoulder - 0.090 * neckline_inset
+        var outer := 0.16 + 0.16 * shoulder - 0.105 * neckline_inset
         var inner := 0.038 + 0.009 * sin(PI * t)
         if float(spec["left"]) < 0.0:
             x_fraction = -inner if right_edge else -outer
