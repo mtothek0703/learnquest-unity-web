@@ -148,10 +148,9 @@ func _capture() -> void:
             int(group_counts["skinned_armor"]) != 3:
         _fail("expected visible shoulder cores, one jacket, two weighted sleeves and three original-Skin armor panels")
         return
-    # After retiring the redundant shoulder bridge, only thirteen
-    # other-costume meshes are visible. Preserve the fourteenth QA control
-    # as the hidden weighted yoke, rendered ONLY in its isolated comparison.
-    # Never count that hidden fallback as a visible production artifact.
+    # With fitted jacket and sleeves, both the shoulder bridge and the
+    # inflated neck ring are hidden. Preserve both as isolated QA controls,
+    # not visible production meshes.
     var isolated_other: Array[MeshInstance3D] = []
     for item in visibility.keys():
         var mesh := item as MeshInstance3D
@@ -159,12 +158,15 @@ func _capture() -> void:
                 _costume_group(mesh, original) == "other_costume":
             isolated_other.append(mesh)
     var retired_yoke := hero.find_child("WeightedSculptedShoulderYoke", true, false) as MeshInstance3D
-    if isolated_other.size() != 13 or retired_yoke == null or \
-            bool(visibility.get(retired_yoke, true)):
-        _fail("expected thirteen visible other-costume meshes and one retired shoulder yoke")
+    var retired_collar := hero.find_child("TrueSkinnedOpenNeckYoke", true, false) as MeshInstance3D
+    if isolated_other.size() != 12 or retired_yoke == null or retired_collar == null or \
+            bool(visibility.get(retired_yoke, true)) or bool(visibility.get(retired_collar, true)):
+        _fail("expected twelve visible other-costume meshes and two retired original-Skin overlays")
         return
-    # Include the hidden yoke as a controlled A/B diagnostic only, keeping
-    # all 108 historical comparison filenames and camera setups stable.
+    # Preserve the historical 108 PNG names and their attribution: the
+    # formerly visible collar was single_other_08, so restore it at that
+    # index as an isolated QA control, never as a production layer.
+    isolated_other.insert(8, retired_collar)
     isolated_other.append(retired_yoke)
     for index in range(isolated_other.size()):
         print("ISOLATED OTHER COSTUME %02d: %s" % [
@@ -223,7 +225,7 @@ func _capture() -> void:
                         _fail("could not save actual skinned sleeve frame")
                         return
                     count += 1
-            # Thirteen visible pieces plus one hidden-yoke A/B control in each
+            # Twelve visible pieces plus two hidden original-Skin QA controls in each
             # front/chase and 16:9/19.5:9 view (56 extra real PNGs).
             for index in range(isolated_other.size()):
                 for item in visibility.keys():
@@ -249,7 +251,7 @@ func _capture() -> void:
         (item as MeshInstance3D).visible = bool(visibility[item])
     Engine.time_scale = 1.0
     if count != 52 + 4 * isolated_other.size():
-        _fail("expected 108 landscape frames, including thirteen visible costume meshes and one retired-yoke QA control in four views")
+        _fail("expected 108 landscape frames, including twelve visible costume meshes and two retired original-Skin QA controls in four views")
         return
-    print("SKINNED SLEEVE VISUAL QA PASSED: 108 pose-locked front/chase frames, seven visible costume-family overlays, thirteen visible other meshes and one retired-yoke A/B control; manual visual gate remains open")
+    print("SKINNED SLEEVE VISUAL QA PASSED: 108 pose-locked front/chase frames, seven visible costume-family overlays, twelve visible other meshes and two retired original-Skin A/B controls; manual visual gate remains open")
     quit(0)
