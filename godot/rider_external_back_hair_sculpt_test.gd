@@ -109,12 +109,12 @@ func _check() -> void:
         path_points, radius, 0.50, 0.0, true)
     var mid_right: Vector3 = headwear.call("_back_lock_point",
         path_points, radius, 0.50, 1.0, true)
-    var tip_left: Vector3 = headwear.call("_back_lock_point",
+    var lock_tip_left: Vector3 = headwear.call("_back_lock_point",
         path_points, radius, 0.98, 0.0, true)
-    var tip_right: Vector3 = headwear.call("_back_lock_point",
+    var lock_tip_right: Vector3 = headwear.call("_back_lock_point",
         path_points, radius, 0.98, 1.0, true)
     var mid_width := mid_right.x - mid_left.x
-    var tip_width := tip_right.x - tip_left.x
+    var tip_width := lock_tip_right.x - lock_tip_left.x
     if mid_width < radius * 2.0 or tip_width <= 0.0 or \
             tip_width >= mid_width * 0.20:
         _fail("five 3D hair locks must taper to fine, non-degenerate ends")
