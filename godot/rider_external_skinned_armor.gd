@@ -131,7 +131,9 @@ func _panel_relief(u: float, v: float, is_front: bool) -> float:
         smoothstep(0.0, 0.15, minf(v, 1.0 - v))
     var curved := sin(PI * u) * sin(PI * v)
     var keel := 0.0 if is_front else 0.006 * exp(-pow((u - 0.5) / 0.18, 2.0))
-    return 0.006 + 0.021 * bevel + 0.009 * curved + keel
+    # A thinner, continuous four-weight shell leaves the original CC0 chest
+    # readable instead of stacking a thick second armored barrel on top.
+    return 0.006 + 0.018 * bevel + 0.008 * curved + keel
 
 ## Three connected anatomical plates: shoulder-width armor tapers toward the
 ## waist instead of ending in straight, rectangular edges. This profile is
@@ -143,10 +145,14 @@ func _profile_edge(bounds: AABB, spec: Dictionary, right_edge: bool, y: float) -
     var shoulder := smoothstep(0.08, 0.94, t)
     var x_fraction := 0.0
     if not bool(spec["front"]):
-        var spine_width := 0.105 + 0.135 * shoulder
+        # Taper the rear shield toward the shoulder blades: the old wide
+        # profile overlapped the animated upper arms in landscape chase view.
+        var spine_width := 0.105 + 0.105 * shoulder
         x_fraction = spine_width if right_edge else -spine_width
     else:
-        var outer := 0.16 + 0.21 * shoulder
+        # Keep chest plates broad at the sternum but remove the outermost
+        # shoulder-wing triangles; the imported skinned sleeves remain intact.
+        var outer := 0.16 + 0.16 * shoulder
         var inner := 0.038 + 0.009 * sin(PI * t)
         if float(spec["left"]) < 0.0:
             x_fraction = -inner if right_edge else -outer
