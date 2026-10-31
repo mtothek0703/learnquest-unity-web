@@ -83,6 +83,10 @@ var neon_warning_left := 0.0
 var neon_sweep_lane := -1
 var neon_sweep_direction := 1
 var neon_sweep_step := 0
+# Optional clean three-beat boss dodge; shield/jump saves are still valid but
+# only steering into a genuinely safe lane advances this skill challenge.
+var neon_dodge_streak := 0
+var neon_dodge_mastery := false
 var guardian: Node3D
 var guardian_beam: MeshInstance3D
 var guardian_hp := GUARDIAN_HEALTH
@@ -346,16 +350,36 @@ func _update_neon_conductor(delta: float) -> void:
             neon_beam.visible = false
             # Each beat sweeps one lane; Shield or a timed jump protects the
             # player. No extra touch gesture or mid-race quiz is introduced.
+            var clean_lane_dodge := lane != neon_sweep_lane
             if lane == neon_sweep_lane and rider.position.y <= 0.9 and shield_left <= 0.0 and hit_cooldown <= 0.0:
                 lives -= 1
                 hit_cooldown = 1.4
+                neon_dodge_streak = 0
                 info_label.text = "NEON-PULS GETROFFEN! NOCH %d LEBEN" % lives
                 feedback_time = 1.4
                 if lives <= 0:
                     _finish_run()
                     return
+            elif clean_lane_dodge:
+                # Only a real safe-lane dodge counts, not shield/jump immunity.
+                # Award the mastery once per round to prevent repeat farming.
+                if not neon_dodge_mastery:
+                    neon_dodge_streak += 1
+                    if neon_dodge_streak >= 3:
+                        neon_dodge_mastery = true
+                        xp += 60
+                        turbo_left = maxf(turbo_left, 2.0)
+                        info_label.text = "NEON-TANZ PERFEKT! +60 XP +2s TURBO"
+                        feedback_time = 1.8
+                    else:
+                        info_label.text = "NEON-PULS SAUBER AUSGEWICHEN! %d/3" % neon_dodge_streak
+                        feedback_time = 1.0
+                else:
+                    info_label.text = "NEON-PULS AUSGEWICHEN!"
+                    feedback_time = 1.0
             else:
-                info_label.text = "NEON-PULS AUSGEWICHEN!"
+                neon_dodge_streak = 0
+                info_label.text = "NEON-PULS MIT SCHILD/SPRUNG ABGEWEHRT!"
                 feedback_time = 1.0
             neon_sweep_step += 1
             if neon_sweep_step < 3:
@@ -829,6 +853,8 @@ func _reset_run() -> void:
     neon_sweep_lane = -1
     neon_sweep_direction = 1
     neon_sweep_step = 0
+    neon_dodge_streak = 0
+    neon_dodge_mastery = false
     neon_conductor.visible = false
     neon_conductor.set("active", false)
     neon_beam.visible = false
@@ -1075,6 +1101,8 @@ func _finish_run() -> void:
             reward_label.text += "\nNEON-PRAEZISION: 6/6 GOLDZIELE +40 XP!"
         if world_choice == 0 and neon_defeated:
             reward_label.text += "\nNEON-DIRIGENT BESIEGT: +1 BONUSSTERN!"
+        if world_choice == 0 and neon_dodge_mastery:
+            reward_label.text += "\nNEON-TANZ: 3 SAUBERE AUSWEICHMANOEVER +60 XP +2s TURBO"
         if world_choice == 1 and guardian_defeated:
             reward_label.text += "\nKRISTALL-WÄCHTER BESIEGT: +1 BONUSSTERN!"
         if world_choice == 1 and int(canyon_zone.get("completed_routes")) >= CANYON_ROUTE_TARGET:
@@ -1557,7 +1585,7 @@ func _refresh_hud() -> void:
             if world_choice == 0:
                 hud.text += "\nNEON-SIGNALE %d/%d  KETTE %d/6  PRAEZ %d/6  %s" % [mini(int(skyway_zone.call("get_signal_count")), NEON_SIGNAL_TARGET), NEON_SIGNAL_TARGET, int(skyway_zone.call("get_signal_streak")), int(skyway_zone.call("get_signal_precision_count")), "PERFEKT!" if bool(skyway_zone.call("get_signal_perfect_run")) else "TORE TREFFEN"]
                 if neon_active:
-                    hud.text += "\nNEON-DIRIGENT %d/%d  %s" % [neon_hp, NEON_BOSS_HEALTH, "PINKER SWEEP!" if neon_warning_left > 0.0 else "ATTACKE LADEN"]
+                    hud.text += "\nNEON-DIRIGENT %d/%d  AUSWEICH %d/3  %s" % [neon_hp, NEON_BOSS_HEALTH, mini(neon_dodge_streak, 3), "PINKER SWEEP!" if neon_warning_left > 0.0 else "ATTACKE LADEN"]
             if world_choice == 1:
                 hud.text += "\nKRISTALL-PFADE %d/%d  WECHSEL: %d/4  LINKS: ENERGIE  RECHTS: XP" % [
                     mini(int(canyon_zone.get("completed_routes")), CANYON_ROUTE_TARGET),
