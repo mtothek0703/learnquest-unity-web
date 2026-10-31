@@ -84,6 +84,15 @@ func _process(delta: float) -> void:
         var part := wake_meshes[i]
         part.visible = intensity > 0.035
         part.transparency = clampf(1.0 - intensity * 0.92, 0.08, 1.0)
+        # The outside engine works harder while carving: its actual 3D wake
+        # extends farther and fans wider, rather than only changing color.
+        # Keep the first wake ring fixed at the existing 1.58m exhaust plane
+        # while scaling the already-uploaded mesh (no per-frame mesh rebuild).
+        var outside := maxf(0.0, side * carve)
+        var trail_length := 0.75 + 0.25 * intensity + 0.30 * outside * intensity
+        part.scale = Vector3(1.0 + 0.20 * outside * intensity,
+            1.0 + 0.12 * outside * intensity, trail_length)
+        part.position.z = 1.58 * (1.0 - trail_length)
         part.position.x = carve * 0.08
         wake_materials[i].emission_energy_multiplier = intensity * (
-            2.3 + maxf(0.0, side * carve) * 0.75)
+            2.3 + outside * 0.75)
