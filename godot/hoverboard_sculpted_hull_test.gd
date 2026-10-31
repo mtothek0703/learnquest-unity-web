@@ -271,6 +271,27 @@ func _check() -> void:
     if retired_prisms != 2:
         _fail("both old wing prisms must remain archived but hidden")
         return
+    # Do not draw a second pair of primitive turbine cylinders/halos or tall
+    # static fin prisms over the finished 3D board. They remain in the scene
+    # for fallback when the sculpted hull cannot initialize.
+    var duplicate_meshes_retired := 0
+    for old_name in ["LegacyPortTurbine", "LegacyStarboardTurbine",
+            "LegacyPortVerticalFin", "LegacyStarboardVerticalFin"]:
+        var old_part := board.get_node_or_null(old_name) as Node3D
+        if old_part == null or old_part.visible:
+            _fail("legacy hoverboard duplicate not safely retired: " + old_name)
+            return
+        if old_name.contains("Turbine"):
+            var children := old_part.find_children("*", "MeshInstance3D", true, false)
+            if children.size() != 2:
+                _fail("original turbine cylinder and torus must remain as fallback")
+                return
+            duplicate_meshes_retired += children.size()
+        elif old_part is MeshInstance3D:
+            duplicate_meshes_retired += 1
+    if duplicate_meshes_retired != 6:
+        _fail("expected six redundant static board meshes to be hidden")
+        return
     if sculpt.find_children("*", "CollisionObject3D", true, false).size() > 0:
         _fail("visual board must not change collisions or touch input")
         return
