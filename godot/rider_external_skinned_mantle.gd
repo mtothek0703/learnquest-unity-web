@@ -189,13 +189,13 @@ func _mantle_point(bounds: AABB, back: float, back_sign: float,
     # Tuck the two broad aero-wings into a jacket-tail profile. The real
     # weighted cloth still fans out during motion, but the resting chase
     # silhouette no longer overwhelms the arms and waist.
-    var inner := width * (0.055 + 0.028 * t)
-    var outer := width * (0.122 + 0.087 * flare + 0.005 * t + scallop * 0.35)
+    var inner := width * (0.065 + 0.038 * t)
+    var outer := width * (0.132 + 0.093 * flare + 0.004 * t + scallop * 0.35)
     var x := center_x + side * lerpf(inner, outer, u)
     var camber := sin(u * PI) * sin(t * PI)
     var y := bounds.position.y + bounds.size.y * (0.76 - 0.39 * t +
         0.025 * camber + 0.012 * u * t)
-    var sweep := 0.040 + 0.10 * t + 0.12 * pow(t, 1.4) + 0.025 * camber
+    var sweep := 0.040 + 0.085 * t + 0.11 * pow(t, 1.4) + 0.025 * camber
     var rib := sin(u * PI * 2.0 + t * 1.7) * width * 0.026 * sin(PI * t)
     var thickness := width * (0.009 + 0.017 * sin(PI * u) * sin(PI * t) +
         0.005 * sin(PI * t) * u * u)
