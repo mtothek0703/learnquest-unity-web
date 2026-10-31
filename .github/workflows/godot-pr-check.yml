@@ -267,7 +267,7 @@ jobs:
             --script res://rider_external_boot_visual_capture_test.gd 2>&1 | tee /tmp/boot-visual.log
           grep -Fq 'SKINNED BOOT VISUAL QA PASSED' /tmp/boot-visual.log
           test "$(find /tmp/learnquest-boots-qa -name '*.png' | wc -l)" -eq 8
-      - name: Render actual V124 twin-turbine before-after landscape frames
+      - name: Render twin-turbine and legacy-cleanup before-after landscape frames
         shell: bash
         run: |
           set -euo pipefail
@@ -277,7 +277,7 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://hoverboard_turbine_visual_capture_test.gd 2>&1 | tee /tmp/turbine-visual.log
           grep -Fq 'TURBINE VISUAL QA PASSED' /tmp/turbine-visual.log
-          test "$(find /tmp/learnquest-turbine-qa -name '*.png' | wc -l)" -eq 8
+          test "$(find /tmp/learnquest-turbine-qa -name '*.png' | wc -l)" -eq 16
       - name: Render articulated carve fins at 16:9 and 19.5:9
         shell: bash
         run: |
@@ -423,11 +423,11 @@ jobs:
           name: learnquest-draft-carve-fins-24-landscape-frames
           path: /tmp/learnquest-carve-fin-qa/*.png
           if-no-files-found: ignore
-      - name: Upload V124 twin-turbine before-after landscape frames
+      - name: Upload V124 turbine and cleaned silhouette landscape frames
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: learnquest-v124-board-turbines-before-after
+          name: learnquest-draft-board-turbines-and-clean-silhouette-16-frames
           path: /tmp/learnquest-turbine-qa/*.png
           if-no-files-found: ignore
       - name: Upload V124 neutral/action expression frames
