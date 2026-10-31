@@ -117,18 +117,18 @@ func _check() -> void:
     var deck_arrays: Array = traction.mesh.surface_get_arrays(0)
     var deck_points: PackedVector3Array = deck_arrays[Mesh.ARRAY_VERTEX]
     var deck_colors: PackedColorArray = deck_arrays[Mesh.ARRAY_COLOR]
-    var pad_found := false
-    var channel_found := false
+    var pad_luminance := -1.0
+    var channel_luminance := -1.0
     if deck_colors.size() != deck_points.size():
         _fail("sculpted traction deck needs real per-vertex material contrast")
         return
     for i in range(deck_points.size()):
         if deck_points[i].distance_to(right_pad) < 0.0001:
-            pad_found = deck_colors[i].get_luminance() > 0.09
+            pad_luminance = maxf(pad_luminance, deck_colors[i].get_luminance())
         if deck_points[i].distance_to(center_channel) < 0.0001:
-            channel_found = deck_colors[i].get_luminance() < 0.09
-    if not pad_found or not channel_found:
-        _fail("rendered deck must contain bright raised footbed and dark channel vertices")
+            channel_luminance = maxf(channel_luminance, deck_colors[i].get_luminance())
+    if pad_luminance < 0.0 or channel_luminance < 0.0 or pad_luminance < channel_luminance + 0.15:
+        _fail("rendered deck must contrast raised footbed against recessed channel")
         return
     var old_boxes := 0
     for child in board.get_children():
