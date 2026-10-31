@@ -162,6 +162,29 @@ func _check() -> void:
         if satin == null or satin.roughness < 0.55 or satin.metallic > 0.40:
             _fail("side stabilizers must use satin composite, not glossy purple")
             return
+        # New genuine 3D gull-wing ridge must rise above the inboard root,
+        # with a smooth nose transition and a recessed lower shell.
+        var crest: Vector3 = sculpt.call("_wing_point", side, 0.5, 0.0)
+        var root_point: Vector3 = sculpt.call("_wing_point", side, 0.5, PI)
+        var nose_crest: Vector3 = sculpt.call("_wing_point", side, 0.02, 0.0)
+        var lower: Vector3 = sculpt.call("_wing_point", side, 0.5, PI * 1.5)
+        var upper: Vector3 = sculpt.call("_wing_point", side, 0.5, PI * 0.5)
+        if crest.y - root_point.y < 0.105 or crest.y - nose_crest.y < 0.10 or \
+                upper.y - lower.y < 0.13:
+            _fail("closed board stabilizers need visible outboard sculpted crests and lower undercut")
+            return
+        var crest_seen := false
+        var crest_luminance := -1.0
+        var root_luminance := -1.0
+        for k in range(wing_vertices.size()):
+            if wing_vertices[k].distance_to(crest) < 0.0001:
+                crest_seen = true
+                crest_luminance = maxf(crest_luminance, wing_colors[k].get_luminance())
+            if wing_vertices[k].distance_to(root_point) < 0.0001:
+                root_luminance = maxf(root_luminance, wing_colors[k].get_luminance())
+        if not crest_seen or root_luminance < 0.0 or crest_luminance < root_luminance + 0.07:
+            _fail("actual GPU wing mesh must show a brighter raised outboard chine")
+            return
         for t in [0.15, 0.5, 0.85]:
             var mirrored: Vector3 = sculpt.call("_wing_point", -side, t, 0.0)
             var sample: Vector3 = sculpt.call("_wing_point", side, t, 0.0)
