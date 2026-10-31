@@ -42,18 +42,28 @@ func _check() -> void:
     var neutral_left_shoulder := rig.get_bone_pose_rotation(left_shoulder_id)
     var neutral_right_shoulder := rig.get_bone_pose_rotation(right_shoulder_id)
     var neutral_right_elbow := rig.get_bone_pose_rotation(right_elbow_id)
-    # Both arms must be visibly lowered from the imported superhero T-pose,
-    # and must remain approximately balanced in the resting surf stance.
-    if neutral_left_shoulder.get_angle() < 1.05 or neutral_right_shoulder.get_angle() < 1.05 or \
-            absf(neutral_left_shoulder.get_angle() - neutral_right_shoulder.get_angle()) > 0.30:
-        _fail("compact balanced shoulder surf silhouette is missing")
+    # The imported glTF bones can have non-identity bind-pose rotations.
+    # Absolute Quaternion.get_angle() is not a shoulder-spread measurement:
+    # as the arm is lowered, one side can approach the identity quaternion
+    # and falsely fail the mobile silhouette gate. Measure the actual pose
+    # relative to the ORIGINAL imported bone pose captured by the adapter.
+    var source_rotations: Dictionary = adapter.get("rest_rotations")
+    if not source_rotations.has(left_shoulder_id) or not source_rotations.has(right_shoulder_id):
+        _fail("missing original CC0 shoulder pose reference")
         return
-    # The shoulder animation must be compact enough to avoid the original
-    # broad superhero T-pose, but must not pin the elbows against the chest.
-    # Both sides use the real original 65-bone GPU skin, not cosmetic props.
-    if neutral_left_shoulder.get_angle() < 1.25 or neutral_left_shoulder.get_angle() > 1.70 or \
-            neutral_right_shoulder.get_angle() < 1.25 or neutral_right_shoulder.get_angle() > 1.70:
-        _fail("neutral original-skinned shoulders must form a compact mobile chase silhouette")
+    var left_rest: Quaternion = source_rotations[left_shoulder_id]
+    var right_rest: Quaternion = source_rotations[right_shoulder_id]
+    var left_spread := left_rest.angle_to(neutral_left_shoulder)
+    var right_spread := right_rest.angle_to(neutral_right_shoulder)
+    # Both sides must leave the original T-pose by a substantial, balanced
+    # amount while preserving the genuine GPU skin and bent elbows.
+    if left_spread < 1.05 or right_spread < 1.05 or \
+            absf(left_spread - right_spread) > 0.30:
+        _fail("compact balanced shoulder surf silhouette is missing (rest-relative L/R: %.3f / %.3f)" % [left_spread, right_spread])
+        return
+    if left_spread < 1.25 or left_spread > 1.70 or \
+            right_spread < 1.25 or right_spread > 1.70:
+        _fail("neutral original-skinned shoulders must form a compact mobile chase silhouette (rest-relative L/R: %.3f / %.3f)" % [left_spread, right_spread])
         return
     if neutral_elbow.get_angle() < 0.45 or neutral_right_elbow.get_angle() < 0.45:
         _fail("both original elbows must remain clearly flexed")
