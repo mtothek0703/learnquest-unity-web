@@ -35,3 +35,10 @@ Earlier chase/turbine frames show two broad, semi-transparent, striped wake shee
 
 ## Next step
 Inspect CI logs and the generated images. If the helices are not visually cleaner, iterate or revert on this DRAFT branch; do not misreport a high-end character improvement.
+
+## Final verification (01.11.2026, 00:33 CET)
+- [Final full Godot CI **41252519436**](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41252519436): `completed/success`, code head `bc0e0dc365faec13453a9d6a6976e2dd6d92aace`. Gameplay/skin/hoverboard regressions, Godot import, Web export and landscape render capture all passed. Documentation-only head follows the tested code.
+- [Final **16 original phone-landscape frames**](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41252519436/artifacts/13061429933) downloaded and **actually compared** to [previous 16 frames](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41247986151/artifacts/13060410974).
+- At 1280×720, threshold RGB max-channel >25, `chase_neutral` changed **46,901 pixels / 5.089%**; `chase_off` changed **43,889 / 4.762%**. At 1170×540, `chase_neutral` changed **26,435 / 4.184%**. The prior huge striped ribbons and dangling cyan spheres are absent; three physically distinct slim luminous helices per turbine remain visible. The front-neutral comparison changes only **459 pixels / 0.073%** at 1170×540, consistent with a localized rear-view effect.
+- This is a **visually verified hoverboard cleanup** in the chase camera, not a claim that the full 65-bone character has passed visual QA. Real iPhone performance, clipping, three-question touch playthrough and complete character aesthetic remain open. No stable merge or release.
+- Stable track: latest independently confirmed immutable **Skyway V138**, main release `3200b304`; no V139 released. Older Skyway URLs and Unity archive were not edited by this experimental branch.
