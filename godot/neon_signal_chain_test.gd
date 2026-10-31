@@ -89,6 +89,15 @@ func _check() -> void:
         _fail("reset must clear mission progress")
         return
 
+    city.call("reset_signals")
+    chain.set("running", true)
+    gates[0].position.z = 0.3
+    var edge: Dictionary = city.call("check_neon_signal", 3.1 + 0.8)
+    if not bool(edge.get("hit", false)) or bool(edge.get("precision", true)) or \
+            int(edge.get("xp", 0)) != 25 or int(city.call("get_signal_precision_count")) != 0:
+        _fail("existing 1.30m catch zone must remain valid without gold bonus")
+        return
+
     city.queue_free()
     var game := preload("res://world.gd").new() as Node3D
     root.add_child(game)
@@ -126,14 +135,6 @@ func _check() -> void:
         return
     if int(active_city.call("get_signal_count")) != 0:
         _fail("new round must reset all six gates and progress")
-        return
-    city.call("reset_signals")
-    chain.set("running", true)
-    gates[0].position.z = 0.3
-    var edge: Dictionary = city.call("check_neon_signal", 3.1 + 0.8)
-    if not bool(edge.get("hit", false)) or bool(edge.get("precision", true)) or \
-            int(edge.get("xp", 0)) != 25 or int(city.call("get_signal_precision_count")) != 0:
-        _fail("existing 1.30m catch zone must remain valid without gold bonus")
         return
     print("NEON SIGNAL CHAIN TEST PASSED: six 3D gates, three lanes, overdrive, pause, reset, full-level star")
     quit(0)
