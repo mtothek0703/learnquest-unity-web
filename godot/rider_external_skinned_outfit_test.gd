@@ -296,7 +296,7 @@ func _check() -> void:
                 total += weights[i * 4 + j]
                 if arm_binds.has(index):
                     arm_weight += weights[i * 4 + j]
-            if arm_weight > 0.56:
+            if arm_weight > 0.40:
                 _fail("jacket still duplicates arm-dominant triangles instead of fitting torso")
                 return
             if absf(total - 1.0) > 0.04:
