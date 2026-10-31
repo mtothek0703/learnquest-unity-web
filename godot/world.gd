@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V130"
+const VERSION_LABEL := "V131"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -655,6 +655,9 @@ func _update_harbor_cargo_relay() -> void:
         turbo_left = maxf(turbo_left, float(delivery.get("turbo_seconds", 0.0)))
         if bool(delivery.get("perfect_convoy", false)):
             info_label.text = "PERFEKTER FRACHTKONVOI! 5/5 - BONUSSTERN!"
+        elif bool(delivery.get("precision", false)):
+            info_label.text = "PRAEZISIONS-DOCK! +%d XP  TREFFER %d/5" % [
+                int(delivery.get("xp", 45)), int(delivery.get("precision_count", 1))]
         else:
             info_label.text = "FRACHT-SERIE %d/5! +%d XP, +12 ENERGIE" % [
                 int(delivery.get("streak", 1)), int(delivery.get("xp", 30))]
@@ -1069,6 +1072,8 @@ func _finish_run() -> void:
             reward_label.text += "\nHAFEN-FRACHTRELAIS: +1 BONUSSTERN!"
         if world_choice == 2 and bool(harbor_zone.call("get_cargo_perfect_convoy")):
             reward_label.text += "\nPERFEKTER FRACHTKONVOI: +1 BONUSSTERN!"
+        if world_choice == 2 and bool(harbor_zone.call("get_cargo_perfect_precision")):
+            reward_label.text += "\nPRAEZISIONS-PILOT: 5/5 MITTENTREFFER! +75 XP"
         if world_choice == 3 and int(glacier_zone.get("completed_gates")) >= GLACIER_BONUS_TARGET:
             reward_label.text += "\nAURORA-SPRUNG-MISSION: +1 BONUSSTERN!"
         if world_choice == 3 and frost_defeated:
@@ -1540,7 +1545,7 @@ func _refresh_hud() -> void:
                 hud.text += "\nKRISTALL-WÄCHTER %d/%d  %s" % [guardian_hp, GUARDIAN_HEALTH, "LASER!" if guardian_warning_left > 0.0 else "ANGRIFF LADEN"]
             if world_choice == 2:
                 hud.text += "\nHAFEN-MISSION: %d/%d ENERGIEKRISTALLE" % [mini(harbor_crystals, HARBOR_BONUS_TARGET), HARBOR_BONUS_TARGET]
-                hud.text += "\nFRACHT-RELAIS %d/%d  SERIE: %d/5  DOCK ANSTEUERN" % [mini(int(harbor_zone.call("get_cargo_deliveries")), HARBOR_RELAY_TARGET), HARBOR_RELAY_TARGET, int(harbor_zone.call("get_cargo_streak"))]
+                hud.text += "\nFRACHT-RELAIS %d/%d  SERIE: %d/5  PRAEZ: %d/5" % [mini(int(harbor_zone.call("get_cargo_deliveries")), HARBOR_RELAY_TARGET), HARBOR_RELAY_TARGET, int(harbor_zone.call("get_cargo_streak")), int(harbor_zone.call("get_cargo_precision_deliveries"))]
                 if orbit_active:
                     hud.text += "\nORBIT-WÄCHTER %d/%d  %s" % [orbit_hp, ORBIT_HEALTH, "PLASMA!" if orbit_warning_left > 0.0 else "ATTACKE LADEN"]
             if world_choice == 3:
