@@ -64,6 +64,18 @@ func _capture() -> void:
             _fail("missing propulsion mesh: " + part_name)
             return
         new_parts.append(part)
+    # A/B the actual silhouette cleanup in the same scene and camera.
+    # "legacy_before" restores only the six superseded original meshes;
+    # "clean_after" shows the new closed turbines and articulated fins alone.
+    var old_parts: Array[Node3D] = []
+    var original_board := board.get_parent() as Node3D
+    for old_name in ["LegacyPortTurbine", "LegacyStarboardTurbine",
+            "LegacyPortVerticalFin", "LegacyStarboardVerticalFin"]:
+        var old_part := original_board.get_node_or_null(old_name) as Node3D
+        if old_part == null or old_part.visible:
+            _fail("original duplicate must exist but be retired: " + old_name)
+            return
+        old_parts.append(old_part)
     var count := 0
     for size in SIZES:
         viewport.size = size
@@ -84,10 +96,30 @@ func _capture() -> void:
                     _fail("could not save rendered comparison frame")
                     return
                 count += 1
+            # Compare the original redundant primitive geometry with the
+            # actual cleaner silhouette, while retaining all new turbine parts.
+            for part in new_parts:
+                part.visible = true
+            for variant in ["legacy_before", "clean_after"]:
+                for old_part in old_parts:
+                    old_part.visible = variant == "legacy_before"
+                for frame in range(5):
+                    await process_frame
+                await RenderingServer.frame_post_draw
+                var cleanup_image := viewport.get_texture().get_image()
+                if cleanup_image.is_empty() or cleanup_image.get_width() != size.x or cleanup_image.get_height() != size.y:
+                    _fail("invalid hoverboard cleanup landscape framebuffer")
+                    return
+                if cleanup_image.save_png("%s/%dx%d_%s_%s.png" % [folder, size.x, size.y, view, variant]) != OK:
+                    _fail("could not save hoverboard cleanup comparison")
+                    return
+                count += 1
     for part in new_parts:
         part.visible = true
-    if count != 8:
-        _fail("expected eight actual landscape propulsion comparison images")
+    for old_part in old_parts:
+        old_part.visible = false
+    if count != 16:
+        _fail("expected sixteen real landscape turbine and cleanup images")
         return
-    print("TURBINE VISUAL QA PASSED: 8 actual rendered before/after frames; visual approval remains manual")
+    print("TURBINE VISUAL QA PASSED: 16 actual landscape turbine/legacy-cleanup frames; visual approval remains manual")
     quit(0)
