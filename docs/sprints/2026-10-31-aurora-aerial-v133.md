@@ -16,3 +16,6 @@ Experimental 65-bone character remains in separate DRAFT PR #111; no merge or re
 
 ## Smartphone landscape HUD QA
 The mobile HUD splits Aurora jump, wind, streak and aerial counters across two compact rows instead of adding another long line. A Godot regression checks each row is at most 48 characters in the narrow layout; physical Safari safe areas still require device testing.
+
+## CI correction
+Release-version wiring moved the HUD label from V132 to V133, exposing four intentional V132 assertions in `godot/smoke_test.gd`. The PR checks [41209623040](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41209623040) failed on this version-label mismatch (not on Aurora gameplay). Updated all four expectations to V133; rerun full PR CI before merge. Archive-preservation PR check [41209623030](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41209623030) already succeeded.
