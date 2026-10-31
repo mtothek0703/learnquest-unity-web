@@ -42,6 +42,15 @@ func _check() -> void:
     if legacy_ion.get_node_or_null("Pulsing cinematic engine light") == null:
         _fail("old ambient propulsion lighting must be preserved")
         return
+    var old_flames: Array = legacy.get("flames")
+    var old_boxes: Array = legacy.get("energy_trails")
+    if old_flames.size() != 2 or old_boxes.size() != 2:
+        _fail("old flame and boost-box fallback meshes must be preserved")
+        return
+    for duplicate in old_flames + old_boxes:
+        if (duplicate as MeshInstance3D).visible:
+            _fail("primitive flame or straight contrail obscures the sculpted jets")
+            return
     var parts: Array = wake.get("wake_meshes")
     var materials: Array = wake.get("wake_materials")
     if parts.size() != 2 or materials.size() != 2:
