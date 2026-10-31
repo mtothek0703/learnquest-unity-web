@@ -18,3 +18,9 @@
 - [ ] Real iPhone Safari FPS, clipping and full touch playthrough after three English questions remain open.
 
 PR: https://github.com/mtothek0703/learnquest-unity-web/pull/111
+
+## Controlled CI and visual QA (same run)
+- [x] [Godot CI 41238144672](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41238144672) **completed/success**, including existing 65-bone gameplay and wake regressions, Web export and the 16 phone-landscape wake frames.
+- [x] [Actual 16 PNGs, artifact 13056785516](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41238144672/artifacts/13056785516) downloaded and inspected against the preceding [artifact 13054994217](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41234807711/artifacts/13054994217). The helix alpha is technically visible, but the chase-camera right plume still produces a **large mottled purple lobe** near the bottom edge. This is not an approved visual upgrade.
+- [x] **Second corrective step:** shorten the actual swept tube from 1.50 to **0.95 world units**, reduce its mid-flare, and tighten the geometry regression while keeping original nozzle anchor and left/right boost steering. Commits `8c7ddf7f` and `53d8438c`.
+- [ ] **Final revised head CI and 16-image visual review pending.** Do not claim the smaller jet looks premium until actual frames confirm it. PR #111 remains DRAFT; stable releases are independent.
