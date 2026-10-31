@@ -47,8 +47,8 @@ func _check() -> void:
     var middle: Vector3 = wake.call("_point", 1.0, 0.5, 0.0)
     var root_point: Vector3 = wake.call("_point", 1.0, 0.0, 0.0)
     var tip: Vector3 = wake.call("_point", 1.0, 1.0, 0.0)
-    if tip.z - root_point.z < 2.5 or middle.x - root_point.x < 0.12 or tip.x >= middle.x:
-        _fail("wake must flare into a substantial tapered 3D trail")
+    if tip.z - root_point.z < 2.2 or middle.x - root_point.x < 0.055 or tip.x >= middle.x:
+        _fail("wake must keep a visible but slender tapered 3D ion trail")
         return
     if wake.find_children("*", "CollisionObject3D", true, false).size() > 0:
         _fail("boost wake may not create gameplay collision objects")
