@@ -121,6 +121,11 @@ func _assemble() -> void:
     var ion_wake := preload("res://cinematic_ion_wake.gd").new() as Node3D
     ion_wake.name = "Cinematic ion wake"
     board.add_child(ion_wake)
+    # The experimental sculpted board already has its own genuine volumetric
+    # exhaust. Keep V83 ribbons/sparks in the scene as a fallback, but hide
+    # their broad translucent layers only when the new wake initialized.
+    if bool(sculpted_board.get("built")) and sculpted_board.get_node_or_null("BoostWake") != null:
+        ion_wake.call("set_streamlined_mode", true)
     # V12: prominent swept side wings, rear stabilisers and an illuminated
     # centre spine. These change the board outline even from the chase camera.
     for side in [-1.0, 1.0]:
