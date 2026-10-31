@@ -9,6 +9,7 @@ const LANE_X := 3.1
 const START_Z := -145.0
 const SPACING := 205.0
 const LOCK_Z := -22.0
+const AERIAL_HEIGHT := 0.9 # Existing jump arc, not a new button or ability
 
 var running := false
 var travel_speed := 14.0
@@ -18,10 +19,13 @@ var missed_streams := 0
 var current_streak := 0
 var best_streak := 0
 var perfect_line := false
+var aerial_catches := 0
+var perfect_aerial_line := false
 var stations: Array[Node3D] = []
 var arches: Array[MeshInstance3D] = []
 var cores: Array[MeshInstance3D] = []
 var helices: Array[MeshInstance3D] = []
+var aerial_targets: Array[MeshInstance3D] = []
 
 func _material(tint: Color) -> StandardMaterial3D:
     var material := StandardMaterial3D.new()
@@ -63,6 +67,13 @@ func _ready() -> void:
     ring_mesh.outer_radius = 1.70
     ring_mesh.rings = 36
     ring_mesh.ring_segments = 8
+    # A second, elevated 3D target signals that jumping during interception
+    # earns an optional aerial reward. The broad ground catch remains intact.
+    var aerial_mesh := TorusMesh.new()
+    aerial_mesh.inner_radius = 0.52
+    aerial_mesh.outer_radius = 0.69
+    aerial_mesh.rings = 32
+    aerial_mesh.ring_segments = 8
     var core_mesh := SphereMesh.new()
     core_mesh.radial_segments = 16
     core_mesh.rings = 8
@@ -113,6 +124,14 @@ func _ready() -> void:
         core.scale = Vector3(0.18, 0.54, 0.18)
         station.add_child(core)
         cores.append(core)
+        var aerial_target := MeshInstance3D.new()
+        aerial_target.name = "Elevated aerial interception ring"
+        aerial_target.mesh = aerial_mesh
+        aerial_target.material_override = gold
+        aerial_target.position = Vector3(0.0, 3.35, 0.0)
+        aerial_target.rotation.x = PI * 0.5
+        station.add_child(aerial_target)
+        aerial_targets.append(aerial_target)
         for side in [-1.0, 1.0]:
             var guide := MeshInstance3D.new()
             guide.name = "Three-dimensional approach wind streak"
@@ -128,6 +147,8 @@ func reset_course() -> void:
     current_streak = 0
     best_streak = 0
     perfect_line = false
+    aerial_catches = 0
+    perfect_aerial_line = false
     for index in range(stations.size()):
         var station := stations[index]
         station.position = Vector3(float(index % 3 - 1) * LANE_X,
@@ -136,7 +157,7 @@ func reset_course() -> void:
         station.set_meta("locked", false)
         station.visible = true
 
-func check_stream(rider_x: float) -> Dictionary:
+func check_stream(rider_x: float, rider_y: float = 0.0) -> Dictionary:
     if not running:
         return {}
     for station in stations:
@@ -149,12 +170,23 @@ func check_stream(rider_x: float) -> Dictionary:
             current_streak += 1
             best_streak = maxi(best_streak, current_streak)
             perfect_line = best_streak == STREAM_COUNT
-            # Consecutive catches strengthen the existing Turbo, not a fifth ability.
+            # The existing jump input adds a real timing challenge on top of
+            # the moving-lane interception. Ordinary ground catches still pay.
+            var aerial := rider_y >= AERIAL_HEIGHT
+            if aerial:
+                aerial_catches += 1
+            perfect_aerial_line = aerial_catches == STREAM_COUNT
             return {
-                "caught": true, "xp": 35 + 10 * (current_streak - 1),
-                "energy": 15, "turbo_seconds": 2.5 + 0.5 * (current_streak - 1),
+                "caught": true, "aerial": aerial,
+                "xp": 35 + 10 * (current_streak - 1) +
+                    (20 if aerial else 0) + (50 if perfect_aerial_line else 0),
+                "energy": 15,
+                "turbo_seconds": 2.5 + 0.5 * (current_streak - 1) +
+                    (0.75 if aerial else 0.0),
                 "count": caught_streams, "streak": current_streak,
-                "perfect_line": perfect_line
+                "perfect_line": perfect_line,
+                "aerial_count": aerial_catches,
+                "perfect_aerial_line": perfect_aerial_line
             }
         missed_streams += 1
         current_streak = 0
@@ -180,6 +212,7 @@ func _process(delta: float) -> void:
             station.position.x = move_toward(station.position.x,
                 float(target_lane) * LANE_X, delta * 5.5)
         cores[index].scale.y = 0.54 * (1.0 + 0.18 * sin(elapsed * 4.0 + float(index)))
+        aerial_targets[index].scale = Vector3.ONE * (1.0 + 0.07 * sin(elapsed * 3.0 + float(index)))
         arches[index].rotation.z = 0.12 * sin(elapsed * 1.5 + float(index))
         helices[index * 2].rotation.z += delta * 0.45
         helices[index * 2 + 1].rotation.z -= delta * 0.45
