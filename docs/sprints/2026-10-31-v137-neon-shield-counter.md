@@ -7,7 +7,7 @@ Ein **neu aktivierter** Energieschild in den letzten 0,60 Sekunden eines angekü
 Ein neuer, zeitlich begrenzter, räumlich wachsender cyanfarbener Torus am Bosskern zeigt die Reflexion an; der bestehende Boss reagiert zusätzlich auf den Treffer. Kein neues Fremdasset, keine neuen Touch-Gesten oder Kollisionskörper. Ring ist im Leerlauf unsichtbar, nach 0,8 s wieder deaktiviert. Das Smartphone-Querformat-HUD zeigt während des präzisen Zeitfensters „KONTER!“. Der Ergebnisbildschirm nennt die erzielten Reflexionen.
 
 ## Abnahme-Gates
-- [ ] Vollständige PR-Godot-Regression einschließlich neuer Boss-/Schild-Zeitfenster- und 3D-Ring-Tests.
+- [ ] Vollständige PR-Godot-Regression einschließlich Boss-/Schild-Zeitfenster-, Einmal-pro-Schild-, Gegen-Spur-, frühem Schild-, letztem Boss-Kern- und 3D-Ring-Test.
 - [ ] Headless-Gameplay, Godot-Webexport, vorhandene Querformat-Renderprüfungen.
 - [ ] Historischer Pages-/Unity-Archivschutz.
 - [ ] **12 echte 1280×720-/1170×540-OpenGL-Bilder**: je Perspektive Boss abwesend, Boss normal und Boss mit reflektiertem 3D-Schockring. Der Render-Test prüft eine tatsächliche Pixeländerung des neuen Rings. Zusätzlich mobile HUD-Lesbarkeit; automatische Bilder sind keine echte iPhone-Abnahme.

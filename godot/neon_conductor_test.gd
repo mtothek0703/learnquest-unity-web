@@ -265,6 +265,28 @@ func _check() -> void:
     if int(game.get("neon_parries")) != 0 or bool(game.get("neon_parry_armed")):
         _fail("next race must reset reflection count and armed shield")
         return
+    # Final-core reflection must defeat the boss cleanly, clear its beam and
+    # preserve the normal boss-star award instead of soft-locking the race.
+    game.set("distance", 470.0)
+    game.call("_update_neon_conductor", 0.1)
+    game.set("neon_hp", 1)
+    game.set("power", 90)
+    game.set("neon_warning_left", 0.40)
+    game.set("neon_sweep_lane", 0)
+    game.set("lane", 0)
+    game.call("_use_shield")
+    game.call("_update_neon_conductor", 0.45)
+    if not bool(game.get("neon_defeated")) or bool(game.get("neon_active")) or \
+            (game.get("neon_conductor") as Node3D).visible or \
+            (game.get("neon_beam") as MeshInstance3D).visible or \
+            int(game.get("xp")) != 155:
+        _fail("last shield counter must defeat boss, hide beam and grant 35+120 XP")
+        return
+    game.set("distance", game.get("mission_target"))
+    game.call("_finish_run")
+    if not (game.get("reward_label") as Label).text.contains("NEON-DIRIGENT BESIEGT"):
+        _fail("shield-counter boss defeat must retain the original bonus star")
+        return
 
     game.set("world_choice", 1)
     game.call("_apply_world_theme")
