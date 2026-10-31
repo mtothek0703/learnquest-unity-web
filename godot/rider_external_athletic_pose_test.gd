@@ -48,6 +48,13 @@ func _check() -> void:
             absf(neutral_left_shoulder.get_angle() - neutral_right_shoulder.get_angle()) > 0.30:
         _fail("compact balanced shoulder surf silhouette is missing")
         return
+    # The shoulder animation must be compact enough to avoid the original
+    # broad superhero T-pose, but must not pin the elbows against the chest.
+    # Both sides use the real original 65-bone GPU skin, not cosmetic props.
+    if neutral_left_shoulder.get_angle() < 1.25 or neutral_left_shoulder.get_angle() > 1.70 or \
+            neutral_right_shoulder.get_angle() < 1.25 or neutral_right_shoulder.get_angle() > 1.70:
+        _fail("neutral original-skinned shoulders must form a compact mobile chase silhouette")
+        return
     if neutral_elbow.get_angle() < 0.45 or neutral_right_elbow.get_angle() < 0.45:
         _fail("both original elbows must remain clearly flexed")
         return
@@ -79,6 +86,23 @@ func _check() -> void:
     if rig.get_bone_pose_rotation(left_shoulder_id).angle_to(neutral_left_shoulder) > 0.04 or \
             rig.get_bone_pose_rotation(right_shoulder_id).angle_to(neutral_right_shoulder) > 0.04:
         _fail("both original shoulders must recover their compact idle stance")
+        return
+    # Mirror the steering direction. The outside shoulder must open on
+    # either side; testing only right-hand turns hid asymmetrical pose bugs.
+    rider.set("lean", -0.90)
+    rider.set("boosting", true)
+    adapter.call("_process", 0.55)
+    var negative_left_delta := rig.get_bone_pose_rotation(left_shoulder_id).angle_to(neutral_left_shoulder)
+    var negative_right_delta := rig.get_bone_pose_rotation(right_shoulder_id).angle_to(neutral_right_shoulder)
+    if negative_left_delta < negative_right_delta + 0.10:
+        _fail("left outside shoulder must open on negative touch-carve without reopening T-pose")
+        return
+    rider.set("lean", 0.0)
+    rider.set("boosting", false)
+    adapter.call("_process", 0.60)
+    if rig.get_bone_pose_rotation(left_shoulder_id).angle_to(neutral_left_shoulder) > 0.04 or \
+            rig.get_bone_pose_rotation(right_shoulder_id).angle_to(neutral_right_shoulder) > 0.04:
+        _fail("both original-skinned arms must recover after a reverse carve")
         return
     # A full second of identical carve/boost at 30 and 60 Hz must converge
     # to the same original bone pose. This catches frame-dependent slerp and
