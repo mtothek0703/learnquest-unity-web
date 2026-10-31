@@ -133,7 +133,12 @@ func _assemble() -> void:
         var fin := PrismMesh.new()
         fin.size = Vector3(0.18, 0.63, 0.81)
         var stabilizer := piece(board, fin, Vector3(side * 0.87, 0.56, 1.03), Vector3.ONE, navy)
+        stabilizer.name = "LegacyPortVerticalFin" if side < 0.0 else "LegacyStarboardVerticalFin"
         stabilizer.rotation_degrees.z = side * 15.0
+        # The sculpted swept wings and articulated carve fins supersede these
+        # tall, static prisms. Keep them as a safe fallback, not a second outline.
+        if bool(sculpted_board.get("built")):
+            stabilizer.visible = false
         var old_wing_light := box(board, Vector3(side * 1.01, 0.43, 0.28), Vector3(0.11, 0.06, 1.02), cyan, true)
         if bool(sculpted_board.get("built")):
             old_wing_light.visible = false
@@ -158,7 +163,13 @@ func _assemble() -> void:
     var prow := piece(board, nose, Vector3(0, 0.30, -1.37), Vector3.ONE, suit)
     prow.rotation_degrees.y = 180
     for side in [-1.0, 1.0]:
-        thruster(board, Vector3(side * 0.48, 0.17, 1.18), 0.27, navy)
+        var legacy_turbine := thruster(board, Vector3(side * 0.48, 0.17, 1.18), 0.27, navy)
+        legacy_turbine.name = "LegacyPortTurbine" if side < 0.0 else "LegacyStarboardTurbine"
+        # Original cylinders/torus halos overlap the new closed swept turbine
+        # housings. Retire only when both sculpted turbines were built; preserve
+        # the separate animated flame and ion wake for boost feedback.
+        if bool(sculpted_board.get("built")):
+            legacy_turbine.visible = false
         var old_outer_panel := box(board, Vector3(side * 0.92, 0.37, -0.35), Vector3(0.35, 0.08, 1.30), bright, true)
         if bool(sculpted_board.get("built")):
             old_outer_panel.visible = false
