@@ -60,7 +60,7 @@ func _check() -> void:
         return
     # Real mesh, not alpha-striped broad exhaust sheets: each engine now
     # contains three separate narrow helical 3D tubes in a single draw call.
-    if int(wake.get("STRAND_COUNT")) != 3:
+    if int(wake.get_script().get_script_constant_map().get("STRAND_COUNT", 0)) != 3:
         _fail("triple-helical jet must use three volumetric strands")
         return
     for side_index in range(2):
