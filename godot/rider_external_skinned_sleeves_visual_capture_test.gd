@@ -5,7 +5,7 @@ extends SceneTree
 ## A successful render is not a V123 aesthetic or physical-device sign-off.
 const SIZES := [Vector2i(1280, 720), Vector2i(1170, 540)]
 const VIEWS := ["front", "chase"]
-const COSTUME_GROUPS := ["suit_sleeves", "shoulder_thrusters", "pauldrons", "head_hair", "other_costume"]
+const COSTUME_GROUPS := ["tailored_jacket", "weighted_sleeves", "skinned_armor", "shoulder_thrusters", "pauldrons", "head_hair", "other_costume"]
 
 func _initialize() -> void:
     call_deferred("_capture")
@@ -29,9 +29,15 @@ func _costume_group(mesh: MeshInstance3D, original: MeshInstance3D) -> String:
         return "shoulder_thrusters"
     if name_text.contains("SkinnedFlightPauldron"):
         return "pauldrons"
-    if name_text.contains("WeightedFlightSleeve") or name_text == "TrueSkinnedTailoredJacket" or \
+    if name_text == "TrueSkinnedTailoredJacket":
+        return "tailored_jacket"
+    if name_text.contains("WeightedFlightSleeve"):
+        return "weighted_sleeves"
+    # These three actual GPU-skinned panels were previously classified as
+    # other_costume: none contains the literal text "SkinnedArmor".
+    if name_text in ["SkinnedLeftPectoral", "SkinnedRightPectoral", "SkinnedSpineShield"] or \
             name_text.contains("SkinnedArmor") or path.contains("IntegratedSkinnedArmor"):
-        return "suit_sleeves"
+        return "skinned_armor"
     if name_text.contains("Hair") or name_text.contains("Portrait") or \
             path.contains("ExternalHeroHeadgear") or path.contains("ExternalSkinnedBackHair"):
         return "head_hair"
@@ -136,8 +142,11 @@ func _capture() -> void:
             shoulder_names.append(String(mesh.name))
     print("COSTUME GROUP INVENTORY (visible meshes): ", group_counts)
     print("VISIBLE SHOULDER MESHES: ", shoulder_names)
-    if int(group_counts["shoulder_thrusters"]) < 2 or int(group_counts["suit_sleeves"]) < 2:
-        _fail("weighted shoulder cores or flight suit not found for isolation")
+    if int(group_counts["shoulder_thrusters"]) < 2 or \
+            int(group_counts["tailored_jacket"]) != 1 or \
+            int(group_counts["weighted_sleeves"]) != 2 or \
+            int(group_counts["skinned_armor"]) != 3:
+        _fail("expected visible shoulder cores, one jacket, two weighted sleeves and three original-Skin armor panels")
         return
     var count := 0
     for size in SIZES:
@@ -196,8 +205,8 @@ func _capture() -> void:
     for item in visibility.keys():
         (item as MeshInstance3D).visible = bool(visibility[item])
     Engine.time_scale = 1.0
-    if count != 44:
-        _fail("expected forty-four 16:9/19.5:9 sleeve, source and isolated costume-family frames")
+    if count != 52:
+        _fail("expected fifty-two 16:9/19.5:9 sleeve, source and isolated costume-family frames")
         return
-    print("SKINNED SLEEVE VISUAL QA PASSED: 44 pose-locked, shader-time-frozen front/chase frames, including five independent costume-family overlays; manual visual gate remains open")
+    print("SKINNED SLEEVE VISUAL QA PASSED: 52 pose-locked, shader-time-frozen front/chase frames, including seven independent costume-family overlays; manual visual gate remains open")
     quit(0)
