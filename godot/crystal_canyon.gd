@@ -165,6 +165,12 @@ func reset_routes() -> void:
     if route_choices != null:
         route_choices.call("reset_course")
 
+func get_switchback_chain() -> int:
+    return int(route_choices.get("switchback_chain")) if route_choices != null else 0
+
+func get_switchback_mastery() -> bool:
+    return bool(route_choices.get("perfect_switchback")) if route_choices != null else false
+
 func check_route_choices(rider_x: float) -> Dictionary:
     if route_choices == null:
         return {}
