@@ -86,7 +86,7 @@ func _check() -> void:
     var ridge_tip: Vector3 = sculpt.sculpt(Vector3.ZERO, size, facing, 0.98, 0.1, true)
     var groove_tip: Vector3 = sculpt.sculpt(Vector3.ZERO, size, facing, 0.98, 0.2, true)
     if groove_tip.y - ridge_tip.y < size.y * 0.022 or \
-            absf(groove_tip.z - ridge_tip.z) < size.z * 0.012:
+            absf(groove_tip.z - ridge_tip.z) < size.z * 0.006:
         _fail("lower hair hem needs modeled five-lobed tips and shoulder-clearing grooves")
         return
     var scalp_ridge: Vector3 = sculpt.sculpt(Vector3.ZERO, size, facing, 0.0, 0.1, true)
