@@ -70,12 +70,25 @@ func _check() -> void:
     var x := bounds.size.x * 0.13
     var chest := Vector3(center.x + x, bounds.position.y + bounds.size.y * 0.665, center.z + bounds.size.z * 0.18)
     var waist := Vector3(center.x + x, bounds.position.y + bounds.size.y * 0.465, center.z + bounds.size.z * 0.18)
+    var shoulder := Vector3(center.x + x, bounds.position.y + bounds.size.y * 0.738, center.z + bounds.size.z * 0.18)
     var head := Vector3(center.x + x, bounds.position.y + bounds.size.y * 0.92, center.z)
     var foot := Vector3(center.x + x, bounds.position.y + bounds.size.y * 0.10, center.z)
     var chest_after: Vector3 = sculpt.call("_reshape", chest, bounds)
     var waist_after: Vector3 = sculpt.call("_reshape", waist, bounds)
     if chest_after.x <= chest.x + 0.015 or waist_after.x >= waist.x - 0.008:
         _fail("sculpt must create athletic chest-to-waist taper on original triangles")
+        return
+    # The old extra 24% shoulder expansion inflated the CC0 body's upper
+    # trapezius into a horizontal bar, visible even in source-only captures.
+    # Protect the slimmer real shoulder contour, not just a material change.
+    var shoulder_after: Vector3 = sculpt.call("_reshape", shoulder, bounds)
+    var shoulder_gain := shoulder_after.x - shoulder.x
+    var chest_gain := chest_after.x - chest.x
+    if shoulder_gain < 0.005 or shoulder_gain >= chest_gain * 0.90:
+        _fail("original weighted shoulder contour is still overinflated or collapsed")
+        return
+    if shoulder_after.z - shoulder.z >= chest_after.z - chest.z:
+        _fail("original shoulder depth still balloons beyond the sculpted chest")
         return
     if (sculpt.call("_reshape", head, bounds) as Vector3).distance_to(head) > 0.0001 or \
             (sculpt.call("_reshape", foot, bounds) as Vector3).distance_to(foot) > 0.0001:
