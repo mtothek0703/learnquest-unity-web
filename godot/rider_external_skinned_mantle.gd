@@ -190,7 +190,7 @@ func _mantle_point(bounds: AABB, back: float, back_sign: float,
     # weighted cloth still fans out during motion, but the resting chase
     # silhouette no longer overwhelms the arms and waist.
     var inner := width * (0.055 + 0.028 * t)
-    var outer := width * (0.116 + 0.087 * flare + 0.010 * t + scallop * 0.35)
+    var outer := width * (0.122 + 0.087 * flare + 0.005 * t + scallop * 0.35)
     var x := center_x + side * lerpf(inner, outer, u)
     var camber := sin(u * PI) * sin(t * PI)
     var y := bounds.position.y + bounds.size.y * (0.76 - 0.39 * t +
