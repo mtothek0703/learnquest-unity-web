@@ -148,6 +148,22 @@ func _capture() -> void:
             int(group_counts["skinned_armor"]) != 3:
         _fail("expected visible shoulder cores, one jacket, two weighted sleeves and three original-Skin armor panels")
         return
+    # The combined "other_costume" bucket still contains fourteen meshes.
+    # Capture each one against the SAME original CC0 body so the remaining
+    # right-hand/cyan protrusion can be attributed to an exact mesh, rather
+    # than guessed from an aggregate overlay or its material color.
+    var isolated_other: Array[MeshInstance3D] = []
+    for item in visibility.keys():
+        var mesh := item as MeshInstance3D
+        if mesh != original and bool(visibility[item]) and \
+                _costume_group(mesh, original) == "other_costume":
+            isolated_other.append(mesh)
+    if isolated_other.size() != 14:
+        _fail("expected fourteen individually attributable visible other-costume meshes")
+        return
+    for index in range(isolated_other.size()):
+        print("ISOLATED OTHER COSTUME %02d: %s" % [
+            index, String(isolated_other[index].get_path())])
     var count := 0
     for size in SIZES:
         viewport.size = size
@@ -202,11 +218,33 @@ func _capture() -> void:
                         _fail("could not save actual skinned sleeve frame")
                         return
                     count += 1
+            # Fourteen additional source+single-mesh controls in each
+            # front/chase and 16:9/19.5:9 view (56 extra real PNGs).
+            for index in range(isolated_other.size()):
+                for item in visibility.keys():
+                    var mesh := item as MeshInstance3D
+                    mesh.visible = mesh == original or mesh == isolated_other[index]
+                for frame in range(5):
+                    hero.global_transform = locked_hero
+                    for bone in range(locked_bones.size()):
+                        rig.set_bone_pose(bone, locked_bones[bone])
+                    await process_frame
+                await RenderingServer.frame_post_draw
+                var single_image := viewport.get_texture().get_image()
+                if single_image.is_empty() or single_image.get_width() != size.x or \
+                        single_image.get_height() != size.y:
+                    _fail("invalid isolated mesh landscape framebuffer")
+                    return
+                if single_image.save_png("%s/%dx%d_%s_single_other_%02d.png" % [
+                        folder, size.x, size.y, view, index]) != OK:
+                    _fail("cannot save individual other-costume mesh control")
+                    return
+                count += 1
     for item in visibility.keys():
         (item as MeshInstance3D).visible = bool(visibility[item])
     Engine.time_scale = 1.0
-    if count != 52:
-        _fail("expected fifty-two 16:9/19.5:9 sleeve, source and isolated costume-family frames")
+    if count != 52 + 4 * isolated_other.size():
+        _fail("expected 108 landscape frames, including fourteen individual other-costume meshes in four views")
         return
-    print("SKINNED SLEEVE VISUAL QA PASSED: 52 pose-locked, shader-time-frozen front/chase frames, including seven independent costume-family overlays; manual visual gate remains open")
+    print("SKINNED SLEEVE VISUAL QA PASSED: 108 pose-locked, shader-time-frozen front/chase frames, seven costume-family overlays and fourteen individually identified other-costume meshes; manual visual gate remains open")
     quit(0)
