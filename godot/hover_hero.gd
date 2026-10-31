@@ -185,7 +185,14 @@ func _assemble() -> void:
         var old_outer_panel := box(board, Vector3(side * 0.92, 0.37, -0.35), Vector3(0.35, 0.08, 1.30), bright, true)
         if bool(sculpted_board.get("built")):
             old_outer_panel.visible = false
-        ball(board, Vector3(side * 0.48, 0.17, 1.62), Vector3(0.20, 0.22, 0.34), cyan, true)
+        var old_rear_flare := ball(board, Vector3(side * 0.48, 0.17, 1.62),
+            Vector3(0.20, 0.22, 0.34), cyan, true)
+        old_rear_flare.name = "LegacyPortRearFlare" if side < 0.0 else "LegacyStarboardRearFlare"
+        # In the actual chase capture these old spheres still hovered as two
+        # disconnected cyan blobs beneath the new sculpted turbine outlets.
+        # Preserve them only for the original-board fallback.
+        if bool(sculpted_board.get("built")) and sculpted_board.get_node_or_null("BoostWake") != null:
+            old_rear_flare.visible = false
         box(board, Vector3(side * 0.37, 0.43, -0.28), Vector3(0.21, 0.06, 1.32), yellow, true)
 
     var body := Node3D.new()
