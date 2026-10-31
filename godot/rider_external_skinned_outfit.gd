@@ -313,15 +313,18 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     # and a controlled central sternum ridge. The prior 0.03-unit shoulder
     # relief disappeared at mobile chase distance, leaving a thin stick body.
     # Keep the offset below the 0.18-unit barrel-chest safety limit.
-    var depth := 0.012 + 0.065 * chest + 0.068 * shoulder + \
+    # Mobile chase QA still showed a swollen upper-torso silhouette. Keep
+    # the genuine sculpted chest and scapula relief, but pull the four-weight
+    # jacket closer to the original athletic body (no rigid substitute).
+    var depth := 0.012 + 0.055 * chest + 0.050 * shoulder + \
         0.043 * chest_ridge + 0.027 * collar + 0.049 * pectoral + \
-        0.032 * deltoid + 0.015 * spine_keel + \
-        0.052 * scapula + 0.032 * dorsal_shoulder + 0.016 * spine_channel
+        0.025 * deltoid + 0.015 * spine_keel + \
+        0.043 * scapula + 0.026 * dorsal_shoulder + 0.016 * spine_channel
     # Shoulder breadth and pectoral depth follow the actual imported Skin;
     # no rigid shoulder boxes or unweighted cosmetic torso are introduced.
     var waist_inset := 0.052 * waist * smoothstep(0.12, 0.35, x)
-    var spread := 0.082 * shoulder + 0.048 * deltoid - waist_inset + \
-        0.045 * dorsal_shoulder
+    var spread := 0.060 * shoulder + 0.039 * deltoid - waist_inset + \
+        0.039 * dorsal_shoulder
     return normal * depth + Vector3(signf(lateral) * spread, 0.006 * shoulder, 0.0)
 
 func _jacket_material(bounds: AABB) -> ShaderMaterial:
