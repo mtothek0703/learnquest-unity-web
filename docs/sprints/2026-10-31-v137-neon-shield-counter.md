@@ -10,7 +10,7 @@ Ein neuer, zeitlich begrenzter, räumlich wachsender cyanfarbener Torus am Bossk
 - [ ] Vollständige PR-Godot-Regression einschließlich neuer Boss-/Schild-Zeitfenster- und 3D-Ring-Tests.
 - [ ] Headless-Gameplay, Godot-Webexport, vorhandene Querformat-Renderprüfungen.
 - [ ] Historischer Pages-/Unity-Archivschutz.
-- [ ] Echte Bild-QA der 3D-Reflexion und mobile HUD-Lesbarkeit; automatisierte Geometrietests sind keine echte iPhone-Abnahme.
+- [ ] **12 echte 1280×720-/1170×540-OpenGL-Bilder**: je Perspektive Boss abwesend, Boss normal und Boss mit reflektiertem 3D-Schockring. Der Render-Test prüft eine tatsächliche Pixeländerung des neuen Rings. Zusätzlich mobile HUD-Lesbarkeit; automatische Bilder sind keine echte iPhone-Abnahme.
 - [ ] Erst bei allen erforderlichen grünen Gates Merge nach main und einmalige Veröffentlichung unter **skyway-v137/**; exakte Commit-ID in build.txt und HTTP 200 für fünf Dateien prüfen. Bis dahin V136 unverändert.
 - [ ] Reale iPhone-Safari-FPS, Clipping und vollständige Drei-Fragen-Touch-Spielrunde weiterhin separat prüfen.
 
