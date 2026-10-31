@@ -64,6 +64,22 @@ func _check() -> void:
     if outer_base.x - outer_top.x < bounds.size.x * 0.06 or             outer_top.x - inner_top.x < bounds.size.x * 0.008:
         _fail("collar must be tapered and have real closed 3D wall thickness")
         return
+    # In the real landscape screenshots the former shoulder-width 360-degree
+    # collar looked like a thick horizontal flying saucer across the chest.
+    # The new mesh must have a compact radial footprint, a lower front V and
+    # a raised rear. Keep the original four-weight closure test above.
+    if outer_base.x - bounds.get_center().x > bounds.size.x * 0.18 or \
+            outer_top.x - bounds.get_center().x > bounds.size.x * 0.12:
+        _fail("neck yoke regressed to oversized horizontal shoulder ring")
+        return
+    if front.y > bounds.position.y + bounds.size.y * 0.76 or \
+            rear.y < bounds.position.y + bounds.size.y * 0.80:
+        _fail("collar lost low front V or protective raised rear profile")
+        return
+    var depth_base: Vector3 = yoke.call("_collar_point", bounds, PI * 0.5, 0.0, false)
+    if absf(depth_base.z - bounds.get_center().z) > bounds.size.x * 0.14:
+        _fail("collar still projects too far forward/back in mobile chase view")
+        return
     var head_id := rig.find_bone("Head")
     var neck_id := rig.find_bone("neck_01")
     if head_id < 0 or neck_id < 0:
