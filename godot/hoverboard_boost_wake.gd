@@ -37,12 +37,12 @@ func _point(side: float, t: float, angle: float) -> Vector3:
     # a giant sheet that runs past the lower edge of a phone viewport.
     var taper := pow(maxf(0.0, 1.0 - t), 0.92)
     var flare := sin(PI * t)
-    var radius_x := (0.075 + 0.14 * flare) * taper + 0.004
+    var radius_x := (0.075 + 0.10 * flare) * taper + 0.004
     var radius_y := (0.045 + 0.06 * flare) * taper + 0.004
     var sweep := 0.06 * sin(t * PI * 1.6)
     return Vector3(side * (0.88 + sweep + radius_x * cos(angle)),
         0.24 + 0.055 * sin(t * TAU) + radius_y * sin(angle),
-        1.58 + 1.50 * t)
+        1.58 + 0.95 * t)
 
 # Three intertwined luminous filaments are encoded in the existing tube's
 # vertex alpha. The same two meshes/draw calls now read as coherent thruster
