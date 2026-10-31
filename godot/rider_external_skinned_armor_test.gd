@@ -123,7 +123,7 @@ func _check() -> void:
         # A real curved neckline: maximum shoulder/pectoral breadth is BELOW
         # the collar. The former monotonic widening made a horizontal shelf
         # beside the neck and visibly doubled the sleeve silhouette.
-        if middle_width <= high_width * 1.05:
+        if middle_width <= high_width * 1.10:
             _fail("weighted armor still flares into a wide flat collar shelf")
             return
         # The former 0.37-wide pectoral and 0.24-wide rear shoulder
