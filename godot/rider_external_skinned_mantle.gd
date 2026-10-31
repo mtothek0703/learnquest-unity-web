@@ -264,8 +264,10 @@ func _sculpt_yoke(body: MeshInstance3D) -> ArrayMesh:
                 # a broad rigid-looking shoulder box, hiding the skinned
                 # jacket and the mantle roots. Keep its real four-weight
                 # source triangles but use a close-fitting seam relief.
-                var offset := normal * (0.018 + shoulder * 0.010)
-                offset.x += (1.0 if x >= 0.0 else -1.0) * shoulder * 0.006
+                # The imported source shoulders already carry the 65-bone
+                # deltoid volume. A shallow fabric seam must not become a
+                # second inflated shoulder plate in the chase camera.
+                var offset := normal * (0.010 + shoulder * 0.006)
                 output.set_normal(normal)
                 output.set_bones(PackedInt32Array([
                     bones[index * 4], bones[index * 4 + 1],
@@ -282,4 +284,9 @@ func _sculpt_yoke(body: MeshInstance3D) -> ArrayMesh:
 func _is_yoke(point: Vector3, bounds: AABB) -> bool:
     var height := (point.y - bounds.position.y) / bounds.size.y
     var width := absf(point.x - bounds.get_center().x) / bounds.size.x
-    return height >= 0.635 and height <= 0.770 and width <= 0.285
+    # A tapered trapezius bridge, not a second full-width upper-arm shell.
+    # The shoulder ends narrow towards the neck at higher rest-pose rows;
+    # the weighted original deltoids and two real sleeves stay exposed.
+    var width_limit := lerpf(0.245, 0.205,
+        smoothstep(0.635, 0.770, height))
+    return height >= 0.635 and height <= 0.770 and width <= width_limit
