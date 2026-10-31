@@ -85,6 +85,20 @@ func _check() -> void:
     if absf(upper_left.x - upper_right.x) > size.x * 0.001:
         _fail("scalp and upper hair must retain their original width")
         return
+    # The five visible weighted locks must taper with the continuous
+    # underhair, instead of fanning back out over the upper armor.
+    for strand in [0, 4]:
+        var phase := float(strand) * 0.73
+        var t := 0.9
+        var old_swing := size.x * (0.14 * sin(t * TAU * 1.25 + phase) +
+            0.045 * cos(phase * 0.7)) * sin(PI * t)
+        var lock_tip: Vector3 = headwear.call("_rear_lock_curve",
+            Vector3.ZERO, size, strand, t)
+        var inset := lock_tip.x - old_swing
+        if (strand == 0 and inset < size.x * 0.020) or \
+                (strand == 4 and inset > -size.x * 0.020):
+            _fail("visible rear locks must follow the same inward tip taper")
+            return
     var original := source_meshes[0] as MeshInstance3D
     if original == null or original.skin == null or original.skin.get_bind_count() < 50:
         _fail("the original weighted humanoid Skin was replaced")
