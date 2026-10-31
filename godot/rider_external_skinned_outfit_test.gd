@@ -256,16 +256,25 @@ func _check() -> void:
     # original imported arm-bone influences; never remove the source arms.
     var arm_binds: Dictionary = {}
     var rig := adapter.get("skeleton") as Skeleton3D
+    if rig == null or rig.get_bone_count() != 65:
+        _fail("original 65-bone skeleton missing from jacket arm-weight test")
+        return
+    var arm_roots := [rig.find_bone("upperarm_l"), rig.find_bone("upperarm_r")]
+    if arm_roots.has(-1):
+        _fail("original upper-arm bones missing")
+        return
     for bind_index in range(garment.skin.get_bind_count()):
-        var bone_name := String(garment.skin.get_bind_name(bind_index))
         var bone_id := garment.skin.get_bind_bone(bind_index)
-        if bone_name.is_empty() and rig != null and bone_id >= 0 and bone_id < rig.get_bone_count():
-            bone_name = String(rig.get_bone_name(bone_id))
-        if bone_name in ["upperarm_l", "upperarm_r", "lowerarm_l", "lowerarm_r",
-                "hand_l", "hand_r"]:
-            arm_binds[bind_index] = true
-    if arm_binds.size() < 4:
-        _fail("original imported arm bind names missing")
+        if bone_id < 0 or bone_id >= rig.get_bone_count():
+            bone_id = rig.find_bone(String(garment.skin.get_bind_name(bind_index)))
+        var ancestor := bone_id
+        while ancestor >= 0:
+            if arm_roots.has(ancestor):
+                arm_binds[bind_index] = true
+                break
+            ancestor = rig.get_bone_parent(ancestor)
+    if arm_binds.size() < 10:
+        _fail("original arm descendant/finger binds missing from the 65-bone Skin")
         return
     var vertex_count := 0
     for surface in range(garment.mesh.get_surface_count()):
