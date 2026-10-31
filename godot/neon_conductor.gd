@@ -7,6 +7,8 @@ var active := false
 var elapsed := 0.0
 var hit_flash := 0.0
 var core: MeshInstance3D
+var counter_ring: MeshInstance3D
+var counter_flash := 0.0
 var coils: Node3D
 var fins: Array[Node3D] = []
 
@@ -108,6 +110,22 @@ func _ready() -> void:
     core.scale = Vector3(0.68, 0.86, 0.30)
     add_child(core)
 
+    # A short-lived, real 3D expanding cyan shock ring signals a correctly
+    # timed Shield counter, not a generic recolor of the existing beam.
+    counter_ring = MeshInstance3D.new()
+    counter_ring.name = "Shield counter shock ring"
+    var counter_mesh := TorusMesh.new()
+    counter_mesh.inner_radius = 1.18
+    counter_mesh.outer_radius = 1.33
+    counter_mesh.rings = 40
+    counter_mesh.ring_segments = 8
+    counter_ring.mesh = counter_mesh
+    counter_ring.material_override = _material(Color("#66f9ff"), true)
+    counter_ring.position = Vector3(0.0, 2.65, 1.36)
+    counter_ring.rotation.x = PI * 0.5
+    counter_ring.visible = false
+    add_child(counter_ring)
+
     coils = Node3D.new()
     coils.name = "Counter-rotating conductor coils"
     coils.position = Vector3(0.0, 2.55, 0.0)
@@ -128,11 +146,22 @@ func _ready() -> void:
 func take_hit() -> void:
     hit_flash = 0.65
 
+func take_parry() -> void:
+    take_hit()
+    counter_flash = 0.8
+    counter_ring.scale = Vector3.ONE
+    counter_ring.visible = true
+
 func _process(delta: float) -> void:
     if not active:
         return
     elapsed += delta
     hit_flash = maxf(0.0, hit_flash - delta)
+    counter_flash = maxf(0.0, counter_flash - delta)
+    counter_ring.visible = counter_flash > 0.0
+    if counter_ring.visible:
+        counter_ring.scale = Vector3.ONE * (1.0 + 0.85 * (1.0 - counter_flash / 0.8))
+        (counter_ring.material_override as StandardMaterial3D).emission_energy_multiplier = 4.0 * counter_flash / 0.8
     coils.rotation.y += delta * 0.92
     coils.rotation.z = sin(elapsed * 0.6) * 0.20
     core.scale = Vector3(0.68, 0.86, 0.30) * (1.0 + 0.12 * sin(elapsed * 5.0) + hit_flash * 0.45)

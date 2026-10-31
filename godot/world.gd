@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V136"
+const VERSION_LABEL := "V137"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -90,6 +90,10 @@ var neon_sweep_step := 0
 # only steering into a genuinely safe lane advances this skill challenge.
 var neon_dodge_streak := 0
 var neon_dodge_mastery := false
+# A precisely timed shield during the warning can reflect ONE beam.
+# Arming is consumed at the next impact and never carries into another beat.
+var neon_parry_armed := false
+var neon_parries := 0
 var guardian: Node3D
 var guardian_beam: MeshInstance3D
 var guardian_hp := GUARDIAN_HEALTH
@@ -354,7 +358,32 @@ func _update_neon_conductor(delta: float) -> void:
             # Each beat sweeps one lane; Shield or a timed jump protects the
             # player. No extra touch gesture or mid-race quiz is introduced.
             var clean_lane_dodge := lane != neon_sweep_lane
-            if lane == neon_sweep_lane and rider.position.y <= 0.9 and shield_left <= 0.0 and hit_cooldown <= 0.0:
+            var reflected := neon_parry_armed and not clean_lane_dodge and \
+                rider.position.y <= 0.9 and shield_left > 0.0
+            neon_parry_armed = false
+            if reflected:
+                # Shield-counter is a separate skill from three clean dodges.
+                # Only a newly activated shield in the final warning window
+                # can reflect a single pulse, never an entire three-beat wave.
+                neon_dodge_streak = 0
+                neon_parries += 1
+                neon_hp -= 1
+                xp += 35
+                neon_conductor.call("take_parry")
+                if neon_hp <= 0:
+                    neon_defeated = true
+                    neon_active = false
+                    neon_conductor.visible = false
+                    neon_conductor.set("active", false)
+                    neon_beam.visible = false
+                    neon_warning_left = 0.0
+                    xp += 120
+                    info_label.text = "NEON-SCHILD-KONTER! BOSS BESIEGT +155 XP!"
+                    feedback_time = 2.0
+                    return
+                info_label.text = "NEON-SCHILD-KONTER! +35 XP, BOSS %d/%d" % [neon_hp, NEON_BOSS_HEALTH]
+                feedback_time = 1.6
+            elif lane == neon_sweep_lane and rider.position.y <= 0.9 and shield_left <= 0.0 and hit_cooldown <= 0.0:
                 lives -= 1
                 hit_cooldown = 1.4
                 neon_dodge_streak = 0
@@ -858,6 +887,8 @@ func _reset_run() -> void:
     neon_sweep_step = 0
     neon_dodge_streak = 0
     neon_dodge_mastery = false
+    neon_parry_armed = false
+    neon_parries = 0
     neon_conductor.visible = false
     neon_conductor.set("active", false)
     neon_beam.visible = false
@@ -927,7 +958,12 @@ func _use_shield() -> void:
     power -= SHIELD_COST
     shield_left = 8.0
     shield_visual.visible = true
-    info_label.text = "ENERGIE-SCHILD AKTIV!"
+    # Existing shield button / touch gesture, no new mobile input.
+    # Timing must be deliberate; early shields still defend normally.
+    neon_parry_armed = world_choice == 0 and neon_active and \
+        neon_warning_left > 0.0 and neon_warning_left <= 0.60 and \
+        lane == neon_sweep_lane
+    info_label.text = "NEON-SCHILD-KONTER BEREIT!" if neon_parry_armed else "ENERGIE-SCHILD AKTIV!"
     feedback_time = 1.6
     _refresh_hud()
 
@@ -1109,6 +1145,8 @@ func _finish_run() -> void:
             reward_label.text += "\nNEON-DIRIGENT BESIEGT: +1 BONUSSTERN!"
         if world_choice == 0 and neon_dodge_mastery:
             reward_label.text += "\nNEON-TANZ: 3 SAUBERE AUSWEICHMANOEVER +60 XP +2s TURBO"
+        if world_choice == 0 and neon_parries > 0:
+            reward_label.text += "\nNEON-SCHILD-KONTER: %d REFLEXIONEN +%d XP" % [neon_parries, neon_parries * 35]
         if world_choice == 1 and guardian_defeated:
             reward_label.text += "\nKRISTALL-WÄCHTER BESIEGT: +1 BONUSSTERN!"
         if world_choice == 1 and int(canyon_zone.get("completed_routes")) >= CANYON_ROUTE_TARGET:
@@ -1609,11 +1647,11 @@ func _refresh_hud() -> void:
                         # Short enough for the narrow 16:9/19.5:9 phone HUD.
                         hud.text += "\nBOSS %d/%d  AUSWEICH %d/3  %s" % [
                             neon_hp, NEON_BOSS_HEALTH, mini(neon_dodge_streak, 3),
-                            "SWEEP!" if neon_warning_left > 0.0 else "ANGRIFF"]
+                            "KONTER!" if neon_parry_armed else ("SWEEP!" if neon_warning_left > 0.0 else "ANGRIFF")]
                     else:
                         hud.text += "\nNEON-DIRIGENT %d/%d  AUSWEICH %d/3  %s" % [
                             neon_hp, NEON_BOSS_HEALTH, mini(neon_dodge_streak, 3),
-                            "PINKER SWEEP!" if neon_warning_left > 0.0 else "ATTACKE LADEN"]
+                            "KONTER BEREIT!" if neon_parry_armed else ("PINKER SWEEP!" if neon_warning_left > 0.0 else "ATTACKE LADEN")]
             if world_choice == 1:
                 hud.text += "\nKRISTALL-PFADE %d/%d  WECHSEL: %d/4  LINKS: ENERGIE  RECHTS: XP" % [
                     mini(int(canyon_zone.get("completed_routes")), CANYON_ROUTE_TARGET),
