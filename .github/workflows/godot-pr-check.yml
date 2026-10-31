@@ -234,6 +234,17 @@ jobs:
             --script res://rider_external_skinned_back_hair_visual_capture_test.gd 2>&1 | tee /tmp/skinned-hair-visual.log
           grep -Fq 'SKINNED BACK HAIR VISUAL QA PASSED' /tmp/skinned-hair-visual.log
           test "$(find /tmp/learnquest-skinned-hair-qa -name '*.png' | wc -l)" -eq 18
+      - name: Capture 12 real neutral and bilateral CC0 carve poses in smartphone landscape
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-bilateral-pose-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_BILATERAL_POSE_OUTPUT=/tmp/learnquest-bilateral-pose-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://rider_external_bilateral_pose_visual_capture_test.gd 2>&1 | tee /tmp/bilateral-pose-visual.log
+          grep -Fq 'BILATERAL POSE VISUAL QA PASSED' /tmp/bilateral-pose-visual.log
+          test "$(find /tmp/learnquest-bilateral-pose-qa -name '*.png' | wc -l)" -eq 12
       - name: Render 32 real V123/V124 neutral and action silhouette frames
         shell: bash
         run: |
@@ -440,6 +451,13 @@ jobs:
           name: learnquest-v124-skinned-sleeve-silhouette
           path: /tmp/learnquest-sleeves-qa/*.png
           if-no-files-found: error
+      - name: Upload DRAFT CC0 bilateral surf-arm pose landscape frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v124-bilateral-65-bone-pose-frames
+          path: /tmp/learnquest-bilateral-pose-qa/*.png
+          if-no-files-found: error
       - name: Upload V124 skinned shoulder-cap A/B landscape comparison
         if: always()
         uses: actions/upload-artifact@v4
@@ -534,6 +552,7 @@ jobs:
             /tmp/quaternius-thrusters.log
             /tmp/quaternius-visual.log
             /tmp/action-visual.log
+            /tmp/bilateral-pose-visual.log
             /tmp/turbine-visual.log
             /tmp/costume-skin-follow.log
             /tmp/sculpted-suit.log
