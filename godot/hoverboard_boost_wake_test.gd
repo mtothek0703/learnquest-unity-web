@@ -51,6 +51,11 @@ func _check() -> void:
         if (duplicate as MeshInstance3D).visible:
             _fail("primitive flame or straight contrail obscures the sculpted jets")
             return
+    for flare_name in ["LegacyPortRearFlare", "LegacyStarboardRearFlare"]:
+        var rear_flare := board.get_node_or_null(flare_name) as MeshInstance3D
+        if rear_flare == null or rear_flare.visible or not rear_flare.mesh is SphereMesh:
+            _fail("disconnected cyan legacy rear flare must remain as hidden fallback")
+            return
     var parts: Array = wake.get("wake_meshes")
     var materials: Array = wake.get("wake_materials")
     if parts.size() != 2 or materials.size() != 2:
