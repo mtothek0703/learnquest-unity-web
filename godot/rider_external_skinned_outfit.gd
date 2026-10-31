@@ -82,6 +82,13 @@ func _extract_jacket(body: MeshInstance3D) -> ArrayMesh:
                 polygon.append(_source_corner(verts, normals, bones, weights, vertex_id, arm_binds))
             polygon = _clip_to_height(polygon, waist_y, true)
             polygon = _clip_to_height(polygon, collar_y, false)
+            # Source arms can fold inward in the CC0 rest pose even when their
+            # four-weight interpolation looks torso-dominant. Keep the jacket
+            # inside the imported torso envelope BEFORE sculpting it. The
+            # source arms remain untouched; only this duplicate shell is cut.
+            var torso_half_width := bounds.size.x * 0.24
+            polygon = _clip_to_lateral(polygon, bounds.get_center().x - torso_half_width, true)
+            polygon = _clip_to_lateral(polygon, bounds.get_center().x + torso_half_width, false)
             polygon = _clip_to_arm_influence(polygon, 0.48)
             if polygon.size() < 3:
                 continue
@@ -139,6 +146,31 @@ func _clip_to_height(polygon: Array[Dictionary], plane_y: float,
             if absf(dy) > 0.0000001:
                 clipped.append(_interpolate_corner(previous, current,
                     clampf((plane_y - previous_point.y) / dy, 0.0, 1.0)))
+        if current_inside:
+            clipped.append(current)
+        previous = current
+    return _deduplicate_polygon(clipped)
+
+# Keep only the torso portion of the imported rest-space silhouette. This
+# is an AABB-relative jacket-only boundary, NOT a change to the source CC0
+# arm meshes or the player's skeleton. All intersections interpolate the
+# ORIGINAL four-weight Skin exactly like the waist/collar boundaries.
+func _clip_to_lateral(polygon: Array[Dictionary], plane_x: float,
+        keep_right: bool) -> Array[Dictionary]:
+    var clipped: Array[Dictionary] = []
+    if polygon.is_empty():
+        return clipped
+    var previous: Dictionary = polygon[polygon.size() - 1]
+    for current in polygon:
+        var previous_point: Vector3 = previous["position"]
+        var current_point: Vector3 = current["position"]
+        var previous_inside := previous_point.x >= plane_x if keep_right else previous_point.x <= plane_x
+        var current_inside := current_point.x >= plane_x if keep_right else current_point.x <= plane_x
+        if previous_inside != current_inside:
+            var dx := current_point.x - previous_point.x
+            if absf(dx) > 0.0000001:
+                clipped.append(_interpolate_corner(previous, current,
+                    clampf((plane_x - previous_point.x) / dx, 0.0, 1.0)))
         if current_inside:
             clipped.append(current)
         previous = current
