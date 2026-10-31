@@ -151,6 +151,12 @@ func _check() -> void:
     if skill_hud == null or not skill_hud.text.contains("AUSWEICH 3/3"):
         _fail("Neon boss clean-dodge progress must be visible in race HUD")
         return
+    game.set("mobile_hud_layout", true)
+    game.call("_refresh_hud")
+    if not skill_hud.text.contains("BOSS 3/3  AUSWEICH 3/3") or skill_hud.text.contains("NEON-DIRIGENT 3/3"):
+        _fail("narrow phone landscape HUD needs a compact boss dodge indicator")
+        return
+    game.set("mobile_hud_layout", false)
     game.set("neon_warning_left", 0.1)
     game.set("neon_sweep_lane", 0)
     game.set("lane", 1)
