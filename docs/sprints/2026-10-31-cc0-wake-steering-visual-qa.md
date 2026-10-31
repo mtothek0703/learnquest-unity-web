@@ -20,3 +20,9 @@
 - [ ] Pages artifact size above 1 GB remains an infrastructure concern; do not touch immutable builds to hide it.
 
 Code/test work in `godot/hoverboard_boost_wake_visual_capture_test.gd`; CI expectations in `.github/workflows/godot-pr-check.yml` and `.github/workflows/publish-unity-webgl.yml`.
+
+## First controlled CI and actual visual diagnosis
+- [x] [Godot PR CI 41233730238](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41233730238) **completed/success** for the 16-frame QA code. Headless boost-wake regression and all 52 workflow steps passed; the actual renderer reported **2,131 sampled boost-on/off chase pixels** and **3,356 sampled left/right chase pixels** at a per-channel threshold of 0.08.
+- [x] [Original 16 PNGs, artifact 13054832845](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41233730238/artifacts/13054832845) downloaded and **visually inspected**, not merely counted. In the chase view the old broad transparent exhaust surfaces form **oversized cyan/violet balloon-like lobes** that dominate the board edges and run beyond the lower camera frame. The left/right difference is real, but the visual design is not premium quality. Front-view jets are largely hidden behind the board.
+- [x] **Second, substantive visual correction implemented in the same run:** the two existing procedural exhaust meshes are slimmer, shorter and more tapered, with less alpha overdraw. Original nozzle root, two draw calls, boost/lean steering, 65-bone rider, touch and gameplay remain untouched. The shape regression was adjusted to require a 2.2m+ jet and a positive tapered midsection instead of the old 2.5m+ oversized plume.
+- [ ] **Second code-head CI and new 16-frame visual comparison still required.** Do not claim the slimmer jets are better until the revised Godot test, web export and actual chase/front frames are checked. No stable release or PR merge.
