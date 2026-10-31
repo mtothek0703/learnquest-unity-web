@@ -28,15 +28,15 @@ func _check() -> void:
     for step in range(3):
         if not _correct(game):
             return
-        if step < 2 and (str(game.get("phase")) != "training" or
+        if step < 2 and (str(game.get("phase")) != "training" or \
                 int(game.get("training_correct")) != step + 1):
             _fail("a full race started before three correct English answers")
             return
-    if str(game.get("phase")) != "race" or bool(game.get("quiz_active")) or
+    if str(game.get("phase")) != "race" or bool(game.get("quiz_active")) or \
             not bool(game.get("flawless_vocabulary_launch")):
         _fail("three flawless answers must unlock an uninterrupted race")
         return
-    if int(game.get("xp")) != 165 or int(game.get("power")) != 75 or
+    if int(game.get("xp")) != 165 or int(game.get("power")) != 75 or \
             absf(float(game.get("turbo_left")) - 2.5) > 0.001:
         _fail("flawless launch must grant exactly +60 XP and 2.5s Turbo")
         return
@@ -49,8 +49,8 @@ func _check() -> void:
         _fail("flawless achievement must appear on the result screen")
         return
     game.call("_begin_training")
-    if int(game.get("training_mistakes")) != 0 or
-            bool(game.get("flawless_vocabulary_launch")) or
+    if int(game.get("training_mistakes")) != 0 or \
+            bool(game.get("flawless_vocabulary_launch")) or \
             float(game.get("turbo_left")) != 0.0:
         _fail("a new round must reset flawless progress and the old Turbo")
         return
@@ -65,7 +65,7 @@ func _check() -> void:
         return
     game.call("_answer", wrong)
     game.call("_answer", wrong)
-    if int(game.get("training_mistakes")) != 1 or
+    if int(game.get("training_mistakes")) != 1 or \
             not (game.get("answer_buttons") as Array)[wrong].disabled:
         _fail("a disabled wrong answer must not count twice")
         return
@@ -75,7 +75,7 @@ func _check() -> void:
     if str(game.get("phase")) != "race" or bool(game.get("flawless_vocabulary_launch")):
         _fail("a corrected mistake must allow the race without the clean bonus")
         return
-    if int(game.get("xp")) != 105 or float(game.get("turbo_left")) != 0.0 or
+    if int(game.get("xp")) != 105 or float(game.get("turbo_left")) != 0.0 or \
             int(game.get("power")) != 75:
         _fail("ordinary three-question run must retain the original rewards")
         return
