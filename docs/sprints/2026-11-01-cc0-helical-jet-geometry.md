@@ -16,6 +16,12 @@ Earlier chase/turbine frames show two broad, semi-transparent, striped wake shee
 - `godot/hoverboard_boost_wake_test.gd`: verify all three helix tubes exist in actual uploaded mesh vertices on both sides, mirrored spatial separation, narrow taper, no collisions, unchanged boost and steering at 30/60 FPS.
 - Performance trade-off: 2 wake draw calls unchanged, 3×32×8×6 = **4,608 vertices per wake**, compared with 40×12×6 = **2,880** previously. Reduced overdraw is the intended trade-off; real iPhone FPS not yet measured.
 
+## Render QA finding and second implementation step
+- First complete CI [41251626997](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41251626997) passed Godot tests, Web export, and 16 real wake frames ([artifact 13061059242](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41251626997/artifacts/13061059242)).
+- **Actual visual inspection revealed a critical oversight:** the new narrow helices were visible, but the broad striped sheets and floating dots remained **even in the wake-off control**. Their source is the independent older `cinematic_ion_wake.gd` renderer, not the replaced `hoverboard_boost_wake.gd` mesh. The first pass therefore did **not** solve the clutter by itself.
+- Second step: `cinematic_ion_wake.gd` now exposes `set_streamlined_mode()`; `hover_hero.gd` enables it only if the sculpted chassis and BoostWake actually exist. Four old broad ribbon meshes and twelve sparks remain present as a **safe fallback**, but are hidden when the modern helix jets are active. The old engine light remains available. The new regression checks this exact hierarchy and conditional visibility.
+- This second-step code requires its own **fresh CI and actual off/neutral/left/right image comparison** before any quality claim. Still DRAFT, never merge while visual hold remains.
+
 ## Quality gates
 - GitHub Actions full Godot headless suite, import, web export, and landscape visual capture must pass before this can be called technically verified.
 - Inspect real 1280×720 and 1170×540 chase/oblique frames against the prior artifact, with attention to wake occlusion and rider silhouette. **No visual acceptance yet.**
