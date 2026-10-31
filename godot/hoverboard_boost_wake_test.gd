@@ -58,6 +58,39 @@ func _check() -> void:
     if bright < dark * 4.0 or bright <= 0.10 or tip_alpha >= bright * 0.15:
         _fail("boost wakes need tapered, high-contrast helical 3D filaments")
         return
+    # Real mesh, not alpha-striped broad exhaust sheets: each engine now
+    # contains three separate narrow helical 3D tubes in a single draw call.
+    if int(wake.get("STRAND_COUNT")) != 3:
+        _fail("triple-helical jet must use three volumetric strands")
+        return
+    for side_index in range(2):
+        var side := -1.0 if side_index == 0 else 1.0
+        var actual: PackedVector3Array = (parts[side_index] as MeshInstance3D).mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+        for strand in range(3):
+            var center: Vector3 = wake.call("_filament_center", side, 0.5, strand)
+            var mirror: Vector3 = wake.call("_filament_center", -side, 0.5, strand)
+            if absf(center.x + mirror.x) > 0.0001 or absf(center.y - mirror.y) > 0.0001:
+                _fail("new 3D helix must remain mirrored between engines")
+                return
+            var sample: Vector3 = wake.call("_filament_point", side, 0.5, 0.0, strand)
+            var found := false
+            for vertex in actual:
+                if vertex.distance_to(sample) < 0.0001:
+                    found = true
+                    break
+            if not found:
+                _fail("each helix must exist in the actual uploaded render mesh")
+                return
+        var strand_a: Vector3 = wake.call("_filament_center", side, 0.5, 0)
+        var strand_b: Vector3 = wake.call("_filament_center", side, 0.5, 1)
+        if strand_a.distance_to(strand_b) < 0.06:
+            _fail("three helices must be spatially distinct, not coincident")
+            return
+        var mid_radius: float = wake.call("_filament_radius", 0.5)
+        var tip_radius: float = wake.call("_filament_radius", 1.0)
+        if mid_radius > 0.025 or tip_radius >= mid_radius * 0.5:
+            _fail("filament tubes must stay narrow and taper at their tips")
+            return
     if wake.find_children("*", "CollisionObject3D", true, false).size() > 0:
         _fail("boost wake may not create gameplay collision objects")
         return
