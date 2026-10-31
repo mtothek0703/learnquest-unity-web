@@ -177,6 +177,7 @@ func _capture() -> void:
         for view in VIEWS:
             camera.position = Vector3(0, 2.0, -5.2) if view == "front" else Vector3(0, 2.25, 5.4)
             camera.look_at(Vector3(0, 1.8, 0), Vector3.UP)
+            var source_control: Image = null
             for layer in ["skin_layers", "complete_rider", "source_isolation", "costume_groups"]:
                 var variants := ["without_sleeves", "with_sleeves"]
                 if layer == "source_isolation":
@@ -220,6 +221,8 @@ func _capture() -> void:
                     if image.is_empty() or image.get_width() != size.x or image.get_height() != size.y:
                         _fail("invalid smartphone landscape framebuffer")
                         return
+                    if layer == "source_isolation" and variant == "source_only":
+                        source_control = image.duplicate() as Image
                     if image.save_png("%s/%dx%d_%s_%s_%s.png" % [
                             folder, size.x, size.y, view, layer, variant]) != OK:
                         _fail("could not save actual skinned sleeve frame")
@@ -247,6 +250,36 @@ func _capture() -> void:
                     _fail("cannot save individual other-costume mesh control")
                     return
                 count += 1
+            # Re-render the SAME imported source after all 27 costume/mesh
+            # toggles. A drifting control makes a cross-run armor/hair pixel
+            # delta unreliable, even when shader TIME is frozen.
+            if source_control == null:
+                _fail("missing initial source-only control frame")
+                return
+            for item in visibility.keys():
+                (item as MeshInstance3D).visible = item == original
+            for frame in range(5):
+                hero.global_transform = locked_hero
+                for bone in range(locked_bones.size()):
+                    rig.set_bone_pose(bone, locked_bones[bone])
+                await process_frame
+            await RenderingServer.frame_post_draw
+            var repeated_control := viewport.get_texture().get_image()
+            if repeated_control.is_empty() or repeated_control.get_size() != source_control.get_size():
+                _fail("source-only repeat framebuffer missing or resized")
+                return
+            var drift_samples := 0
+            for py in range(0, size.y, 6):
+                for px in range(0, size.x, 6):
+                    var a: Color = source_control.get_pixel(px, py)
+                    var b: Color = repeated_control.get_pixel(px, py)
+                    if maxf(absf(a.r - b.r), maxf(absf(a.g - b.g), absf(a.b - b.b))) > 0.10:
+                        drift_samples += 1
+            print("SOURCE-ONLY CONTROL %dx%d %s: %d changed samples (6px grid)" % [
+                size.x, size.y, view, drift_samples])
+            if drift_samples > 24:
+                _fail("source-only control drift invalidates isolated costume A/B (%d samples)" % drift_samples)
+                return
     for item in visibility.keys():
         (item as MeshInstance3D).visible = bool(visibility[item])
     Engine.time_scale = 1.0
