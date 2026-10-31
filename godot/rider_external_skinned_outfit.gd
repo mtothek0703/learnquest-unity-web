@@ -38,14 +38,26 @@ func _extract_jacket(body: MeshInstance3D) -> ArrayMesh:
     # this follows each 65-bone arm through steering and jumping.
     var arm_binds: Dictionary = {}
     var rig := body.get_node_or_null(body.skeleton) as Skeleton3D
+    if rig == null:
+        push_warning("Cannot safely trim CC0 jacket without the original 65-bone skeleton")
+        return null
+    var left_root := rig.find_bone("upperarm_l")
+    var right_root := rig.find_bone("upperarm_r")
+    if left_root < 0 or right_root < 0:
+        return null
     for bind_index in range(body.skin.get_bind_count()):
-        var bone_name := String(body.skin.get_bind_name(bind_index))
         var bone_id := body.skin.get_bind_bone(bind_index)
-        if bone_name.is_empty() and rig != null and bone_id >= 0 and bone_id < rig.get_bone_count():
-            bone_name = String(rig.get_bone_name(bone_id))
-        if bone_name in ["upperarm_l", "upperarm_r", "lowerarm_l", "lowerarm_r",
-                "hand_l", "hand_r"]:
-            arm_binds[bind_index] = true
+        if bone_id < 0 or bone_id >= rig.get_bone_count():
+            bone_id = rig.find_bone(String(body.skin.get_bind_name(bind_index)))
+        # Finger and thumb bones are descendants of the upper arm. The old
+        # six-name allowlist missed them, so hand triangles with finger-heavy
+        # weights could survive the jacket cut and form cyan/pink wrist bulbs.
+        var ancestor := bone_id
+        while ancestor >= 0:
+            if ancestor == left_root or ancestor == right_root:
+                arm_binds[bind_index] = true
+                break
+            ancestor = rig.get_bone_parent(ancestor)
     if arm_binds.size() < 4:
         push_warning("Cannot safely trim jacket arm duplicates without original arm Skin binds")
         return null
