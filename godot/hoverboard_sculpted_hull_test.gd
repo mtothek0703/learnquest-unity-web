@@ -222,6 +222,39 @@ func _check() -> void:
     if engine_mid_top.y - engine_mid_bottom.y < 0.40 or engine_mid_top.y - engine_tip_top.y < 0.08 or engine_back.z - engine_front.z < 1.0:
         _fail("propulsion housing lacks a swept, three-dimensional tapered body")
         return
+    # Four genuinely recessed longitudinal channels must exist in the
+    # turbine's ACTUAL render mesh, not just a shader or extra decoration.
+    # The flutes fade away at both ends to preserve closed round end caps.
+    for side in [-1.0, 1.0]:
+        var center_x := side * (0.80 + 0.08 * 0.5)
+        var groove: Vector3 = sculpt.call("_thruster_point", side, 0.5, 0.0)
+        var ridge: Vector3 = sculpt.call("_thruster_point", side, 0.5, PI / 4.0)
+        var groove_radius := absf(groove.x - center_x)
+        var ridge_radius := absf(ridge.x - center_x) / cos(PI / 4.0)
+        if ridge_radius - groove_radius < 0.030:
+            _fail("turbine housing lacks four genuinely recessed 3D cooling channels")
+            return
+        var front_groove: Vector3 = sculpt.call("_thruster_point", side, 0.05, 0.0)
+        var front_ridge: Vector3 = sculpt.call("_thruster_point", side, 0.05, PI / 4.0)
+        var front_center := side * (0.80 + 0.08 * 0.05)
+        if absf(absf(front_groove.x - front_center) -
+                absf(front_ridge.x - front_center) / cos(PI / 4.0)) > 0.001:
+            _fail("recessed turbine channels must fade before the closed front cap")
+            return
+        var turbine := port_engine if side < 0.0 else starboard_engine
+        var actual_vertices: PackedVector3Array = turbine.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+        var found_groove := false
+        var found_ridge := false
+        for vertex in actual_vertices:
+            if vertex.distance_to(groove) < 0.0001:
+                found_groove = true
+            if vertex.distance_to(ridge) < 0.0001:
+                found_ridge = true
+            if found_groove and found_ridge:
+                break
+        if not found_groove or not found_ridge:
+            _fail("fluted turbine contour is absent from the actual GPU mesh")
+            return
     var halo_outer: Vector3 = sculpt.call("_exhaust_halo_point", 1.0, 0.0, 0.0)
     var halo_inner: Vector3 = sculpt.call("_exhaust_halo_point", 1.0, 0.0, PI)
     if halo_outer.x - halo_inner.x < 0.04 or halo_outer.z < engine_back.z:
