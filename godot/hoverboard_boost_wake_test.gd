@@ -62,7 +62,21 @@ func _check() -> void:
     if float(materials[1].emission_energy_multiplier) <= float(materials[0].emission_energy_multiplier):
         _fail("carving must brighten the outside wake")
         return
+    # Both original exhaust openings stay attached even when the outside
+    # plume becomes physically longer and wider during a right-hand carve.
+    var port := parts[0] as MeshInstance3D
+    var starboard := parts[1] as MeshInstance3D
+    if starboard.scale.z <= port.scale.z + 0.15 or \
+            starboard.scale.x <= port.scale.x + 0.10:
+        _fail("outside boost wake needs visibly longer, wider 3D geometry")
+        return
+    for part in parts:
+        var plume := part as MeshInstance3D
+        if absf(plume.position.z + 1.58 * plume.scale.z - 1.58) > 0.0001:
+            _fail("wake scaling detached its root from the turbine exhaust")
+            return
     var at_30 := 0.0
+    var length_30 := 0.0
     for fps in [30, 60]:
         wake.set("intensity", 0.0)
         for frame in range(3 if fps == 30 else 6):
@@ -70,9 +84,17 @@ func _check() -> void:
         var level := float(wake.get("intensity"))
         if fps == 30:
             at_30 = level
-        elif absf(level - at_30) > 0.001:
-            _fail("wake fade-in must match at 30 and 60 FPS")
+            length_30 = starboard.scale.z
+        elif absf(level - at_30) > 0.001 or \
+                absf(starboard.scale.z - length_30) > 0.001:
+            _fail("wake fade and 3D trail length must match at 30 and 60 FPS")
             return
+    # A reversed turn must switch which actual plume extends farther.
+    legacy.set("lean", -0.7)
+    wake.call("_process", 0.25)
+    if port.scale.z <= starboard.scale.z + 0.15:
+        _fail("left-hand carve must extend the port wake instead")
+        return
     legacy.set("boosting", false)
     for frame in range(30):
         wake.call("_process", 0.0333)
