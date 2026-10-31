@@ -81,6 +81,16 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: f
         yoke_mat.set_shader_parameter("rest_width", bounds.size.x)
         shoulder_yoke.material_override = yoke_mat
         body.get_parent().add_child(shoulder_yoke)
+        # The isolated landscape A/B still showed a horizontal duplicate
+        # shoulder/chest band even after narrowing its four-weight geometry.
+        # The two genuine source-skinned sleeves now own this transition.
+        # Retire the redundant bridge ONLY when both fitted sleeves exist;
+        # retain the weighted mesh as a hidden QA/fallback reference.
+        var sleeve_controller := get_parent().get_node_or_null("ExternalSkinnedFlightSleeves") as Node
+        if sleeve_controller != null:
+            var fitted_sleeves: Array = sleeve_controller.get("sleeves")
+            if fitted_sleeves.size() == 2:
+                shoulder_yoke.visible = false
         yoke_vertices = yoke_mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
         panels = created
         mantle_span = bounds.size.y * 0.39
