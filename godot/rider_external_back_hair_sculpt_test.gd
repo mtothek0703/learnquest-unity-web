@@ -69,6 +69,22 @@ func _check() -> void:
         if sculpt.ridge(0.5, u) < 0.48 or sculpt.ridge(0.0, u) > 0.001:
             _fail("five smooth scalp-to-tip hair ridges must rise and taper")
             return
+    # The lower five-channel curtain now draws inward above the shoulders,
+    # while the scalp stays at its original width. Check real procedural
+    # vertex offsets rather than accepting a shader-only appearance change.
+    var root_left: Vector3 = sculpt.sculpt(Vector3.ZERO, size, facing, 0.0, 0.0, true)
+    var root_right: Vector3 = sculpt.sculpt(Vector3.ZERO, size, facing, 0.0, 1.0, true)
+    var tip_left: Vector3 = sculpt.sculpt(Vector3.ZERO, size, facing, 0.9, 0.0, true)
+    var tip_right: Vector3 = sculpt.sculpt(Vector3.ZERO, size, facing, 0.9, 1.0, true)
+    var tip_inset := (tip_left.x - tip_right.x) - (root_left.x - root_right.x)
+    if tip_inset < size.x * 0.055 or tip_inset > size.x * 0.09:
+        _fail("lower hair must taper symmetrically toward neck, not flare over shoulders")
+        return
+    var upper_left: Vector3 = sculpt.sculpt(Vector3.ZERO, size, facing, 0.25, 0.0, true)
+    var upper_right: Vector3 = sculpt.sculpt(Vector3.ZERO, size, facing, 0.25, 1.0, true)
+    if absf(upper_left.x - upper_right.x) > size.x * 0.001:
+        _fail("scalp and upper hair must retain their original width")
+        return
     var original := source_meshes[0] as MeshInstance3D
     if original == null or original.skin == null or original.skin.get_bind_count() < 50:
         _fail("the original weighted humanoid Skin was replaced")
