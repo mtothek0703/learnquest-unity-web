@@ -126,6 +126,13 @@ func _assemble() -> void:
     # their broad translucent layers only when the new wake initialized.
     if bool(sculpted_board.get("built")) and sculpted_board.get_node_or_null("BoostWake") != null:
         ion_wake.call("set_streamlined_mode", true)
+        # The V12 primitive flame ellipsoids and straight boost boxes are
+        # duplicate propulsion on this board. Retain their scene nodes for
+        # fallback, but draw only the actual sculpted nozzle/helix system.
+        for old_flame in flames:
+            old_flame.visible = false
+        for old_trail in energy_trails:
+            old_trail.visible = false
     # V12: prominent swept side wings, rear stabilisers and an illuminated
     # centre spine. These change the board outline even from the chase camera.
     for side in [-1.0, 1.0]:
