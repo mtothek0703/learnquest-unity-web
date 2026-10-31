@@ -1,6 +1,6 @@
 extends SceneTree
-## V125: eight actual OpenGL landscape images compare the Neon City race
-## with and without the new modeled boss. No phone FPS claims are made.
+## V137: twelve actual OpenGL landscape images: original boss before/after
+## plus its new timed shield-counter shock ring. No phone FPS claims are made.
 const SIZES := [Vector2i(1280, 720), Vector2i(1170, 540)]
 const VIEWS := ["chase", "oblique"]
 
@@ -61,8 +61,17 @@ func _capture() -> void:
                 camera.position = Vector3(5.0, 7.0, 10.5)
                 camera.look_at(Vector3(0.0, 3.5, -10.0), Vector3.UP)
             var baseline: Image
-            for state in ["before", "after"]:
-                boss.visible = state == "after"
+            var normal_boss: Image
+            boss.set("active", false)
+            boss.set("counter_flash", 0.0)
+            (boss.get("counter_ring") as MeshInstance3D).visible = false
+            for state in ["before", "after", "parry"]:
+                boss.visible = state != "before"
+                if state == "parry":
+                    boss.call("take_parry")
+                    boss.set("active", true)
+                    boss.call("_process", 0.20)
+                    boss.set("active", false)
                 for frame in range(5):
                     await process_frame
                 await RenderingServer.frame_post_draw
@@ -75,22 +84,32 @@ func _capture() -> void:
                     return
                 if state == "before":
                     baseline = shot
+                elif state == "after":
+                    normal_boss = shot
                 else:
+                    if normal_boss == null:
+                        _fail("missing non-parry boss control image")
+                        return
+                if state != "before":
                     var changed := 0
                     for y in range(108):
                         for x in range(192):
                             var px := int(float(size.x - 1) * float(x) / 191.0)
                             var py := int(float(size.y - 1) * float(y) / 107.0)
-                            var a := baseline.get_pixel(px, py)
+                            var a := (normal_boss if state == "parry" else baseline).get_pixel(px, py)
                             var b := shot.get_pixel(px, py)
                             if absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b) > 0.18:
                                 changed += 1
-                    if changed < 100:
-                        _fail("modeled boss is not visibly distinct in %s %s (%d samples)" % [str(size), view, changed])
+                    var minimum := 10 if state == "parry" else 100
+                    if changed < minimum:
+                        _fail("%s is not visibly distinct in %s %s (%d samples)" % [
+                            state, str(size), view, changed])
                         return
+                    print("NEON VISUAL A/B: %s %s %s = %d changed samples" % [
+                        str(size), view, state, changed])
                 captures += 1
-    if captures != 8:
-        _fail("expected eight actual before-after boss screenshots")
+    if captures != 12:
+        _fail("expected twelve boss and counter-ring landscape screenshots")
         return
-    print("NEON CONDUCTOR VISUAL QA PASSED: eight 16:9 / 19.5:9 before-after Neon City frames")
+    print("NEON CONDUCTOR VISUAL QA PASSED: twelve real landscape boss / counter 3D frames")
     quit(0)

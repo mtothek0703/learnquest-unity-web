@@ -37,6 +37,22 @@ func _check() -> void:
     if float(boss.get("hit_flash")) <= 0.0:
         _fail("boss must react visibly to super attack")
         return
+    var counter := boss.get_node_or_null("Shield counter shock ring") as MeshInstance3D
+    if counter == null or counter.mesh == null or counter.visible:
+        _fail("real 3D counter shock ring must exist but remain hidden at idle")
+        return
+    boss.call("take_parry")
+    if not counter.visible or float(boss.get("counter_flash")) < 0.79:
+        _fail("parry must reveal a distinct modeled 3D feedback ring")
+        return
+    boss.call("_process", 0.2)
+    if counter.scale.x < 1.1:
+        _fail("counter shock ring must physically expand after reflection")
+        return
+    boss.call("_process", 0.7)
+    if counter.visible:
+        _fail("counter ring must disappear to protect mobile frame rate")
+        return
     boss.queue_free()
 
     var game := preload("res://world.gd").new() as Node3D
@@ -173,6 +189,105 @@ func _check() -> void:
     if bool(game.get("neon_dodge_mastery")) or int(game.get("neon_dodge_streak")) != 0:
         _fail("next race must reset boss dodge streak and mastery")
         return
+    # V137: a freshly activated shield in the last 0.6 seconds of the
+    # indicated lane reflects one real boss hit. Existing shields outside
+    # this window still defend, and dodging cancels the armed reflection.
+    game.call("_reset_run")
+    game.set("distance", 470.0)
+    game.call("_update_neon_conductor", 0.1)
+    game.set("power", 90)
+    game.set("neon_warning_left", 0.42)
+    game.set("neon_sweep_lane", 0)
+    game.set("lane", 0)
+    game.call("_use_shield")
+    if not bool(game.get("neon_parry_armed")) or int(game.get("power")) != 60:
+        _fail("timed shield must arm exactly one counter using existing energy")
+        return
+    game.set("mobile_hud_layout", true)
+    game.call("_refresh_hud")
+    if not (game.get("hud") as Label).text.contains("KONTER!"):
+        _fail("shield counter timing must be legible in phone landscape HUD")
+        return
+    game.call("_update_neon_conductor", 0.5)
+    if int(game.get("neon_hp")) != 2 or int(game.get("neon_parries")) != 1 or \
+            int(game.get("xp")) != 35 or int(game.get("lives")) != 3 or \
+            bool(game.get("neon_parry_armed")) or int(game.get("neon_dodge_streak")) != 0:
+        _fail("one timed shield must reflect exactly one beam for 35 XP and one boss HP")
+        return
+    var game_boss := game.get("neon_conductor") as Node3D
+    if float(game_boss.get("counter_flash")) <= 0.0:
+        _fail("actual boss must show the 3D counter shock ring")
+        return
+    # The same 8s shield must not auto-reflect the next sweep beat.
+    game.set("neon_warning_left", 0.42)
+    game.set("neon_sweep_lane", 0)
+    game.call("_update_neon_conductor", 0.5)
+    if int(game.get("neon_hp")) != 2 or int(game.get("neon_parries")) != 1:
+        _fail("shield counter may not be farmed across repeated boss beats")
+        return
+    game.set("distance", game.get("mission_target"))
+    game.call("_finish_run")
+    if not (game.get("reward_label") as Label).text.contains("NEON-SCHILD-KONTER: 1"):
+        _fail("finished race must show shield counter rewards")
+        return
+
+    game.call("_reset_run")
+    game.set("distance", 470.0)
+    game.call("_update_neon_conductor", 0.1)
+    game.set("power", 90)
+    game.set("neon_warning_left", 0.42)
+    game.set("neon_sweep_lane", 0)
+    game.set("lane", 0)
+    game.call("_use_shield")
+    game.set("lane", 1)
+    game.call("_update_neon_conductor", 0.5)
+    if int(game.get("neon_parries")) != 0 or int(game.get("neon_hp")) != 3 or \
+            int(game.get("neon_dodge_streak")) != 1:
+        _fail("moving to a safe lane must dodge, not reflect an armed counter")
+        return
+
+    game.call("_reset_run")
+    game.set("distance", 470.0)
+    game.call("_update_neon_conductor", 0.1)
+    game.set("power", 90)
+    game.set("neon_warning_left", 0.80)
+    game.set("neon_sweep_lane", 0)
+    game.set("lane", 0)
+    game.call("_use_shield")
+    if bool(game.get("neon_parry_armed")):
+        _fail("early shield must not auto-arm a late reflection")
+        return
+    game.call("_update_neon_conductor", 0.85)
+    if int(game.get("neon_hp")) != 3 or int(game.get("lives")) != 3:
+        _fail("early shield must protect without damaging the boss")
+        return
+    game.call("_reset_run")
+    if int(game.get("neon_parries")) != 0 or bool(game.get("neon_parry_armed")):
+        _fail("next race must reset reflection count and armed shield")
+        return
+    # Final-core reflection must defeat the boss cleanly, clear its beam and
+    # preserve the normal boss-star award instead of soft-locking the race.
+    game.set("distance", 470.0)
+    game.call("_update_neon_conductor", 0.1)
+    game.set("neon_hp", 1)
+    game.set("power", 90)
+    game.set("neon_warning_left", 0.40)
+    game.set("neon_sweep_lane", 0)
+    game.set("lane", 0)
+    game.call("_use_shield")
+    game.call("_update_neon_conductor", 0.45)
+    if not bool(game.get("neon_defeated")) or bool(game.get("neon_active")) or \
+            (game.get("neon_conductor") as Node3D).visible or \
+            (game.get("neon_beam") as MeshInstance3D).visible or \
+            int(game.get("xp")) != 155:
+        _fail("last shield counter must defeat boss, hide beam and grant 35+120 XP")
+        return
+    game.set("distance", game.get("mission_target"))
+    game.call("_finish_run")
+    if not (game.get("reward_label") as Label).text.contains("NEON-DIRIGENT BESIEGT"):
+        _fail("shield-counter boss defeat must retain the original bonus star")
+        return
+
     game.set("world_choice", 1)
     game.call("_apply_world_theme")
     game.set("distance", 900.0)
