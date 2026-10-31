@@ -115,6 +115,64 @@ func _check() -> void:
     if int(game.get("neon_hp")) != 3 or bool(game.get("neon_defeated")) or conductor.visible or warning.visible:
         _fail("next race must reset all boss state without stale hazards")
         return
+    # New optional lane skill: a shield/jump save is valid survival, but it
+    # must not count as a clean dodge of the warned lane.
+    game.set("distance", 470.0)
+    game.call("_update_neon_conductor", 0.1)
+    game.set("neon_warning_left", 0.1)
+    game.set("neon_sweep_lane", -1)
+    game.set("lane", 1)
+    game.call("_update_neon_conductor", 0.2)
+    if int(game.get("neon_dodge_streak")) != 1:
+        _fail("safe-lane steering must count as one clean boss dodge")
+        return
+    game.set("neon_warning_left", 0.1)
+    game.set("neon_sweep_lane", 0)
+    game.set("lane", 0)
+    game.set("shield_left", 4.0)
+    game.call("_update_neon_conductor", 0.2)
+    if int(game.get("neon_dodge_streak")) != 0 or int(game.get("lives")) != 3:
+        _fail("shield must preserve life without crediting clean lane mastery")
+        return
+    game.call("_reset_run")
+    game.set("distance", 470.0)
+    game.call("_update_neon_conductor", 0.1)
+    for beat in range(3):
+        game.set("neon_warning_left", 0.1)
+        game.set("neon_sweep_lane", beat - 1)
+        game.set("lane", 1 if beat < 2 else -1)
+        game.call("_update_neon_conductor", 0.2)
+    if not bool(game.get("neon_dodge_mastery")) or int(game.get("neon_dodge_streak")) != 3 or \
+            int(game.get("xp")) != 60 or float(game.get("turbo_left")) < 2.0:
+        _fail("three actual clean dodges must award exactly 60 XP and 2s Turbo")
+        return
+    game.call("_refresh_hud")
+    var skill_hud := game.get("hud") as Label
+    if skill_hud == null or not skill_hud.text.contains("AUSWEICH 3/3"):
+        _fail("Neon boss clean-dodge progress must be visible in race HUD")
+        return
+    game.set("mobile_hud_layout", true)
+    game.call("_refresh_hud")
+    if not skill_hud.text.contains("BOSS 3/3  AUSWEICH 3/3") or skill_hud.text.contains("NEON-DIRIGENT 3/3"):
+        _fail("narrow phone landscape HUD needs a compact boss dodge indicator")
+        return
+    game.set("mobile_hud_layout", false)
+    game.set("neon_warning_left", 0.1)
+    game.set("neon_sweep_lane", 0)
+    game.set("lane", 1)
+    game.call("_update_neon_conductor", 0.2)
+    if int(game.get("xp")) != 60:
+        _fail("clean-dodge mastery must be awarded only once per round")
+        return
+    game.set("distance", game.get("mission_target"))
+    game.call("_finish_run")
+    if not (game.get("reward_label") as Label).text.contains("NEON-TANZ"):
+        _fail("completed race results must recognize three clean boss dodges")
+        return
+    game.call("_reset_run")
+    if bool(game.get("neon_dodge_mastery")) or int(game.get("neon_dodge_streak")) != 0:
+        _fail("next race must reset boss dodge streak and mastery")
+        return
     game.set("world_choice", 1)
     game.call("_apply_world_theme")
     game.set("distance", 900.0)
