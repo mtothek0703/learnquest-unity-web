@@ -99,6 +99,31 @@ func _check() -> void:
                 (strand == 4 and inset > -size.x * 0.020):
             _fail("visible rear locks must follow the same inward tip taper")
             return
+    # Inspect the actual 3D cross-section, not a shader color or a
+    # screenshot pixel threshold: each closed lock must end in a slender,
+    # still non-degenerate tip instead of the former blunt paddle.
+    var path_points: Array[Vector3] = [
+        Vector3(0.0, 0.0, 0.0), Vector3(0.0, -1.0, 0.0)]
+    var radius := maxf(size.x * 0.105, 0.01)
+    var mid_left: Vector3 = headwear.call("_back_lock_point",
+        path_points, radius, 0.50, 0.0, true)
+    var mid_right: Vector3 = headwear.call("_back_lock_point",
+        path_points, radius, 0.50, 1.0, true)
+    var tip_left: Vector3 = headwear.call("_back_lock_point",
+        path_points, radius, 0.98, 0.0, true)
+    var tip_right: Vector3 = headwear.call("_back_lock_point",
+        path_points, radius, 0.98, 1.0, true)
+    var mid_width := mid_right.x - mid_left.x
+    var tip_width := tip_right.x - tip_left.x
+    if mid_width < radius * 2.0 or tip_width <= 0.0 or \
+            tip_width >= mid_width * 0.20:
+        _fail("five 3D hair locks must taper to fine, non-degenerate ends")
+        return
+    var last_tip: Vector3 = headwear.call("_back_lock_point",
+        path_points, radius, 1.0, 1.0, true)
+    if not last_tip.is_finite():
+        _fail("closed tapered hair tip must retain finite rest geometry")
+        return
     var original := source_meshes[0] as MeshInstance3D
     if original == null or original.skin == null or original.skin.get_bind_count() < 50:
         _fail("the original weighted humanoid Skin was replaced")
