@@ -1,6 +1,6 @@
 extends Node
-## V124 draft: one closed, anatomically tapered neck-to-shoulder flight yoke.
-## The 360-degree surface is genuinely weighted to four ORIGINAL CC0 bones,
+## DRAFT: split, anatomically tapered neck-to-shoulder flight yoke.
+## The open 292.5-degree surface is weighted to four ORIGINAL CC0 bones,
 ## shares the imported Skin and never creates gameplay collision objects.
 ## Open front / raised rear preserves the face in both landscape cameras.
 const ROWS := 15
@@ -38,7 +38,7 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: f
             for segment in range(SEGMENTS):
                 var a0 := TAU * float(segment) / float(SEGMENTS)
                 var a1 := TAU * float(segment + 1) / float(SEGMENTS)
-                # Leave a real 45-degree front opening. The old lowered V was
+                # Leave a real 67.5-degree front opening. The old lowered V was
                 # still a closed 360-degree ring across the upper chest.
                 if _front_gap((a0 + a1) * 0.5):
                     continue
@@ -57,7 +57,7 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: f
         var front_center := PI * 0.5 if face_direction > 0.0 else PI * 1.5
         gap_cap_vertices = 0
         for side in [-1.0, 1.0]:
-            _end_cap(surface, joints, front_center + side * PI / 8.0, side)
+            _end_cap(surface, joints, front_center + side * 3.0 * PI / 16.0, side)
             gap_cap_vertices += 6
         var mesh := surface.commit()
         if mesh == null:
@@ -113,7 +113,7 @@ func _collar_point(bounds: AABB, angle: float, t: float, inside: bool) -> Vector
 
 func _front_gap(angle: float) -> bool:
     var front_center := PI * 0.5 if face_direction > 0.0 else PI * 1.5
-    return absf(wrapf(angle - front_center, -PI, PI)) < PI / 8.0 - 0.00001
+    return absf(wrapf(angle - front_center, -PI, PI)) < 3.0 * PI / 16.0 - 0.00001
 
 func _weights(t: float, back: float) -> PackedFloat32Array:
     var low := 0.21 + 0.0 * back
