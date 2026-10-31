@@ -14,7 +14,8 @@
 - CI workflow requires all 16 images and uploads them as a dedicated artifact.
 
 ## Gates and open risks
-- **CI on final head pending.** Do not claim tests, export or image comparison passed until the final GitHub Actions run completes. A code diff or image count alone does not establish improved overall visual quality.
+- **Final code head `431ba6e3` technically green:** [Godot PR CI 41228397745](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41228397745) completed/success, including existing gameplay/65-bone/hoverboard regressions, Web export and **16 real landscape frames**. [Original 16-frame artifact 13052447203](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41228397745/artifacts/13052447203). The following Markdown-only commit does not alter tested code.
+- **Actual visual A/B inspected:** compared `legacy_before` and `clean_after` at the same frozen camera and rider pose. For RGB maximum-channel absolute difference >25: **20,134 pixels** in 1280×720 chase (2.18% of frame), **2,856 pixels** in 1280×720 front; 1170×540 chase **11,328**, front **1,619**. The original large white duplicate rear torus rings disappear in the chase view, leaving the new sculpted cyan turbine openings and trails. This is a genuine visible board silhouette cleanup, not a high-end total-character transformation. The paired `after` and `clean_after` frames are byte-identical in both camera sizes, confirming the A/B scene restores the intended clean final state.
 - Inspect the paired rendered frames; if the cleaned silhouette is not clearly better, keep PR #111 DRAFT.
 - Stable channel stays V134 unless a separate completed playable or genuinely visible feature is tested, merged and deployed with exact Pages revision and archive proof.
 - Real iPhone Safari FPS, clipping, complete three-English-question + touch-race playthrough, and >1 GB Pages artifact remain unresolved.
