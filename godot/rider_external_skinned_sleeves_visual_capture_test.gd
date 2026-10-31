@@ -148,19 +148,24 @@ func _capture() -> void:
             int(group_counts["skinned_armor"]) != 3:
         _fail("expected visible shoulder cores, one jacket, two weighted sleeves and three original-Skin armor panels")
         return
-    # The combined "other_costume" bucket still contains fourteen meshes.
-    # Capture each one against the SAME original CC0 body so the remaining
-    # right-hand/cyan protrusion can be attributed to an exact mesh, rather
-    # than guessed from an aggregate overlay or its material color.
+    # After retiring the redundant shoulder bridge, only thirteen
+    # other-costume meshes are visible. Preserve the fourteenth QA control
+    # as the hidden weighted yoke, rendered ONLY in its isolated comparison.
+    # Never count that hidden fallback as a visible production artifact.
     var isolated_other: Array[MeshInstance3D] = []
     for item in visibility.keys():
         var mesh := item as MeshInstance3D
         if mesh != original and bool(visibility[item]) and \
                 _costume_group(mesh, original) == "other_costume":
             isolated_other.append(mesh)
-    if isolated_other.size() != 14:
-        _fail("expected fourteen individually attributable visible other-costume meshes")
+    var retired_yoke := hero.find_child("WeightedSculptedShoulderYoke", true, false) as MeshInstance3D
+    if isolated_other.size() != 13 or retired_yoke == null or \
+            bool(visibility.get(retired_yoke, true)):
+        _fail("expected thirteen visible other-costume meshes and one retired shoulder yoke")
         return
+    # Include the hidden yoke as a controlled A/B diagnostic only, keeping
+    # all 108 historical comparison filenames and camera setups stable.
+    isolated_other.append(retired_yoke)
     for index in range(isolated_other.size()):
         print("ISOLATED OTHER COSTUME %02d: %s" % [
             index, String(isolated_other[index].get_path())])
@@ -218,7 +223,7 @@ func _capture() -> void:
                         _fail("could not save actual skinned sleeve frame")
                         return
                     count += 1
-            # Fourteen additional source+single-mesh controls in each
+            # Thirteen visible pieces plus one hidden-yoke A/B control in each
             # front/chase and 16:9/19.5:9 view (56 extra real PNGs).
             for index in range(isolated_other.size()):
                 for item in visibility.keys():
@@ -244,7 +249,7 @@ func _capture() -> void:
         (item as MeshInstance3D).visible = bool(visibility[item])
     Engine.time_scale = 1.0
     if count != 52 + 4 * isolated_other.size():
-        _fail("expected 108 landscape frames, including fourteen individual other-costume meshes in four views")
+        _fail("expected 108 landscape frames, including thirteen visible costume meshes and one retired-yoke QA control in four views")
         return
-    print("SKINNED SLEEVE VISUAL QA PASSED: 108 pose-locked, shader-time-frozen front/chase frames, seven costume-family overlays and fourteen individually identified other-costume meshes; manual visual gate remains open")
+    print("SKINNED SLEEVE VISUAL QA PASSED: 108 pose-locked front/chase frames, seven visible costume-family overlays, thirteen visible other meshes and one retired-yoke A/B control; manual visual gate remains open")
     quit(0)
