@@ -13,6 +13,9 @@ var travel_speed := 14.0
 var elapsed := 0.0
 var completed_routes := 0
 var missed_routes := 0
+var switchback_chain := 0
+var last_route_choice := ""
+var perfect_switchback := false
 var junctions: Array[Node3D] = []
 var portals: Array[MeshInstance3D] = []
 var ribbons: Array[MeshInstance3D] = []
@@ -83,7 +86,7 @@ func _ready() -> void:
             var portal := MeshInstance3D.new()
             portal.name = "Energy route portal" if side < 0.0 else "XP route portal"
             portal.mesh = portal_mesh
-            portal.material_override = material
+            portal.material_override = material.duplicate()
             portal.position = Vector3(side * LANE_X, 2.15, 0.0)
             portal.rotation.x = PI * 0.5
             junction.add_child(portal)
@@ -109,12 +112,43 @@ func _ready() -> void:
 func reset_course() -> void:
     completed_routes = 0
     missed_routes = 0
+    switchback_chain = 0
+    last_route_choice = ""
+    perfect_switchback = false
     elapsed = 0.0
     for index in range(junctions.size()):
         var junction := junctions[index]
         junction.position.z = START_Z - float(index) * SPACING
         junction.set_meta("passed", false)
         junction.visible = true
+    _refresh_switchback_guidance()
+
+# The next opposite route is marked by an enlarged, brighter real 3D
+# portal. Per-instance materials avoid changing every junction at once.
+func _refresh_switchback_guidance() -> void:
+    var next_choice := "xp" if last_route_choice == "energy" else "energy"
+    for index in range(junctions.size()):
+        for side in range(2):
+            var portal := portals[index * 2 + side]
+            var material := portal.material_override as StandardMaterial3D
+            var choice := "energy" if side == 0 else "xp"
+            var highlight := switchback_chain > 0 and choice == next_choice and \
+                not bool(junctions[index].get_meta("passed"))
+            portal.scale = Vector3.ONE * (1.0 + 0.055 * float(switchback_chain) if highlight else 1.0)
+            material.emission_energy_multiplier = 1.5 + (0.42 * float(switchback_chain) if highlight else 0.0)
+
+func _record_choice(choice: String, base_xp: int, energy: int) -> Dictionary:
+    switchback_chain = switchback_chain + 1 if last_route_choice != choice else 1
+    last_route_choice = choice
+    perfect_switchback = switchback_chain == JUNCTION_COUNT
+    _refresh_switchback_guidance()
+    # Only a full four-junction left/right/left/right switchback pays the
+    # mastery bonus; the original XP/energy paths remain unchanged.
+    return {"choice": choice, "energy": energy,
+        "xp": base_xp + (50 if perfect_switchback else 0),
+        "count": completed_routes, "switchback_chain": switchback_chain,
+        "perfect_switchback": perfect_switchback,
+        "turbo_seconds": 2.5 if perfect_switchback else 0.0}
 
 func check_route_choice(rider_x: float) -> Dictionary:
     # A junction is scored once when it crosses the rider plane.
@@ -129,11 +163,14 @@ func check_route_choice(rider_x: float) -> Dictionary:
         junction.visible = false
         if absf(rider_x + LANE_X) <= 1.35:
             completed_routes += 1
-            return {"choice": "energy", "energy": 20, "xp": 15, "count": completed_routes}
+            return _record_choice("energy", 15, 20)
         if absf(rider_x - LANE_X) <= 1.35:
             completed_routes += 1
-            return {"choice": "xp", "energy": 0, "xp": 40, "count": completed_routes}
+            return _record_choice("xp", 40, 0)
         missed_routes += 1
+        switchback_chain = 0
+        last_route_choice = ""
+        _refresh_switchback_guidance()
         return {"missed": true}
     return {}
 
