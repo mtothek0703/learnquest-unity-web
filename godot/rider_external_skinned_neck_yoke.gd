@@ -3,12 +3,13 @@ extends Node
 ## The 360-degree surface is genuinely weighted to four ORIGINAL CC0 bones,
 ## shares the imported Skin and never creates gameplay collision objects.
 ## Open front / raised rear preserves the face in both landscape cameras.
-const ROWS := 14
+const ROWS := 15
 const SEGMENTS := 32
 var collar: MeshInstance3D
 var generated_vertices: int = 0
 var face_direction: float = -1.0
 var source_bounds: AABB
+var gap_cap_vertices: int = 0
 
 func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: float) -> bool:
     if rig == null:
@@ -37,14 +38,27 @@ func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: f
             for segment in range(SEGMENTS):
                 var a0 := TAU * float(segment) / float(SEGMENTS)
                 var a1 := TAU * float(segment + 1) / float(SEGMENTS)
+                # Leave a real 45-degree front opening. The old lowered V was
+                # still a closed 360-degree ring across the upper chest.
+                if _front_gap((a0 + a1) * 0.5):
+                    continue
                 for inside in [false, true]:
                     _quad(surface, joints, t0, t1, a0, a1, inside)
         # Closed upper/lower rims, including the inside of the neck opening.
         for segment in range(SEGMENTS):
             var a0 := TAU * float(segment) / float(SEGMENTS)
             var a1 := TAU * float(segment + 1) / float(SEGMENTS)
+            if _front_gap((a0 + a1) * 0.5):
+                continue
             for t in [0.0, 1.0]:
                 _rim(surface, joints, t, a0, a1)
+        # Close both exposed ends of the split collar with skinned thickness,
+        # so the opening reads as tailored fabric rather than a cut-off tube.
+        var front_center := PI * 0.5 if face_direction > 0.0 else PI * 1.5
+        gap_cap_vertices = 0
+        for side in [-1.0, 1.0]:
+            _end_cap(surface, joints, front_center + side * PI / 8.0, side)
+            gap_cap_vertices += 6
         var mesh := surface.commit()
         if mesh == null:
             return false
@@ -97,6 +111,10 @@ func _collar_point(bounds: AABB, angle: float, t: float, inside: bool) -> Vector
         bounds.position.y + bounds.size.y * height_fraction + seam,
         bounds.get_center().z + sin(angle) * (radius_z - inset))
 
+func _front_gap(angle: float) -> bool:
+    var front_center := PI * 0.5 if face_direction > 0.0 else PI * 1.5
+    return absf(wrapf(angle - front_center, -PI, PI)) < PI / 8.0 - 0.00001
+
 func _weights(t: float, back: float) -> PackedFloat32Array:
     var low := 0.21 + 0.0 * back
     var high := 0.60 - 0.40 * t
@@ -108,11 +126,13 @@ func _weights(t: float, back: float) -> PackedFloat32Array:
     return PackedFloat32Array([low / total, high / total, neck / total, head / total])
 
 func _vertex(surface: SurfaceTool, joints: PackedInt32Array,
-        bounds: AABB, angle: float, t: float, inside: bool) -> void:
+        bounds: AABB, angle: float, t: float, inside: bool,
+        cap_normal: Vector3 = Vector3.ZERO) -> void:
     var back := maxf(0.0, -sin(angle) * face_direction)
     var front := maxf(0.0, sin(angle) * face_direction)
     var outward := Vector3(cos(angle), 0.22 - 0.35 * t, sin(angle)).normalized()
-    surface.set_normal(-outward if inside else outward)
+    surface.set_normal(cap_normal if cap_normal != Vector3.ZERO else
+        (-outward if inside else outward))
     surface.set_bones(joints)
     surface.set_weights(_weights(t, back))
     surface.set_uv(Vector2(angle / TAU, t))
@@ -140,3 +160,18 @@ func _rim(surface: SurfaceTool, joints: PackedInt32Array,
         points.reverse()
     for p in points:
         _vertex(surface, joints, source_bounds, p.x, t, p.y > 0.5)
+
+# Six triangles' vertices per end: original-Skin weights and real wall
+# thickness, with an outward normal pointing into the open front gap.
+func _end_cap(surface: SurfaceTool, joints: PackedInt32Array,
+        angle: float, side: float) -> void:
+    var tangent := Vector3(-sin(angle), 0.0, cos(angle))
+    var cap_normal := tangent * (-side)
+    var corners := [
+        Vector2(0.0, 0.0), Vector2(1.0, 0.0), Vector2(1.0, 1.0),
+        Vector2(0.0, 0.0), Vector2(1.0, 1.0), Vector2(0.0, 1.0)]
+    if side > 0.0:
+        corners.reverse()
+    for corner in corners:
+        _vertex(surface, joints, source_bounds, angle, corner.x,
+            corner.y > 0.5, cap_normal)
