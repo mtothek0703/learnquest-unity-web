@@ -478,8 +478,8 @@ func _check() -> void:
         return
     var starboard_energy_30 := 0.0
     for fps in [30, 60]:
-        for signal in signals:
-            (signal as StandardMaterial3D).emission_energy_multiplier = 1.1
+        for light in signals:
+            (light as StandardMaterial3D).emission_energy_multiplier = 1.1
         for frame in range(3 if fps == 30 else 6):
             vanes.call("update_state", 0.9, true, 1.0 / float(fps))
         if fps == 30:
