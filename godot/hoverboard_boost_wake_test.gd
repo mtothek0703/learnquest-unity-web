@@ -17,6 +17,31 @@ func _check() -> void:
     if legacy == null or board == null or wake == null:
         _fail("boost wake must follow the original animated hoverboard")
         return
+    # The V83 cinematic wake caused the huge striped sheets seen even when
+    # the new helix was disabled. Keep its nodes for fallback but retire their
+    # renderers only when the sculpted board/helix initialized successfully.
+    var legacy_ion := board.get_node_or_null("Cinematic ion wake") as Node3D
+    if legacy_ion == null or not bool(legacy_ion.get("streamlined_mode")):
+        _fail("sculpted board must disable duplicate legacy ion ribbons")
+        return
+    var legacy_roots: Array = legacy_ion.get("wake_roots")
+    var legacy_sparks: Array = legacy_ion.get("sparks")
+    if legacy_roots.size() != 2 or legacy_sparks.size() != 12:
+        _fail("old ion wake fallback geometry and sparks must be preserved")
+        return
+    for old_root in legacy_roots:
+        for old_name in ["Translucent curved plasma", "Bright sculpted ion core"]:
+            var old_mesh := (old_root as Node3D).get_node_or_null(old_name) as MeshInstance3D
+            if old_mesh == null or old_mesh.visible:
+                _fail("old broad ion sheet must be retained but not rendered")
+                return
+    for old_spark in legacy_sparks:
+        if (old_spark as MeshInstance3D).visible:
+            _fail("old floating sparks must not obscure the new helix silhouette")
+            return
+    if legacy_ion.get_node_or_null("Pulsing cinematic engine light") == null:
+        _fail("old ambient propulsion lighting must be preserved")
+        return
     var parts: Array = wake.get("wake_meshes")
     var materials: Array = wake.get("wake_materials")
     if parts.size() != 2 or materials.size() != 2:
