@@ -50,6 +50,14 @@ func _check() -> void:
     if tip.z - root_point.z < 1.45 or middle.x - root_point.x < 0.055 or tip.x >= middle.x:
         _fail("wake must keep a visible but slender tapered 3D ion trail")
         return
+    # A real volumetric tube must have narrow bright spirals, not a flat
+    # translucent sheet across every azimuth. Check both angle and distance.
+    var bright: float = float(wake.call("_opacity", 0.5, 0.0))
+    var dark: float = float(wake.call("_opacity", 0.5, PI / 3.0))
+    var tip_alpha: float = float(wake.call("_opacity", 0.95, 0.0))
+    if bright < dark * 4.0 or bright <= 0.10 or tip_alpha >= bright * 0.15:
+        _fail("boost wakes need tapered, high-contrast helical 3D filaments")
+        return
     if wake.find_children("*", "CollisionObject3D", true, false).size() > 0:
         _fail("boost wake may not create gameplay collision objects")
         return
