@@ -232,6 +232,15 @@ func _check() -> void:
     if yoke_points.size() < 120 or yoke_weights.size() != yoke_points.size() * 4 or yoke_bones.size() != yoke_points.size() * 4:
         _fail("shoulder bridge must contain substantial four-weight sculpted geometry")
         return
+    # The actual 1280x720 isolated render showed an over-wide shoulder
+    # bridge. Prevent reintroducing a second barrel-shaped armor shell.
+    var source_bounds := source.mesh.get_aabb()
+    for point in yoke_points:
+        var lateral := absf(point.x - source_bounds.get_center().x) / \
+            maxf(source_bounds.size.x, 0.001)
+        if lateral > 0.315:
+            _fail("weighted shoulder bridge protrudes beyond the tailored mantle-root seam")
+            return
     for i in range(yoke_points.size()):
         var total := 0.0
         for j in range(4):
