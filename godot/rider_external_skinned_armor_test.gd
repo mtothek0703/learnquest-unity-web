@@ -115,8 +115,16 @@ func _check() -> void:
         var high_y := jacket_bounds.position.y + jacket_bounds.size.y * (float(spec["low"]) * 0.05 + float(spec["high"]) * 0.95)
         var low_width := float(armor.call("_profile_edge", jacket_bounds, spec, true, low_y)) - float(armor.call("_profile_edge", jacket_bounds, spec, false, low_y))
         var high_width := float(armor.call("_profile_edge", jacket_bounds, spec, true, high_y)) - float(armor.call("_profile_edge", jacket_bounds, spec, false, high_y))
+        var middle_y := jacket_bounds.position.y + jacket_bounds.size.y * (float(spec["low"]) * 0.45 + float(spec["high"]) * 0.55)
+        var middle_width := float(armor.call("_profile_edge", jacket_bounds, spec, true, middle_y)) - float(armor.call("_profile_edge", jacket_bounds, spec, false, middle_y))
         if low_width <= 0.0 or high_width < low_width * 1.25:
-            _fail("original-skinned anatomical armor must widen continuously toward shoulders")
+            _fail("original-skinned anatomical armor must retain an athletic chest-to-shoulder taper")
+            return
+        # A real curved neckline: maximum shoulder/pectoral breadth is BELOW
+        # the collar. The former monotonic widening made a horizontal shelf
+        # beside the neck and visibly doubled the sleeve silhouette.
+        if middle_width <= high_width * 1.05:
+            _fail("weighted armor still flares into a wide flat collar shelf")
             return
         # The former 0.37-wide pectoral and 0.24-wide rear shoulder
         # envelopes covered the articulated sleeve/arm silhouette in the
