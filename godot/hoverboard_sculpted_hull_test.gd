@@ -414,6 +414,19 @@ func _check() -> void:
                 fin_tip.y < wing_tip.y + 0.17:
             _fail("carve fin tip is buried behind the sculpted board wing")
             return
+        # The aft aerofoil now rises and sweeps outboard as a continuous
+        # sculpted volume, rather than a nearly flat decorative strip.
+        var forward_crest: Vector3 = vanes.call("_fin_point", side, 0.15, PI * 0.5)
+        var aft_crest: Vector3 = vanes.call("_fin_point", side, 0.85, PI * 0.5)
+        if aft_crest.y - forward_crest.y < 0.12 or absf(aft_crest.x) < absf(forward_crest.x) + 0.12:
+            _fail("closed aerofoil needs a visible rising, outboard swept aft crest")
+            return
+        for t in [0.15, 0.5, 0.85]:
+            var left: Vector3 = vanes.call("_fin_point", -side, t, PI * 0.5)
+            var right: Vector3 = vanes.call("_fin_point", side, t, PI * 0.5)
+            if absf(left.x + right.x) > 0.001 or absf(left.y - right.y) > 0.001:
+                _fail("articulated aerofoils must remain mirrored after resculpt")
+                return
         # The actual triangle mesh must have continuous, outward-facing
         # surface normals on both mirrored fins. A previous unindexed mesh
         # generated per-face normals and visibly faceted in the chase view.

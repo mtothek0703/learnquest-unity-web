@@ -54,12 +54,16 @@ func _ready() -> void:
 func _fin_point(side: float, t: float, angle: float) -> Vector3:
     # Longitudinal sweep and elliptical section form a genuine closed 3D wing.
     # Its deployed outer tip stays within the original 1.2-unit board profile.
+    # The previous nearly flat vane was hard to distinguish from the deck.
+    # A curved, rising aft crest now exposes a genuine swept 3D silhouette
+    # during carving without adding geometry, materials or collisions.
     var taper := pow(maxf(0.0, sin(PI * t)), 0.85)
-    var center := 0.105 + 0.085 * t
-    var half_span := 0.045 + 0.125 * taper
-    var thickness := 0.012 + 0.028 * taper
+    var center := 0.11 + 0.18 * t
+    var half_span := 0.055 + 0.17 * taper
+    var thickness := 0.016 + 0.038 * taper
+    var swept_lift := 0.025 + 0.075 * sin(PI * t) + 0.18 * t * t
     return Vector3(side * (center + half_span * cos(angle)),
-        0.014 + 0.018 * t + thickness * sin(angle),
+        swept_lift + thickness * sin(angle),
         lerpf(-0.62, 0.87, t))
 
 # Analytic normals are shared by coincident triangle vertices. The old
