@@ -47,7 +47,7 @@ func _check() -> void:
     var middle: Vector3 = wake.call("_point", 1.0, 0.5, 0.0)
     var root_point: Vector3 = wake.call("_point", 1.0, 0.0, 0.0)
     var tip: Vector3 = wake.call("_point", 1.0, 1.0, 0.0)
-    if tip.z - root_point.z < 1.45 or middle.x - root_point.x < 0.055 or tip.x >= middle.x:
+    if tip.z - root_point.z < 0.90 or tip.z - root_point.z > 1.05 or middle.x - root_point.x < 0.040 or tip.x >= middle.x:
         _fail("wake must keep a visible but slender tapered 3D ion trail")
         return
     # A real volumetric tube must have narrow bright spirals, not a flat
