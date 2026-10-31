@@ -13,6 +13,7 @@
 - Regression `hoverboard_boost_wake_test.gd` now checks outside vs inside **actual 3D scale**, nozzle anchoring, left/right reversal and equivalent 30/60-FPS trail length in addition to prior geometry and fade checks.
 
 ## Release gate
-- **Not a stable release**. Wait for the final PR branch Godot-CI, Web export and archive protection to finish; inspect the real phone-landscape render artifact. Do not claim visible overall art-quality acceptance from geometric assertions alone.
+- [x] **Technical CI completed:** [Godot run 41230570598](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41230570598) on code/test commit `0ffb467ecc0e7ed6adc1a10abe1c0e3d72d3c169` passed **52/52 job steps**: headless gameplay, 65-bone/skinning regressions, extended asymmetric-wake assertions, web export and the real landscape capture jobs. The [eight original boost-wake frames](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41230570598/artifacts/13053936020) were produced. They have **not** been independently inspected as a controlled visual before/after of the new steering-dependent length; no visual quality approval is claimed.
+- [ ] **Not a stable release:** PR #111 remains DRAFT / VISUAL HOLD. Do not merge without holistic character/board render review and manual phone QA. CI success does not prove high-end art quality.
 - Remaining visual gate: cohesive 65-bone rider proportions, jacket/arm/hair clipping and board silhouette in real chase/portrait images. Manual iPhone Safari FPS, touch and full three-question-to-race round remain unverified.
 - Pages package above 1 GB remains an infrastructure risk; do not duplicate or overwrite immutable builds.
