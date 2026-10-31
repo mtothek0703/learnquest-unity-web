@@ -434,6 +434,11 @@ func _rear_lock_curve(point: Vector3, size: Vector3, strand: int, t: float) -> V
     var swing := sin(PI * root_to_tip)
     point.x += size.x * (0.14 * sin(root_to_tip * TAU * 1.25 + phase) +
         0.045 * cos(phase * 0.7)) * swing
+    # Keep all five genuinely weighted outer locks aligned with the new
+    # tapered inner curtain; otherwise the shell narrows while its visible
+    # lock volumes still form a wide shoulder-level fan.
+    var across := (float(strand) + 0.5) / 5.0
+    point.x += size.x * (0.5 - across) * 0.08 * smoothstep(0.50, 1.0, root_to_tip)
     point.y += size.y * (0.035 * sin(root_to_tip * TAU * 1.5 + phase) * swing +
         0.027 * sin(phase * 1.7) * pow(root_to_tip, 3.0))
     point.z -= face_sign * size.z * (0.15 +
