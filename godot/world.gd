@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V135"
+const VERSION_LABEL := "V136"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -31,6 +31,9 @@ const FROST_HEALTH := 3
 const FROST_SPAWN_FRACTION := 0.65
 var phase := "menu" # menu -> training -> race -> results
 var training_correct := 0
+# A clean three-question run earns a short, playable launch boost.
+var training_mistakes := 0
+var flawless_vocabulary_launch := false
 var round_number := 1
 var rounds_finished := 0
 var world_choice := 0
@@ -895,6 +898,7 @@ func _reset_run() -> void:
     quiz_time = 7.0
     quiz_active = false
     previous_quiz_index = -1
+    flawless_vocabulary_launch = false
     rider.position = Vector3(0, 0, 0.2)
     for i in range(run_items.get_child_count()):
         var item: Node3D = run_items.get_child(i)
@@ -1093,6 +1097,8 @@ func _finish_run() -> void:
         total_stars += stars_earned
         total_reward_xp += xp
         reward_label.text = "+%d STERNE  |  +%d XP\nGESAMT: %d STERNE" % [stars_earned, xp, total_stars]
+        if flawless_vocabulary_launch:
+            reward_label.text += "\nWORT-MEISTER: 3 FEHLERFREI +60 XP, 2,5s START-TURBO"
         if world_choice == 0 and int(skyway_zone.call("get_signal_count")) >= NEON_SIGNAL_TARGET:
             reward_label.text += "\nNEON-SIGNALKETTE: +1 BONUSSTERN!"
         if world_choice == 0 and bool(skyway_zone.call("get_signal_perfect_run")):
@@ -1467,6 +1473,8 @@ func _begin_training() -> void:
     touch_steering.reset()
     phase = "training"
     training_correct = 0
+    training_mistakes = 0
+    flawless_vocabulary_launch = false
     combo = 0
     previous_quiz_index = -1
     # Clear temporary abilities from the previous race before mandatory training.
@@ -1526,7 +1534,12 @@ func _answer(index: int) -> void:
     # Otherwise a queued second press can award XP and energy more than once.
     if not started or not quiz_active or index < 0 or index >= options.size():
         return
+    # Ignore a disabled wrong option even if a delayed touch event arrives.
+    if answer_buttons[index].disabled:
+        return
     if options[index] != correct_index:
+        if phase == "training":
+            training_mistakes += 1
         combo = 0
         # Disable the wrong choice until the next question, so the player
         # can retry without repeatedly tapping the same incorrect answer.
@@ -1544,11 +1557,18 @@ func _answer(index: int) -> void:
         if training_correct >= TASKS_PER_ROUND:
             # Award a useful starting boost, then run the entire track
             # without interrupting play with further vocabulary questions.
+            var clean_start := training_mistakes == 0
             _reset_run()
             power = mini(100, TASKS_PER_ROUND * 25)
             xp = TASKS_PER_ROUND * 35
             combo = TASKS_PER_ROUND
-            info_label.text = "RUNDE %d FREIGESCHALTET! BIS INS ZIEL!" % round_number
+            flawless_vocabulary_launch = clean_start
+            if clean_start:
+                xp += 60
+                turbo_left = 2.5
+                info_label.text = "WORT-MEISTER! +60 XP +2,5s START-TURBO"
+            else:
+                info_label.text = "RUNDE %d FREIGESCHALTET! BIS INS ZIEL!" % round_number
             feedback_time = 3.0
             _refresh_hud()
         else:
