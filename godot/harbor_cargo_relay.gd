@@ -4,6 +4,9 @@ extends Node3D
 ## interruptions to the three-question / continuous-race flow.
 
 const DELIVERY_COUNT := 5
+# Optional skill challenge inside the existing delivery lane; the broad
+# 1.30 m cargo catch zone and all touch controls remain unchanged.
+const PRECISION_RADIUS := 0.42
 const LANE_X := 3.1
 const START_Z := -85.0
 const SPACING := 190.0
@@ -16,8 +19,12 @@ var missed_deliveries := 0
 var delivery_streak := 0
 var best_delivery_streak := 0
 var perfect_convoy := false
+var precision_deliveries := 0
+var precision_streak := 0
+var perfect_precision := false
 var stations: Array[Node3D] = []
 var portals: Array[MeshInstance3D] = []
+var precision_targets: Array[MeshInstance3D] = []
 var cargo: Array[MeshInstance3D] = []
 
 func _material(color: Color, glow: bool = false) -> StandardMaterial3D:
@@ -38,6 +45,13 @@ func _ready() -> void:
     ring.outer_radius = 1.82
     ring.rings = 40
     ring.ring_segments = 12
+    # A concentric golden 3D aiming ring shows the narrower precision zone.
+    # Shared geometry, no new collider or mobile control.
+    var precision_mesh := TorusMesh.new()
+    precision_mesh.inner_radius = 0.34
+    precision_mesh.outer_radius = 0.45
+    precision_mesh.rings = 28
+    precision_mesh.ring_segments = 8
     var capsule := CapsuleMesh.new()
     capsule.radius = 0.50
     capsule.height = 2.1
@@ -46,6 +60,7 @@ func _ready() -> void:
     var cyan := _material(Color("#64f5fa"), true)
     var magenta := _material(Color("#ff8ee4"), true)
     var hull := _material(Color("#88b6d4"))
+    var precision_gold := _material(Color("#ffe39a"), true)
     for index in range(DELIVERY_COUNT):
         var side := -1.0 if index % 2 == 0 else 1.0
         var station := Node3D.new()
@@ -63,6 +78,14 @@ func _ready() -> void:
         portal.rotation.x = PI * 0.5
         station.add_child(portal)
         portals.append(portal)
+        var precision_target := MeshInstance3D.new()
+        precision_target.name = "Golden precision docking target"
+        precision_target.mesh = precision_mesh
+        precision_target.material_override = precision_gold
+        precision_target.position = Vector3(side * LANE_X, 2.05, -0.14)
+        precision_target.rotation.x = PI * 0.5
+        station.add_child(precision_target)
+        precision_targets.append(precision_target)
         var pod := MeshInstance3D.new()
         pod.name = "Suspended delivery capsule"
         pod.mesh = capsule
@@ -86,6 +109,9 @@ func reset_course() -> void:
     delivery_streak = 0
     best_delivery_streak = 0
     perfect_convoy = false
+    precision_deliveries = 0
+    precision_streak = 0
+    perfect_precision = false
     for index in range(stations.size()):
         stations[index].position.z = START_Z - float(index) * SPACING
         stations[index].set_meta("passed", false)
@@ -103,6 +129,8 @@ func _refresh_gate_guidance() -> void:
         if glow != null:
             glow.emission_energy_multiplier = 2.1 + 0.32 * float(delivery_streak)
         ring.scale = Vector3.ONE * (1.0 + 0.035 * float(delivery_streak))
+        # A successful precise catch makes the next inner target brighter.
+        precision_targets[index].scale = Vector3.ONE * (1.0 + 0.055 * float(precision_streak))
 
 func check_delivery(rider_x: float) -> Dictionary:
     if not running:
@@ -112,20 +140,31 @@ func check_delivery(rider_x: float) -> Dictionary:
             continue
         station.set_meta("passed", true)
         station.visible = false
-        if absf(rider_x - float(station.get_meta("lane_x"))) <= 1.30:
+        var lane_error := absf(rider_x - float(station.get_meta("lane_x")))
+        if lane_error <= 1.30:
             completed_deliveries += 1
             delivery_streak += 1
             best_delivery_streak = maxi(best_delivery_streak, delivery_streak)
             # The fifth consecutive delivery completes the optional mastery
             # objective. No bonus is paid before the full level finishes.
             perfect_convoy = delivery_streak == DELIVERY_COUNT
+            var precise := lane_error <= PRECISION_RADIUS
+            if precise:
+                precision_deliveries += 1
+                precision_streak += 1
+            else:
+                precision_streak = 0
+            perfect_precision = precision_deliveries == DELIVERY_COUNT
             _refresh_gate_guidance()
-            return {"delivered": true, "xp": 30 + 10 * (delivery_streak - 1),
+            return {"delivered": true, "xp": 30 + 10 * (delivery_streak - 1) + (15 if precise else 0),
                 "energy": 12, "count": completed_deliveries,
                 "streak": delivery_streak, "perfect_convoy": perfect_convoy,
+                "precision": precise, "precision_count": precision_deliveries,
+                "perfect_precision": perfect_precision,
                 "turbo_seconds": (2.0 + 0.5 * float(delivery_streak - 3)) if delivery_streak >= 3 else 0.0}
         missed_deliveries += 1
         delivery_streak = 0
+        precision_streak = 0
         _refresh_gate_guidance()
         return {"missed": true, "streak": 0}
     return {}
