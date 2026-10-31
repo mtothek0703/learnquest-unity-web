@@ -451,9 +451,14 @@ func _back_lock_point(points: Array[Vector3], radius: float, t: float,
     var index := mini(int(floor(scaled)), points.size() - 2)
     var alpha := scaled - float(index)
     var center := points[index].lerp(points[index + 1], alpha)
-    var taper := maxf(0.09, sin(PI * (0.09 + 0.82 * t)))
+    # Shape the actual 3D locks into individual tapered tips instead of
+    # five blunt shoulder-width paddles. The previous 0.09..0.91 sine
+    # interval left ~28% of the maximum width even at the very end.
+    # The new interval approaches zero at the tip, with a small nonzero
+    # radius to keep normals and the closed end-cap well-conditioned.
+    var taper := maxf(0.045, sin(PI * (0.06 + 0.94 * clampf(t, 0.0, 1.0))))
     var broad := (u - 0.5) * radius * 2.65 * taper
-    var groove := sin(u * PI) * sin(t * PI) * radius * 0.14
+    var groove := sin(u * PI) * sin(t * PI) * radius * 0.14 * taper
     var depth := radius * 0.30 * taper
     return center + Vector3(broad, groove,
         -face_sign * depth * (0.75 if outer else -0.50))
