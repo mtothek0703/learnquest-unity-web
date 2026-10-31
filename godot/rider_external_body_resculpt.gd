@@ -77,9 +77,12 @@ func _reshape(point: Vector3, bounds: AABB) -> Vector3:
     var waist := exp(-pow((y - 0.465) / 0.055, 2.0))
     var hip := exp(-pow((y - 0.398) / 0.055, 2.0))
     var thigh := exp(-pow((y - 0.310) / 0.060, 2.0))
-    var width_scale := 1.0 + torso * (0.19 * chest + 0.24 * shoulder -
+    # Original CC0 deltoids are already broad. The previous extra 24% swell
+    # created a horizontal inflated shoulder bar even with the collar hidden.
+    # Keep the chest athletic while letting the original arm bones read clearly.
+    var width_scale := 1.0 + torso * (0.19 * chest + 0.07 * shoulder -
         0.12 * waist + 0.075 * hip) + leg * 0.065 * thigh
-    var depth_scale := 1.0 + torso * (0.14 * chest + 0.10 * shoulder -
+    var depth_scale := 1.0 + torso * (0.14 * chest + 0.035 * shoulder -
         0.07 * waist + 0.06 * hip) + leg * 0.045 * thigh
     var center := bounds.get_center()
     return Vector3(center.x + (point.x - center.x) * width_scale,
