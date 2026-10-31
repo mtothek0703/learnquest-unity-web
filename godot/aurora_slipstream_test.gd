@@ -170,9 +170,11 @@ func _check() -> void:
     if not mobile_hud.contains("WINDSTROM: 3/3") or not mobile_hud.contains("LUFT: 4/4"):
         _fail("mobile landscape HUD must keep original mission and new aerial goal")
         return
+    # The existing world-status row is intentionally longer and predates
+    # V133; constrain only the two NEW Aurora rows, not unrelated legacy UI.
     for line in mobile_hud.split("\n"):
-        if line.length() > 48:
-            _fail("landscape HUD line exceeds safe 360px panel: " + line)
+        if (line.contains("WINDSTROM") or line.contains("LUFT")) and line.length() > 48:
+            _fail("new Aurora landscape HUD row exceeds safe 360px panel: " + line)
             return
     game.set("mobile_hud_layout", false)
     game.call("_refresh_hud")

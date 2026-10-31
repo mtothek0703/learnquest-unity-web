@@ -19,3 +19,6 @@ The mobile HUD splits Aurora jump, wind, streak and aerial counters across two c
 
 ## CI correction
 Release-version wiring moved the HUD label from V132 to V133, exposing four intentional V132 assertions in `godot/smoke_test.gd`. The PR checks [41209623040](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41209623040) failed on this version-label mismatch (not on Aurora gameplay). Updated all four expectations to V133; rerun full PR CI before merge. Archive-preservation PR check [41209623030](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41209623030) already succeeded.
+
+## Narrow-HUD regression correction
+The first V133 mobile-row assertion was overly broad: it flagged an unchanged pre-existing world-status row (“AURORA-GLETSCHER RUNDE...”). The new assertion now constrains **only the two newly split Aurora rows** (WINDSTROM/LUFT) to 48 characters, preserving the existing world HUD unchanged. The failure was correctly detected by [CI 41209741928](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41209741928); rerun required.
