@@ -101,6 +101,35 @@ func _check() -> void:
     if top.y - bottom.y < 0.20 or top.z != bottom.z:
         _fail("board chassis is not a genuine rounded 360-degree volume")
         return
+    # The actual rendered deck has two symmetric raised footbeds and a
+    # continuous recessed center channel, not decorative unlit box meshes.
+    var traction := sculpt.get_node("ContouredTractionDeck") as MeshInstance3D
+    var left_pad: Vector3 = sculpt.call("_grip_point", 0.5, -0.5)
+    var right_pad: Vector3 = sculpt.call("_grip_point", 0.5, 0.5)
+    var center_channel: Vector3 = sculpt.call("_grip_point", 0.5, 0.0)
+    var front_transition: Vector3 = sculpt.call("_grip_point", 0.08, 0.5)
+    if absf(left_pad.y - right_pad.y) > 0.0001 or \
+            left_pad.y < center_channel.y + 0.035 or \
+            center_channel.y > 0.425 or \
+            right_pad.y < front_transition.y + 0.018:
+        _fail("3D traction pads/channel must be sculpted, symmetric and tapered")
+        return
+    var deck_arrays: Array = traction.mesh.surface_get_arrays(0)
+    var deck_points: PackedVector3Array = deck_arrays[Mesh.ARRAY_VERTEX]
+    var deck_colors: PackedColorArray = deck_arrays[Mesh.ARRAY_COLOR]
+    var pad_found := false
+    var channel_found := false
+    if deck_colors.size() != deck_points.size():
+        _fail("sculpted traction deck needs real per-vertex material contrast")
+        return
+    for i in range(deck_points.size()):
+        if deck_points[i].distance_to(right_pad) < 0.0001:
+            pad_found = deck_colors[i].get_luminance() > 0.09
+        if deck_points[i].distance_to(center_channel) < 0.0001:
+            channel_found = deck_colors[i].get_luminance() < 0.09
+    if not pad_found or not channel_found:
+        _fail("rendered deck must contain bright raised footbed and dark channel vertices")
+        return
     var old_boxes := 0
     for child in board.get_children():
         if child is MeshInstance3D and child.mesh is BoxMesh:
