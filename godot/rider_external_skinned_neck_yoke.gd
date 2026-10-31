@@ -80,12 +80,16 @@ func _collar_point(bounds: AABB, angle: float, t: float, inside: bool) -> Vector
     var back := maxf(0.0, -sin(angle) * face_direction)
     # V-shaped low front, high protective rear and smoothly shrinking neck.
     # Both radii are relative to the actual imported body, never world units.
-    var top := 0.790 + 0.038 * back - 0.018 * front
+    # A low V-neck in front replaces the oversized horizontal chest ring,
+    # while the rear collar remains raised behind the original skinned neck.
+    var top := 0.765 + 0.042 * back - 0.018 * front
     var base := 0.730 + 0.006 * back
     var height_fraction := lerpf(base, top, t)
     var flare := 1.0 - smoothstep(0.0, 1.0, t)
-    var radius_x := bounds.size.x * (0.132 + 0.078 * flare)
-    var radius_z := bounds.size.x * (0.100 + 0.060 * flare)
+    # Fit the collar to the anatomical neck/upper trapezius instead of the
+    # previous broad shoulder-width disc in 16:9 chase and front views.
+    var radius_x := bounds.size.x * (0.110 + 0.063 * flare)
+    var radius_z := bounds.size.x * (0.078 + 0.050 * flare)
     var inset := bounds.size.x * 0.010 if inside else 0.0
     var seam := 0.004 * bounds.size.y * sin(PI * t) * cos(angle * 2.0)
     return Vector3(
