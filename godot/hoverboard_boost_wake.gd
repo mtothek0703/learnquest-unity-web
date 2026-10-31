@@ -33,6 +33,8 @@ func _point(side: float, t: float, angle: float) -> Vector3:
     # Real chase-camera QA exposed oversized, balloon-like exhaust lobes.
     # Keep the original nozzle position but sculpt two slim, low-overdraw
     # ion jets with tighter flare, softer opacity and a cleaner taper.
+    # Shorten the rear-chase trail so perspective does not blow it up into
+    # a giant sheet that runs past the lower edge of a phone viewport.
     var taper := pow(maxf(0.0, 1.0 - t), 0.92)
     var flare := sin(PI * t)
     var radius_x := (0.075 + 0.14 * flare) * taper + 0.004
@@ -40,7 +42,7 @@ func _point(side: float, t: float, angle: float) -> Vector3:
     var sweep := 0.06 * sin(t * PI * 1.6)
     return Vector3(side * (0.88 + sweep + radius_x * cos(angle)),
         0.24 + 0.055 * sin(t * TAU) + radius_y * sin(angle),
-        1.58 + 2.25 * t)
+        1.58 + 1.50 * t)
 
 func _emit(tool: SurfaceTool, side: float, t: float, angle: float) -> void:
     var point := _point(side, t, angle)
@@ -48,7 +50,7 @@ func _emit(tool: SurfaceTool, side: float, t: float, angle: float) -> void:
     var root := Color("#37dfff") if side < 0.0 else Color("#8e8dff")
     var tip := Color("#c7f5ff") if side < 0.0 else Color("#efb5ff")
     var color := root.lerp(tip, smoothstep(0.15, 0.90, t))
-    color.a = (0.14 + 0.26 * maxf(0.0, sin(angle))) * fade
+    color.a = (0.12 + 0.20 * maxf(0.0, sin(angle))) * fade
     tool.set_color(color)
     tool.set_normal(Vector3(side * cos(angle), sin(angle), 0.05).normalized())
     tool.add_vertex(point)
