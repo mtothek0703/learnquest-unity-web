@@ -238,12 +238,24 @@ func _check() -> void:
     # The actual 1280x720 isolated render showed an over-wide shoulder
     # bridge. Prevent reintroducing a second barrel-shaped armor shell.
     var source_bounds := source.mesh.get_aabb()
+    var outermost := 0.0
+    var upper_outermost := 0.0
+    var upper_samples := 0
     for point in yoke_points:
         var lateral := absf(point.x - source_bounds.get_center().x) / \
             maxf(source_bounds.size.x, 0.001)
-        if lateral > 0.315:
-            _fail("weighted shoulder bridge protrudes beyond the tailored mantle-root seam")
+        var height := (point.y - source_bounds.position.y) / \
+            maxf(source_bounds.size.y, 0.001)
+        outermost = maxf(outermost, lateral)
+        if height >= 0.735:
+            upper_outermost = maxf(upper_outermost, lateral)
+            upper_samples += 1
+        if lateral > 0.260:
+            _fail("weighted shoulder bridge protrudes into the original deltoids")
             return
+    if upper_samples < 6 or upper_outermost > 0.235:
+        _fail("shoulder bridge must taper inward toward the original neck")
+        return
     for i in range(yoke_points.size()):
         var total := 0.0
         for j in range(4):
