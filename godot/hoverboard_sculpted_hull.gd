@@ -192,12 +192,27 @@ func _make_shell() -> ArrayMesh:
             _emit_shell_cap(tool, end, u if end == 0.0 else v)
     return tool.commit()
 
+# Two molded traction footbeds and a recessed center channel are sculpted
+# into the SAME deck surface (no extra draw calls, collision or input changes).
+# Taper the relief to zero near the nose/tail to avoid hard raised edges.
+func _grip_relief_fade(t: float) -> float:
+    return smoothstep(0.16, 0.32, t) * (1.0 - smoothstep(0.68, 0.84, t))
+
+func _grip_footbed(t: float, across: float) -> float:
+    var lateral := (absf(across) - 0.55) / 0.27
+    return exp(-lateral * lateral) * _grip_relief_fade(t)
+
+func _grip_channel(t: float, across: float) -> float:
+    var lateral := across / 0.20
+    return exp(-lateral * lateral) * _grip_relief_fade(t)
+
 func _grip_point(t: float, across: float) -> Vector3:
     var z := lerpf(-0.96, 0.95, t)
     var deck_t := (z + 1.37) / 2.70
     var width := _half_width(deck_t) * 0.65
+    var relief := 0.035 * _grip_footbed(t, across) - 0.018 * _grip_channel(t, across)
     return Vector3(across * width,
-        0.415 + 0.022 * (1.0 - across * across) + 0.012 * cos(PI * t), z)
+        0.415 + 0.022 * (1.0 - across * across) + 0.012 * cos(PI * t) + relief, z)
 
 func _grip_normal(t: float, across: float) -> Vector3:
     var h := 0.001
@@ -208,8 +223,11 @@ func _grip_normal(t: float, across: float) -> Vector3:
     return tangent_t.cross(tangent_across).normalized()
 
 func _emit_grip(tool: SurfaceTool, t: float, across: float) -> void:
-    var stripe := pow(maxf(0.0, 1.0 - absf(across)), 3.0)
-    tool.set_color(Color("#1b2944").lerp(Color("#45617b"), 0.25 + 0.35 * stripe))
+    var footbed := _grip_footbed(t, across)
+    var channel := _grip_channel(t, across)
+    # The raised pads read as satin rubber; the recessed central channel stays dark.
+    var tone := clampf(0.22 + 0.52 * footbed - 0.18 * channel, 0.0, 1.0)
+    tool.set_color(Color("#1b2944").lerp(Color("#5e8092"), tone))
     tool.set_normal(_grip_normal(t, across))
     tool.add_vertex(_grip_point(t, across))
 
