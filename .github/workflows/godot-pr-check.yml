@@ -212,6 +212,17 @@ jobs:
             --script res://neon_conductor_visual_capture_test.gd 2>&1 | tee /tmp/neon-conductor-visual.log
           grep -Fq 'NEON CONDUCTOR VISUAL QA PASSED' /tmp/neon-conductor-visual.log
           test "$(find /tmp/learnquest-conductor-qa -name '*.png' | wc -l)" -eq 8
+      - name: Render V134 Neon precision targets in both smartphone landscape ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-precision-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_PRECISION_OUTPUT=/tmp/learnquest-precision-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://neon_signal_precision_visual_capture_test.gd 2>&1 | tee /tmp/neon-precision-visual.log
+          grep -Fq 'NEON PRECISION VISUAL QA PASSED' /tmp/neon-precision-visual.log
+          test "$(find /tmp/learnquest-precision-qa -name '*.png' | wc -l)" -eq 8
       - name: Render V126 Aurora slipstream in both smartphone landscape ratios
         shell: bash
         run: |
@@ -223,6 +234,13 @@ jobs:
             --script res://aurora_slipstream_visual_capture_test.gd 2>&1 | tee /tmp/aurora-slipstream-visual.log
           grep -Fq 'AURORA SLIPSTREAM VISUAL QA PASSED' /tmp/aurora-slipstream-visual.log
           test "$(find /tmp/learnquest-slipstream-qa -name '*.png' | wc -l)" -eq 8
+      - name: Upload V134 Neon precision comparison frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v134-neon-precision-before-after
+          path: /tmp/learnquest-precision-qa/*.png
+          if-no-files-found: error
       - name: Upload V126 Aurora slipstream comparison frames
         if: always()
         uses: actions/upload-artifact@v4

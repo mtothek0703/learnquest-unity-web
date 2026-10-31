@@ -8,6 +8,9 @@ const LANE_X := 3.1
 const START_Z := -92.0
 const SPACING := 112.0
 const TARGET_SIGNALS := 4
+const PRECISION_RADIUS := 0.42
+const PRECISION_XP := 10
+const PERFECT_PRECISION_XP := 40
 
 var running := false
 var travel_speed := 14.0
@@ -18,8 +21,11 @@ var streak := 0
 var best_streak := 0
 # All six correctly steered gates in a single uninterrupted streak.
 var perfect_chain := false
+var precision_hits := 0
+var precision_mastery := false
 var gates: Array[Node3D] = []
 var rings: Array[MeshInstance3D] = []
+var precision_rings: Array[MeshInstance3D] = []
 var beacons: Array[MeshInstance3D] = []
 
 func _material(tint: Color, glow: bool = false) -> StandardMaterial3D:
@@ -40,6 +46,11 @@ func _ready() -> void:
     ring_mesh.outer_radius = 1.83
     ring_mesh.rings = 36
     ring_mesh.ring_segments = 10
+    var precision_mesh := TorusMesh.new()
+    precision_mesh.inner_radius = 0.58
+    precision_mesh.outer_radius = 0.78
+    precision_mesh.rings = 28
+    precision_mesh.ring_segments = 8
     var core_mesh := CylinderMesh.new()
     core_mesh.top_radius = 0.0
     core_mesh.bottom_radius = 0.50
@@ -70,6 +81,15 @@ func _ready() -> void:
         ring.rotation.x = PI * 0.5
         gate.add_child(ring)
         rings.append(ring)
+        # Real 3D gold bullseye inside the original catch arch; no collider.
+        var bullseye := MeshInstance3D.new()
+        bullseye.name = "Precision gold inner target"
+        bullseye.mesh = precision_mesh
+        bullseye.material_override = _material(Color("#ffe59b"), true)
+        bullseye.position = ring.position
+        bullseye.rotation = ring.rotation
+        gate.add_child(bullseye)
+        precision_rings.append(bullseye)
 
         var beacon := MeshInstance3D.new()
         beacon.name = "Animated hexagonal lane signal"
@@ -109,6 +129,8 @@ func reset_course() -> void:
     streak = 0
     best_streak = 0
     perfect_chain = false
+    precision_hits = 0
+    precision_mastery = false
     for index in range(gates.size()):
         gates[index].position.z = START_Z - float(index) * SPACING
         gates[index].set_meta("passed", false)
@@ -125,6 +147,10 @@ func _refresh_gate_guidance() -> void:
         if glow != null:
             glow.emission_energy_multiplier = 2.0 + 0.24 * float(streak)
         rings[index].scale = Vector3.ONE * (1.0 + 0.03 * float(streak))
+        precision_rings[index].scale = Vector3.ONE * (1.0 + 0.045 * float(precision_hits))
+        var inner_glow := precision_rings[index].material_override as StandardMaterial3D
+        if inner_glow != null:
+            inner_glow.emission_energy_multiplier = 2.0 + 0.20 * float(precision_hits)
 
 func check_signal(rider_x: float) -> Dictionary:
     if not running:
@@ -141,14 +167,21 @@ func check_signal(rider_x: float) -> Dictionary:
             best_streak = maxi(best_streak, streak)
             var overdrive := streak == 3
             perfect_chain = streak == SIGNAL_COUNT
+            var precision := absf(rider_x - target_x) <= PRECISION_RADIUS
+            if precision:
+                precision_hits += 1
+            precision_mastery = precision_hits == SIGNAL_COUNT
             _refresh_gate_guidance()
             return {
                 "hit": true,
-                "xp": 20 + mini(streak, 4) * 5,
+                "precision": precision,
+                "precision_count": precision_hits,
+                "precision_mastery": precision_mastery,
+                "xp": 20 + mini(streak, 4) * 5 + (PRECISION_XP if precision else 0) + (PERFECT_PRECISION_XP if precision_mastery else 0),
                 "energy": 12 + (18 if overdrive else 0) + (25 if perfect_chain else 0),
                 "overdrive": overdrive,
                 "perfect_chain": perfect_chain,
-                "turbo_seconds": 2.5 if perfect_chain else 0.0,
+                "turbo_seconds": 3.5 if precision_mastery else (2.5 if perfect_chain else 0.0),
                 "streak": streak,
                 "count": completed_signals
             }

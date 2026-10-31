@@ -33,7 +33,7 @@ func _check() -> void:
         var lane_index: int = (index + 2) % 3 - 1
         rider.position.x = float(lane_index) * 3.1
         game.call("_update_neon_signals")
-        expected_xp += 20 + mini(index + 1, 4) * 5
+        expected_xp += 20 + mini(index + 1, 4) * 5 + 10 + (40 if index == 5 else 0)
         if int(game.get("xp")) != expected_xp or int(city.call("get_signal_streak")) != index + 1:
             _fail("perfect streak must award each gate once and grow 1..6")
             return
@@ -45,25 +45,34 @@ func _check() -> void:
         if not (city.call("check_neon_signal", rider.position.x) as Dictionary).is_empty():
             _fail("already collected gate rewarded twice")
             return
-    if not bool(city.call("get_signal_perfect_run")) or expected_xp != 210:
+    if not bool(city.call("get_signal_perfect_run")) or expected_xp != 310 or \
+            int(city.call("get_signal_precision_count")) != 6 or \
+            not bool(city.call("get_signal_precision_mastery")):
+        _fail("six centered catches must grant 60 precision XP and 40 mastery XP")
+        return
+    if not bool(city.call("get_signal_perfect_run")) or expected_xp != 310:
         _fail("six consecutive hits must complete mastery without duplicate XP")
         return
-    if int(game.get("power")) != 100 or float(game.get("turbo_left")) < 2.49:
+    if int(game.get("power")) != 100 or float(game.get("turbo_left")) < 3.49:
         _fail("sixth gate must grant extra energy and 2.5-second Turbo")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("KETTE 6/6") or not hud.text.contains("PERFEKT!"):
+    if hud == null or not hud.text.contains("KETTE 6/6") or \
+            not hud.text.contains("PRAEZ 6/6") or not hud.text.contains("PERFEKT!"):
         _fail("landscape HUD must clearly show completed mastery")
         return
     game.set("distance", game.get("mission_target"))
     game.call("_finish_run")
     var reward := game.get("reward_label") as Label
-    if int(game.get("total_stars")) != 5 or reward == null or not reward.text.contains("PERFEKTE NEON-SIGNALRUNDE"):
+    if int(game.get("total_stars")) != 5 or reward == null or \
+            not reward.text.contains("PERFEKTE NEON-SIGNALRUNDE") or \
+            not reward.text.contains("NEON-PRAEZISION: 6/6"):
         _fail("full race must award separate Neon mastery star")
         return
 
     game.call("_reset_run")
-    if bool(city.call("get_signal_perfect_run")) or int(city.call("get_signal_streak")) != 0:
+    if bool(city.call("get_signal_perfect_run")) or int(city.call("get_signal_streak")) != 0 or \
+            int(city.call("get_signal_precision_count")) != 0:
         _fail("new round must reset mastery and streak")
         return
     var reset_glow := rings[0].material_override as StandardMaterial3D
@@ -76,7 +85,8 @@ func _check() -> void:
         var lane_index: int = (index + 2) % 3 - 1
         rider.position.x = -3.1 if index == 2 else float(lane_index) * 3.1
         game.call("_update_neon_signals")
-    if bool(city.call("get_signal_perfect_run")) or int(city.call("get_signal_count")) != 5 or int(city.call("get_signal_streak")) != 3:
+    if bool(city.call("get_signal_perfect_run")) or int(city.call("get_signal_count")) != 5 or \
+            int(city.call("get_signal_streak")) != 3 or bool(city.call("get_signal_precision_mastery")):
         _fail("a missed third gate must break mastery despite five catches")
         return
     game.set("distance", game.get("mission_target"))

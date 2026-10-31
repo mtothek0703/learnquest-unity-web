@@ -314,6 +314,12 @@ func get_signal_streak() -> int:
 func get_signal_perfect_run() -> bool:
     return bool(signal_chain.get("perfect_chain"))
 
+func get_signal_precision_count() -> int:
+    return int(signal_chain.get("precision_hits"))
+
+func get_signal_precision_mastery() -> bool:
+    return bool(signal_chain.get("precision_mastery"))
+
 func _process(delta: float) -> void:
     signal_chain.set("running", running)
     signal_chain.set("travel_speed", travel_speed)
