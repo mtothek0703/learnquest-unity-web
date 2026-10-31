@@ -63,6 +63,11 @@ func _capture() -> void:
             else:
                 camera.position = Vector3(6.0, 8.2, 14.0)
                 camera.look_at(Vector3(0.0, 2.7, -17.0), Vector3.UP)
+            # The prior switchback A/B resets the junction positions. Restore
+            # the SAME near-camera baseline for every ratio and camera view.
+            routes.call("reset_course")
+            junctions[0].position.z = -10.0
+            junctions[1].position.z = -38.0
             var baseline: Image
             for state in ["before", "after"]:
                 routes.visible = state == "after"
