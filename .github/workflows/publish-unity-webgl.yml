@@ -274,7 +274,7 @@ jobs:
             --script res://aurora_slipstream_visual_capture_test.gd 2>&1 | tee /tmp/godot-aurora-slipstream-visual.log
           grep -Fq 'AURORA SLIPSTREAM VISUAL QA PASSED' /tmp/godot-aurora-slipstream-visual.log
           test "$(find /tmp/learnquest-slipstream-qa -name '*.png' | wc -l)" -eq 8
-          test "$(find /tmp/learnquest-conductor-qa -name '*.png' | wc -l)" -eq 8
+          test "$(find /tmp/learnquest-conductor-qa -name '*.png' | wc -l)" -eq 12
           python .github/scripts/preserve_legacy_pages.py
           # Never overwrite previously published versions.
           # Every future release must deliberately use a new URL.

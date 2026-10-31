@@ -8,10 +8,13 @@ Ein neuer, zeitlich begrenzter, räumlich wachsender cyanfarbener Torus am Bossk
 
 ## Abnahme-Gates
 - [ ] Vollständige PR-Godot-Regression einschließlich Boss-/Schild-Zeitfenster-, Einmal-pro-Schild-, Gegen-Spur-, frühem Schild-, letztem Boss-Kern- und 3D-Ring-Test.
-- [ ] Headless-Gameplay, Godot-Webexport, vorhandene Querformat-Renderprüfungen.
-- [ ] Historischer Pages-/Unity-Archivschutz.
-- [ ] **12 echte 1280×720-/1170×540-OpenGL-Bilder**: je Perspektive Boss abwesend, Boss normal und Boss mit reflektiertem 3D-Schockring. Der Render-Test prüft eine tatsächliche Pixeländerung des neuen Rings. Zusätzlich mobile HUD-Lesbarkeit; automatische Bilder sind keine echte iPhone-Abnahme.
+- [x] Headless-Gameplay, Godot-Webexport und Querformat-Renderprüfungen bestanden.
+- [x] [PR-Archivschutz 41243384842](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41243384842) bestanden.
+- [x] **12 echte 1280×720-/1170×540-OpenGL-Bilder**: [Artefakt 13057949224](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41243270342/artifacts/13057949224) heruntergeladen und visuell geprüft. Der 3D-Schockring verändert 10.345 Chase- und 8.307 Oblique-Pixel bei 1280×720 (>25 RGB-Maxkanal). Kein Ersatz für reale iPhone-Abnahme.
 - [ ] Erst bei allen erforderlichen grünen Gates Merge nach main und einmalige Veröffentlichung unter **skyway-v137/**; exakte Commit-ID in build.txt und HTTP 200 für fünf Dateien prüfen. Bis dahin V136 unverändert.
 - [ ] Reale iPhone-Safari-FPS, Clipping und vollständige Drei-Fragen-Touch-Spielrunde weiterhin separat prüfen.
 
 **Spur B:** Experimenteller PR #111 bleibt DRAFT/VISUAL HOLD; Titel V124 reserviert keine Release-Nummer. Keine alten Skyway-Versionen oder Unity-Archive verändern.
+
+## Release-Korrektur
+PR #125 als `32e7aa9c` nach grüner CI gemergt. Erste Main-Release-CI `41243648861` scheiterte ausschließlich am alten 8-PNG-Zähltest nach erfolgreich gerenderten zwölf Bossbildern. Der Release-Workflow erwartet jetzt zwölf PNGs; V137 wird **erst nach erfolgreicher erneuter Pages-CI** als live bezeichnet.
