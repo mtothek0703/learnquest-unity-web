@@ -299,7 +299,7 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://hoverboard_boost_wake_visual_capture_test.gd 2>&1 | tee /tmp/boost-wake-visual.log
           grep -Fq 'BOOST WAKE VISUAL QA PASSED' /tmp/boost-wake-visual.log
-          test "$(find /tmp/learnquest-wake-qa -name '*.png' | wc -l)" -eq 8
+          test "$(find /tmp/learnquest-wake-qa -name '*.png' | wc -l)" -eq 16
       - name: Render actual V124 neutral versus action face and pose frames
         shell: bash
         run: |
