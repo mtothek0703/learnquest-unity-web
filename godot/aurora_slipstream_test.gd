@@ -21,12 +21,13 @@ func _check() -> void:
     var arches: Array = course.get("arches")
     var cores: Array = course.get("cores")
     var helices: Array = course.get("helices")
-    if stations.size() != 4 or arches.size() != 4 or cores.size() != 4 or helices.size() != 8:
+    var aerial_targets: Array = course.get("aerial_targets")
+    if stations.size() != 4 or arches.size() != 4 or cores.size() != 4 or helices.size() != 8 or aerial_targets.size() != 4:
         _fail("four complete 3D moving wind tunnels are required")
         return
     for index in range(4):
-        if stations[index].get_child_count() != 8:
-            _fail("each tunnel needs three 3D hoops, two continuous helices, a core and two wind guides")
+        if stations[index].get_child_count() != 9:
+            _fail("each tunnel needs three hoops, two helices, a core, two guides and an aerial ring")
             return
         var ring := arches[index] as MeshInstance3D
         var core := cores[index] as MeshInstance3D
@@ -36,6 +37,12 @@ func _check() -> void:
         if not (helices[index * 2] as MeshInstance3D).mesh is ArrayMesh or \
                 (helices[index * 2] as MeshInstance3D).mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() < 300:
             _fail("actual continuous sculpted helical 3D wind ribbons are required")
+            return
+        var aerial_ring := aerial_targets[index] as MeshInstance3D
+        if aerial_ring == null or not aerial_ring.mesh is TorusMesh or \
+                aerial_ring.position.y <= core.position.y + 1.0 or \
+                not (aerial_ring.material_override as StandardMaterial3D).emission_enabled:
+            _fail("elevated illuminated 3D jump ring must visibly signal the aerial bonus")
             return
         if not (ring.material_override as StandardMaterial3D).emission_enabled:
             _fail("moving tunnel must be visibly illuminated")
@@ -128,5 +135,46 @@ func _check() -> void:
     if int(active_glacier.call("get_aurora_stream_count")) != 0:
         _fail("next round must reset all moving tunnels and their rewards")
         return
-    print("AURORA SLIPSTREAM TEST PASSED: four moving 3D tunnels, lane lock, Turbo, pause, reset, full-level star")
+    # V133: four true airborne interceptions, using the existing jump input,
+    # are distinct from ordinary ground catches and grant a mastery XP bonus.
+    game.call("_reset_run")
+    active_course.set("running", true)
+    rider.position.y = 0.0
+    active_stations[0].position.z = 0.3
+    rider.position.x = active_stations[0].position.x
+    game.call("_update_aurora_slipstream")
+    if int(game.get("xp")) != 35 or int(active_glacier.call("get_aurora_aerial_catches")) != 0:
+        _fail("ground interception must retain original reward without aerial XP")
+        return
+    game.call("_reset_run")
+    active_course.set("running", true)
+    for index in range(4):
+        active_stations[index].position.z = 0.3
+        rider.position.x = active_stations[index].position.x
+        rider.position.y = 1.1
+        game.call("_update_aurora_slipstream")
+        if int(active_glacier.call("get_aurora_aerial_catches")) != index + 1:
+            _fail("real airborne catches must increment the aerial mastery")
+            return
+    if int(game.get("xp")) != 330 or int(game.get("power")) != 60 or \
+            float(game.get("turbo_left")) < 4.74 or \
+            not bool(active_glacier.call("get_aurora_perfect_aerial_line")):
+        _fail("four airborne catches must grant base 200 XP +80 aerial +50 mastery and extra Turbo")
+        return
+    if not (game.get("hud") as Label).text.contains("LUFT: 4/4"):
+        _fail("landscape HUD must display airborne mastery")
+        return
+    game.set("distance", game.get("mission_target"))
+    game.call("_finish_run")
+    reward = game.get("reward_label") as Label
+    if reward == null or not reward.text.contains("AURORA-LUFTAKROBAT"):
+        _fail("completed full round must report the aerial mastery reward")
+        return
+    game.call("_reset_run")
+    if int(active_glacier.call("get_aurora_aerial_catches")) != 0 or \
+            bool(active_glacier.call("get_aurora_perfect_aerial_line")):
+        _fail("a new round must clear all airborne mastery rewards")
+        return
+    rider.position.y = 0.0
+    print("AURORA SLIPSTREAM TEST PASSED: moving 3D tunnels, lane lock, Turbo, ground/aerial rewards, 330 XP aerial mastery, reset and full-level result")
     quit(0)

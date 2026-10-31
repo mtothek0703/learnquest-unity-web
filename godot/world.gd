@@ -685,7 +685,7 @@ func _update_glacier_mission() -> void:
 func _update_aurora_slipstream() -> void:
     if world_choice != 3 or phase != "race" or not started or quiz_active:
         return
-    var result: Dictionary = glacier_zone.call("check_aurora_stream", rider.position.x)
+    var result: Dictionary = glacier_zone.call("check_aurora_stream", rider.position.x, rider.position.y)
     if result.is_empty():
         return
     if bool(result.get("caught", false)):
@@ -694,8 +694,12 @@ func _update_aurora_slipstream() -> void:
         # A successful aerial-current interception starts real existing Turbo,
         # without spending the player's stored power or adding a fifth ability.
         turbo_left = maxf(turbo_left, float(result.get("turbo_seconds", 0.0)))
-        if bool(result.get("perfect_line", false)):
+        if bool(result.get("perfect_aerial_line", false)):
+            info_label.text = "AURORA-LUFTAKROBAT! 4/4 SPRUENGE +130 XP!"
+        elif bool(result.get("perfect_line", false)):
             info_label.text = "PERFEKTE AURORA-LINIE! 4/4 - BONUSSTERN!"
+        elif bool(result.get("aerial", false)):
+            info_label.text = "LUFT-WINDSTROM! +20 XP UND EXTRA-TURBO"
         else:
             info_label.text = "WIND-KETTE %d/4! TURBO + ENERGIE" % int(result.get("streak", 1))
     else:
@@ -1089,6 +1093,8 @@ func _finish_run() -> void:
             reward_label.text += "\nAURORA-WINDSTROM: +1 BONUSSTERN!"
         if world_choice == 3 and bool(glacier_zone.call("get_aurora_perfect_line")):
             reward_label.text += "\nPERFEKTE AURORA-LINIE: +1 BONUSSTERN!"
+        if world_choice == 3 and bool(glacier_zone.call("get_aurora_perfect_aerial_line")):
+            reward_label.text += "\nAURORA-LUFTAKROBAT: 4/4 SPRUENGE +130 XP"
     else:
         reward_label.text = "NOCH %dm BIS ZUM ZIEL\nVERSUCHE ES ERNEUT!" % maxi(0, int(mission_target - distance))
     phase = "results"
@@ -1558,7 +1564,7 @@ func _refresh_hud() -> void:
                 if orbit_active:
                     hud.text += "\nORBIT-WÄCHTER %d/%d  %s" % [orbit_hp, ORBIT_HEALTH, "PLASMA!" if orbit_warning_left > 0.0 else "ATTACKE LADEN"]
             if world_choice == 3:
-                hud.text += "\nAURORA-SPRUNGTORE: %d/%d  WINDSTROM: %d/%d  KETTE: %d/4" % [mini(int(glacier_zone.get("completed_gates")), GLACIER_BONUS_TARGET), GLACIER_BONUS_TARGET, mini(int(glacier_zone.call("get_aurora_stream_count")), AURORA_SLIPSTREAM_TARGET), AURORA_SLIPSTREAM_TARGET, int(glacier_zone.call("get_aurora_streak"))]
+                hud.text += "\nAURORA-SPRUNGTORE: %d/%d  WINDSTROM: %d/%d  KETTE: %d/4  LUFT: %d/4" % [mini(int(glacier_zone.get("completed_gates")), GLACIER_BONUS_TARGET), GLACIER_BONUS_TARGET, mini(int(glacier_zone.call("get_aurora_stream_count")), AURORA_SLIPSTREAM_TARGET), AURORA_SLIPSTREAM_TARGET, int(glacier_zone.call("get_aurora_streak")), int(glacier_zone.call("get_aurora_aerial_catches"))]
                 if frost_active:
                     hud.text += "\nFROST-DRACHE %d/%d  %s" % [frost_hp, FROST_HEALTH, "EISWELLE!" if frost_warning_left > 0.0 else "ATTACKE LADEN"]
     if progress_bar != null:

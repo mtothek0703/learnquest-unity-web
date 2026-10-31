@@ -186,16 +186,22 @@ func reset_course() -> void:
         gate.set_meta("cleared", false)
         gate.visible = true
 
-func check_aurora_stream(rider_x: float) -> Dictionary:
+func check_aurora_stream(rider_x: float, rider_y: float = 0.0) -> Dictionary:
     if aurora_slipstream == null:
         return {}
-    return aurora_slipstream.call("check_stream", rider_x)
+    return aurora_slipstream.call("check_stream", rider_x, rider_y)
 
 func get_aurora_stream_count() -> int:
     return int(aurora_slipstream.get("caught_streams")) if aurora_slipstream != null else 0
 
 func get_aurora_perfect_line() -> bool:
     return bool(aurora_slipstream.get("perfect_line")) if aurora_slipstream != null else false
+
+func get_aurora_aerial_catches() -> int:
+    return int(aurora_slipstream.get("aerial_catches")) if aurora_slipstream != null else 0
+
+func get_aurora_perfect_aerial_line() -> bool:
+    return bool(aurora_slipstream.get("perfect_aerial_line")) if aurora_slipstream != null else false
 
 func get_aurora_streak() -> int:
     return int(aurora_slipstream.get("current_streak")) if aurora_slipstream != null else 0
