@@ -348,10 +348,18 @@ func _make_wing(side: float) -> ArrayMesh:
 # and toroidal exhaust halos. Both are children of the existing animated board,
 # so leaning, hovering, jumping and boost retain their original gameplay path.
 # Geometry and materials are original procedural work; no external asset.
+# Four longitudinal recessed turbine channels are carved into the existing
+# closed housing surface. Smooth entrance/exit fades keep the nose and exhaust
+# circular; no extra meshes, materials, collisions or mobile draw calls.
+func _thruster_flute(t: float, angle: float) -> float:
+    var fade := smoothstep(0.18, 0.38, t) * (1.0 - smoothstep(0.82, 0.98, t))
+    return fade * (0.5 + 0.5 * cos(4.0 * angle))
+
 func _thruster_point(side: float, t: float, angle: float) -> Vector3:
     var z := lerpf(0.42, 1.55, t)
     var swell := pow(maxf(0.0, sin(PI * t)), 0.75)
     var radius := 0.115 + 0.145 * swell + 0.035 * smoothstep(0.68, 1.0, t)
+    radius -= 0.036 * _thruster_flute(t, angle)
     var center_x := side * (0.80 + 0.08 * t)
     return Vector3(center_x + radius * cos(angle),
         0.24 + radius * 0.82 * sin(angle), z)
@@ -377,8 +385,10 @@ func _make_thruster_housing(side: float) -> ArrayMesh:
                 Vector2(a, u), Vector2(b, v), Vector2(a, v)]:
                 var upper := maxf(0.0, sin(sample.y))
                 var accent := smoothstep(0.66, 0.94, sample.x)
-                tool.set_color(Color("#17213d").lerp(Color("#647ca6"),
-                    0.20 + 0.48 * upper + 0.20 * accent))
+                var flute := _thruster_flute(sample.x, sample.y)
+                var satin := Color("#17213d").lerp(Color("#647ca6"),
+                    0.20 + 0.48 * upper + 0.20 * accent)
+                tool.set_color(satin.lerp(Color("#0d1931"), 0.48 * flute))
                 tool.set_normal(_thruster_normal(side, sample.x, sample.y))
                 tool.add_vertex(_thruster_point(side, sample.x, sample.y))
     # End caps make each turbine a real closed volume, not a decorative plane.
