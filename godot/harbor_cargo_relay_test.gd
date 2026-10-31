@@ -19,12 +19,25 @@ func _check() -> void:
     var stations: Array = relay.get("stations")
     var portals: Array = relay.get("portals")
     var pods: Array = relay.get("cargo")
-    if stations.size() != 5 or portals.size() != 5 or pods.size() != 5:
+    var precision_targets: Array = relay.get("precision_targets")
+    if stations.size() != 5 or portals.size() != 5 or pods.size() != 5 or precision_targets.size() != 5:
         _fail("five complete orbital delivery checkpoints are required")
         return
     for index in range(5):
         var portal := portals[index] as MeshInstance3D
         var pod := pods[index] as MeshInstance3D
+        var target := precision_targets[index] as MeshInstance3D
+        if target == null or not target.mesh is TorusMesh or not (target.material_override as StandardMaterial3D).emission_enabled:
+            _fail("every 3D cargo dock needs a glowing precision aiming ring")
+            return
+        if (target.mesh as TorusMesh).outer_radius >= (portal.mesh as TorusMesh).inner_radius * 0.5:
+            _fail("precision target must be visibly narrower than the regular dock")
+            return
+        var arrows := target.get_node_or_null("Precision four-arrow guidance") as MeshInstance3D
+        if arrows == null or not arrows.mesh is ArrayMesh or arrows.mesh.get_surface_count() != 1 or \
+                arrows.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() != 12:
+            _fail("mobile precision dock needs four real inward 3D guidance arrows")
+            return
         if portal == null or not portal.mesh is TorusMesh or pod == null or not pod.mesh is CapsuleMesh:
             _fail("each dock must have a true 3D ring and cargo capsule")
             return
@@ -50,8 +63,11 @@ func _check() -> void:
     relay.set("running", true)
     stations[0].position.z = 0.3
     var first: Dictionary = harbor.call("check_cargo_delivery", -3.1)
-    if not bool(first.get("delivered", false)) or int(first.get("xp", 0)) != 30 or int(first.get("energy", 0)) != 12:
+    if not bool(first.get("delivered", false)) or int(first.get("xp", 0)) != 45 or int(first.get("energy", 0)) != 12:
         _fail("correct lane must award cargo XP and energy")
+        return
+    if not bool(first.get("precision", false)) or int(relay.get("precision_deliveries")) != 1:
+        _fail("centered delivery must earn a separate 15 XP precision bonus")
         return
     if not (harbor.call("check_cargo_delivery", -3.1) as Dictionary).is_empty():
         _fail("one checkpoint must not pay out twice")
@@ -68,6 +84,15 @@ func _check() -> void:
         _fail("paused menu or vocabulary phase must never award cargo")
         return
 
+    # The broad original catch zone remains valid without precision XP.
+    harbor.call("reset_cargo_relay")
+    relay.set("running", true)
+    stations[0].position.z = 0.3
+    var wide: Dictionary = harbor.call("check_cargo_delivery", -2.2)
+    if not bool(wide.get("delivered", false)) or bool(wide.get("precision", true)) or \
+            int(wide.get("xp", 0)) != 30 or int(relay.get("precision_deliveries")) != 0:
+        _fail("near-edge delivery must remain playable without precision reward")
+        return
     harbor.queue_free()
     var game := preload("res://world.gd").new() as Node3D
     root.add_child(game)
@@ -86,7 +111,7 @@ func _check() -> void:
     if int(active_harbor.call("get_cargo_deliveries")) != 3:
         _fail("the real world must count three delivered cargo checkpoints")
         return
-    if int(game.get("xp")) != 120 or int(game.get("power")) != 36:
+    if int(game.get("xp")) != 165 or int(game.get("power")) != 36:
         _fail("the game must apply exactly three XP and energy payouts")
         return
     game.set("distance", game.get("mission_target"))
@@ -115,24 +140,31 @@ func _check() -> void:
         if index == 0 and (active_relay.get("portals")[1] as MeshInstance3D).scale.x <= 1.0:
             _fail("next illuminated 3D dock must visually react to the convoy streak")
             return
-    if int(game.get("xp")) != 250 or int(game.get("power")) != 60 or float(game.get("turbo_left")) < 2.99:
+    if int(game.get("xp")) != 325 or int(game.get("power")) != 60 or float(game.get("turbo_left")) < 2.99:
         _fail("five perfect deliveries must grant 250 XP, 60 energy and 3s Turbo")
         return
     if not bool(active_harbor.call("get_cargo_perfect_convoy")):
         _fail("five consecutive deliveries must complete the perfect convoy")
         return
-    if not (game.get("hud") as Label).text.contains("SERIE: 5/5"):
+    if not bool(active_harbor.call("get_cargo_perfect_precision")) or \
+            int(active_harbor.call("get_cargo_precision_deliveries")) != 5:
+        _fail("five centered catches must earn the separate precision pilot distinction")
+        return
+    if not (game.get("hud") as Label).text.contains("SERIE: 5/5") or \
+            not (game.get("hud") as Label).text.contains("PRAEZ: 5/5"):
         _fail("landscape race HUD must show five-dock mastery progress")
         return
     game.set("distance", game.get("mission_target"))
     game.call("_finish_run")
     reward = game.get("reward_label") as Label
-    if int(game.get("total_stars")) != 9 or reward == null or not reward.text.contains("PERFEKTER FRACHTKONVOI"):
+    if int(game.get("total_stars")) != 9 or reward == null or not reward.text.contains("PERFEKTER FRACHTKONVOI") or \
+            not reward.text.contains("PRAEZISIONS-PILOT"):
         _fail("full round must award a separate perfect convoy bonus star")
         return
     game.call("_reset_run")
     active_relay.set("running", true)
-    if bool(active_harbor.call("get_cargo_perfect_convoy")) or int(active_harbor.call("get_cargo_streak")) != 0:
+    if bool(active_harbor.call("get_cargo_perfect_convoy")) or int(active_harbor.call("get_cargo_streak")) != 0 or \
+            int(active_harbor.call("get_cargo_precision_deliveries")) != 0:
         _fail("next round must reset perfect convoy progress")
         return
     for index in range(5):
@@ -148,5 +180,5 @@ func _check() -> void:
     if int(game.get("total_stars")) != 13 or reward == null or not reward.text.contains("HAFEN-FRACHTRELAIS") or reward.text.contains("PERFEKTER FRACHTKONVOI"):
         _fail("broken convoy must grant only the original regular cargo star")
         return
-    print("HARBOR CARGO RELAY TEST PASSED: five 3D docks, 250 XP perfect convoy, Turbo, miss reset and full-round mastery star")
+    print("HARBOR CARGO RELAY TEST PASSED: five precision reticles, narrow 15 XP bonus, broad catch zone, 325 XP perfect convoy, Turbo, HUD and results")
     quit(0)

@@ -276,6 +276,12 @@ func get_cargo_streak() -> int:
 func get_cargo_perfect_convoy() -> bool:
     return bool(cargo_relay.get("perfect_convoy"))
 
+func get_cargo_precision_deliveries() -> int:
+    return int(cargo_relay.get("precision_deliveries"))
+
+func get_cargo_perfect_precision() -> bool:
+    return bool(cargo_relay.get("perfect_precision"))
+
 func _process(delta: float) -> void:
     if cargo_relay != null:
         cargo_relay.set("running", running)
