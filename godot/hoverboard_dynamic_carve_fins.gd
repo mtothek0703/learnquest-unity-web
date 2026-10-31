@@ -7,6 +7,7 @@ const SECTION_SEGMENTS := 12
 var fins: Array[Node3D] = []
 var fin_material: StandardMaterial3D
 var edge_material: StandardMaterial3D
+var edge_materials: Array[StandardMaterial3D] = []
 var ready_to_animate: bool = false
 
 func _ready() -> void:
@@ -41,7 +42,11 @@ func _ready() -> void:
         var edge := MeshInstance3D.new()
         edge.name = "CurvedSignalEdge"
         edge.mesh = _make_edge(side)
-        edge.material_override = edge_material
+        # Each outboard signal edge reacts to its own steering side.
+        # Reuse the same two existing meshes: no new draw calls or collision.
+        var side_edge_material := edge_material.duplicate() as StandardMaterial3D
+        edge_materials.append(side_edge_material)
+        edge.material_override = side_edge_material
         hinge.add_child(edge)
         fins.append(hinge)
     ready_to_animate = fins.size() == 2
@@ -125,6 +130,11 @@ func update_state(lean: float, boosting: bool, delta: float) -> void:
         var carve := maxf(0.0, side * clampf(lean, -1.0, 1.0))
         var angle := side * (0.045 + 0.42 * carve + (0.12 if boosting else 0.0))
         fins[i].rotation.z = lerpf(fins[i].rotation.z, angle, response)
+        var signal := edge_materials[i]
+        var target_energy := (2.3 if boosting else 1.1) + 1.55 * carve
+        signal.emission_energy_multiplier = lerpf(
+            signal.emission_energy_multiplier, target_energy, response)
+        signal.emission = Color("#25c7e9").lerp(Color("#c56cff"), carve * 0.65)
     edge_material.emission_energy_multiplier = lerpf(
         edge_material.emission_energy_multiplier,
         2.3 if boosting else 1.1, response)

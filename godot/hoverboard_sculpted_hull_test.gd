@@ -462,6 +462,34 @@ func _check() -> void:
     if absf((hinges[0] as Node3D).rotation.z) <= absf((hinges[1] as Node3D).rotation.z) + 0.12:
         _fail("left carve must reverse the deployed aerofoil")
         return
+    # Both already-existing edge meshes now have independent steer-dependent
+    # emissive materials. Right-turn/left-turn lighting must switch sides
+    # without extra geometry, and be reproducible at mobile frame rates.
+    var signals: Array = vanes.get("edge_materials")
+    if signals.size() != 2 or signals[0] == signals[1]:
+        _fail("carve fin signal edges must have independent materials")
+        return
+    var port_signal := signals[0] as StandardMaterial3D
+    var starboard_signal := signals[1] as StandardMaterial3D
+    if port_signal == null or starboard_signal == null or \
+            port_signal.emission_energy_multiplier < starboard_signal.emission_energy_multiplier + 0.35 or \
+            port_signal.emission == starboard_signal.emission:
+        _fail("left carve must visibly brighten only the outside signal edge")
+        return
+    var starboard_energy_30 := 0.0
+    for fps in [30, 60]:
+        for signal in signals:
+            (signal as StandardMaterial3D).emission_energy_multiplier = 1.1
+        for frame in range(3 if fps == 30 else 6):
+            vanes.call("update_state", 0.9, true, 1.0 / float(fps))
+        if fps == 30:
+            starboard_energy_30 = starboard_signal.emission_energy_multiplier
+        elif absf(starboard_signal.emission_energy_multiplier - starboard_energy_30) > 0.015:
+            _fail("directional fin glow must not depend on 30/60 FPS")
+            return
+    if starboard_signal.emission_energy_multiplier < port_signal.emission_energy_multiplier + 0.25:
+        _fail("right carve must brighten the starboard fin")
+        return
     if not vanes.find_children("*", "CollisionObject3D", true, false).is_empty():
         _fail("articulated board art must never change collision or touch controls")
         return
