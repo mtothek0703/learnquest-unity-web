@@ -39,6 +39,21 @@ func _material(color: Color, glow: bool = false) -> StandardMaterial3D:
         material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
     return material
 
+func _precision_guides_mesh() -> ArrayMesh:
+    # Four inward-pointing, real 3D triangles frame the small precision ring.
+    # One shared mesh per dock keeps the center readable on phone landscape.
+    var tool := SurfaceTool.new()
+    tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+    for corner in range(4):
+        var angle := TAU * float(corner) / 4.0
+        var radial := Vector2(cos(angle), sin(angle))
+        var tangent := Vector2(-sin(angle), cos(angle))
+        for point in [radial * 0.52, radial * 1.02 + tangent * 0.18,
+                radial * 1.02 - tangent * 0.18]:
+            tool.set_normal(Vector3.UP)
+            tool.add_vertex(Vector3(point.x, 0.0, point.y))
+    return tool.commit()
+
 func _ready() -> void:
     var ring := TorusMesh.new()
     ring.inner_radius = 1.55
@@ -52,6 +67,7 @@ func _ready() -> void:
     precision_mesh.outer_radius = 0.45
     precision_mesh.rings = 28
     precision_mesh.ring_segments = 8
+    var guide_mesh := _precision_guides_mesh()
     var capsule := CapsuleMesh.new()
     capsule.radius = 0.50
     capsule.height = 2.1
@@ -61,6 +77,7 @@ func _ready() -> void:
     var magenta := _material(Color("#ff8ee4"), true)
     var hull := _material(Color("#88b6d4"))
     var precision_gold := _material(Color("#ffe39a"), true)
+    precision_gold.cull_mode = BaseMaterial3D.CULL_DISABLED
     for index in range(DELIVERY_COUNT):
         var side := -1.0 if index % 2 == 0 else 1.0
         var station := Node3D.new()
@@ -86,6 +103,11 @@ func _ready() -> void:
         precision_target.rotation.x = PI * 0.5
         station.add_child(precision_target)
         precision_targets.append(precision_target)
+        var guidance := MeshInstance3D.new()
+        guidance.name = "Precision four-arrow guidance"
+        guidance.mesh = guide_mesh
+        guidance.material_override = precision_gold
+        precision_target.add_child(guidance)
         var pod := MeshInstance3D.new()
         pod.name = "Suspended delivery capsule"
         pod.mesh = capsule
@@ -129,7 +151,7 @@ func _refresh_gate_guidance() -> void:
         if glow != null:
             glow.emission_energy_multiplier = 2.1 + 0.32 * float(delivery_streak)
         ring.scale = Vector3.ONE * (1.0 + 0.035 * float(delivery_streak))
-        # A successful precise catch makes the next inner target brighter.
+        # A successful precise catch makes the next inner target larger.
         precision_targets[index].scale = Vector3.ONE * (1.0 + 0.055 * float(precision_streak))
 
 func check_delivery(rider_x: float) -> Dictionary:
