@@ -8,7 +8,7 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V133"
+const VERSION_LABEL := "V134"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -612,10 +612,14 @@ func _update_neon_signals() -> void:
         xp += int(result.get("xp", 0))
         power = mini(100, power + int(result.get("energy", 0)))
         turbo_left = maxf(turbo_left, float(result.get("turbo_seconds", 0.0)))
-        if bool(result.get("perfect_chain", false)):
+        if bool(result.get("precision_mastery", false)):
+            info_label.text = "NEON-PRAEZISIONSMEISTER! +40 XP  3,5s TURBO"
+        elif bool(result.get("perfect_chain", false)):
             info_label.text = "PERFEKTE NEON-KETTE! +25 ENERGIE +2,5s TURBO"
         elif bool(result.get("overdrive", false)):
             info_label.text = "NEON-OVERDRIVE! DREIERKETTE +30 ENERGIE"
+        elif bool(result.get("precision", false)):
+            info_label.text = "NEON-PRAEZISION! +10 XP  TREFFER %d/6" % int(result.get("precision_count", 0))
         else:
             info_label.text = "SIGNAL ERWISCHT! KOMBO x%d  +%d XP" % [int(result.get("streak", 0)), int(result.get("xp", 0))]
     else:
@@ -1067,6 +1071,8 @@ func _finish_run() -> void:
             reward_label.text += "\nNEON-SIGNALKETTE: +1 BONUSSTERN!"
         if world_choice == 0 and bool(skyway_zone.call("get_signal_perfect_run")):
             reward_label.text += "\nPERFEKTE NEON-SIGNALRUNDE: +1 BONUSSTERN!"
+        if world_choice == 0 and bool(skyway_zone.call("get_signal_precision_mastery")):
+            reward_label.text += "\nNEON-PRAEZISION: 6/6 GOLDZIELE +40 XP!"
         if world_choice == 0 and neon_defeated:
             reward_label.text += "\nNEON-DIRIGENT BESIEGT: +1 BONUSSTERN!"
         if world_choice == 1 and guardian_defeated:
@@ -1549,7 +1555,7 @@ func _refresh_hud() -> void:
         if phase == "race":
             hud.text += "\n%s  RUNDE %d  ZIEL %dm  SCHILD %ds  BOOST %ds" % [WORLD_NAMES[world_choice], round_number, int(mission_target), ceili(shield_left), ceili(turbo_left)]
             if world_choice == 0:
-                hud.text += "\nNEON-SIGNALE %d/%d  KETTE %d/6  %s" % [mini(int(skyway_zone.call("get_signal_count")), NEON_SIGNAL_TARGET), NEON_SIGNAL_TARGET, int(skyway_zone.call("get_signal_streak")), "PERFEKT!" if bool(skyway_zone.call("get_signal_perfect_run")) else "TORE TREFFEN"]
+                hud.text += "\nNEON-SIGNALE %d/%d  KETTE %d/6  PRAEZ %d/6  %s" % [mini(int(skyway_zone.call("get_signal_count")), NEON_SIGNAL_TARGET), NEON_SIGNAL_TARGET, int(skyway_zone.call("get_signal_streak")), int(skyway_zone.call("get_signal_precision_count")), "PERFEKT!" if bool(skyway_zone.call("get_signal_perfect_run")) else "TORE TREFFEN"]
                 if neon_active:
                     hud.text += "\nNEON-DIRIGENT %d/%d  %s" % [neon_hp, NEON_BOSS_HEALTH, "PINKER SWEEP!" if neon_warning_left > 0.0 else "ATTACKE LADEN"]
             if world_choice == 1:

@@ -20,7 +20,8 @@ func _check() -> void:
     var gates: Array = chain.get("gates")
     var rings: Array = chain.get("rings")
     var beacons: Array = chain.get("beacons")
-    if gates.size() != 6 or rings.size() != 6 or beacons.size() != 6:
+    var precision_rings: Array = chain.get("precision_rings")
+    if gates.size() != 6 or rings.size() != 6 or beacons.size() != 6 or precision_rings.size() != 6:
         _fail("six visible 3D signal gates are required")
         return
     for index in range(6):
@@ -32,6 +33,12 @@ func _check() -> void:
         var lane_index: int = (index + 2) % 3 - 1
         if not is_equal_approx(ring.position.x, float(lane_index) * 3.1):
             _fail("signal gates must align with the three confirmed touch lanes")
+            return
+        var bullseye := precision_rings[index] as MeshInstance3D
+        if bullseye == null or not bullseye.mesh is TorusMesh or \
+                absf(bullseye.position.x - ring.position.x) > 0.001 or \
+                (bullseye.mesh as TorusMesh).outer_radius >= (ring.mesh as TorusMesh).inner_radius:
+            _fail("each gate needs a concentric modeled gold precision target")
             return
         if not (ring.material_override as StandardMaterial3D).emission_enabled:
             _fail("signal arch must be visibly illuminated")
@@ -101,7 +108,7 @@ func _check() -> void:
     if int(active_city.call("get_signal_count")) != 4:
         _fail("four real Neon City gates must complete the optional mission")
         return
-    if int(game.get("xp")) != 25 + 30 + 35 + 40 or int(game.get("power")) != 12 + 12 + 30 + 12:
+    if int(game.get("xp")) != 25 + 30 + 35 + 40 + 4 * 10 or int(game.get("power")) != 12 + 12 + 30 + 12:
         _fail("world integration must apply each unique streak XP/energy payout")
         return
     game.set("distance", game.get("mission_target"))
@@ -114,8 +121,19 @@ func _check() -> void:
         _fail("three lives plus optional Neon mission must award four stars")
         return
     game.call("_reset_run")
+    if int(active_city.call("get_signal_precision_count")) != 0 or bool(active_city.call("get_signal_precision_mastery")):
+        _fail("new round must clear precision progress")
+        return
     if int(active_city.call("get_signal_count")) != 0:
         _fail("new round must reset all six gates and progress")
+        return
+    city.call("reset_signals")
+    chain.set("running", true)
+    gates[0].position.z = 0.3
+    var edge: Dictionary = city.call("check_neon_signal", 3.1 + 0.8)
+    if not bool(edge.get("hit", false)) or bool(edge.get("precision", true)) or \
+            int(edge.get("xp", 0)) != 25 or int(city.call("get_signal_precision_count")) != 0:
+        _fail("existing 1.30m catch zone must remain valid without gold bonus")
         return
     print("NEON SIGNAL CHAIN TEST PASSED: six 3D gates, three lanes, overdrive, pause, reset, full-level star")
     quit(0)
