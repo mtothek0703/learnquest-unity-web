@@ -226,7 +226,7 @@ func _check() -> void:
     # turbine's ACTUAL render mesh, not just a shader or extra decoration.
     # The flutes fade away at both ends to preserve closed round end caps.
     for side in [-1.0, 1.0]:
-        var center_x := side * (0.80 + 0.08 * 0.5)
+        var center_x: float = side * (0.80 + 0.08 * 0.5)
         var groove: Vector3 = sculpt.call("_thruster_point", side, 0.5, PI / 4.0)
         var ridge: Vector3 = sculpt.call("_thruster_point", side, 0.5, 0.0)
         var groove_radius := absf(groove.x - center_x) / cos(PI / 4.0)
@@ -236,7 +236,7 @@ func _check() -> void:
             return
         var front_groove: Vector3 = sculpt.call("_thruster_point", side, 0.05, PI / 4.0)
         var front_ridge: Vector3 = sculpt.call("_thruster_point", side, 0.05, 0.0)
-        var front_center := side * (0.80 + 0.08 * 0.05)
+        var front_center: float = side * (0.80 + 0.08 * 0.05)
         if absf(absf(front_groove.x - front_center) / cos(PI / 4.0) -
                 absf(front_ridge.x - front_center)) > 0.001:
             _fail("recessed turbine channels must fade before the closed front cap")
