@@ -353,7 +353,7 @@ func _make_wing(side: float) -> ArrayMesh:
 # circular; no extra meshes, materials, collisions or mobile draw calls.
 func _thruster_flute(t: float, angle: float) -> float:
     var fade := smoothstep(0.18, 0.38, t) * (1.0 - smoothstep(0.82, 0.98, t))
-    return fade * (0.5 + 0.5 * cos(4.0 * angle))
+    return fade * (0.5 - 0.5 * cos(4.0 * angle))
 
 func _thruster_point(side: float, t: float, angle: float) -> Vector3:
     var z := lerpf(0.42, 1.55, t)
