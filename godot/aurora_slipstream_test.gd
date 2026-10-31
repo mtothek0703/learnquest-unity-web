@@ -164,6 +164,18 @@ func _check() -> void:
     if not (game.get("hud") as Label).text.contains("LUFT: 4/4"):
         _fail("landscape HUD must display airborne mastery")
         return
+    game.set("mobile_hud_layout", true)
+    game.call("_refresh_hud")
+    var mobile_hud := (game.get("hud") as Label).text
+    if not mobile_hud.contains("WINDSTROM: 3/3") or not mobile_hud.contains("LUFT: 4/4"):
+        _fail("mobile landscape HUD must keep original mission and new aerial goal")
+        return
+    for line in mobile_hud.split("\n"):
+        if line.length() > 48:
+            _fail("landscape HUD line exceeds safe 360px panel: " + line)
+            return
+    game.set("mobile_hud_layout", false)
+    game.call("_refresh_hud")
     game.set("distance", game.get("mission_target"))
     game.call("_finish_run")
     reward = game.get("reward_label") as Label

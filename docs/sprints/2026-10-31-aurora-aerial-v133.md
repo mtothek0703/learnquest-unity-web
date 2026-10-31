@@ -13,3 +13,6 @@ The four moving Aurora wind tunnels now have elevated glowing 3D interception ri
 - [ ] Real iPhone FPS/clipping and three-quiz-to-full-round touch playthrough remain manual/unverified.
 
 Experimental 65-bone character remains in separate DRAFT PR #111; no merge or release-number reservation.
+
+## Smartphone landscape HUD QA
+The mobile HUD splits Aurora jump, wind, streak and aerial counters across two compact rows instead of adding another long line. A Godot regression checks each row is at most 48 characters in the narrow layout; physical Safari safe areas still require device testing.

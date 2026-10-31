@@ -1564,7 +1564,13 @@ func _refresh_hud() -> void:
                 if orbit_active:
                     hud.text += "\nORBIT-WÄCHTER %d/%d  %s" % [orbit_hp, ORBIT_HEALTH, "PLASMA!" if orbit_warning_left > 0.0 else "ATTACKE LADEN"]
             if world_choice == 3:
-                hud.text += "\nAURORA-SPRUNGTORE: %d/%d  WINDSTROM: %d/%d  KETTE: %d/4  LUFT: %d/4" % [mini(int(glacier_zone.get("completed_gates")), GLACIER_BONUS_TARGET), GLACIER_BONUS_TARGET, mini(int(glacier_zone.call("get_aurora_stream_count")), AURORA_SLIPSTREAM_TARGET), AURORA_SLIPSTREAM_TARGET, int(glacier_zone.call("get_aurora_streak")), int(glacier_zone.call("get_aurora_aerial_catches"))]
+                var aurora_progress := [mini(int(glacier_zone.get("completed_gates")), GLACIER_BONUS_TARGET), GLACIER_BONUS_TARGET, mini(int(glacier_zone.call("get_aurora_stream_count")), AURORA_SLIPSTREAM_TARGET), AURORA_SLIPSTREAM_TARGET, int(glacier_zone.call("get_aurora_streak")), int(glacier_zone.call("get_aurora_aerial_catches"))]
+                # Mobile HUD stays inside the narrow 360px landscape panel.
+                # The extra airborne goal must not push buttons off-screen.
+                if mobile_hud_layout:
+                    hud.text += "\nSPRUNG %d/%d  WINDSTROM: %d/%d\nKETTE: %d/4  LUFT: %d/4" % aurora_progress
+                else:
+                    hud.text += "\nAURORA-SPRUNGTORE: %d/%d  WINDSTROM: %d/%d  KETTE: %d/4  LUFT: %d/4" % aurora_progress
                 if frost_active:
                     hud.text += "\nFROST-DRACHE %d/%d  %s" % [frost_hp, FROST_HEALTH, "EISWELLE!" if frost_warning_left > 0.0 else "ATTACKE LADEN"]
     if progress_bar != null:
