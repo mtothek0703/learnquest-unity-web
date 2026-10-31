@@ -176,6 +176,33 @@ func _check() -> void:
     if not has_new_boundary:
         _fail("clipping failed to generate interpolated boundary vertices")
         return
+    # The source CC0 body remains intact, but the duplicate jacket must not
+    # include far-out forearm/hand triangles even when their arm weights are
+    # unexpectedly mixed with torso bones. Clip both rest-space lateral edges.
+    var torso_polygon: Array[Dictionary] = outfit.call(
+        "_clip_to_lateral", source_triangle, -0.30, true)
+    torso_polygon = outfit.call("_clip_to_lateral", torso_polygon, 0.30, false)
+    if torso_polygon.size() < 3:
+        _fail("jacket lateral envelope discarded the entire torso triangle")
+        return
+    var lateral_boundary := false
+    for corner in torso_polygon:
+        var p: Vector3 = corner["position"]
+        if p.x < -0.3001 or p.x > 0.3001:
+            _fail("jacket still includes geometry outside the original torso envelope")
+            return
+        if absf(absf(p.x) - 0.30) < 0.0001:
+            lateral_boundary = true
+        var w: PackedFloat32Array = corner["weights"]
+        var sum := 0.0
+        for influence in w:
+            sum += influence
+        if w.size() != 4 or absf(sum - 1.0) > 0.001:
+            _fail("lateral jacket clipping must preserve four normalized source Skin weights")
+            return
+    if not lateral_boundary:
+        _fail("jacket lateral clipping did not create a real seam boundary")
+        return
     var middle: Dictionary = outfit.call("_interpolate_corner", corner_a, corner_b, 0.5)
     var middle_weights: PackedFloat32Array = middle["weights"]
     if absf(middle_weights[0] - 0.5) > 0.001 or absf(middle_weights[1] - 0.5) > 0.001:
