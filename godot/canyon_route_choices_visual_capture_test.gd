@@ -94,8 +94,32 @@ func _capture() -> void:
                         _fail("two branch portals are not visibly distinguishable in %s %s (%d samples)" % [str(size), view, changed])
                         return
                 captures += 1
-    if captures != 8:
-        _fail("expected eight before-after route screenshots")
+            # V132: keep the same camera and a single visible fork while the
+            # next opposite-lane target brightens. These are actual rendered
+            # gameplay-state frames, not manually composited mockups.
+            routes.call("reset_course")
+            junctions[0].visible = false
+            junctions[0].set_meta("passed", true)
+            junctions[1].position.z = -10.0
+            routes.visible = true
+            for state in ["unlit", "switchback"]:
+                if state == "switchback":
+                    routes.call("_record_choice", "energy", 15, 20)
+                for frame in range(5):
+                    await process_frame
+                await RenderingServer.frame_post_draw
+                var combo_image := viewport.get_texture().get_image()
+                if combo_image.is_empty() or combo_image.get_width() != size.x or \
+                        combo_image.get_height() != size.y:
+                    _fail("invalid real switchback landscape screenshot")
+                    return
+                if combo_image.save_png("%s/%dx%d_%s_%s.png" % [
+                        output, size.x, size.y, view, state]) != OK:
+                    _fail("cannot save switchback portal guidance frame")
+                    return
+                captures += 1
+    if captures != 16:
+        _fail("expected sixteen baseline, fork and active switchback landscape frames")
         return
-    print("CANYON ROUTES VISUAL QA PASSED: eight actual landscape before-after images")
+    print("CANYON ROUTES VISUAL QA PASSED: sixteen actual landscape images including live switchback 3D guidance")
     quit(0)
