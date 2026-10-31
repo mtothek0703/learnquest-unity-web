@@ -77,7 +77,12 @@ func _extract_panel(source: Mesh, spec: Dictionary, face_sign: float) -> ArrayMe
                 facing += normals[i].z * face_sign
             # The chest and rear shield are selected from actual outward-facing
             # torso surfaces, not flat rectangular overlays across the body.
-            if (facing > 0.38) != bool(spec["front"]):
+            # The former rear-panel predicate accepted every side-facing
+            # triangle (and even slightly forward-facing ones). Those copied
+            # jacket flanks into the spine shield, causing double armor
+            # silhouettes beside the arms in the chase camera. Select actual
+            # back-facing source triangles instead of "not front".
+            if not _faces_panel(facing, bool(spec["front"])):
                 continue
             # Cut waist/collar first, then sculpt the side edges as continuous
             # tapered shoulder-to-waist profiles. Unlike rectangular plates,
@@ -112,6 +117,12 @@ func _extract_panel(source: Mesh, spec: Dictionary, face_sign: float) -> ArrayMe
     if accepted < 90:
         return null
     return output.commit()
+
+# facing is the sum of the three imported vertex-normal Z components,
+# oriented using the actual CC0 face_sign. A rear shield must be REAR-facing,
+# not merely a triangle that failed the forward-facing test.
+func _faces_panel(facing: float, is_front: bool) -> bool:
+    return facing > 0.38 if is_front else facing < -0.38
 
 func _panel_relief(u: float, v: float, is_front: bool) -> float:
     # Continuous rounded facets with a beveled border and shallow center.
