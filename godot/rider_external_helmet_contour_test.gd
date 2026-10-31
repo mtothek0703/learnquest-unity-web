@@ -59,6 +59,18 @@ func _check() -> void:
     if upper.x - lower.x < s.x * 0.08 or face_sign * (upper.z - lower.z) < s.z * 0.30:
         _fail("sculpted cheek contour must taper in width and depth toward the jaw")
         return
+    # Explicitly guard against the old bulky rectangular side guards. These
+    # are sampled from the same actual closed mesh generator, not a mock.
+    var mid: Vector3 = contour.call("_point", c, s, face_sign, 1.0, 0.5, 0.5, true)
+    var mirrored: Vector3 = contour.call("_point", c, s, face_sign, -1.0, 1.0, 1.0, true)
+    if upper.x - c.x < s.x * 0.55 or lower.x - c.x > s.x * 0.43 or \
+            not (upper.x > mid.x and mid.x > lower.x):
+        _fail("integrated helmet must narrow continuously from crown to jaw")
+        return
+    if absf((lower.x - c.x) + (mirrored.x - c.x)) > 0.00001 or \
+            absf(lower.z - mirrored.z) > 0.00001:
+        _fail("athletic cheek contour must be bilaterally symmetric")
+        return
     if nonfinite != 0 or left < 50 or right < 50:
         _fail("both anatomically tapered cheek guards must have finite, closed geometry")
         return
