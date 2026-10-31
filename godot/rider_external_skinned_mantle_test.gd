@@ -291,6 +291,14 @@ func _check() -> void:
             not cloth_shader.shader.code.contains("METALLIC = mix(0.055"):
         _fail("weighted coat tails must use matte flexible fabric, not inflated metal wings")
         return
+    # The actual four-weight mantle is now dynamically compact in idle and
+    # unfolds on the existing jump/boost action; do not add fake rigid wings.
+    if not cloth_shader.shader.code.contains("fold_to_hips") or \
+            not cloth_shader.shader.code.contains("VERTEX.x -= side * 0.14") or \
+            not cloth_shader.shader.code.contains("boost_amount * 0.80") or \
+            not cloth_shader.shader.code.contains("jump_amount * 0.45"):
+        _fail("the same skinned coat must fold at rest and open on real actions")
+        return
     if active_leg_binds < 100:
         _fail("trailing mantle must actually deform with leg bones")
         return

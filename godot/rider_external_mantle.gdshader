@@ -12,6 +12,16 @@ void vertex() {
     cloth_uv = UV;
     float trailing = smoothstep(0.12, 1.0, UV.y);
     float flutter = trailing * trailing;
+    // Keep the large split mantle tucked behind the hips during normal
+    // steering; deploy its real four-weight cloth only on Turbo/jump.
+    // The shoulder seam stays anchored (UV.y = 0), and the center gap
+    // remains open (UV.x = 0). No alpha overdraw or extra mesh/pass.
+    float fold_to_hips = (1.0 - clamp(boost_amount * 0.80
+        + jump_amount * 0.45, 0.0, 1.0))
+        * smoothstep(0.18, 0.86, UV.y)
+        * smoothstep(0.15, 0.90, UV.x);
+    VERTEX.x -= side * 0.14 * fold_to_hips;
+    VERTEX.z -= wind_back_sign * 0.035 * fold_to_hips;
     float wave = sin(TIME * (2.2 + boost_amount * 2.4) + UV.y * 9.0 + UV.x * 5.5 + side * 0.7);
     VERTEX.x += side * wave * (0.012 + boost_amount * 0.027) * flutter;
     VERTEX.x += steer_amount * 0.050 * trailing;
