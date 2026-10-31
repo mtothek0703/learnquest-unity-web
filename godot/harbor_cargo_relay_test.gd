@@ -33,6 +33,11 @@ func _check() -> void:
         if (target.mesh as TorusMesh).outer_radius >= (portal.mesh as TorusMesh).inner_radius * 0.5:
             _fail("precision target must be visibly narrower than the regular dock")
             return
+        var arrows := target.get_node_or_null("Precision four-arrow guidance") as MeshInstance3D
+        if arrows == null or not arrows.mesh is ArrayMesh or arrows.mesh.get_surface_count() != 1 or \
+                arrows.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() != 12:
+            _fail("mobile precision dock needs four real inward 3D guidance arrows")
+            return
         if portal == null or not portal.mesh is TorusMesh or pod == null or not pod.mesh is CapsuleMesh:
             _fail("each dock must have a true 3D ring and cargo capsule")
             return
