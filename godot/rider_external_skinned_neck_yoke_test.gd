@@ -53,6 +53,16 @@ func _check() -> void:
     var face := float(yoke.get("face_direction"))
     var front_angle := PI * 0.5 if face > 0.0 else PI * 1.5
     var back_angle := front_angle + PI
+    # A lower front lip is not enough: require a true, capped 45-degree
+    # opening in the GPU-skinned mesh rather than a continuous chest hoop.
+    if not bool(yoke.call("_front_gap", front_angle)) or \
+            bool(yoke.call("_front_gap", back_angle)) or \
+            bool(yoke.call("_front_gap", front_angle + 0.7)):
+        _fail("collar must have a real front-only angular opening")
+        return
+    if int(yoke.get("gap_cap_vertices")) != 12 or vertices.size() != 5388:
+        _fail("split collar lost closed skinned end caps or original 4-weight topology")
+        return
     var front: Vector3 = yoke.call("_collar_point", bounds, front_angle, 1.0, false)
     var rear: Vector3 = yoke.call("_collar_point", bounds, back_angle, 1.0, false)
     var outer_base: Vector3 = yoke.call("_collar_point", bounds, 0.0, 0.0, false)
