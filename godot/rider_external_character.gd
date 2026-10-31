@@ -112,7 +112,11 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
         # V124 unified silhouette trial: reduce the oversized floating-head
         # look while retaining readable eyes in landscape. Original imported
         # head, 65 bones and inverse bind matrices remain unchanged.
-        headgear.call("set_visual_scale", 2.12)
+        # Keep the readable mobile face while reducing the oversized
+        # head/helmet/hair silhouette relative to the skinned torso.
+        # All generated Head-local meshes scale around their sampled center;
+        # the imported 65-bone Skin and board contact stay unchanged.
+        headgear.call("set_visual_scale", 1.96)
         # Wind-reactive rear locks remain Head-bone attachments. Pivoted
         # movement preserves their scalp roots and avoids extra draw calls.
         var hair_motion := preload("res://rider_external_hair_dynamics.gd").new() as Node
