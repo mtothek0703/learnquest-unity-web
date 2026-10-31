@@ -22,3 +22,7 @@
 1. Check final GitHub Actions on the new PR head, fix any red regression/export; inspect real images before claiming graphics improvement.
 2. Improve the coherent character–board chase silhouette, not cosmetic percentage-only edits.
 3. Independently develop and gate the next substantive stable gameplay feature; publish only under a fresh immutable Skyway URL after main CI, archive and Pages revision checks.
+
+## CI follow-up (17:20 MEZ)
+- [Initial full Godot run 41219034094](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41219034094) **failed** at the new traction contrast assertion after the prior gameplay/rig regressions passed. The initial test incorrectly assumed a fixed absolute `Color.get_luminance() < 0.09` for the dark channel, although Godot color luminance is not normalized to that arbitrary threshold. This is a **test calibration failure**, not proof of a gameplay defect.
+- [Correction 4a99be10](https://github.com/mtothek0703/learnquest-unity-web/commit/4a99be108651195d2f1bd731f55239412e9bf8fa) now measures the two *actual rendered mesh vertices* and demands that the raised pad is at least 0.15 luminance above the recessed channel. The geometry/vertex colors are unchanged. A fresh full CI is required; do not report success until confirmed.
