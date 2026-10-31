@@ -73,6 +73,21 @@ func _ready() -> void:
     engine_light.shadow_enabled = false
     add_child(engine_light)
 
+# Preserve the V83 ribbon/spark objects as a fallback, but never stack
+# four huge translucent sheets and twelve dots behind the new true 3D
+# triple-helix propulsion. This avoids the visually cluttered old chase QA.
+var streamlined_mode := false
+
+func set_streamlined_mode(enabled: bool) -> void:
+    streamlined_mode = enabled
+    for root in wake_roots:
+        for part_name in ["Translucent curved plasma", "Bright sculpted ion core"]:
+            var old_ribbon := root.get_node_or_null(part_name) as MeshInstance3D
+            if old_ribbon != null:
+                old_ribbon.visible = not enabled
+    for spark in sparks:
+        spark.visible = not enabled
+
 func _plasma_material(tint: Color, energy: float) -> StandardMaterial3D:
     var material := StandardMaterial3D.new()
     material.albedo_color = Color(1.0, 1.0, 1.0, 0.86)
