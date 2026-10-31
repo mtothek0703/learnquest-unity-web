@@ -264,8 +264,8 @@ func _build_carriers() -> void:
 func reset_cargo_relay() -> void:
     cargo_relay.call("reset_course")
 
-func check_cargo_delivery(rider_x: float) -> Dictionary:
-    return cargo_relay.call("check_delivery", rider_x)
+func check_cargo_delivery(rider_x: float, rider_y: float = 0.0) -> Dictionary:
+    return cargo_relay.call("check_delivery", rider_x, rider_y)
 
 func get_cargo_deliveries() -> int:
     return int(cargo_relay.get("completed_deliveries"))
@@ -281,6 +281,12 @@ func get_cargo_precision_deliveries() -> int:
 
 func get_cargo_perfect_precision() -> bool:
     return bool(cargo_relay.get("perfect_precision"))
+
+func get_cargo_aerial_deliveries() -> int:
+    return int(cargo_relay.get("aerial_deliveries"))
+
+func get_cargo_aerial_mastery() -> bool:
+    return bool(cargo_relay.get("aerial_mastery"))
 
 func _process(delta: float) -> void:
     if cargo_relay != null:

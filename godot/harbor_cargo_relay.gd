@@ -7,6 +7,8 @@ const DELIVERY_COUNT := 5
 # Optional skill challenge inside the existing delivery lane; the broad
 # 1.30 m cargo catch zone and all touch controls remain unchanged.
 const PRECISION_RADIUS := 0.42
+const AERIAL_MIN_HEIGHT := 0.85
+const AERIAL_MASTER_TARGET := 4
 const LANE_X := 3.1
 const START_Z := -85.0
 const SPACING := 190.0
@@ -22,9 +24,12 @@ var perfect_convoy := false
 var precision_deliveries := 0
 var precision_streak := 0
 var perfect_precision := false
+var aerial_deliveries := 0
+var aerial_mastery := false
 var stations: Array[Node3D] = []
 var portals: Array[MeshInstance3D] = []
 var precision_targets: Array[MeshInstance3D] = []
+var aerial_targets: Array[MeshInstance3D] = []
 var cargo: Array[MeshInstance3D] = []
 
 func _material(color: Color, glow: bool = false) -> StandardMaterial3D:
@@ -67,6 +72,12 @@ func _ready() -> void:
     precision_mesh.outer_radius = 0.45
     precision_mesh.rings = 28
     precision_mesh.ring_segments = 8
+    # Raised 3D jump targets reuse the existing touch gesture.
+    var aerial_mesh := TorusMesh.new()
+    aerial_mesh.inner_radius = 0.58
+    aerial_mesh.outer_radius = 0.73
+    aerial_mesh.rings = 28
+    aerial_mesh.ring_segments = 8
     var guide_mesh := _precision_guides_mesh()
     var capsule := CapsuleMesh.new()
     capsule.radius = 0.50
@@ -78,6 +89,7 @@ func _ready() -> void:
     var hull := _material(Color("#88b6d4"))
     var precision_gold := _material(Color("#ffe39a"), true)
     precision_gold.cull_mode = BaseMaterial3D.CULL_DISABLED
+    var aerial_cyan := _material(Color("#83f7ff"), true)
     for index in range(DELIVERY_COUNT):
         var side := -1.0 if index % 2 == 0 else 1.0
         var station := Node3D.new()
@@ -103,6 +115,14 @@ func _ready() -> void:
         precision_target.rotation.x = PI * 0.5
         station.add_child(precision_target)
         precision_targets.append(precision_target)
+        var aerial_target := MeshInstance3D.new()
+        aerial_target.name = "Raised aerial cargo jump ring"
+        aerial_target.mesh = aerial_mesh
+        aerial_target.material_override = aerial_cyan
+        aerial_target.position = Vector3(side * LANE_X, 4.30, -0.16)
+        aerial_target.rotation.x = PI * 0.5
+        station.add_child(aerial_target)
+        aerial_targets.append(aerial_target)
         var guidance := MeshInstance3D.new()
         guidance.name = "Precision four-arrow guidance"
         guidance.mesh = guide_mesh
@@ -134,6 +154,8 @@ func reset_course() -> void:
     precision_deliveries = 0
     precision_streak = 0
     perfect_precision = false
+    aerial_deliveries = 0
+    aerial_mastery = false
     for index in range(stations.size()):
         stations[index].position.z = START_Z - float(index) * SPACING
         stations[index].set_meta("passed", false)
@@ -153,8 +175,9 @@ func _refresh_gate_guidance() -> void:
         ring.scale = Vector3.ONE * (1.0 + 0.035 * float(delivery_streak))
         # A successful precise catch makes the next inner target larger.
         precision_targets[index].scale = Vector3.ONE * (1.0 + 0.055 * float(precision_streak))
+        aerial_targets[index].scale = Vector3.ONE * (1.0 + 0.04 * float(aerial_deliveries))
 
-func check_delivery(rider_x: float) -> Dictionary:
+func check_delivery(rider_x: float, rider_y: float = 0.0) -> Dictionary:
     if not running:
         return {}
     for station in stations:
@@ -177,13 +200,20 @@ func check_delivery(rider_x: float) -> Dictionary:
             else:
                 precision_streak = 0
             perfect_precision = precision_deliveries == DELIVERY_COUNT
+            var aerial := rider_y >= AERIAL_MIN_HEIGHT
+            if aerial:
+                aerial_deliveries += 1
+            var aerial_mastery_award := aerial and aerial_deliveries == AERIAL_MASTER_TARGET
+            aerial_mastery = aerial_deliveries >= AERIAL_MASTER_TARGET
             _refresh_gate_guidance()
-            return {"delivered": true, "xp": 30 + 10 * (delivery_streak - 1) + (15 if precise else 0),
+            return {"delivered": true, "xp": 30 + 10 * (delivery_streak - 1) + (15 if precise else 0) + (20 if aerial else 0) + (40 if aerial_mastery_award else 0),
                 "energy": 12, "count": completed_deliveries,
                 "streak": delivery_streak, "perfect_convoy": perfect_convoy,
                 "precision": precise, "precision_count": precision_deliveries,
                 "perfect_precision": perfect_precision,
-                "turbo_seconds": (2.0 + 0.5 * float(delivery_streak - 3)) if delivery_streak >= 3 else 0.0}
+                "aerial": aerial, "aerial_count": aerial_deliveries,
+                "aerial_mastery": aerial_mastery, "aerial_mastery_award": aerial_mastery_award,
+                "turbo_seconds": maxf((2.0 + 0.5 * float(delivery_streak - 3)) if delivery_streak >= 3 else 0.0, 0.75 if aerial else 0.0)}
         missed_deliveries += 1
         delivery_streak = 0
         precision_streak = 0

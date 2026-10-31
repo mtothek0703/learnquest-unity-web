@@ -20,13 +20,18 @@ func _check() -> void:
     var portals: Array = relay.get("portals")
     var pods: Array = relay.get("cargo")
     var precision_targets: Array = relay.get("precision_targets")
-    if stations.size() != 5 or portals.size() != 5 or pods.size() != 5 or precision_targets.size() != 5:
+    var aerial_targets: Array = relay.get("aerial_targets")
+    if stations.size() != 5 or portals.size() != 5 or pods.size() != 5 or precision_targets.size() != 5 or aerial_targets.size() != 5:
         _fail("five complete orbital delivery checkpoints are required")
         return
     for index in range(5):
         var portal := portals[index] as MeshInstance3D
         var pod := pods[index] as MeshInstance3D
         var target := precision_targets[index] as MeshInstance3D
+        var aerial_target := aerial_targets[index] as MeshInstance3D
+        if aerial_target == null or not aerial_target.mesh is TorusMesh or aerial_target.position.y <= portal.position.y + 1.5:
+            _fail("each dock needs a visibly raised 3D jump ring")
+            return
         if target == null or not target.mesh is TorusMesh or not (target.material_override as StandardMaterial3D).emission_enabled:
             _fail("every 3D cargo dock needs a glowing precision aiming ring")
             return
@@ -180,5 +185,44 @@ func _check() -> void:
     if int(game.get("total_stars")) != 13 or reward == null or not reward.text.contains("HAFEN-FRACHTRELAIS") or reward.text.contains("PERFEKTER FRACHTKONVOI"):
         _fail("broken convoy must grant only the original regular cargo star")
         return
-    print("HARBOR CARGO RELAY TEST PASSED: five precision reticles, narrow 15 XP bonus, broad catch zone, 325 XP perfect convoy, Turbo, HUD and results")
+    # Jump delivery stacks with normal precision and convoy, no duplicate payout.
+    game.call("_reset_run")
+    active_relay.set("running", true)
+    var aerial_xp := 0
+    for index in range(5):
+        active_stations[index].position.z = 0.3
+        hero.position.x = -3.1 if index % 2 == 0 else 3.1
+        hero.position.y = 1.15 if index < 4 else 0.0
+        var before_xp: int = int(game.get("xp"))
+        game.call("_update_harbor_cargo_relay")
+        var delta_xp: int = int(game.get("xp")) - before_xp
+        aerial_xp += delta_xp
+        if index == 0 and (delta_xp != 65 or float(game.get("turbo_left")) < 0.74):
+            _fail("first jump dock must award 30+15+20 XP and short Turbo")
+            return
+        if index == 3 and (delta_xp != 135 or not bool(active_harbor.call("get_cargo_aerial_mastery"))):
+            _fail("fourth jump dock must pay the one-off 40 XP mastery")
+            return
+        if index == 4 and delta_xp != 85:
+            _fail("ordinary fifth dock must not repeat aerial or mastery XP")
+            return
+        if not (active_harbor.call("check_cargo_delivery", hero.position.x, 1.15) as Dictionary).is_empty():
+            _fail("aerial checkpoint must not pay twice")
+            return
+    if aerial_xp != 445 or int(active_harbor.call("get_cargo_aerial_deliveries")) != 4:
+        _fail("four jumps plus five precision docks must award 445 XP")
+        return
+    if not (game.get("hud") as Label).text.contains("LUFTFRACHT: 4/5"):
+        _fail("landscape HUD must show airborne progress")
+        return
+    game.set("distance", game.get("mission_target"))
+    game.call("_finish_run")
+    if not (game.get("reward_label") as Label).text.contains("LUFTFRACHT-MEISTER"):
+        _fail("results must explain aerial mastery")
+        return
+    game.call("_reset_run")
+    if int(active_harbor.call("get_cargo_aerial_deliveries")) != 0 or bool(active_harbor.call("get_cargo_aerial_mastery")):
+        _fail("aerial mission must reset between rounds")
+        return
+    print("HARBOR CARGO RELAY TEST PASSED: precision, convoy, four-jump aerial mastery, Turbo, HUD and results")
     quit(0)
