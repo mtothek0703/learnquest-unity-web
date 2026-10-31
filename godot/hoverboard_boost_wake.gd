@@ -2,8 +2,9 @@ extends Node3D
 ## V124 draft: two continuous, tapered, volumetric energy wakes behind the
 ## existing sculpted hoverboard turbines. Original procedural geometry; no
 ## third-party assets, collision, touch, physics or game-rule modifications.
-const LENGTH_STEPS := 40
-const RING_STEPS := 12
+const LENGTH_STEPS := 32
+const RING_STEPS := 8
+const STRAND_COUNT := 3
 var wake_meshes: Array[MeshInstance3D] = []
 var wake_materials: Array[StandardMaterial3D] = []
 var intensity: float = 0.0
@@ -52,31 +53,51 @@ func _opacity(t: float, angle: float) -> float:
     var filament := pow(maxf(0.0, cos(phase)), 6.0)
     return (0.045 + 0.30 * filament) * pow(maxf(0.0, 1.0 - t), 1.3)
 
-func _emit(tool: SurfaceTool, side: float, t: float, angle: float) -> void:
-    var point := _point(side, t, angle)
+# Replace the broad translucent exhaust cylinder with three actual 3D
+# helical filaments in ONE ArrayMesh per engine. The previous tube caused
+# striped balloon-like sheets in rear-chase screenshots, especially on phones.
+# Each strand has its own narrow 8-sided volume and fades toward the tip;
+# still only two draw calls, no colliders or changes to touch/gameplay.
+func _filament_center(side: float, t: float, strand: int) -> Vector3:
+    var sweep := 0.06 * sin(t * PI * 1.6)
+    var envelope := (0.068 + 0.065 * sin(PI * t)) * pow(maxf(0.0, 1.0 - t), 0.65)
+    var phase := TAU * (2.25 * t + float(strand) / float(STRAND_COUNT))
+    return Vector3(side * (0.88 + sweep + envelope * cos(phase)),
+        0.24 + 0.055 * sin(t * TAU) + envelope * sin(phase),
+        1.58 + 0.95 * t)
+
+func _filament_radius(t: float) -> float:
+    return 0.014 * pow(maxf(0.0, 1.0 - t), 0.6) + 0.002
+
+func _filament_point(side: float, t: float, section: float, strand: int) -> Vector3:
+    var center := _filament_center(side, t, strand)
+    var radius := _filament_radius(t)
+    return center + Vector3(side * radius * cos(section), radius * sin(section), 0.0)
+
+func _emit_filament(tool: SurfaceTool, side: float, t: float, section: float, strand: int) -> void:
     var root := Color("#37dfff") if side < 0.0 else Color("#8e8dff")
     var tip := Color("#c7f5ff") if side < 0.0 else Color("#efb5ff")
     var color := root.lerp(tip, smoothstep(0.15, 0.90, t))
-    color.a = _opacity(t, angle)
+    # Uniform across the thin circumference: brightness comes from actual
+    # filament volume, not the old wide translucent angular alpha stripes.
+    color.a = maxf(_opacity(t, 0.0), 0.55 * pow(maxf(0.0, 1.0 - t), 1.25))
     tool.set_color(color)
-    tool.set_normal(Vector3(side * cos(angle), sin(angle), 0.05).normalized())
-    tool.add_vertex(point)
+    tool.set_normal(Vector3(side * cos(section), sin(section), 0.0).normalized())
+    tool.add_vertex(_filament_point(side, t, section, strand))
 
 func _make_wake(side: float) -> ArrayMesh:
     var tool := SurfaceTool.new()
     tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-    for i in range(LENGTH_STEPS):
-        var a := float(i) / float(LENGTH_STEPS)
-        var b := float(i + 1) / float(LENGTH_STEPS)
-        for j in range(RING_STEPS):
-            var u := TAU * float(j) / float(RING_STEPS)
-            var v := TAU * float(j + 1) / float(RING_STEPS)
-            _emit(tool, side, a, u)
-            _emit(tool, side, b, u)
-            _emit(tool, side, b, v)
-            _emit(tool, side, a, u)
-            _emit(tool, side, b, v)
-            _emit(tool, side, a, v)
+    for strand in range(STRAND_COUNT):
+        for i in range(LENGTH_STEPS):
+            var a := float(i) / float(LENGTH_STEPS)
+            var b := float(i + 1) / float(LENGTH_STEPS)
+            for j in range(RING_STEPS):
+                var u := TAU * float(j) / float(RING_STEPS)
+                var v := TAU * float(j + 1) / float(RING_STEPS)
+                for sample in [Vector2(a, u), Vector2(b, u), Vector2(b, v),
+                        Vector2(a, u), Vector2(b, v), Vector2(a, v)]:
+                    _emit_filament(tool, side, sample.x, sample.y, strand)
     return tool.commit()
 
 func _process(delta: float) -> void:
