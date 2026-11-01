@@ -71,9 +71,11 @@ func _check() -> void:
     if not source_rotations.has(elbow_id) or not source_rotations.has(right_elbow_id):
         _fail("missing original CC0 elbow pose references")
         return
-    var left_elbow_bend := (source_rotations[elbow_id] as Quaternion).angle_to(neutral_elbow)
-    var right_elbow_bend := (source_rotations[right_elbow_id] as Quaternion).angle_to(neutral_right_elbow)
-    if left_elbow_bend < 0.66 or right_elbow_bend < 0.66 or \\
+    var left_elbow_rest: Quaternion = source_rotations[elbow_id]
+    var right_elbow_rest: Quaternion = source_rotations[right_elbow_id]
+    var left_elbow_bend := left_elbow_rest.angle_to(neutral_elbow)
+    var right_elbow_bend := right_elbow_rest.angle_to(neutral_right_elbow)
+    if left_elbow_bend < 0.66 or right_elbow_bend < 0.66 or \
             absf(left_elbow_bend - right_elbow_bend) > 0.16:
         _fail("both source-skinned elbows must form symmetric compact riding bends (L/R: %.3f / %.3f)" % [left_elbow_bend, right_elbow_bend])
         return
