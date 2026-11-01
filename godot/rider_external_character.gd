@@ -116,12 +116,11 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
         # head/helmet/hair silhouette relative to the skinned torso.
         # All generated Head-local meshes scale around their sampled center;
         # the imported 65-bone Skin and board contact stay unchanged.
-        # Experimental second proportion pass: 1.82 -> 1.68 (7.7% smaller)
-        # for a less doll-like overall head-to-torso ratio in landscape.
-        # Keep the ORIGINAL CC0 head/neck bones,
+        # Compact the complete helmet/face/hair silhouette by 7.1% compared
+        # with the previous 1.96 trial. Keep the ORIGINAL CC0 head/neck bones,
         # weighted face and all board/contact/gameplay transforms untouched.
         # This is a DRAFT visual candidate until landscape frames are reviewed.
-        headgear.call("set_visual_scale", 1.68)
+        headgear.call("set_visual_scale", 1.82)
         # Wind-reactive rear locks remain Head-bone attachments. Pivoted
         # movement preserves their scalp roots and avoids extra draw calls.
         var hair_motion := preload("res://rider_external_hair_dynamics.gd").new() as Node
