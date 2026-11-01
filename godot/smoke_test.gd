@@ -2612,7 +2612,7 @@ func _run_checks() -> void:
         return
     game.call("_start_game")
     game.call("_update_camera", 1.0)
-    if portrait_camera.position.z <= 6.0 or portrait_camera.fov < 62.0:
+    if portrait_camera.position.z <= 7.0 or portrait_camera.position.z >= 8.2 or portrait_camera.fov < 56.0 or portrait_camera.fov > 61.0:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
