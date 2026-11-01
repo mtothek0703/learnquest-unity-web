@@ -12,3 +12,5 @@ PR #111 stays DRAFT; the 65-bone character remains independent and is not versio
 
 ## Visual capture gate
 New `godot/energy_weave_visual_capture_test.gd` renders real 1280×720 and 1170×540 chase frames before and after the earned 3D pulse. Both PR and publish workflows require four PNGs and a measurable on-screen difference; results must be reviewed before claiming a visual upgrade.
+
+Visual QA refinement: the first generated images exposed that the small pulse was buried in the animated character; enlarged/repositioned the same collision-free torus to frame the rider and froze rider/environment animation during A/B to prevent false-positive pixel differences. No release until this corrected image gate passes and frames are inspected.

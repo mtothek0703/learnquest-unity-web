@@ -26,6 +26,11 @@ func _capture() -> void:
     viewport.add_child(game)
     await process_frame
     game.set_process(false)
+    # Hold every animated child at the SAME pose for a real VFX-only A/B.
+    # Otherwise moving hair/traffic can falsely satisfy pixel-difference QA.
+    var world_zone := game.get("skyway_zone") as Node3D
+    if world_zone != null:
+        world_zone.process_mode = Node.PROCESS_MODE_DISABLED
     game.set("phase", "race")
     game.set("started", true)
     game.set("quiz_active", false)
@@ -39,6 +44,7 @@ func _capture() -> void:
     if rider == null or camera == null or ring == null:
         _fail("real game chase camera, rider or pulse missing")
         return
+    rider.process_mode = Node.PROCESS_MODE_DISABLED
     for size in SIZES:
         viewport.size = size
         game.call("_apply_mobile_layout", float(size.x), 1, float(size.y))
@@ -82,7 +88,7 @@ func _capture() -> void:
                         var now := shot.get_pixel(px, py)
                         if absf(old.r - now.r) + absf(old.g - now.g) + absf(old.b - now.b) > 0.16:
                             changed += 1
-                if changed < 12:
+                if changed < 32:
                     _fail("earned 3D pulse not visible at %s: only %d changed samples" % [size, changed])
                     return
                 print("Energy Weave actual landscape changed samples %s: %d" % [size, changed])
