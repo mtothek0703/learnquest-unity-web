@@ -155,6 +155,40 @@ func _check() -> void:
         if absf(plume.position.z + 1.58 * plume.scale.z - 1.58) > 0.0001:
             _fail("wake scaling detached its root from the turbine exhaust")
             return
+    # Aerial propulsion must articulate the REAL 3D jets, not detach
+    # their first ring from the turbine or modify the rider's jump physics.
+    legacy.set("jump_pose", 0.85)
+    wake.call("_process", 0.25)
+    for i in range(2):
+        var side := -1.0 if i == 0 else 1.0
+        var plume := parts[i] as MeshInstance3D
+        var nozzle := Vector3(side * 0.88, 0.24, 1.58)
+        var root_world := plume.transform * nozzle
+        var tip_local: Vector3 = wake.call("_filament_center", side, 1.0, 0)
+        var tip_world := plume.transform * tip_local
+        if plume.rotation.x < 0.16 or root_world.distance_to(nozzle) > 0.001 or \
+                tip_world.y > nozzle.y - 0.11:
+            _fail("aerial 3D jets must pitch downward while keeping turbine roots anchored")
+            return
+    legacy.set("jump_pose", 0.0)
+    wake.call("_process", 0.75)
+    if absf(port.rotation.x) > 0.001 or absf(starboard.rotation.x) > 0.001:
+        _fail("aerial jet pitch must settle back to neutral after landing")
+        return
+    var pitch_30 := 0.0
+    legacy.set("jump_pose", 0.7)
+    for fps in [30, 60]:
+        port.rotation.x = 0.0
+        starboard.rotation.x = 0.0
+        for frame in range(3 if fps == 30 else 6):
+            wake.call("_process", 1.0 / float(fps))
+        if fps == 30:
+            pitch_30 = starboard.rotation.x
+        elif absf(starboard.rotation.x - pitch_30) > 0.001:
+            _fail("aerial jet pitch must match at 30 and 60 FPS")
+            return
+    legacy.set("jump_pose", 0.0)
+    wake.call("_process", 0.75)
     var at_30 := 0.0
     var length_30 := 0.0
     for fps in [30, 60]:
