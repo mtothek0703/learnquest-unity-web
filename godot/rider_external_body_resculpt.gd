@@ -77,13 +77,27 @@ func _reshape(point: Vector3, bounds: AABB) -> Vector3:
     var waist := exp(-pow((y - 0.465) / 0.055, 2.0))
     var hip := exp(-pow((y - 0.398) / 0.055, 2.0))
     var thigh := exp(-pow((y - 0.310) / 0.060, 2.0))
+    # The imported CC0 shoulder/upper-arm triangles, not the overlaid armor,
+    # form the wide horizontal shelf in isolated source-only mobile captures.
+    # Pull only the OUTER trapezius/deltoid zone toward the real spine. Keep
+    # the central chest, hand tips, face, feet and original four Skin weights.
+    # This is a smooth, symmetric rest-space sculpt, not a separate prop.
+    var upper_shoulder := exp(-pow((y - 0.738) / 0.052, 2.0))
+    var outer_deltoid := smoothstep(0.25, 0.43, side) * (
+        1.0 - smoothstep(0.65, 0.83, side))
+    var shoulder_taper := upper_shoulder * outer_deltoid
     # Athletic silhouette pass: remove inflated hips/thighs and reduce the\n    # broad upper chest, while preserving the continuous imported skin.\n    # Original CC0 deltoids are already broad. The previous extra 24% swell
     # created a horizontal inflated shoulder bar even with the collar hidden.
     # Keep the chest athletic while letting the original arm bones read clearly.
     var width_scale := 1.0 + torso * (0.15 * chest + 0.015 * shoulder -
         0.12 * waist + 0.035 * hip) - leg * 0.025 * thigh
+    # The broadest source shoulder now contracts by up to 10.5% in width
+    # and 4.8% in depth, fading before the hands and below the armpit.
+    # Existing chest/waist tailoring and all gameplay physics are untouched.
+    width_scale -= 0.105 * shoulder_taper
     var depth_scale := 1.0 + torso * (0.12 * chest + 0.020 * shoulder -
         0.07 * waist + 0.03 * hip) - leg * 0.012 * thigh
+    depth_scale -= 0.048 * shoulder_taper
     var center := bounds.get_center()
     return Vector3(center.x + (point.x - center.x) * width_scale,
         point.y, center.z + (point.z - center.z) * depth_scale)
