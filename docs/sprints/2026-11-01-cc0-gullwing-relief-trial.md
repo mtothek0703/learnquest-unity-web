@@ -18,3 +18,9 @@ The sculpted hoverboard's **existing** port/starboard gull-wing surfaces now hav
 - [ ] Compare real matched chase/oblique Godot images at 1280×720 and 1170×540 against the previous successful DRAFT. Confirm the new ridge is not hidden by the articulated fin and does not make the board too bulky.
 - [ ] Real iPhone Safari FPS, full three-question + touch race, and all-pose clipping remain unverified.
 - [ ] PR #111 remains **DRAFT / VISUAL HOLD**; no merge or new immutable release until quality approval.
+
+## Final Godot and image QA — rejected, reverted
+- [x] [Full Godot CI 41348231897](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41348231897) completed **SUCCESS**, all 52 steps, including web export and original 16-frame 16:9/19.5:9 board captures.
+- [x] Compared all 16 matched previous/current board images from [previous run 41341911198](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41341911198) and the new run. At RGB maximum-channel difference >25, the 1280×720 chase-after frame changed only **513 pixels (0.056%)**, front-after **1,508 pixels (0.164%)**; controls already drifted **506** and **1,496** pixels respectively. The after/control differences are nearly identical, so there is **no isolated, convincing on-screen improvement**. Side-by-side chase/front review also shows no clearly visible enhancement.
+- [x] Reverted both geometry and test changes rather than keeping a misleading "improvement" (commits `e61e7477`, `adc68389`). Historical stable releases, original 65-bone CC0 import and touch gameplay remain untouched.
+- [ ] No visual quality approval, no PR merge, no V150 release. Existing CC0 DRAFT remains an experimental workbench. Next substantive work should focus on visible full-character silhouette/garment occlusion, not hidden wing height adjustments. Manual iPhone FPS and full touch race still outstanding.
