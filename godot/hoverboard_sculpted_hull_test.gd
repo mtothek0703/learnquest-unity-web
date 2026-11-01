@@ -537,7 +537,9 @@ func _check() -> void:
         elif absf(outside_fin.position.y - lift_30) > 0.002 or \
                 absf(outside_fin.position.x - span_30) > 0.002 or \
                 absf(outside_fin.rotation.x - pitch_30) > 0.002 or \
-                hue.distance_to(hue_30) > 0.005:
+                absf(hue.r - hue_30.r) > 0.005 or \
+                absf(hue.g - hue_30.g) > 0.005 or \
+                absf(hue.b - hue_30.b) > 0.005:
             _fail("two-axis fin deployment or color changes with 30/60 FPS")
             return
     for frame in range(60):
