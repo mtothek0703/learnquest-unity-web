@@ -141,6 +141,29 @@ func _check() -> void:
     if rear_waist.z > absf(front_waist.z) + 0.012:
         _fail("rear scapular contour must taper out before the skinned waist")
         return
+    # The chase-view V is REAL relief on the same four-weight garment.
+    # It must remain mirrored, read above the neighboring back panel,
+    # and fade before the waist; front-facing triangles are not changed.
+    var v_height := 0.645 * test_bounds.size.y
+    var v_x := 0.31
+    var v_back: Vector3 = outfit.call("_tailored_offset",
+        Vector3(v_x, v_height, -0.3), rear_normal, test_bounds)
+    var v_front: Vector3 = outfit.call("_tailored_offset",
+        Vector3(v_x, v_height, -0.3), front_normal, test_bounds)
+    var v_mirror: Vector3 = outfit.call("_tailored_offset",
+        Vector3(-v_x, v_height, -0.3), rear_normal, test_bounds)
+    var v_outer: Vector3 = outfit.call("_tailored_offset",
+        Vector3(0.40, v_height, -0.3), rear_normal, test_bounds)
+    var v_outer_front: Vector3 = outfit.call("_tailored_offset",
+        Vector3(0.40, v_height, -0.3), front_normal, test_bounds)
+    if v_back.z - v_front.z < 0.052 or \\
+            v_outer.z - v_outer_front.z > 0.047:
+        _fail("weighted dorsal V-panels must be raised, tapered 3D relief")
+        return
+    if absf(v_back.z - v_mirror.z) > 0.001 or \\
+            absf(v_back.x + v_mirror.x) > 0.001:
+        _fail("dorsal V-panel sculpt must be mirrored across the original rig")
+        return
     # The garment must keep EVERY intersecting source triangle instead of
     # dropping the neckline/waist triangles and exposing the naked CC0 torso.
     # Synthetic clipping also exercises interpolation of real skin influences.
