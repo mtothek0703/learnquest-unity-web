@@ -30,13 +30,15 @@ func _check() -> void:
     if headwear == null or headwear.bone_name != "Head":
         _fail("headwear must be attached to original Head bone")
         return
-    # Balanced 360-degree silhouette: the Head-bone portrait remains readable
-    # at mobile landscape size without overpowering the real skinned torso.
+    # Landscape proportion trial: shrink the ENTIRE generated Head-attached
+    # portrait from 1.96 to 1.82 (7.1%), without scaling the imported Skin.
+    # This is a structural regression, NOT an automatic visual approval.
     var scale_factor := float(headwear.get("visual_scale"))
-    # A narrower mobile portrait should not overpower the original
-    # GPU-skinned torso. Reject accidental return to the inflated silhouette.
-    if scale_factor < 1.93 or scale_factor > 1.99:
-        _fail("integrated hero portrait scale must balance the skinned torso")
+    if scale_factor < 1.80 or scale_factor > 1.84:
+        _fail("compact portrait trial must not regress to inflated 1.96 silhouette")
+        return
+    if rig.get_bone_count() != 65 or absf(rig.scale.x - 1.0) > 0.001:
+        _fail("portrait fitting must not scale the original 65-bone skeleton")
         return
     var region := headwear.get("head_bounds") as AABB
     var rear_center := region.get_center()
