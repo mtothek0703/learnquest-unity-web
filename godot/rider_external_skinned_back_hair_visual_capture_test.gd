@@ -182,10 +182,51 @@ func _capture() -> void:
                     if maxf(absf(a.r - b.r), maxf(absf(a.g - b.g), absf(a.b - b.b))) > 0.08:
                         changed_wind += 1
         count += 1
-    wind.call("set_motion", 0.0, 0.0, 0.0, 0.0)
-    if count != 18 or changed_chase < 12 or changed_wind < 8 or \
-            bleached_hair > int(sampled_hair * 0.20):
-        _fail("expected 18 frames, visible wind and no white hair regression: %d %d %d/%d" % [changed_chase, changed_wind, bleached_hair, sampled_hair])
+    # Freeze the same real 65-bone action pose and ALL existing motion,
+    # changing ONLY the five weighted locks' per-strand GPU uniforms.
+    # This isolates the new 3D phase fan from board effects and pose drift.
+    var lock_materials: Array = lock_controller.get("materials")
+    if lock_materials.size() != 5:
+        _fail("five independent weighted lock shaders required for phase A/B")
         return
-    print("SKINNED BACK HAIR VISUAL QA PASSED: 18 real landscape images, including all five four-weight locks and isolated weighted-hair wind; manual clipping and iPhone FPS still required")
+    wind.call("set_motion", 0.0, 1.0, 0.0, 2.0)
+    var synchronized: Image
+    var changed_phase := 0
+    for variant in ["synced", "staggered"]:
+        for i in range(5):
+            var material := lock_materials[i] as ShaderMaterial
+            material.set_shader_parameter("lock_side",
+                0.0 if variant == "synced" else float(i - 2) * 0.5)
+            material.set_shader_parameter("lock_phase",
+                0.0 if variant == "synced" else float(i) * 0.63)
+        for frame in range(5):
+            await process_frame
+        await RenderingServer.frame_post_draw
+        var phase_shot := viewport.get_texture().get_image()
+        if phase_shot.is_empty() or phase_shot.get_size() != SIZES[0]:
+            _fail("invalid isolated GPU strand phase frame")
+            return
+        if phase_shot.save_png("%s/1280x720_carve_chase_locks_%s.png" % [
+                folder, variant]) != OK:
+            _fail("could not save isolated five-lock phase comparison")
+            return
+        if variant == "synced":
+            synchronized = phase_shot
+        else:
+            # Hair-only upper-center region: the board and its turbines
+            # remain outside this ROI and cannot falsely pass the test.
+            for y in range(30, 190, 3):
+                for x in range(500, 780, 3):
+                    var a := phase_shot.get_pixel(x, y)
+                    var b := synchronized.get_pixel(x, y)
+                    if maxf(absf(a.r - b.r), maxf(absf(a.g - b.g),
+                            absf(a.b - b.b))) > 0.08:
+                        changed_phase += 1
+        count += 1
+    wind.call("set_motion", 0.0, 0.0, 0.0, 0.0)
+    if count != 20 or changed_phase < 4 or changed_chase < 12 or changed_wind < 8 or \
+            bleached_hair > int(sampled_hair * 0.20):
+        _fail("expected 20 frames, phase-separated locks, visible wind and no white hair regression: %d %d %d/%d" % [changed_chase, changed_wind, bleached_hair, sampled_hair])
+        return
+    print("SKINNED BACK HAIR VISUAL QA PASSED: 20 real landscape images, including all five four-weight locks and isolated weighted-hair wind; manual clipping and iPhone FPS still required")
     quit(0)
