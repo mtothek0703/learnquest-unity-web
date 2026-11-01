@@ -17,9 +17,10 @@ func _check() -> void:
         return
     var cranes: Array = scene.get("cranes")
     var supports: Array = scene.get("supports")
+    var bridges: Array = scene.get("overhead_bridges")
     var rings: Array = scene.get("transfer_rings")
     var pods: Array = scene.get("freight_pods")
-    if cranes.size() != 4 or supports.size() != 4 or rings.size() != 4 or pods.size() != 8:
+    if cranes.size() != 4 or supports.size() != 4 or bridges.size() != 4 or rings.size() != 4 or pods.size() != 8:
         _fail("expected four complete orbital cranes and eight freight pods")
         return
     for index in range(4):
@@ -42,6 +43,32 @@ func _check() -> void:
         var bounds := mesh.get_aabb().size
         if bounds.y < 10.0 or bounds.x < 4.5 or bounds.z < 0.7:
             _fail("support must be an actual tall bent 3D structure")
+            return
+        # New overhead arch must be one genuinely curved, closed 3D
+        # structure above the road, not a flat billboard or a collider.
+        var bridge := bridges[index] as MeshInstance3D
+        if bridge == null or not bridge.visible or not bridge.mesh is ArrayMesh:
+            _fail("overhead transit arch missing from real harbor crane")
+            return
+        var bridge_mesh := bridge.mesh as ArrayMesh
+        var bridge_arrays: Array = bridge_mesh.surface_get_arrays(0)
+        var bridge_vertices: PackedVector3Array = bridge_arrays[Mesh.ARRAY_VERTEX]
+        var bridge_normals: PackedVector3Array = bridge_arrays[Mesh.ARRAY_NORMAL]
+        var bridge_colors: PackedColorArray = bridge_arrays[Mesh.ARRAY_COLOR]
+        var bridge_size := bridge_mesh.get_aabb().size
+        if bridge_vertices.size() < 2500 or bridge_normals.size() != bridge_vertices.size() or \
+                bridge_colors.size() != bridge_vertices.size() or \
+                bridge_size.x < 10.0 or bridge_size.y < 2.4 or bridge_size.z < 0.70:
+            _fail("overhead bridge must be a shaded volumetric 3D arch")
+            return
+        var side := -1.0 if index % 2 == 0 else 1.0
+        var left_end: Vector3 = scene.call("_bridge_point", side, 0.0, 0.0)
+        var right_end: Vector3 = scene.call("_bridge_point", side, 1.0, 0.0)
+        var apex: Vector3 = scene.call("_bridge_point", side, 0.5, 0.0)
+        if left_end.y < 7.5 or right_end.y < 7.5 or apex.y < 9.5 or \
+                absf(left_end.x - right_end.x) < 10.0 or \
+                absf((crane.position.x + apex.x)) > 0.10:
+            _fail("arched bridge must clear the racing lane and cross its center")
             return
         if rings[index] == null or not (rings[index] as MeshInstance3D).mesh is TorusMesh:
             _fail("missing volumetric docking halo")
@@ -69,5 +96,5 @@ func _check() -> void:
     if not is_equal_approx(cranes[0].position.z, 22.0 + 6.0 - 128.0):
         _fail("crane loop must not accumulate geometry")
         return
-    print("HARBOR SKYCRANES TEST PASSED: four 3D cranes, eight cargo pods, lane safety, pause and wrap")
+    print("HARBOR SKYCRANES TEST PASSED: four 3D cranes, four overhead transit arches, eight cargo pods, lane safety, pause and wrap")
     quit(0)
