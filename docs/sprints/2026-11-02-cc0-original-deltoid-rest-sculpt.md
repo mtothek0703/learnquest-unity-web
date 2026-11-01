@@ -9,7 +9,7 @@
 ## Root cause and implementation
 The prior genuine 1280×720 isolated `source_only` front/chase captures identified a wide shoulder shelf in the imported CC0 source body even when graphite armor and other overlays were hidden. Recoloring or narrowing those overlays did not fix it.
 
-`godot/rider_external_body_resculpt.gd` now adds a smooth symmetric rest-space contraction of the **original imported, GPU-skinned source triangles** across the outer trapezius/deltoid at normalized height 0.738. A Gaussian height envelope and lateral smoothstep window (normalized `side` 0.25–0.83) contract up to 10.5% of local lateral displacement and 4.8% of depth displacement. The effect fades below the armpit and before the hand tips; original chest/waist, face, feet and board contact remain unchanged.
+`godot/rider_external_body_resculpt.gd` now adds a smooth symmetric rest-space contraction of the **original imported, GPU-skinned source triangles** across the outer trapezius/deltoid at normalized height 0.738. A Gaussian height envelope and lateral smoothstep window (normalized `side` 0.24–0.98) contract up to 16% of local lateral displacement and 6.5% of depth displacement. The effect fades below the armpit and before the hand tips; original chest/waist, face, feet and board contact remain unchanged.
 
 No new geometry objects, colliders, texture dependencies or external licenses; all original 65-bone skeleton, four weights per vertex, mesh topology, triangle indices and material slots are preserved. The existing finite-difference normal transform follows the modified sculpt Jacobian.
 
@@ -27,3 +27,9 @@ No new geometry objects, colliders, texture dependencies or external licenses; a
 
 ## Outcome
 Pending final CI and actual rendered-frame comparison; no release claimed. If the full character remains toy-like or visually worse, retain DRAFT status and adjust/revert only after inspecting the actual CI artifacts.
+
+## Actual first-trial results and corrective second pass
+- [Godot CI 41361582346](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41361582346) **52/52 steps SUCCESS**, including imported original 65-bone skin, gameplay, web export and 24 real paired landscape source-body frames ([artifact 13106130299](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41361582346/artifacts/13106130299)).
+- Downloaded those 24 PNGs and compared them with the preceding green [CI 41356436231 source-body artifact 13103890578](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41356436231/artifacts/13103890578). At 1280×720 the original-only chase `sculpted` frame differed by 967 pixels (0.105%) but the unchanged `original` control itself drifted by 572 pixels; the complete rider changed 4,169 pixels while its unchanged original control drifted by 4,067. **No convincing full-rider quality gain was visible.** This first taper therefore **failed the visual effectiveness gate** despite green CI.
+- Root cause of weak effect: lateral mask faded at normalized side 0.83, before the actual wide outer deltoid edge. Second code pass [19885ee3](https://github.com/mtothek0703/learnquest-unity-web/commit/19885ee3bccee45e4eaa38462ec5bf960cd1bdd6) extends the taper to 0.98 and strengthens width/depth contraction to 16% / 6.5%; [27fb73b8](https://github.com/mtothek0703/learnquest-unity-web/commit/27fb73b8c5aa047dd3d18e7d9cff36a7a3130f81) requires real outer-edge contraction and untouched hand-height geometry.
+- **Second pass is NOT accepted until its own final CI and genuine rendered frame comparison pass.** If visually ineffective, revert experimental sculpt/test while retaining this honest trial record. DRAFT #111 remains unmerged, no stable release.
