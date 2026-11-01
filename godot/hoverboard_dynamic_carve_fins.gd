@@ -134,11 +134,25 @@ func update_state(lean: float, boosting: bool, delta: float) -> void:
         var carve := maxf(0.0, side * clampf(lean, -1.0, 1.0))
         var angle := side * (0.045 + 0.42 * carve + (0.12 if boosting else 0.0))
         fins[i].rotation.z = lerpf(fins[i].rotation.z, angle, response)
+        # A real two-axis articulated stabilizer: the outside wing rises,
+        # slides slightly outboard and pitches into the airflow. This keeps
+        # the whole closed 3D aerofoil readable in a landscape chase camera.
+        # It is attached to the existing visual board; physics stays intact.
+        var deployment := clampf(carve + (0.35 if boosting else 0.0), 0.0, 1.0)
+        var target_height := 0.59 + 0.14 * deployment
+        var target_outboard := side * (1.09 + 0.065 * carve)
+        var target_pitch := -0.09 - 0.18 * carve - (0.055 if boosting else 0.0)
+        fins[i].position.y = lerpf(fins[i].position.y, target_height, response)
+        fins[i].position.x = lerpf(fins[i].position.x, target_outboard, response)
+        fins[i].rotation.x = lerpf(fins[i].rotation.x, target_pitch, response)
         var edge_light := edge_materials[i]
         var target_energy := (2.3 if boosting else 1.1) + 1.55 * carve
         edge_light.emission_energy_multiplier = lerpf(
             edge_light.emission_energy_multiplier, target_energy, response)
-        edge_light.emission = Color("#25c7e9").lerp(Color("#c56cff"), carve * 0.65)
+        # Ease the hue too; instant cyan/magenta jumps made fast alternating
+        # touch swipes look like flicker even while the fin motion was smooth.
+        var target_color := Color("#25c7e9").lerp(Color("#c56cff"), carve * 0.65)
+        edge_light.emission = edge_light.emission.lerp(target_color, response)
     edge_material.emission_energy_multiplier = lerpf(
         edge_material.emission_energy_multiplier,
         2.3 if boosting else 1.1, response)
