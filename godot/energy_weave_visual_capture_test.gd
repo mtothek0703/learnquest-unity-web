@@ -94,5 +94,67 @@ func _capture() -> void:
                     _fail("earned 3D pulse not visible at %s: only %d changed samples" % [size, changed])
                     return
                 print("Energy Weave actual landscape changed samples %s: %d" % [size, changed])
-    print("ENERGY WEAVE VISUAL QA PASSED: 4 real game chase frames at 1280x720 and 1170x540")
+    # New V150: isolate an actual energy gate in the next valid lane, and
+    # prove that its 3D waypoint changes REAL chase frames (not only a flag).
+    var items := game.get("run_items") as Node3D
+    var target_gate: Node3D
+    for item in items.get_children():
+        item.visible = false
+        item.set_meta("collected", true)
+        if target_gate == null and bool(item.get_meta("energy")):
+            target_gate = item as Node3D
+    if target_gate == null:
+        _fail("no real energy gate for slalom waypoint capture")
+        return
+    target_gate.position = Vector3(3.1, 0.0, -7.0)
+    target_gate.set_meta("collected", false)
+    target_gate.visible = true
+    var beacon := target_gate.get_node_or_null("Next slalom lane beacon") as Node3D
+    if beacon == null:
+        _fail("missing 3D slalom waypoint")
+        return
+    ring.visible = false
+    game.set("energy_weave_mastery", false)
+    game.set("energy_weave_last_lane", -1)
+    for size in SIZES:
+        viewport.size = size
+        game.call("_apply_mobile_layout", float(size.x), 1, float(size.y))
+        var targets: Dictionary = game.call("_race_camera_targets", false, Vector2(size))
+        camera.position = targets["position"]
+        camera.look_at(targets["focus"], Vector3.UP)
+        camera.fov = targets["fov"]
+        var baseline: Image
+        for variant in ["unmarked", "marked"]:
+            game.set("energy_weave_streak", 0 if variant == "unmarked" else 1)
+            game.call("_update_energy_weave_guides")
+            if beacon.visible != (variant == "marked"):
+                _fail("slalom beacon did not obey alternate-lane progress")
+                return
+            for frame in range(5):
+                await process_frame
+            await RenderingServer.frame_post_draw
+            var shot := viewport.get_texture().get_image()
+            if shot.is_empty() or shot.get_size() != size:
+                _fail("invalid beacon landscape render")
+                return
+            if shot.save_png("%s/%dx%d_beacon_%s.png" % [output, size.x, size.y, variant]) != OK:
+                _fail("could not save beacon frame")
+                return
+            if variant == "unmarked":
+                baseline = shot
+            else:
+                var changed := 0
+                for y in range(108):
+                    for x in range(192):
+                        var px := int(float(size.x - 1) * float(x) / 191.0)
+                        var py := int(float(size.y - 1) * float(y) / 107.0)
+                        var before := baseline.get_pixel(px, py)
+                        var after := shot.get_pixel(px, py)
+                        if absf(before.r - after.r) + absf(before.g - after.g) + absf(before.b - after.b) > 0.16:
+                            changed += 1
+                if changed < 16:
+                    _fail("3D slalom beacon too small/occluded at %s: %d changed samples" % [size, changed])
+                    return
+                print("Slalom beacon actual landscape changed samples %s: %d" % [size, changed])
+    print("ENERGY WEAVE VISUAL QA PASSED: 8 real game chase frames at 1280x720 and 1170x540, including 3D lane beacons")
     quit(0)

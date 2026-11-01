@@ -12,7 +12,7 @@ const CLEAN_FLIGHT_STEP := 250.0
 const CLEAN_FLIGHT_LIMIT := 3
 const AERIAL_ENERGY_TARGET := 3
 const ENERGY_WEAVE_TARGET := 3
-const VERSION_LABEL := "V149"
+const VERSION_LABEL := "V150"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -948,6 +948,16 @@ func _create_run_items() -> void:
     aerial_mesh.rings = 28
     aerial_mesh.ring_segments = 8
     var aerial_material := mat(Color("#70f6ff"), true)
+    # Shared, low-cost 3D waypoint meshes: only gates in a DIFFERENT lane
+    # become highlighted after the first catch of the three-gate slalom.
+    var weave_halo_mesh := TorusMesh.new()
+    weave_halo_mesh.inner_radius = 0.74
+    weave_halo_mesh.outer_radius = 0.93
+    weave_halo_mesh.rings = 24
+    weave_halo_mesh.ring_segments = 8
+    var weave_pointer_mesh := PrismMesh.new()
+    weave_pointer_mesh.size = Vector3(0.95, 0.75, 0.25)
+    var weave_marker_material := mat(Color("#baff49"), true)
     for i in range(20):
         var item := Node3D.new()
         var good: bool = i % 3 == 0
@@ -978,6 +988,28 @@ func _create_run_items() -> void:
             aerial_ring.rotation_degrees.x = 90.0
             aerial_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
             item.add_child(aerial_ring)
+            # A floating 3D halo + downward pointer makes the next valid
+            # slalom lane readable on small landscape screens. No collisions.
+            var guide := Node3D.new()
+            guide.name = "Next slalom lane beacon"
+            guide.position = Vector3(0.0, 3.15, 0.0)
+            guide.visible = false
+            item.add_child(guide)
+            var halo := MeshInstance3D.new()
+            halo.name = "Slalom beacon halo"
+            halo.mesh = weave_halo_mesh
+            halo.material_override = weave_marker_material
+            halo.rotation_degrees.x = 90.0
+            halo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+            guide.add_child(halo)
+            var pointer := MeshInstance3D.new()
+            pointer.name = "Slalom beacon pointer"
+            pointer.mesh = weave_pointer_mesh
+            pointer.material_override = weave_marker_material
+            pointer.position.y = -0.50
+            pointer.rotation_degrees.z = 180.0
+            pointer.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+            guide.add_child(pointer)
             var core := Node3D.new()
             core.name = "Animated core"
             core.position = Vector3(0, 1.45, 0)
@@ -1090,6 +1122,7 @@ func _reset_run() -> void:
         item.position.y = 0.0
         item.set_meta("collected", false)
         item.visible = true
+    _update_energy_weave_guides()
     started = true
     splash.hide()
     quiz_box.hide()
@@ -1253,6 +1286,19 @@ func _update_clean_flight(delta: float) -> void:
         info_label.text = "SAUBERER FLUG %d/3! +25 XP +0,8s TURBO" % clean_flight_count
     feedback_time = 1.8
 
+# Keep only alternate-lane beacons visible. A completed streak, damage,
+# menu/results, or recycled/collected gate must never leave a stale marker.
+func _update_energy_weave_guides() -> void:
+    var guiding := phase == "race" and started and not energy_weave_mastery and energy_weave_streak > 0
+    for item in run_items.get_children():
+        if not bool(item.get_meta("energy")):
+            continue
+        var guide := item.get_node_or_null("Next slalom lane beacon") as Node3D
+        if guide == null:
+            continue
+        var gate_lane := clampi(roundi(item.position.x / 3.1), -1, 1)
+        guide.visible = guiding and item.visible and not bool(item.get_meta("collected")) and gate_lane != energy_weave_last_lane
+
 # Three energy gates in alternating lanes reward active touch steering.
 # Staying in one lane resets the sequence; barrier damage breaks it.
 # One capped reward per race, independent of aerial and clean-flight bonuses.
@@ -1281,6 +1327,7 @@ func _register_energy_weave(pickup_x: float) -> void:
     elif energy_weave_streak == 2:
         info_label.text = "ENERGIE-SLALOM 2/3! NAECHSTES TOR IN ANDERER SPUR"
         feedback_time = 1.5
+    _update_energy_weave_guides()
 
 func _update_energy_weave_pulse(delta: float) -> void:
     if energy_weave_pulse <= 0.0:
@@ -1325,6 +1372,10 @@ func _update_run_items(delta: float) -> void:
                 aerial_ring.rotation.z += delta * 0.55
             # Animate the collectible independently from the world motion.
             var core: Node3D = item.get_node_or_null("Animated core")
+            var guide := item.get_node_or_null("Next slalom lane beacon") as Node3D
+            if guide != null and guide.visible:
+                guide.rotation.y += delta * 0.7
+                guide.position.y = 3.15 + sin(distance * 0.08 + float(item.get_index())) * 0.10
             if core != null:
                 core.rotation.y += delta * 2.8
                 core.rotation.z += delta * 0.6
@@ -1384,6 +1435,7 @@ func _update_run_items(delta: float) -> void:
             item.position.x = float(randi_range(-1, 1)) * 3.1
             item.set_meta("collected", false)
             item.visible = true
+    _update_energy_weave_guides()
 
 func _finish_run() -> void:
     var completed := phase == "race" and distance >= mission_target
@@ -1445,6 +1497,7 @@ func _finish_run() -> void:
     else:
         reward_label.text = "NOCH %dm BIS ZUM ZIEL\nVERSUCHE ES ERNEUT!" % maxi(0, int(mission_target - distance))
     phase = "results"
+    _update_energy_weave_guides()
     clean_flight_pulse = 0.0
     clean_flight_ring.visible = false
     energy_weave_pulse = 0.0

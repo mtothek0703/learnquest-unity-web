@@ -55,6 +55,24 @@ func _check() -> void:
         return
     var start_xp := int(game.get("xp"))
     _catch(game, gates[0], -1)
+    # Only a different lane receives a visible 3D navigation beacon.
+    var same_beacon := gates[1].get_node_or_null("Next slalom lane beacon") as Node3D
+    var other_beacon := gates[2].get_node_or_null("Next slalom lane beacon") as Node3D
+    if same_beacon == null or other_beacon == null:
+        _fail("real 3D slalom guidance missing")
+        return
+    gates[1].position.x = -3.1
+    gates[2].position.x = 3.1
+    for gate in [gates[1], gates[2]]:
+        gate.set_meta("collected", false)
+        gate.visible = true
+    game.call("_update_energy_weave_guides")
+    if same_beacon.visible or not other_beacon.visible:
+        _fail("beacons must highlight only an uncollected alternate-lane gate")
+        return
+    if other_beacon.find_children("*", "CollisionObject3D", true, false).size() > 0:
+        _fail("3D slalom beacon must never add a collision")
+        return
     _catch(game, gates[1], -1)
     if int(game.get("energy_weave_streak")) != 1 or int(game.get("xp")) != start_xp + 30:
         _fail("same-lane catches must not advance streak")
@@ -81,6 +99,11 @@ func _check() -> void:
     if not bool(game.get("energy_weave_mastery")) or int(game.get("energy_weave_streak")) != 3:
         _fail("three alternating catches did not earn mastery")
         return
+    for gate in gates:
+        var guide := gate.get_node_or_null("Next slalom lane beacon") as Node3D
+        if guide == null or guide.visible:
+            _fail("completed slalom must hide all guidance")
+            return
     if int(game.get("xp")) != start_xp + 6 * 15 + 75 or float(game.get("turbo_left")) < 2.0:
         _fail("one-shot slalom XP/Turbo incorrect")
         return
@@ -109,5 +132,5 @@ func _check() -> void:
     if int(game.get("energy_weave_streak")) != 0 or bool(game.get("energy_weave_mastery")) or ring.visible:
         _fail("next round did not reset slalom")
         return
-    print("ENERGY WEAVE MASTERY TEST PASSED: 3 English tasks, alternating energy gates, damage reset, 3D pulse, capped XP/Turbo, results and replay")
+    print("ENERGY WEAVE MASTERY TEST PASSED: 3 English tasks, 3D alternate-lane guidance, damage reset, mastery pulse, capped XP/Turbo, results and replay")
     quit(0)
