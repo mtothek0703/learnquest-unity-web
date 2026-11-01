@@ -57,7 +57,7 @@ func _capture() -> void:
             _fail("short phone landscape race HUD is not three lines")
             return
         if hud_panel.get_global_rect().end.y + 4.0 > progress.get_global_rect().position.y:
-            _fail("real landscape HUD overlaps mission progress at " + str(size))
+            _fail("real landscape HUD overlaps mission progress at %s: panel=%s progress=%s" % [size, hud_panel.get_global_rect(), progress.get_global_rect()])
             return
         for pose in POSES:
             rider.position.x = 3.1 if pose == "right_lane" else 0.0
