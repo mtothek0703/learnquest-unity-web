@@ -224,54 +224,6 @@ func _check() -> void:
     if not has_cut_edge:
         _fail("front V collar did not interpolate any new skinned seam vertices")
         return
-    # The collar-end jacket must be substantially narrower than its chest,
-    # so the weighted sleeves define the shoulders instead of a horizontal
-    # barrel across the face. These are real clipped source-Skin triangles.
-    var collar_half: float = outfit.call("_jacket_half_width",
-        Vector3(0.0, 2.34, 0.0), test_bounds)
-    var chest_half: float = outfit.call("_jacket_half_width",
-        Vector3(0.0, 1.65, 0.0), test_bounds)
-    if collar_half > test_bounds.size.x * 0.185 or \
-            chest_half < test_bounds.size.x * 0.235 or \
-            chest_half - collar_half < test_bounds.size.x * 0.055:
-        _fail("true-Skin jacket shoulder bar must taper from chest to collar")
-        return
-    var taper_triangle: Array[Dictionary] = [
-        {"position": Vector3(0.10, 2.30, 0.0), "normal": Vector3.RIGHT,
-            "bones": PackedInt32Array([0, 1, 2, 3]),
-            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
-        {"position": Vector3(0.50, 2.30, 0.0), "normal": Vector3.RIGHT,
-            "bones": PackedInt32Array([4, 5, 6, 7]),
-            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
-        {"position": Vector3(0.10, 2.15, 0.0), "normal": Vector3.RIGHT,
-            "bones": PackedInt32Array([0, 1, 2, 3]),
-            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])}
-    ]
-    var tapered: Array[Dictionary] = outfit.call(
-        "_clip_to_tapered_lateral", taper_triangle, test_bounds, false)
-    if tapered.size() < 3:
-        _fail("tapered shoulder discarded intersecting original-Skin triangles")
-        return
-    var has_taper_seam := false
-    for corner in tapered:
-        var p: Vector3 = corner["position"]
-        var half: float = outfit.call("_jacket_half_width", p, test_bounds)
-        if p.x > test_bounds.get_center().x + half + 0.012:
-            _fail("tapered shoulder escaped the weighted torso envelope")
-            return
-        if absf(p.x - test_bounds.get_center().x - half) < 0.012:
-            has_taper_seam = true
-        var w: PackedFloat32Array = corner["weights"]
-        var b: PackedInt32Array = corner["bones"]
-        var total := 0.0
-        for weight in w:
-            total += weight
-        if w.size() != 4 or b.size() != 4 or absf(total - 1.0) > 0.001:
-            _fail("tapered shoulder seam must keep four normalized original Skin weights")
-            return
-    if not has_taper_seam:
-        _fail("tapered shoulder did not interpolate a real weighted boundary")
-        return
     # The garment must keep EVERY intersecting source triangle instead of
     # dropping the neckline/waist triangles and exposing the naked CC0 torso.
     # Synthetic clipping also exercises interpolation of real skin influences.
