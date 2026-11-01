@@ -270,10 +270,32 @@ func _make_keel() -> ArrayMesh:
     tool.generate_normals()
     return tool.commit()
 
-func _rail_point(side: float, t: float, offset: float) -> Vector3:
+# A pair of closed, tapered, circular edge-light guides replaces the former
+# single-plane strips. The luminous tubes run along the existing curved
+# chassis edge, adding real side/top parallax without another draw call.
+# Geometry remains purely visual on the original animated hoverboard root.
+func _rail_radius(t: float) -> float:
+    var tip_fade := smoothstep(0.0, 0.13, t) * (1.0 - smoothstep(0.87, 1.0, t))
+    return 0.010 + 0.036 * tip_fade
+
+func _rail_point(side: float, t: float, angle: float) -> Vector3:
     var width := _half_width(t)
-    return Vector3(side * (width * 0.97 + offset),
-        _shell_point(t, PI * 0.24).y + 0.004, lerpf(-1.30, 1.27, t))
+    var radius := _rail_radius(t)
+    return Vector3(side * (width * 0.97 + radius * cos(angle)),
+        _shell_point(t, PI * 0.24).y + 0.016 + radius * 0.82 * sin(angle),
+        lerpf(-1.30, 1.27, t))
+
+func _rail_normal(side: float, t: float, angle: float) -> Vector3:
+    var h := 0.001
+    var along := _rail_point(side, clampf(t + h, 0.0, 1.0), angle) - \
+        _rail_point(side, clampf(t - h, 0.0, 1.0), angle)
+    var around := _rail_point(side, t, angle + h) - \
+        _rail_point(side, t, angle - h)
+    var normal := around.cross(along).normalized()
+    # The mirrored port tube must point outwards just like starboard.
+    if normal.x * side * cos(angle) < 0.0:
+        normal = -normal
+    return normal
 
 func _make_rail(side: float) -> ArrayMesh:
     var tool := SurfaceTool.new()
@@ -281,11 +303,23 @@ func _make_rail(side: float) -> ArrayMesh:
     for i in range(28):
         var a := float(i) / 28.0
         var b := float(i + 1) / 28.0
-        for point in [_rail_point(side, a, -0.016), _rail_point(side, b, -0.016),
-            _rail_point(side, b, 0.016), _rail_point(side, a, -0.016),
-            _rail_point(side, b, 0.016), _rail_point(side, a, 0.016)]:
-            tool.add_vertex(point)
-    tool.generate_normals()
+        for j in range(12):
+            var u := TAU * float(j) / 12.0
+            var v := TAU * float(j + 1) / 12.0
+            for sample in [Vector2(a, u), Vector2(b, u), Vector2(b, v),
+                Vector2(a, u), Vector2(b, v), Vector2(a, v)]:
+                tool.set_normal(_rail_normal(side, sample.x, sample.y))
+                tool.add_vertex(_rail_point(side, sample.x, sample.y))
+    # Real end caps prevent the old open-strip silhouette at both tips.
+    for end in [0.0, 1.0]:
+        var center := (_rail_point(side, end, 0.0) + _rail_point(side, end, PI)) * 0.5
+        for j in range(12):
+            var u := TAU * float(j) / 12.0
+            var v := TAU * float(j + 1) / 12.0
+            for point in [center, _rail_point(side, end, v if end == 0.0 else u),
+                _rail_point(side, end, u if end == 0.0 else v)]:
+                tool.set_normal(Vector3.FORWARD if end == 0.0 else Vector3.BACK)
+                tool.add_vertex(point)
     return tool.commit()
 
 func _wing_point(side: float, t: float, angle: float) -> Vector3:
