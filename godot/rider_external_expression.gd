@@ -4,12 +4,18 @@ extends Node
 ## original 65 bones, hoverboard controls, collision shapes or game rules.
 var headwear: BoneAttachment3D
 var features: Dictionary = {}
+# Gaze follows the rider's turn with time-based damping, not a robotic snap.
+# The imported Head bone and original painted eye meshes stay untouched.
+var smoothed_gaze := Vector3.ZERO
+var last_clock := -1.0
 
 func configure(attachment: BoneAttachment3D) -> bool:
     if attachment == null:
         return false
     headwear = attachment
     features.clear()
+    smoothed_gaze = Vector3.ZERO
+    last_clock = -1.0
     for pattern in ["EyeWhite*", "Iris*", "Pupil*", "IrisCatchlight*",
             "UpperLid*", "LowerLid*", "CurvedBrow*", "CurvedSmile",
             "LowerLipContour"]:
@@ -50,8 +56,18 @@ func animate(steer: float, boosting: bool, jump: float, clock: float,
     var scale_factor: float = float(headwear.get("visual_scale"))
     var width := dimensions.x * scale_factor
     var height := dimensions.y * scale_factor
-    var gaze := Vector3(turn * width * 0.017,
+    var target_gaze := Vector3(turn * width * 0.017,
         (air * 0.012 - speed * 0.008) * height, 0.0)
+    # Exponential response is effectively frame-rate independent at 30/60 FPS.
+    # A rewound capture clock starts from an exact pose (no accumulated drift).
+    if last_clock < 0.0 or clock < last_clock:
+        smoothed_gaze = target_gaze
+    else:
+        var dt := maxf(clock - last_clock, 0.0)
+        var response := 1.0 - exp(-12.0 * dt)
+        smoothed_gaze = smoothed_gaze.lerp(target_gaze, response)
+    last_clock = clock
+    var gaze := smoothed_gaze
     for key in features:
         var item: Dictionary = features[key]
         var part := item["node"] as MeshInstance3D
