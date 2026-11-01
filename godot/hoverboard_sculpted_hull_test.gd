@@ -394,6 +394,20 @@ func _check() -> void:
         return
     for hinge in hinges:
         var aerofoil := (hinge as Node3D).get_node_or_null("ClosedSweptAerofoil") as MeshInstance3D
+        var mount := (hinge as Node3D).get_node_or_null("SculptedBoardMount") as MeshInstance3D
+        if mount == null or not mount.mesh is ArrayMesh or mount.mesh.surface_get_array_len(0) < 650:
+            _fail("each floating aerofoil needs a real curved 3D mount to the board")
+            return
+        var mount_bounds := mount.mesh.get_aabb().size
+        if mount_bounds.x < 0.59 or mount_bounds.y < 0.23 or mount_bounds.z < 0.12:
+            _fail("carve fin mount must bridge deck and aerofoil in three dimensions")
+            return
+        var mount_side := -1.0 if (hinge as Node3D).name.begins_with("Port") else 1.0
+        var inboard: Vector3 = (hinge as Node3D).position + vanes.call("_mount_point", mount_side, 0.0, 0.0)
+        var outboard: Vector3 = (hinge as Node3D).position + vanes.call("_mount_point", mount_side, 1.0, 0.0)
+        if absf(inboard.x) > 0.72 or absf(outboard.x) < 1.17:
+            _fail("carve mount must start inside the hull chine and end at the fin")
+            return
         var edge := (hinge as Node3D).get_node_or_null("CurvedSignalEdge") as MeshInstance3D
         if aerofoil == null or edge == null or aerofoil.mesh == null or edge.mesh == null:
             _fail("articulated fins need closed curved volume and emissive edge")
