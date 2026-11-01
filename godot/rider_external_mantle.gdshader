@@ -7,6 +7,7 @@ uniform float wind_back_sign : hint_range(-1.0, 1.0) = 1.0;
 uniform float steer_amount : hint_range(-1.0, 1.0) = 0.0;
 uniform float boost_amount : hint_range(0.0, 1.0) = 0.0;
 uniform float jump_amount : hint_range(0.0, 1.0) = 0.0;
+uniform float landing_amount : hint_range(0.0, 1.0) = 0.0;
 varying vec2 cloth_uv;
 void vertex() {
     cloth_uv = UV;
@@ -28,6 +29,14 @@ void vertex() {
     VERTEX.z += wind_back_sign * (0.018 + boost_amount * 0.045 + jump_amount * 0.020) * trailing;
     VERTEX.z += sin(TIME * 3.1 + UV.y * 9.0 + UV.x * 6.0) * 0.024 * flutter;
     VERTEX.y += sin(TIME * 2.6 + UV.y * 7.0) * 0.010 * flutter + jump_amount * 0.024 * trailing;
+    // On board contact, the same skinned fabric recoils behind the knees
+    // rather than cutting through the boots. The root stays bone-anchored.
+    // landing_amount is driven by the existing frame-rate-independent
+    // landing impulse; no physics solver, extra meshes or shader passes.
+    float landing_recoil = landing_amount * trailing * trailing;
+    VERTEX.x += side * 0.09 * landing_recoil;
+    VERTEX.z += wind_back_sign * 0.18 * landing_recoil;
+    VERTEX.y += 0.025 * landing_recoil;
 }
 void fragment() {
     // One continuous tailored flight-fin surface: a dark structural root,

@@ -338,6 +338,29 @@ func _check() -> void:
     if absf(float(motion_mat.get_shader_parameter("steer_amount"))) > 0.01 or float(motion_mat.get_shader_parameter("boost_amount")) > 0.01:
         _fail("split-wing wind must return to neutral when steering/turbo end")
         return
+    # Landing compresses the real 65-bone legs. The weighted cloth must
+    # recoil briefly behind them, then return to its compact neutral shape.
+    if not cloth_shader.shader.code.contains("landing_recoil") or \
+            not cloth_shader.shader.code.contains("VERTEX.z += wind_back_sign * 0.18"):
+        _fail("real skinned cloth needs rearward landing clearance")
+        return
+    rider.position.y = 0.90
+    pose.call("_process", 0.05)
+    rider.position.y = 0.0
+    pose.call("_process", 0.05)
+    var impact := float(motion_mat.get_shader_parameter("landing_amount"))
+    if impact < 0.15 or impact > 0.51:
+        _fail("landing recoil must respond to real rider contact velocity")
+        return
+    for panel in panels:
+        var other := (panel as MeshInstance3D).material_override as ShaderMaterial
+        if absf(float(other.get_shader_parameter("landing_amount")) - impact) > 0.001:
+            _fail("both weighted cloth tails must react to the same landing")
+            return
+    pose.call("_process", 0.5)
+    if float(motion_mat.get_shader_parameter("landing_amount")) > impact * 0.05:
+        _fail("landing cloth recoil must decay without a persistent inflated silhouette")
+        return
     if rider.get_node_or_null("LegacyRider") == null:
         _fail("legacy fallback and existing hoverboard must remain")
         return

@@ -425,7 +425,7 @@ func _process(delta: float) -> void:
         _pose(["foot_l" if side < 0 else "foot_r", prefix + "Foot"],
             Quaternion(Vector3.RIGHT, -0.13 - crouch * 0.12 + last_jump * 0.19 - leg_load * 0.35 - landing_impact * 0.18), blend)
     if flight_mantle != null:
-        flight_mantle.call("set_motion", steer, boost, last_jump)
+        flight_mantle.call("set_motion", steer, boost, last_jump, landing_impact)
     if facial_acting != null:
         facial_acting.call("animate", steer, turbo, last_jump, elapsed)
     if hair_dynamics != null:

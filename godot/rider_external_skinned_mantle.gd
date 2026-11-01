@@ -10,7 +10,7 @@ var shoulder_yoke: MeshInstance3D
 var yoke_vertices: int = 0
 
 # Visual-only wind response; real bone skinning still owns the base pose.
-func set_motion(steer: float, boost: float, jump: float) -> void:
+func set_motion(steer: float, boost: float, jump: float, landing: float = 0.0) -> void:
     for panel in panels:
         var material := panel.material_override as ShaderMaterial
         if material == null:
@@ -18,6 +18,7 @@ func set_motion(steer: float, boost: float, jump: float) -> void:
         material.set_shader_parameter("steer_amount", clampf(steer, -1.0, 1.0))
         material.set_shader_parameter("boost_amount", clampf(boost, 0.0, 1.0))
         material.set_shader_parameter("jump_amount", clampf(jump, 0.0, 1.0))
+        material.set_shader_parameter("landing_amount", clampf(landing, 0.0, 1.0))
 
 func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D, face_sign: float) -> bool:
     if rig == null:
