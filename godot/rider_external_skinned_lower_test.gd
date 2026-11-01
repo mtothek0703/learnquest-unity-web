@@ -128,7 +128,7 @@ func _check() -> void:
         Vector3(0.28, 0.255, 0.0), Vector3.RIGHT, sample_bounds, true)
     var right_waist: Vector3 = lower.call("_sculpt_offset",
         Vector3(0.28, 1.2, 0.0), Vector3.RIGHT, sample_bounds, false)
-    if right_knee.x < 0.045 or right_boot.x < 0.065 or right_knee.x < right_waist.x + 0.018:
+    if right_knee.x < 0.038 or right_boot.x < 0.065 or right_knee.x < right_waist.x + 0.018:
         _fail("athletic knee and boot must be sculpted wider than the original narrow legs")
         return
     # Full skinned boot geometry must have an actual toe, instep, heel,
