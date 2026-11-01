@@ -407,19 +407,22 @@ func _process(delta: float) -> void:
         # silhouette even after its duplicate geometry was trimmed. Keep
         # outside-arm balance and inside-arm tuck, but reduce their extreme
         # reach and lower both arms a little further from the source T-pose.
-        var spread := -sign_side * (1.42 + 0.12 * carve +
-            0.24 * outside - 0.10 * inside -
+        # A deeper 1.57-rad shoulder fold and 0.73-rad elbow bend create a
+        # more compact, readable surfing triangle in portrait and chase views.
+        # Keep bilateral carve offsets and original Skin weights unchanged.
+        var spread := -sign_side * (1.57 + 0.09 * carve +
+            0.15 * outside - 0.08 * inside -
             last_jump * (0.45 if ascending else 0.32))
         _pose(["upperarm_l" if side < 0 else "upperarm_r", prefix + "UpperArm", prefix + "Arm"],
             Quaternion(Vector3.FORWARD, spread - torso_follow * 0.13) *
             Quaternion(Vector3.RIGHT, -0.20 - boost * 0.30 + landing_impact * 0.14), blend)
         _pose(["lowerarm_l" if side < 0 else "lowerarm_r", prefix + "LowerArm", prefix + "ForeArm", prefix + "Forearm"],
-            Quaternion(Vector3.RIGHT, -0.55 - last_jump * 0.42 - boost * 0.16 -
-                inside * 0.21 + outside * 0.08) *
+            Quaternion(Vector3.RIGHT, -0.73 - last_jump * 0.38 - boost * 0.12 -
+                inside * 0.24 + outside * 0.08) *
             Quaternion(Vector3.FORWARD, sign_side * (0.10 + carve * 0.09 +
                 turn_lead * 0.10)), blend)
         _pose(["hand_l" if side < 0 else "hand_r", prefix + "Hand"],
-            Quaternion(Vector3.RIGHT, 0.20 + boost * 0.14 +
+            Quaternion(Vector3.RIGHT, 0.25 + boost * 0.14 +
                 outside * 0.10 - inside * 0.08) *
             Quaternion(Vector3.UP, -sign_side * steer * 0.12), blend)
         _pose(["thigh_l" if side < 0 else "thigh_r", prefix + "UpperLeg", prefix + "UpLeg", prefix + "Thigh"],
