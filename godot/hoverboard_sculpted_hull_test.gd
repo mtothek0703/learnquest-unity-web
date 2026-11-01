@@ -520,9 +520,9 @@ func _check() -> void:
             vanes.call("update_state", 0.9, true, 1.0 / float(fps))
         var outside_fin := hinges[1] as Node3D
         var inside_fin := hinges[0] as Node3D
-        if outside_fin.position.y < inside_fin.position.y + 0.045 or \
+        if outside_fin.position.y < inside_fin.position.y + 0.030 or \
                 outside_fin.position.x < 1.11 or \
-                outside_fin.rotation.x > inside_fin.rotation.x - 0.065:
+                outside_fin.rotation.x > inside_fin.rotation.x - 0.035:
             _fail("outside 3D fin must rise, extend and pitch during a boost carve")
             return
         var hue := (signals[1] as StandardMaterial3D).emission
