@@ -21,4 +21,8 @@ The broad glossy cobalt chest and rear shield visually inflate the shoulders and
 4. Stable main and all immutable Skyway URLs / Unity archive remain untouched.
 
 ## Status
-**Experimental implementation committed; final CI and visual comparison pending.** Do not interpret changed constants or a green geometry test alone as a visually approved result.
+**Godot CI passed for code + regression commit `4b98bfaf`:** [52/52 steps, run 41356436231](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41356436231), including import, gameplay, original 65-bone Skin, web export, and 108 isolated costume landscape frames ([artifact 13103476655](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41356436231/artifacts/13103476655)). The following documentation-only commit does not alter tested runtime code.
+
+**Actual image QA (compared with previous green run 41353334715, artifact 13102836005):** 1280×720 front full rider: 9,461 pixels (1.027%) changed by RGB max channel >25; chase full rider: 9,758 (1.059%); isolated front skinned armor: 7,507 (0.815%); isolated chase armor: 3,967 (0.430%). Unchanged source-only chase control also drifted 1,376 pixels (0.149%), so raw pixel difference alone is **not** a quality score. Visually the chest is a little narrower/darker and the back shield less wide, but the face, collar, shoulder volume and total silhouette still look toy-like. **VISUAL HOLD continues; no merge, no release.**
+
+**Follow-up:** solve the broad upper-sleeve/collar geometry as one coherent source-skinned silhouette, not another cosmetic color change; compare genuine 16:9/19.5:9 frames and perform actual iPhone FPS/clipping/full-touch-round QA before any acceptance.
