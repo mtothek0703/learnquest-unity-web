@@ -14,8 +14,8 @@ func _ready() -> void:
     fin_material = StandardMaterial3D.new()
     fin_material.albedo_color = Color.WHITE
     fin_material.vertex_color_use_as_albedo = true
-    fin_material.metallic = 0.27
-    fin_material.roughness = 0.53
+    fin_material.metallic = 0.18
+    fin_material.roughness = 0.62
     fin_material.cull_mode = BaseMaterial3D.CULL_DISABLED
     edge_material = StandardMaterial3D.new()
     edge_material.albedo_color = Color("#53d9ed")
@@ -80,7 +80,7 @@ func _fin_normal(side: float, t: float, angle: float) -> Vector3:
 
 func _emit_fin(tool: SurfaceTool, side: float, t: float, angle: float) -> void:
     var upper := maxf(0.0, sin(angle))
-    tool.set_color(Color("#1c2e4b").lerp(Color("#6886a3"),
+    tool.set_color(Color("#304563").lerp(Color("#829ab4"),
         0.16 + 0.50 * upper + 0.12 * sin(PI * t)))
     tool.set_normal(_fin_normal(side, t, angle))
     tool.add_vertex(_fin_point(side, t, angle))
@@ -139,9 +139,9 @@ func update_state(lean: float, boosting: bool, delta: float) -> void:
         # the whole closed 3D aerofoil readable in a landscape chase camera.
         # It is attached to the existing visual board; physics stays intact.
         var deployment := clampf(carve + (0.35 if boosting else 0.0), 0.0, 1.0)
-        var target_height := 0.59 + 0.14 * deployment
-        var target_outboard := side * (1.09 + 0.065 * carve)
-        var target_pitch := -0.09 - 0.18 * carve - (0.055 if boosting else 0.0)
+        var target_height := 0.59 + 0.10 * deployment
+        var target_outboard := side * (1.09 + 0.045 * carve)
+        var target_pitch := -0.09 - 0.08 * carve - (0.035 if boosting else 0.0)
         fins[i].position.y = lerpf(fins[i].position.y, target_height, response)
         fins[i].position.x = lerpf(fins[i].position.x, target_outboard, response)
         fins[i].rotation.x = lerpf(fins[i].rotation.x, target_pitch, response)
