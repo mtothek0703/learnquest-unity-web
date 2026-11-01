@@ -316,15 +316,15 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     # Mobile chase QA still showed a swollen upper-torso silhouette. Keep
     # the genuine sculpted chest and scapula relief, but pull the four-weight
     # jacket closer to the original athletic body (no rigid substitute).
-    var depth := 0.012 + 0.055 * chest + 0.050 * shoulder + \
+    var depth := 0.012 + 0.055 * chest + 0.040 * shoulder + \
         0.043 * chest_ridge + 0.027 * collar + 0.049 * pectoral + \
         0.025 * deltoid + 0.015 * spine_keel + \
         0.043 * scapula + 0.026 * dorsal_shoulder + 0.016 * spine_channel
     # Shoulder breadth and pectoral depth follow the actual imported Skin;
     # no rigid shoulder boxes or unweighted cosmetic torso are introduced.
     var waist_inset := 0.052 * waist * smoothstep(0.12, 0.35, x)
-    var spread := 0.060 * shoulder + 0.039 * deltoid - waist_inset + \
-        0.039 * dorsal_shoulder
+    # Lower the broad, toy-like deltoid wings while keeping a continuous\n    # original-Skin V taper and genuine dorsal scapula relief. The chest\n    # remains full; the jacket's shoulder expansion is ~25% narrower in\n    # the same rest-space QA pose (0.0575 -> 0.0416 source units).\n    var spread := 0.043 * shoulder + 0.031 * deltoid - waist_inset + \
+        0.028 * dorsal_shoulder
     return normal * depth + Vector3(signf(lateral) * spread, 0.006 * shoulder, 0.0)
 
 func _jacket_material(bounds: AABB) -> ShaderMaterial:
