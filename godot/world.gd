@@ -1272,6 +1272,8 @@ func _finish_run() -> void:
     else:
         reward_label.text = "NOCH %dm BIS ZUM ZIEL\nVERSUCHE ES ERNEUT!" % maxi(0, int(mission_target - distance))
     phase = "results"
+    clean_flight_pulse = 0.0
+    clean_flight_ring.visible = false
     neon_conductor.visible = false
     neon_conductor.set("active", false)
     neon_beam.visible = false
@@ -1605,6 +1607,12 @@ func _change_grade(delta: int) -> void:
 func _begin_training() -> void:
     # Starts the mandatory preparation before every player-facing round.
     touch_steering.reset()
+    clean_flight_origin = 0.0
+    clean_flight_count = 0
+    clean_flight_rewards = 0
+    clean_flight_mastery = false
+    clean_flight_pulse = 0.0
+    clean_flight_ring.visible = false
     phase = "training"
     training_correct = 0
     training_mistakes = 0

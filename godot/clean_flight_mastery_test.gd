@@ -22,6 +22,10 @@ func _drag(pos: Vector2) -> InputEventScreenDrag:
 
 func _three_correct(game: Node) -> bool:
     game.call("_begin_training")
+    var clean_ring := game.get("clean_flight_ring") as MeshInstance3D
+    if clean_ring == null or clean_ring.visible or int(game.get("clean_flight_count")) != 0:
+        _fail("mandatory English preparation must hide and reset prior race effects")
+        return false
     for question in range(3):
         if str(game.get("phase")) != "training" or not bool(game.get("quiz_active")):
             _fail("missing mandatory English task %d" % question)
@@ -115,6 +119,9 @@ func _check() -> void:
         _fail("non-consecutive streak awarded mastery")
         return
     game.call("_finish_run")
+    if ring.visible:
+        _fail("result screen must not retain a gameplay checkpoint pulse")
+        return
     if str(game.get("phase")) != "results":
         _fail("race result transition failed")
         return
