@@ -8,6 +8,19 @@ var originals: Array[MeshInstance3D] = []
 var materials: Array[ShaderMaterial] = []
 var vertex_count: int = 0
 
+# The previous five rounded tubes had broad, blunt ends in chase view.
+# Tailor the actual SOURCE-SKINNED lock triangles before rest-space transfer:
+# scalp roots stay fixed, lower tips narrow and fan subtly apart. No new
+# rigid hair attachments, bones, draw calls or extra materials.
+func _tailor_lock_point(point: Vector3, bounds: AABB, index: int) -> Vector3:
+    var down := clampf((bounds.end.y - point.y) / maxf(bounds.size.y, 0.001), 0.0, 1.0)
+    var tip := smoothstep(0.18, 1.0, down)
+    var narrow := 1.0 - 0.34 * tip * tip
+    var fan := float(index - 2) * 0.022 * tip * tip
+    var center_x := bounds.get_center().x
+    return Vector3(center_x + (point.x - center_x) * narrow + fan,
+        point.y, point.z + 0.020 * tip * tip)
+
 func install(source: MeshInstance3D, rig: Skeleton3D,
         headwear: BoneAttachment3D, hair: Node) -> bool:
     if source == null or source.mesh == null or source.skin == null or \
@@ -53,7 +66,7 @@ func install(source: MeshInstance3D, rig: Skeleton3D,
             var count := indices.size() if not indices.is_empty() else vertices.size()
             for corner in range(count):
                 var id := indices[corner] if not indices.is_empty() else corner
-                var local := old.transform * vertices[id]
+                var local := old.transform * _tailor_lock_point(vertices[id], bounds, i)
                 var point := source.to_local(rig.to_global(rest * local))
                 var local_normal := old.transform.basis * normals[id]
                 var world_normal := rig.global_transform.basis * rest.basis * local_normal

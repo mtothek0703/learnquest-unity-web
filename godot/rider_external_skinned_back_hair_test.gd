@@ -136,6 +136,22 @@ func _check() -> void:
             weighted_materials.size() != 5 or int(weighted_controller.get("vertex_count")) < 2500:
         _fail("all five substantial rear volumes must be GPU-skinned")
         return
+    # The new sculpt is real rest-space geometry, not a shader-only tint:
+    # unchanged scalp roots, 34% tapered tip volume and mirrored lower fan.
+    var sample_bounds := AABB(Vector3(-0.2, 0.0, -0.1), Vector3(0.4, 1.0, 0.2))
+    var root_sample := Vector3(0.10, 0.98, 0.0)
+    var tip_sample := Vector3(0.10, 0.02, 0.0)
+    var root_result: Vector3 = weighted_controller.call("_tailor_lock_point", root_sample, sample_bounds, 2)
+    var tip_result: Vector3 = weighted_controller.call("_tailor_lock_point", tip_sample, sample_bounds, 2)
+    var left_result: Vector3 = weighted_controller.call("_tailor_lock_point", Vector3(0.0, 0.02, 0.0), sample_bounds, 0)
+    var right_result: Vector3 = weighted_controller.call("_tailor_lock_point", Vector3(0.0, 0.02, 0.0), sample_bounds, 4)
+    if not root_result.is_equal_approx(root_sample) or \
+            tip_result.x > 0.070 or tip_result.x < 0.062 or \
+            absf(left_result.x + right_result.x) > 0.001 or \
+            left_result.x > -0.040 or right_result.x < 0.040 or \
+            tip_result.z < 0.018 or absf(tip_result.y - tip_sample.y) > 0.0001:
+        _fail("source-skinned lock tips must taper and fan symmetrically without scalp drift")
+        return
     for i in range(5):
         var lock := weighted_locks[i] as MeshInstance3D
         var rigid := rigid_locks[i] as MeshInstance3D
