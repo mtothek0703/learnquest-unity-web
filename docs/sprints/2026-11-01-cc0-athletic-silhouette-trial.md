@@ -18,3 +18,11 @@
 
 ## Follow-up
 Compare the complete character in menu and chase views, especially collar/shoulder and thigh-to-boot transitions. If the silhouette still reads as toy-like, keep PR #111 in DRAFT and continue broader visual redesign.
+
+## Actual validation and visual decision
+- [x] First candidate CI failed the new thigh-taper assertion because its absolute depth threshold was too aggressive for the imported CC0 mesh's original bounds. The test was corrected to require **real contraction in both axes**, independent of source proportions.
+- [x] Final [Godot PR CI run 41311222108](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41311222108) completed **success**, including original 65-bone skin, gameplay regressions, Web export and landscape render steps.
+- [x] Downloaded actual [24-frame current character QA artifact 13085194546](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41311222108/artifacts/13085194546) and compared identical `*_after.png` views with the prior successful [artifact 13084013447](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41308097794/artifacts/13084013447).
+- At 1280x720, max-channel RGB difference >25: **5,120 px (0.556%) front detail**, **2,948 px (0.320%) chase detail**, **2,522 px (0.274%) front wide**, **1,427 px (0.155%) chase wide**.
+- [ ] **VISUAL HOLD RETAINED:** thighs/knees are marginally less balloon-like, but the oversized collar/shoulder silhouette and cartoon-like whole-character proportions still dominate. These actual screenshots do **not** establish the high-quality character gate. PR #111 stays DRAFT and is not merged.
+- [ ] Real iPhone FPS, clipping in all poses and manual touch run still need device testing.
