@@ -82,6 +82,10 @@ func install(source: MeshInstance3D, rig: Skeleton3D,
             return false
         material.set_shader_parameter("hair_base_tint", original_material.albedo_color)
         material.set_shader_parameter("wind_back_sign", -float(headwear.get("face_sign")))
+        # Mirror outer strands around the center, stagger their oscillations.
+        # Set once at install; steering/boost/jump remain time-based uniforms.
+        material.set_shader_parameter("lock_side", float(i - 2) * 0.5)
+        material.set_shader_parameter("lock_phase", float(i) * 0.63)
         var weighted := MeshInstance3D.new()
         weighted.name = "TrueSkinnedBackLock%d" % i
         weighted.mesh = surface_mesh
