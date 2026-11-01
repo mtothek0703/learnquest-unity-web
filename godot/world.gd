@@ -1846,7 +1846,7 @@ func _update_camera(delta: float) -> void:
         var normal_distance := lerpf(7.75, 8.15, edge_lane)
         var normal_fov := lerpf(60.0, 61.0, edge_lane)
         target_position = Vector3(rider.position.x * 0.36, 4.15 + rider.position.y * 0.25, 9.1 if boost else normal_distance)
-        target_focus = Vector3(rider.position.x * 0.42, 1.5 + rider.position.y * 0.45, 0.5)
+        target_focus = Vector3(rider.position.x * 0.42, 1.5 - edge_lane * 0.25 + rider.position.y * 0.45, 0.5)
         target_fov = 71.0 if boost else normal_fov
     else:
         showcase_clock += delta
