@@ -29,3 +29,10 @@ Review real CI logs and screenshot artifact; adjust composition if necessary. If
 - [x] The original 7.15m / 58-degree zoom was clearly more legible, but **too aggressive**: helmet nearly touched the top and the hoverboard ion-wake tails were clipped at the bottom, especially at 1170x540. Do **not** release this version.
 - [x] Corrected the camera to 7.75m / 60 degrees and 4.15m elevation; Turbo uses 9.1m / 71 degrees. Kept the >=15% larger projected rider gate and all three lanes visible.
 - [ ] Repeat full CI, download the revised eight frames, visually check actual margins, then release only if the composition is better without cropping.
+
+## Second image review — edge-lane clearance
+- [x] [Godot CI 41311462004](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41311462004) and [archive check 41311461858](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41311461858) passed on the 7.75m / 60-degree revision. Downloaded and inspected all eight actual [frames 13086045577](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41311462004/artifacts/13086045577).
+- [x] The center lane now retains helmet and wake margins, and the world/rider are visibly larger. At 1280x720 the new framing changes 55.61% of RGB pixels (>25 channel difference) in center lane, 52.72% in right lane; at 1170x540 it changes 54.76% / 52.34%. These large changes are from the camera projection, **not** proof of a premium character.
+- [ ] **Remaining QA issue:** at the outer right lane the trailing hoverboard ion-wake ribbons still approach the bottom edge, particularly at 1280x720. Do not merge this iteration.
+- [x] Third correction: adaptive normal camera pullback from **7.75m / 60° in center** to **8.15m / 61° at outer lanes**. Keep Turbo at 9.1m / 71° and menu unchanged; the camera follows the rider's actual lane position, not a new input mechanism.
+- [ ] Re-run all checks and inspect the new lane1/center 16:9 and 19.5:9 screenshots before merging.
