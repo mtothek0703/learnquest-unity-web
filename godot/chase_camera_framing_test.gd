@@ -40,6 +40,11 @@ func _run() -> void:
             if absf(camera.position.z - expected_distance) > 0.01 or absf(camera.fov - expected_fov) > 0.01:
                 _fail("new normal-race camera is not active")
                 return
+            var focus: Vector3 = game.get("camera_focus")
+            var expected_focus_y := 1.5 if lane == 0 else 1.25
+            if absf(focus.y - expected_focus_y) > 0.01:
+                _fail("edge-lane hoverboard clearance focus is missing")
+                return
             var center := camera.unproject_position(rider.global_position + Vector3(0.0, 2.0, 0.0))
             if center.x < float(size.x) * 0.16 or center.x > float(size.x) * 0.84:
                 _fail("rider lane %d falls outside landscape safe area %s" % [lane, str(size)])
