@@ -190,6 +190,33 @@ func _check() -> void:
             not forearm_shape.is_finite():
         _fail("arm sculpt produced nonfinite rest-space geometry")
         return
+    # Actual lighting normals must follow the curved GPU-skinned sleeve
+    # displacement, not the flat source body's pre-sculpt vertex normals.
+    # Sample a noncentral shoulder point where the deltoid profile slopes.
+    var lit_shoulder: Vector3 = controller.call("_sculpt_normal",
+        Vector3(0.45, 1.5, 0.20), Vector3.RIGHT, sample_bounds, Vector2(1.0, 0.96))
+    var lit_mirror: Vector3 = controller.call("_sculpt_normal",
+        Vector3(-0.45, 1.5, 0.20), Vector3.LEFT, sample_bounds, Vector2(1.0, 0.96))
+    var lit_wrist: Vector3 = controller.call("_sculpt_normal",
+        Vector3(0.45, 1.0, 0.20), Vector3.RIGHT, sample_bounds, Vector2(0.20, 0.02))
+    if not lit_shoulder.is_finite() or not lit_mirror.is_finite() or not lit_wrist.is_finite():
+        _fail("sculpted sleeve lighting normals must remain finite")
+        return
+    if absf(lit_shoulder.length() - 1.0) > 0.001 or \
+            absf(lit_mirror.length() - 1.0) > 0.001 or \
+            absf(lit_wrist.length() - 1.0) > 0.001:
+        _fail("sculpted sleeve lighting normals must remain unit length")
+        return
+    if lit_shoulder.distance_to(Vector3.RIGHT) < 0.002 or \
+            lit_shoulder.dot(Vector3.RIGHT) < 0.55 or \
+            lit_wrist.dot(Vector3.RIGHT) < 0.85:
+        _fail("curved shoulder must shade as relief without flipping wrist normals")
+        return
+    if absf(lit_shoulder.x + lit_mirror.x) > 0.002 or \
+            absf(lit_shoulder.y - lit_mirror.y) > 0.002 or \
+            absf(lit_shoulder.z - lit_mirror.z) > 0.002:
+        _fail("sculpted left/right sleeve lighting must be symmetric")
+        return
     var shoulder_panel: float = controller.call("_armor_panel", Vector2(1.0, 0.96))
     var elbow_panel: float = controller.call("_armor_panel", Vector2(1.0, 0.48))
     if shoulder_panel < 0.80 or elbow_panel < 0.55:
