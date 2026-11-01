@@ -13,6 +13,10 @@ var was_airborne: bool = false
 var arcs: Array[MeshInstance3D] = []
 var sparks: Array[MeshInstance3D] = []
 var landing_light: OmniLight3D
+var streamlined_mode := false
+
+func set_streamlined_mode(enabled: bool) -> void:
+    streamlined_mode = enabled
 
 func _ready() -> void:
     var arc_material := StandardMaterial3D.new()
@@ -114,8 +118,16 @@ func update_visuals(delta: float, jump_height: float, steering: float, turbo: bo
         var arc := arcs[index]
         var side := -1.0 if index == 0 else 1.0
         arc.visible = air_weight > 0.035
-        arc.scale = Vector3(0.50 + 0.50 * air_weight, 1.0, 0.30 + 0.75 * air_weight)
-        arc.position.y = 0.05 * sin(clock * (12.0 if turbo else 6.0) + float(index))
+        # Compact shoulder-side wind streaks for the experimental CC0 hero:
+        # preserve both real 3D meshes and the landing sparks, but avoid the
+        # enormous striped V87 loops around the new articulated silhouette.
+        var compact_x := 0.27 if streamlined_mode else 1.0
+        var compact_z := 0.35 if streamlined_mode else 1.0
+        arc.scale = Vector3((0.50 + 0.50 * air_weight) * compact_x,
+            1.0, (0.30 + 0.75 * air_weight) * compact_z)
+        arc.position.x = side * 1.10 if streamlined_mode else 0.0
+        arc.position.y = -0.20 if streamlined_mode else 0.05 * sin(clock * (12.0 if turbo else 6.0) + float(index))
+        arc.transparency = 0.50 if streamlined_mode else 0.0
         arc.rotation.y = steering * 0.08 + side * sin(clock * 4.0) * 0.045
 
     var burst_progress := 1.0 - landing_energy

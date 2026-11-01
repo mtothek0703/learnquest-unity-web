@@ -34,6 +34,11 @@ func _ready() -> void:
     var aerial := preload("res://rider_aerial_choreography.gd").new() as Node3D
     aerial.name = "Cinematic aerial choreography"
     add_child(aerial)
+    # The genuine 65-bone hero already has mantle and 3D jet effects.
+    # Keep jump wind readable but prevent the V87 giant ribbon loops from
+    # obscuring its arms/board. The original rider retains the old effect.
+    if external_hero != null:
+        aerial.call("set_streamlined_mode", true)
 
 func _try_load_character_asset() -> void:
     if not ResourceLoader.exists(character_asset_path):

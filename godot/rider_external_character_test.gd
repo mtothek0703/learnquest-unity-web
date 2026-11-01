@@ -24,6 +24,24 @@ func _check() -> void:
     if not imported.visible or legacy.visible:
         _fail("only real imported CC0 character may be visible when selected")
         return
+    # CC0 opt-in keeps the original aerial mesh, but constrains its
+    # enormous striped jump ribbons to subtle shoulder-side streaks.
+    var aerial := rider.get_node_or_null("Cinematic aerial choreography") as Node3D
+    if aerial == null or not bool(aerial.get("streamlined_mode")):
+        _fail("CC0 hero must use compact 3D aerial ribbons")
+        return
+    aerial.call("update_visuals", 0.10, 1.0, 0.0, true)
+    var arcs: Array = aerial.get("arcs")
+    if arcs.size() != 2:
+        _fail("both original jump ribbon meshes must be preserved")
+        return
+    for arc in arcs:
+        var ribbon := arc as MeshInstance3D
+        if ribbon == null or not ribbon.visible or ribbon.scale.x > 0.30 or \
+                ribbon.scale.z > 0.40 or ribbon.transparency < 0.49 or \
+                absf(ribbon.position.x) < 1.0:
+            _fail("CC0 wind streaks must stay compact, translucent and outside the torso")
+            return
     var rig: Skeleton3D = adapter.get("skeleton")
     var meshes: Array = adapter.get("skinned_meshes")
     if rig == null or rig.get_bone_count() < 50 or meshes.is_empty():
@@ -185,6 +203,10 @@ func _check() -> void:
     root.add_child(fallback)
     await process_frame
     var fallback_model := fallback.get_node_or_null("ImportedRider") as Node3D
+    var fallback_aerial := fallback.get_node_or_null("Cinematic aerial choreography") as Node3D
+    if fallback_aerial == null or bool(fallback_aerial.get("streamlined_mode")):
+        _fail("original rider fallback must keep its unchanged V87 aerial effects")
+        return
     if fallback_model == null or not fallback_model.visible or fallback.get_node_or_null("ExternalRiggedHero") != null:
         _fail("missing external asset must preserve the original working character")
         return
