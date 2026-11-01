@@ -156,8 +156,8 @@ func _check() -> void:
         Vector3(0.40, v_height, -0.3), rear_normal, test_bounds)
     var v_outer_front: Vector3 = outfit.call("_tailored_offset",
         Vector3(0.40, v_height, -0.3), front_normal, test_bounds)
-    if v_back.z - v_front.z < 0.052 or \
-            v_outer.z - v_outer_front.z > 0.047:
+    if v_back.z - absf(v_front.z) < 0.052 or \
+            v_outer.z - absf(v_outer_front.z) > 0.047:
         _fail("weighted dorsal V-panels must be raised, tapered 3D relief")
         return
     if absf(v_back.z - v_mirror.z) > 0.001 or \
