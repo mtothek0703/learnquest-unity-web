@@ -11,6 +11,7 @@ var completed_gates := 0
 var missed_gates := 0
 var crystal_sentinels: Node3D
 var aurora_slipstream: Node3D
+var glacier_icefalls: Node3D
 
 func _ready() -> void:
     _build_glacier()
@@ -169,6 +170,10 @@ func _build_glacier() -> void:
     crystal_sentinels = preload("res://cinematic_glacier_sentinels.gd").new() as Node3D
     crystal_sentinels.name = "Cinematic Aurora crystal sentinels"
     add_child(crystal_sentinels)
+    # V143: substantial, collision-free sculpted ice cascades on both sides.
+    glacier_icefalls = preload("res://cinematic_glacier_icefalls.gd").new() as Node3D
+    glacier_icefalls.name = "Cinematic sculpted glacier icefalls"
+    add_child(glacier_icefalls)
     # Optional dynamic wind tunnels are independent of existing jump gates.
     aurora_slipstream = preload("res://aurora_slipstream.gd").new() as Node3D
     aurora_slipstream.name = "Playable Aurora slipstream course"
@@ -236,6 +241,9 @@ func _process(delta: float) -> void:
     if crystal_sentinels != null:
         crystal_sentinels.set("running", running)
         crystal_sentinels.set("travel_speed", travel_speed)
+    if glacier_icefalls != null:
+        glacier_icefalls.set("running", running)
+        glacier_icefalls.set("travel_speed", travel_speed)
     if not running:
         return
     for cluster in moving_parts:
