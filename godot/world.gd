@@ -10,7 +10,8 @@ const WORDS := [
 const TASKS_PER_ROUND := 3
 const CLEAN_FLIGHT_STEP := 250.0
 const CLEAN_FLIGHT_LIMIT := 3
-const VERSION_LABEL := "V139"
+const AERIAL_ENERGY_TARGET := 3
+const VERSION_LABEL := "V140"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -135,6 +136,8 @@ var clean_flight_rewards := 0
 var clean_flight_mastery := false
 var clean_flight_pulse := 0.0
 var clean_flight_ring: MeshInstance3D
+var aerial_energy_count := 0
+var aerial_energy_mastery := false
 var end_panel: PanelContainer
 var hud: Label
 var hud_panel: PanelContainer
@@ -859,6 +862,13 @@ func _create_run_items() -> void:
     run_items = Node3D.new()
     run_items.name = "3D obstacles and energy pickups"
     add_child(run_items)
+    # One shared, raised 3D target mesh across all energy gates.
+    var aerial_mesh := TorusMesh.new()
+    aerial_mesh.inner_radius = 0.44
+    aerial_mesh.outer_radius = 0.56
+    aerial_mesh.rings = 28
+    aerial_mesh.ring_segments = 8
+    var aerial_material := mat(Color("#70f6ff"), true)
     for i in range(20):
         var item := Node3D.new()
         var good: bool = i % 3 == 0
@@ -881,6 +891,14 @@ func _create_run_items() -> void:
             outer.material_override = mat(Color("#ffd35a"), true)
             outer.position = Vector3(0, 1.45, 0)
             item.add_child(outer)
+            var aerial_ring := MeshInstance3D.new()
+            aerial_ring.name = "Aerial energy bonus ring"
+            aerial_ring.mesh = aerial_mesh
+            aerial_ring.material_override = aerial_material
+            aerial_ring.position = Vector3(0.0, 2.55, 0.0)
+            aerial_ring.rotation_degrees.x = 90.0
+            aerial_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+            item.add_child(aerial_ring)
             var core := Node3D.new()
             core.name = "Animated core"
             core.position = Vector3(0, 1.45, 0)
@@ -919,6 +937,8 @@ func _reset_run() -> void:
     clean_flight_mastery = false
     clean_flight_pulse = 0.0
     clean_flight_ring.visible = false
+    aerial_energy_count = 0
+    aerial_energy_mastery = false
     turbo_left = 0.0
     shield_left = 0.0
     attack_left = 0.0
@@ -1169,6 +1189,11 @@ func _update_run_items(delta: float) -> void:
                 gate.rotation.z += delta * 0.45
                 var glow_pulse := 1.0 + sin(distance * 0.10 + float(item.get_index()) * 0.7) * 0.08
                 gate.scale = Vector3.ONE * glow_pulse
+            # Elevated cyan 3D target advertises the optional jump bonus.
+            var aerial_ring := item.get_node_or_null("Aerial energy bonus ring") as MeshInstance3D
+            if aerial_ring != null:
+                aerial_ring.visible = aerial_energy_count < AERIAL_ENERGY_TARGET
+                aerial_ring.rotation.z += delta * 0.55
             # Animate the collectible independently from the world motion.
             var core: Node3D = item.get_node_or_null("Animated core")
             if core != null:
@@ -1187,7 +1212,19 @@ func _update_run_items(delta: float) -> void:
                         info_label.text = "HAFEN-KRISTALL %d/%d  +15 XP" % [harbor_crystals, HARBOR_BONUS_TARGET]
                     else:
                         info_label.text = "ENERGIE +15 XP!"
-                    feedback_time = 1.2
+                    # A real mid-air catch pays extra only for the first three
+                    # gates per round; ground catches remain unchanged.
+                    if rider.position.y >= 0.90 and aerial_energy_count < AERIAL_ENERGY_TARGET:
+                        aerial_energy_count += 1
+                        xp += 20
+                        turbo_left = maxf(turbo_left, 1.0)
+                        info_label.text = "LUFT-ENERGIE %d/3! +20 XP +1s TURBO" % aerial_energy_count
+                        if aerial_energy_count == AERIAL_ENERGY_TARGET:
+                            aerial_energy_mastery = true
+                            xp += 40
+                            turbo_left = maxf(turbo_left, 2.0)
+                            info_label.text = "LUFT-ENERGIE MEISTER! 3/3 +100 XP +2s TURBO"
+                    feedback_time = 1.5 if aerial_energy_mastery else 1.2
                 elif rider.position.y > 0.85:
                     xp += 10
                     info_label.text = "SPRUNG! +10 XP"
@@ -1227,6 +1264,8 @@ func _finish_run() -> void:
         reward_label.text = "+%d STERNE  |  +%d XP\nGESAMT: %d STERNE" % [stars_earned, xp, total_stars]
         if clean_flight_mastery:
             reward_label.text += "\nSAUBERER FLUG: 3/3 STRECKEN +125 XP UND TURBO!"
+        if aerial_energy_mastery:
+            reward_label.text += "\nLUFT-ENERGIE: 3/3 SPRUNGTREFFER +100 XP UND TURBO!"
         if flawless_vocabulary_launch:
             reward_label.text += "\nWORT-MEISTER: 3 FEHLERFREI +60 XP, 2,5s START-TURBO"
         if world_choice == 0 and int(skyway_zone.call("get_signal_count")) >= NEON_SIGNAL_TARGET:
@@ -1613,6 +1652,8 @@ func _begin_training() -> void:
     clean_flight_mastery = false
     clean_flight_pulse = 0.0
     clean_flight_ring.visible = false
+    aerial_energy_count = 0
+    aerial_energy_mastery = false
     phase = "training"
     training_correct = 0
     training_mistakes = 0
@@ -1739,9 +1780,9 @@ func _use_turbo() -> void:
 func _refresh_hud() -> void:
     if hud != null:
         if mobile_hud_layout:
-            hud.text = "%s  L%d  XP%d  SAUBER %d/3\nENERGIE %d%%  KOMBO x%d  %dm" % [VERSION_LABEL, lives, xp, clean_flight_count, power, combo, int(distance)]
+            hud.text = "%s  L%d  XP%d  SAUBER %d/3  LUFT %d/3\nENERGIE %d%%  KOMBO x%d  %dm" % [VERSION_LABEL, lives, xp, clean_flight_count, aerial_energy_count, power, combo, int(distance)]
         else:
-            hud.text = "SKYWAY %s   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm   SAUBER %d/3" % [VERSION_LABEL, lives, xp, power, combo, int(distance), clean_flight_count]
+            hud.text = "SKYWAY %s   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm   SAUBER %d/3   LUFT %d/3" % [VERSION_LABEL, lives, xp, power, combo, int(distance), clean_flight_count, aerial_energy_count]
         if phase == "race":
             hud.text += "\n%s  RUNDE %d  ZIEL %dm  SCHILD %ds  BOOST %ds" % [WORLD_NAMES[world_choice], round_number, int(mission_target), ceili(shield_left), ceili(turbo_left)]
             if world_choice == 0:
