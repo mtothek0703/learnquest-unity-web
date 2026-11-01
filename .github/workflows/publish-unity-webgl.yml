@@ -176,6 +176,8 @@ jobs:
           grep -Fq 'CANYON ROUTES TEST PASSED' /tmp/godot-canyon-routes.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://cinematic_harbor_drydocks_test.gd 2>&1 | tee /tmp/godot-harbor-drydocks.log
           grep -Fq 'HARBOR DRYDOCKS TEST PASSED' /tmp/godot-harbor-drydocks.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://cinematic_harbor_skycranes_test.gd 2>&1 | tee /tmp/godot-harbor-skycranes.log
+          grep -Fq 'HARBOR SKYCRANES TEST PASSED' /tmp/godot-harbor-skycranes.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://harbor_cargo_relay_test.gd 2>&1 | tee /tmp/godot-harbor-relay.log
           grep -Fq 'HARBOR CARGO RELAY TEST PASSED' /tmp/godot-harbor-relay.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://neon_signal_chain_test.gd 2>&1 | tee /tmp/godot-neon-signal-chain.log
@@ -294,28 +296,28 @@ jobs:
           python - <<'PY'
           from urllib.error import HTTPError
           from urllib.request import Request, urlopen
-          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v143/index.html"
+          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v144/index.html"
           try:
               with urlopen(Request(url, headers={"Cache-Control": "no-cache"}), timeout=20):
-                  raise SystemExit("Skyway V143 already exists: refusing to overwrite an immutable release")
+                  raise SystemExit("Skyway V144 already exists: refusing to overwrite an immutable release")
           except HTTPError as error:
               if error.code != 404:
                   raise
-          print("Skyway V143 is not published yet; safe to create")
+          print("Skyway V144 is not published yet; safe to create")
           PY
           # Each release gets a fresh URL; historical folders are never rebuilt from newer exports.
-          mkdir -p _site/skyway-v143
-          cp -a _site/godot/. _site/skyway-v143/
-          echo "$GITHUB_SHA" > _site/skyway-v143/build.txt
+          mkdir -p _site/skyway-v144
+          cp -a _site/godot/. _site/skyway-v144/
+          echo "$GITHUB_SHA" > _site/skyway-v144/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
-          echo "Archived previous versions and prepared immutable Skyway V143"
+          echo "Archived previous versions and prepared immutable Skyway V144"
       - name: Check browser export integrity
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          root = Path("_site/skyway-v143")
+          root = Path("_site/skyway-v144")
           for name in ("index.html", "index.js", "index.wasm", "index.pck"):
               file = root / name
               if not file.is_file() or file.stat().st_size == 0:
@@ -364,6 +366,8 @@ jobs:
             /tmp/godot-canyon-geodes.log
             /tmp/godot-canyon-routes.log
             /tmp/godot-harbor-drydocks.log
+            /tmp/godot-harbor-skycranes.log
+            /tmp/godot-harbor-skycranes-visual.log
             /tmp/godot-harbor-relay.log
             /tmp/godot-neon-signal-chain.log
             /tmp/godot-neon-conductor.log
@@ -475,6 +479,24 @@ jobs:
           path: /tmp/learnquest-powerup-qa/*.png
           if-no-files-found: ignore
 
+      - name: Render V144 orbital cranes before-after in both smartphone landscape ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-skycranes-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_SKYCRANES_OUTPUT=/tmp/learnquest-skycranes-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://cinematic_harbor_skycranes_visual_capture_test.gd 2>&1 | tee /tmp/godot-harbor-skycranes-visual.log
+          grep -Fq 'HARBOR SKYCRANES VISUAL QA PASSED' /tmp/godot-harbor-skycranes-visual.log
+          test "$(find /tmp/learnquest-skycranes-qa -name '*.png' | wc -l)" -eq 8
+      - name: Upload V144 orbital crane comparison frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v144-harbor-skycranes-release-qa
+          path: /tmp/learnquest-skycranes-qa/*.png
+          if-no-files-found: error
       - name: Check Pages configuration
         env:
           GH_TOKEN: ${{ github.token }}
@@ -520,7 +542,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request, urllib.error
-          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v143/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v144/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.js": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
