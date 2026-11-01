@@ -25,3 +25,9 @@ Der vorhandene `landscape_chase_visual_capture_test.gd` erzwingt jetzt Touchscre
 - Erste vollständige Godot-PR-CI [41325519827](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41325519827) erfolgreich: Gameplay-Smoke und Webexport inklusive.
 - Die neue echte Renderprüfung [41325682171](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41325682171) deckte einen echten verbleibenden Fehler auf: Bei **1280×720** wurde der alte lange Desktop-HUD gewählt, der die Missionsleiste überdeckte. Keine Freigabe.
 - Korrektur: Touch-Querformat bis einschließlich 720px Höhe erhält jetzt das dreizeilige HUD. Erneute CI und echte Renderprüfung ausstehend.
+
+## Kandidat nach korrigiertem Layout — 01.11.2026
+- [x] [PR-Godot-CI 41326361419](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41326361419) **39/39 Schritte erfolgreich**: Godot-Import, Gameplay-Regression, Webexport, echte OpenGL-Querformatbilder. Die neu eingeführte tatsächliche HUD-/Fortschrittsleisten-Überlappungsprüfung bestand für 1280×720 und 1170×540.
+- [x] Erste Render-CI [41325682171](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41325682171) und zweite [41325993536](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41325993536) scheiterten an der echten HUD-/Progressbar-Überlappung. Ursache: altes Desktop-Layout bei 720px sowie eine zu hoch positionierte starre ProgressBar. Jetzt Touch-Querformat bis 720px kompakt; die ProgressBar folgt der **tatsächlichen gemessenen HUD-Unterkante** nach `reset_size()` mit 9px Abstand. Keine künstliche Freigabe vor grüner End-CI.
+- [x] Nach dem grünen Layout-Test wurde die neue unveränderliche **V146-Kandidatenversion** in Spieltext, Smoke-Test und Release-Workflow vorbereitet. Das ist noch **kein** Pages-Release.
+- [ ] Finale CI des Versions- und Workflowänderungssatzes, Archivschutz, Merge, main-CI, Pages und Live-Buildrevision stehen aus.
