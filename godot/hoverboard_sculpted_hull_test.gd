@@ -69,6 +69,39 @@ func _check() -> void:
         if vertices.size() < 120 or normals.size() != vertices.size():
             _fail("board geometry is too coarse or unshaded: " + name)
             return
+    # Both permanent board-edge light guides must now be real closed 3D
+    # tubes, not flat two-triangle strips. Their cross-sections have depth
+    # and height, taper at each tip and preserve left/right symmetry.
+    for side in [-1.0, 1.0]:
+        var rail_name := "PortEdgeLight" if side < 0.0 else "StarboardEdgeLight"
+        var rail := sculpt.get_node_or_null(rail_name) as MeshInstance3D
+        if rail == null or rail.mesh == null:
+            _fail("closed hoverboard edge-light tube missing: " + rail_name)
+            return
+        var rail_arrays: Array = rail.mesh.surface_get_arrays(0)
+        var rail_vertices: PackedVector3Array = rail_arrays[Mesh.ARRAY_VERTEX]
+        var rail_normals: PackedVector3Array = rail_arrays[Mesh.ARRAY_NORMAL]
+        if rail_vertices.size() < 2000 or rail_normals.size() != rail_vertices.size():
+            _fail("board edge guide must have closed circular sections and normals")
+            return
+        var outer: Vector3 = sculpt.call("_rail_point", side, 0.5, 0.0)
+        var inner: Vector3 = sculpt.call("_rail_point", side, 0.5, PI)
+        var upper: Vector3 = sculpt.call("_rail_point", side, 0.5, PI * 0.5)
+        var lower: Vector3 = sculpt.call("_rail_point", side, 0.5, PI * 1.5)
+        var tip_outer: Vector3 = sculpt.call("_rail_point", side, 0.0, 0.0)
+        var tip_inner: Vector3 = sculpt.call("_rail_point", side, 0.0, PI)
+        if outer.distance_to(inner) < 0.075 or upper.distance_to(lower) < 0.060:
+            _fail("board edge light must have substantial 3D volume")
+            return
+        if tip_outer.distance_to(tip_inner) >= outer.distance_to(inner) * 0.45:
+            _fail("board edge light must taper into the chassis at its ends")
+            return
+        if absf(outer.x) <= absf(inner.x) or absf(outer.z - inner.z) > 0.0001:
+            _fail("tube must follow the mirrored board edge without twisting")
+            return
+        if rail.mesh.get_aabb().size.z < 2.5:
+            _fail("board edge light must run continuously along the hull")
+            return
     var chassis := sculpt.get_node("ContinuousAerodynamicChassis") as MeshInstance3D
     var points: PackedVector3Array = chassis.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
     var colors: PackedColorArray = chassis.mesh.surface_get_arrays(0)[Mesh.ARRAY_COLOR]
