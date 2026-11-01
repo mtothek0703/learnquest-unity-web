@@ -1825,9 +1825,23 @@ func _refresh_hud() -> void:
         progress_bar.value = clampf(distance, 0.0, mission_target)
     _update_touch_ui()
 
+# A phone landscape viewport used to render the racer far too small. Only
+# race framing changes: desktop, quiz, menus, touch and collision stay intact.
+# This helper also allows deterministic QA at both common phone aspect ratios.
+func _race_camera_targets(boost: bool, viewport_size: Vector2) -> Dictionary:
+    var phone_landscape := viewport_size.x > viewport_size.y and viewport_size.y <= 720.0
+    var camera_distance := (8.65 if boost else 7.55) if phone_landscape else (10.1 if boost else 9.0)
+    var camera_height := 3.95 if phone_landscape else 4.3
+    var camera_fov := (70.0 if boost else 58.0) if phone_landscape else (74.0 if boost else 64.0)
+    return {
+        "position": Vector3(rider.position.x * 0.36, camera_height + rider.position.y * 0.25, camera_distance),
+        "focus": Vector3(rider.position.x * 0.42, 1.65 + rider.position.y * 0.45, 0.1) if phone_landscape else Vector3(rider.position.x * 0.42, 1.5 + rider.position.y * 0.45, 0.5),
+        "fov": camera_fov
+    }
+
 # The menu showcases the actual modeled face, hair and outfit from the front.
-# Training/results keep the gallery; races transition to the existing chase
-# camera without interrupting controls, physics or the timed boss warnings.
+# Training/results keep the gallery; races transition to the chase camera
+# without interrupting controls, physics or the timed boss warnings.
 func _update_camera(delta: float) -> void:
     if chase_camera == null or rider == null:
         return
@@ -1837,9 +1851,10 @@ func _update_camera(delta: float) -> void:
     var target_focus: Vector3
     var target_fov: float
     if racing:
-        target_position = Vector3(rider.position.x * 0.36, 4.3 + rider.position.y * 0.25, 10.1 if boost else 9.0)
-        target_focus = Vector3(rider.position.x * 0.42, 1.5 + rider.position.y * 0.45, 0.5)
-        target_fov = 74.0 if boost else 64.0
+        var framing := _race_camera_targets(boost, get_viewport().get_visible_rect().size)
+        target_position = framing["position"]
+        target_focus = framing["focus"]
+        target_fov = framing["fov"]
     else:
         showcase_clock += delta
         # Frame the rider to the right of the central menu/quiz panel.
