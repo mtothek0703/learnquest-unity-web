@@ -118,13 +118,13 @@ func _capture() -> void:
             # Preserve the original paired frames; two extra isolation states
             # reveal whether broad weighted tails or glowing shoulder cores
             # are responsible for the toy-like rear silhouette.
-            for variant in ["before", "after", "after_no_mantle", "after_no_thrusters"]:
+            for variant in ["before", "after", "after_no_mantle", "after_with_thrusters"]:
                 old.visible = variant == "before"
                 hero.visible = variant != "before"
                 for mesh in mantle_meshes:
                     mesh.visible = variant != "after_no_mantle"
                 for mesh in core_meshes:
-                    mesh.visible = variant != "after_no_thrusters"
+                    mesh.visible = variant == "after_with_thrusters"
                 old.global_transform = locked_old
                 hero.global_transform = locked_hero
                 for skeleton_node in bone_locks.keys():
