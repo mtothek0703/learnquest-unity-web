@@ -2369,7 +2369,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V144") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V145") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -2616,7 +2616,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V144") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V145") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
