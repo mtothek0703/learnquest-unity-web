@@ -1621,7 +1621,7 @@ func _apply_mobile_layout(viewport_width: float, touchscreen_override: int = -1,
     var has_touchscreen := DisplayServer.is_touchscreen_available() if touchscreen_override < 0 else touchscreen_override == 1
     # The primary mobile format is landscape: reserve the middle for the rider.
     # Never force a long desktop HUD across a short 16:9 mobile viewport.
-    var landscape_phone := has_touchscreen and viewport_width > layout_height and layout_height < 620.0
+    var landscape_phone := has_touchscreen and viewport_width > layout_height and layout_height <= 720.0
     mobile_hud_layout = narrow or landscape_phone
     compact_landscape_hud = landscape_phone
     touch_screen_mode = narrow or has_touchscreen
