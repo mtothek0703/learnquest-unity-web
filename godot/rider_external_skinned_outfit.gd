@@ -328,7 +328,7 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     # remains full; the jacket's shoulder expansion is ~25% narrower in
     # the same rest-space QA pose (0.0575 -> 0.0416 source units).
     var spread := 0.043 * shoulder + 0.031 * deltoid - waist_inset + \
-        0.028 * dorsal_shoulder
+        0.036 * dorsal_shoulder
     return normal * depth + Vector3(signf(lateral) * spread, 0.006 * shoulder, 0.0)
 
 func _jacket_material(bounds: AABB) -> ShaderMaterial:
