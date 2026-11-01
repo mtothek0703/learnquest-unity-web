@@ -97,8 +97,10 @@ func _check() -> void:
         return
     # Keep the weighted 3D V-shape without recreating oversized deltoid
     # wings in the 1280x720 and 1170x540 chase camera.
-    if shoulder.x > 0.068:
-        _fail("skinned jacket shoulder spread is still inflated in landscape")
+    # The previous sculpt measured ~0.0575 in this fixed CC0 rest pose.
+    # Reject that broad toy-like shoulder while retaining the genuine V.
+    if shoulder.x > 0.052:
+        _fail("weighted jacket shoulder has regressed to the wide pre-tailoring silhouette")
         return
     if opposite.x > -0.035 or absf(shoulder.x + opposite.x) > 0.002:
         _fail("weighted shoulder expansion must be balanced on both sides")
@@ -123,8 +125,9 @@ func _check() -> void:
             dorsal_offset.x < ventral_offset.x + 0.018:
         _fail("rear scapular relief and broad shoulder contour are not geometric")
         return
-    if dorsal_offset.x > 0.095:
-        _fail("rear weighted scapula silhouette still protrudes too far")
+    # Rearward shoulder spread was ~0.0837 before this tapered trial.
+    if dorsal_offset.x > 0.072:
+        _fail("rear weighted scapula silhouette regressed to the broad profile")
         return
     if absf(dorsal_offset.x + opposite_dorsal.x) > 0.001 or \
             absf(dorsal_offset.z - opposite_dorsal.z) > 0.001:
