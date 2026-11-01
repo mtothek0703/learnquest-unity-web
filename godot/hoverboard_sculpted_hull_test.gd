@@ -414,6 +414,22 @@ func _check() -> void:
                 fin_tip.y < wing_tip.y + 0.17:
             _fail("carve fin tip is buried behind the sculpted board wing")
             return
+        # Protect the narrow, aircraft-like outline against regression to
+        # the large paddle shape rejected in real landscape screenshots.
+        # Check the actual procedural cross-sections on BOTH mirrored fins.
+        var middle_outer: Vector3 = vanes.call("_fin_point", side, 0.5, 0.0)
+        var middle_inner: Vector3 = vanes.call("_fin_point", side, 0.5, PI)
+        var root_outer: Vector3 = vanes.call("_fin_point", side, 0.03, 0.0)
+        var root_inner: Vector3 = vanes.call("_fin_point", side, 0.03, PI)
+        var tail_outer: Vector3 = vanes.call("_fin_point", side, 0.97, 0.0)
+        var tail_inner: Vector3 = vanes.call("_fin_point", side, 0.97, PI)
+        var middle_chord := absf(middle_outer.x - middle_inner.x)
+        var root_chord := absf(root_outer.x - root_inner.x)
+        var tail_chord := absf(tail_outer.x - tail_inner.x)
+        if middle_chord < 0.28 or root_chord > middle_chord * 0.30 or \
+                tail_chord > middle_chord * 0.30:
+            _fail("carve fin must taper to narrow tips instead of a broad paddle")
+            return
         # The aft aerofoil now rises and sweeps outboard as a continuous
         # sculpted volume, rather than a nearly flat decorative strip.
         var forward_crest: Vector3 = vanes.call("_fin_point", side, 0.15, PI * 0.5)
