@@ -47,11 +47,11 @@ func _support_mesh(side: float) -> ArrayMesh:
 func _bridge_point(side: float, t: float, angle: float) -> Vector3:
     var crest := sin(PI * t)
     var center_x := -side * (4.65 + 10.30 * t)
-    var center_y := 7.65 + 2.15 * crest
+    var center_y := 7.65 + 2.65 * crest
     var center_z := 0.35 + 0.42 * crest
     return Vector3(center_x,
-        center_y + (0.28 + 0.12 * crest) * sin(angle),
-        center_z + (0.34 + 0.06 * crest) * cos(angle))
+        center_y + (0.43 + 0.15 * crest) * sin(angle),
+        center_z + (0.48 + 0.08 * crest) * cos(angle))
 
 func _bridge_mesh(side: float) -> ArrayMesh:
     var tool := SurfaceTool.new()
@@ -122,7 +122,7 @@ func _ready() -> void:
     bridge_metal.roughness = 0.44
     bridge_metal.emission_enabled = true
     bridge_metal.emission = Color("#3d8394")
-    bridge_metal.emission_energy_multiplier = 0.42
+    bridge_metal.emission_energy_multiplier = 0.72
     var bridge_left := _bridge_mesh(-1.0)
     var bridge_right := _bridge_mesh(1.0)
     var tube_left := _support_mesh(-1.0)
