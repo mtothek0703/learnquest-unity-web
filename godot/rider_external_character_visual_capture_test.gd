@@ -93,6 +93,10 @@ func _capture() -> void:
     rider.process_mode = Node.PROCESS_MODE_DISABLED
     for frame in range(4):
         await process_frame
+    var board := rider.get_node_or_null("LegacyRider/Floating hoverboard") as Node3D
+    if board == null:
+        _fail("CC0 board comparison needs the original animated board")
+        return
     var count := 0
     for size in SIZES:
         viewport.size = size
@@ -118,9 +122,11 @@ func _capture() -> void:
             # Preserve the original paired frames; two extra isolation states
             # reveal whether broad weighted tails or glowing shoulder cores
             # are responsible for the toy-like rear silhouette.
-            for variant in ["before", "after", "after_no_mantle", "after_with_thrusters"]:
+            var compact_board_frame: Image
+            for variant in ["before", "after", "after_no_mantle", "after_with_thrusters", "after_original_board"]:
                 old.visible = variant == "before"
                 hero.visible = variant != "before"
+                board.scale = Vector3.ONE if variant in ["before", "after_original_board"] else Vector3(0.80, 1.0, 0.90)
                 for mesh in mantle_meshes:
                     mesh.visible = variant != "after_no_mantle"
                 for mesh in core_meshes:
@@ -147,9 +153,25 @@ func _capture() -> void:
                 if image.save_png(filename) != OK:
                     _fail("could not save actual rendered PNG")
                     return
+                if variant == "after":
+                    compact_board_frame = image
+                elif variant == "after_original_board" and view in ["front", "chase"]:
+                    var changed := 0
+                    for y in range(108):
+                        for x in range(192):
+                            var px := int(float(size.x - 1) * float(x) / 191.0)
+                            var py := int(float(size.y - 1) * float(y) / 107.0)
+                            var compact := compact_board_frame.get_pixel(px, py)
+                            var original := image.get_pixel(px, py)
+                            if absf(compact.r - original.r) + absf(compact.g - original.g) + absf(compact.b - original.b) > 0.16:
+                                changed += 1
+                    if changed < 70:
+                        _fail("CC0 board footprint not visually distinct in %s %s: %d changed samples" % [size, view, changed])
+                        return
+                    print("CC0 compact-board real landscape changed samples %s %s: %d" % [size, view, changed])
                 count += 1
-    if count != 48:
-        _fail("expected 48 actual paired and costume-isolated landscape images")
+    if count != 60:
+        _fail("expected 60 actual paired, board-footprint and costume-isolated landscape images")
         return
-    print("QUATERNIUS VISUAL QA PASSED: 48 pose-locked V123/V124 and mantle/thruster isolation PNGs (manual quality review still required)")
+    print("QUATERNIUS VISUAL QA PASSED: 60 pose-locked V123/V124, compact-board and costume-isolated PNGs (manual quality review still required)")
     quit(0)
