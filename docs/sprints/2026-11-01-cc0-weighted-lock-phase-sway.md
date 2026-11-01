@@ -17,3 +17,8 @@
 
 ## Nächster Schritt
 CI-Fehler gegebenenfalls anhand des konkreten Logs korrigieren. Anschließend die neuen Haarbewegungen in echten Pose-locked Godot-Querformatbildern gegenüber dem vorherigen DRAFT-Stand vergleichen. Wenn die Unterschiede optisch unzureichend sind, das Experiment weiter verfeinern; keine vorzeitige Grafikfreigabe.
+
+## Nachweis der abschließenden technischen Prüfung
+- **Finaler Code-Head `b5ab1da18d800088ba25e7c4c3f72c7a77124ed1`:** [Godot-PR-CI 41260063925](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41260063925) ist `completed/success`, **52/52 Jobschritte erfolgreich**. Enthalten: 65-Bone- und Haar-Regressionen, Godot-Import, Gameplay, Webexport sowie bestehende Querformat-Render-QA.
+- [18 gerenderte Haar-Vorher/Nachher-Frames](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41260063925/artifacts/13064743212) wurden als CI-Artefakt bereitgestellt (2.369.525 Bytes). Eine unabhängige visuelle Gegenüberstellung der neuen Phasenvariation gegen den vorherigen DRAFT-Head wurde in diesem Durchlauf **nicht** abgenommen; daraus wird kein Premiumgrafik-Meilenstein abgeleitet.
+- Nach dem Test folgte nur diese Sprintdokumentation; kein Gameplay- oder Grafikcode wurde nach dem grünen Head verändert. PR #111 bleibt DRAFT, main bleibt `2f90449c` / V139.
