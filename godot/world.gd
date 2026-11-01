@@ -1830,12 +1830,18 @@ func _refresh_hud() -> void:
 # This helper also allows deterministic QA at both common phone aspect ratios.
 func _race_camera_targets(boost: bool, viewport_size: Vector2) -> Dictionary:
     var phone_landscape := viewport_size.x > viewport_size.y and viewport_size.y <= 720.0
-    var camera_distance := (8.65 if boost else 7.55) if phone_landscape else (10.1 if boost else 9.0)
-    var camera_height := 3.95 if phone_landscape else 4.3
-    var camera_fov := (70.0 if boost else 58.0) if phone_landscape else (74.0 if boost else 64.0)
+    # Short 19.5:9 screens reserve ~150 px for the two touch-control rows
+    # and ~90 px for mission HUD. Aggressive 16:9 zoom clipped the hoverboard
+    # behind the buttons. Keep a safer, smaller improvement on short phones.
+    var compact_touch := phone_landscape and viewport_size.y < 620.0
+    var camera_distance := (9.7 if boost else 8.5) if compact_touch else ((8.65 if boost else 7.55) if phone_landscape else (10.1 if boost else 9.0))
+    var camera_height := 4.25 if compact_touch else (3.95 if phone_landscape else 4.3)
+    var camera_fov := (73.0 if boost else 63.0) if compact_touch else ((70.0 if boost else 58.0) if phone_landscape else (74.0 if boost else 64.0))
+    var focus_y := 1.55 if compact_touch else (1.65 if phone_landscape else 1.5)
+    var focus_z := 0.4 if compact_touch else (0.1 if phone_landscape else 0.5)
     return {
         "position": Vector3(rider.position.x * 0.36, camera_height + rider.position.y * 0.25, camera_distance),
-        "focus": Vector3(rider.position.x * 0.42, 1.65 + rider.position.y * 0.45, 0.1) if phone_landscape else Vector3(rider.position.x * 0.42, 1.5 + rider.position.y * 0.45, 0.5),
+        "focus": Vector3(rider.position.x * 0.42, focus_y + rider.position.y * 0.45, focus_z),
         "fov": camera_fov
     }
 
