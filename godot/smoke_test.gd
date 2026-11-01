@@ -2359,7 +2359,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V145") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V146") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -2369,7 +2369,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V145") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V146") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -2508,9 +2508,37 @@ func _run_checks() -> void:
     # V59: an iPhone in landscape is wider than 720px but still needs the
     # optional gesture-only mode. Simulate touch hardware in headless CI.
     game.call("_apply_mobile_layout", 844.0, 1, 390.0)
-    if not mobile_hud.text.contains("V145") or not mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("V146") or not mobile_hud.text.contains("\n"):
         _fail("Landscape-first phone layout must use a compact two-line HUD")
         return
+    # V146 candidate: during the race, short landscape screens must never
+    # stack world objectives over the mission bar and active touch area.
+    var previous_phase := str(game.get("phase"))
+    var previous_world := int(game.get("world_choice"))
+    game.set("phase", "race")
+    for world_index in range(4):
+        game.set("world_choice", world_index)
+        game.call("_refresh_hud")
+        var short_lines := mobile_hud.text.split("\n")
+        if short_lines.size() != 3:
+            _fail("Short landscape race HUD must use exactly three lines for world %d" % world_index)
+            return
+        for short_line in short_lines:
+            if short_line.length() > 43:
+                _fail("Short landscape race HUD exceeds the 360px text budget: " + short_line)
+                return
+    game.set("world_choice", 0)
+    game.set("neon_active", true)
+    game.set("neon_warning_left", 0.35)
+    game.call("_refresh_hud")
+    if not mobile_hud.text.contains("SWEEP!"):
+        _fail("Short landscape HUD must preserve urgent boss warnings")
+        return
+    game.set("neon_active", false)
+    game.set("neon_warning_left", 0.0)
+    game.set("world_choice", previous_world)
+    game.set("phase", previous_phase)
+    game.call("_refresh_hud")
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
         _fail("V59 landscape touchscreen lost its button-visibility toggle")
         return
@@ -2616,7 +2644,7 @@ func _run_checks() -> void:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V145") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V146") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):

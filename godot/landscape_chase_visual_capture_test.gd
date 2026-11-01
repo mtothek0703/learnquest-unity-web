@@ -42,6 +42,23 @@ func _capture() -> void:
     var count := 0
     for size in SIZES:
         viewport.size = size
+        # Render the REAL touch-landscape HUD rather than a desktop fallback.
+        # The mission progress bar must remain below the three-line panel.
+        game.call("_apply_mobile_layout", float(size.x), 1, float(size.y))
+        game.call("_refresh_hud")
+        await process_frame
+        var hud_panel := game.get("hud_panel") as PanelContainer
+        var progress := game.get("progress_bar") as ProgressBar
+        var hud := game.get("hud") as Label
+        if hud_panel == null or progress == null or hud == null:
+            _fail("real landscape HUD/progress nodes missing")
+            return
+        if hud.text.split("\n").size() != 3:
+            _fail("short phone landscape race HUD is not three lines")
+            return
+        if hud_panel.get_global_rect().end.y + 4.0 > progress.get_global_rect().position.y:
+            _fail("real landscape HUD overlaps mission progress at %s: panel=%s progress=%s" % [size, hud_panel.get_global_rect(), progress.get_global_rect()])
+            return
         for pose in POSES:
             rider.position.x = 3.1 if pose == "right_lane" else 0.0
             var boost: bool = pose == "turbo"

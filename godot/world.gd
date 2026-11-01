@@ -11,7 +11,7 @@ const TASKS_PER_ROUND := 3
 const CLEAN_FLIGHT_STEP := 250.0
 const CLEAN_FLIGHT_LIMIT := 3
 const AERIAL_ENERGY_TARGET := 3
-const VERSION_LABEL := "V145"
+const VERSION_LABEL := "V146"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -142,6 +142,8 @@ var end_panel: PanelContainer
 var hud: Label
 var hud_panel: PanelContainer
 var mobile_hud_layout := false
+# Short touchscreen landscape screens need a three-line HUD above the mission bar.
+var compact_landscape_hud := false
 # Wide touchscreen phones must still offer the optional gesture-only mode.
 var touch_screen_mode := false
 # A rotated/resized viewport invalidates active finger coordinates.
@@ -1619,8 +1621,9 @@ func _apply_mobile_layout(viewport_width: float, touchscreen_override: int = -1,
     var has_touchscreen := DisplayServer.is_touchscreen_available() if touchscreen_override < 0 else touchscreen_override == 1
     # The primary mobile format is landscape: reserve the middle for the rider.
     # Never force a long desktop HUD across a short 16:9 mobile viewport.
-    var landscape_phone := has_touchscreen and viewport_width > layout_height and layout_height < 620.0
+    var landscape_phone := has_touchscreen and viewport_width > layout_height and layout_height <= 720.0
     mobile_hud_layout = narrow or landscape_phone
+    compact_landscape_hud = landscape_phone
     touch_screen_mode = narrow or has_touchscreen
     hud_panel.custom_minimum_size.x = minf(360.0, maxf(0.0, viewport_width - 30.0)) if mobile_hud_layout else 360.0
     progress_bar.custom_minimum_size.x = hud_panel.custom_minimum_size.x
@@ -1777,48 +1780,87 @@ func _use_turbo() -> void:
         turbo_left = 5.0
         _refresh_hud()
 
+# On short landscape phones the old four-to-seven-line HUD overlapped the
+# mission progress bar and blocked the rider. Keep three readable lines while
+# preserving world objectives and urgent boss telegraphs.
+func _compact_landscape_hud_text() -> String:
+    var first := "%s L%d XP%d E%d%% Kx%d %dm" % [VERSION_LABEL, lives, xp, power, combo, int(distance)]
+    var world_short: String = ["NEON", "CANYON", "HAFEN", "AURORA"][world_choice]
+    var second := "%s R%d  %d/%dm  SCH %ds BOOST %ds" % [world_short, round_number, int(distance), int(mission_target), ceili(shield_left), ceili(turbo_left)]
+    var status := ""
+    match world_choice:
+        0:
+            status = "TORE %d/%d KETTE %d/6 PRAEZ %d/6" % [mini(int(skyway_zone.call("get_signal_count")), NEON_SIGNAL_TARGET), NEON_SIGNAL_TARGET, int(skyway_zone.call("get_signal_streak")), int(skyway_zone.call("get_signal_precision_count"))]
+            if neon_active:
+                status = "BOSS %d/%d AUSW %d/3 %s" % [neon_hp, NEON_BOSS_HEALTH, mini(neon_dodge_streak, 3), "KONTER!" if neon_parry_armed else ("SWEEP!" if neon_warning_left > 0.0 else "ANGRIFF")]
+        1:
+            status = "PFADE %d/%d WECHSEL %d/4" % [mini(int(canyon_zone.get("completed_routes")), CANYON_ROUTE_TARGET), CANYON_ROUTE_TARGET, int(canyon_zone.call("get_switchback_chain"))]
+            if guardian_active:
+                status = "WAECHTER %d/%d %s" % [guardian_hp, GUARDIAN_HEALTH, "LASER!" if guardian_warning_left > 0.0 else "ANGRIFF"]
+        2:
+            status = "KRIST %d/%d DOCK %d/%d LUFT %d/5" % [mini(harbor_crystals, HARBOR_BONUS_TARGET), HARBOR_BONUS_TARGET, mini(int(harbor_zone.call("get_cargo_deliveries")), HARBOR_RELAY_TARGET), HARBOR_RELAY_TARGET, int(harbor_zone.call("get_cargo_aerial_deliveries"))]
+            if orbit_active:
+                status = "ORBIT %d/%d %s" % [orbit_hp, ORBIT_HEALTH, "PLASMA!" if orbit_warning_left > 0.0 else "ANGRIFF"]
+        3:
+            status = "TORE %d/%d WIND %d/%d LUFT %d/4" % [mini(int(glacier_zone.get("completed_gates")), GLACIER_BONUS_TARGET), GLACIER_BONUS_TARGET, mini(int(glacier_zone.call("get_aurora_stream_count")), AURORA_SLIPSTREAM_TARGET), AURORA_SLIPSTREAM_TARGET, int(glacier_zone.call("get_aurora_aerial_catches"))]
+            if frost_active:
+                status = "FROST %d/%d %s" % [frost_hp, FROST_HEALTH, "EISWELLE!" if frost_warning_left > 0.0 else "ANGRIFF"]
+    return first + "\n" + second + "\n" + status
+
 func _refresh_hud() -> void:
     if hud != null:
-        if mobile_hud_layout:
-            hud.text = "%s  L%d  XP%d  SAUBER %d/3  LUFT %d/3\nENERGIE %d%%  KOMBO x%d  %dm" % [VERSION_LABEL, lives, xp, clean_flight_count, aerial_energy_count, power, combo, int(distance)]
+        if compact_landscape_hud and phase == "race":
+            hud.text = _compact_landscape_hud_text()
         else:
-            hud.text = "SKYWAY %s   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm   SAUBER %d/3   LUFT %d/3" % [VERSION_LABEL, lives, xp, power, combo, int(distance), clean_flight_count, aerial_energy_count]
-        if phase == "race":
-            hud.text += "\n%s  RUNDE %d  ZIEL %dm  SCHILD %ds  BOOST %ds" % [WORLD_NAMES[world_choice], round_number, int(mission_target), ceili(shield_left), ceili(turbo_left)]
-            if world_choice == 0:
-                hud.text += "\nNEON-SIGNALE %d/%d  KETTE %d/6  PRAEZ %d/6  %s" % [mini(int(skyway_zone.call("get_signal_count")), NEON_SIGNAL_TARGET), NEON_SIGNAL_TARGET, int(skyway_zone.call("get_signal_streak")), int(skyway_zone.call("get_signal_precision_count")), "PERFEKT!" if bool(skyway_zone.call("get_signal_perfect_run")) else "TORE TREFFEN"]
-                if neon_active:
+            if mobile_hud_layout:
+                hud.text = "%s  L%d  XP%d  SAUBER %d/3  LUFT %d/3\nENERGIE %d%%  KOMBO x%d  %dm" % [VERSION_LABEL, lives, xp, clean_flight_count, aerial_energy_count, power, combo, int(distance)]
+            else:
+                hud.text = "SKYWAY %s   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm   SAUBER %d/3   LUFT %d/3" % [VERSION_LABEL, lives, xp, power, combo, int(distance), clean_flight_count, aerial_energy_count]
+            if phase == "race":
+                hud.text += "\n%s  RUNDE %d  ZIEL %dm  SCHILD %ds  BOOST %ds" % [WORLD_NAMES[world_choice], round_number, int(mission_target), ceili(shield_left), ceili(turbo_left)]
+                if world_choice == 0:
+                    hud.text += "\nNEON-SIGNALE %d/%d  KETTE %d/6  PRAEZ %d/6  %s" % [mini(int(skyway_zone.call("get_signal_count")), NEON_SIGNAL_TARGET), NEON_SIGNAL_TARGET, int(skyway_zone.call("get_signal_streak")), int(skyway_zone.call("get_signal_precision_count")), "PERFEKT!" if bool(skyway_zone.call("get_signal_perfect_run")) else "TORE TREFFEN"]
+                    if neon_active:
+                        if mobile_hud_layout:
+                            # Short enough for the narrow 16:9/19.5:9 phone HUD.
+                            hud.text += "\nBOSS %d/%d  AUSWEICH %d/3  %s" % [
+                                neon_hp, NEON_BOSS_HEALTH, mini(neon_dodge_streak, 3),
+                                "KONTER!" if neon_parry_armed else ("SWEEP!" if neon_warning_left > 0.0 else "ANGRIFF")]
+                        else:
+                            hud.text += "\nNEON-DIRIGENT %d/%d  AUSWEICH %d/3  %s" % [
+                                neon_hp, NEON_BOSS_HEALTH, mini(neon_dodge_streak, 3),
+                                "KONTER BEREIT!" if neon_parry_armed else ("PINKER SWEEP!" if neon_warning_left > 0.0 else "ATTACKE LADEN")]
+                if world_choice == 1:
+                    hud.text += "\nKRISTALL-PFADE %d/%d  WECHSEL: %d/4  LINKS: ENERGIE  RECHTS: XP" % [
+                        mini(int(canyon_zone.get("completed_routes")), CANYON_ROUTE_TARGET),
+                        CANYON_ROUTE_TARGET, int(canyon_zone.call("get_switchback_chain"))]
+                if guardian_active and world_choice == 1:
+                    hud.text += "\nKRISTALL-WÄCHTER %d/%d  %s" % [guardian_hp, GUARDIAN_HEALTH, "LASER!" if guardian_warning_left > 0.0 else "ANGRIFF LADEN"]
+                if world_choice == 2:
+                    hud.text += "\nHAFEN-MISSION: %d/%d ENERGIEKRISTALLE" % [mini(harbor_crystals, HARBOR_BONUS_TARGET), HARBOR_BONUS_TARGET]
+                    hud.text += "\nFRACHT-RELAIS %d/%d  SERIE: %d/5  PRAEZ: %d/5" % [mini(int(harbor_zone.call("get_cargo_deliveries")), HARBOR_RELAY_TARGET), HARBOR_RELAY_TARGET, int(harbor_zone.call("get_cargo_streak")), int(harbor_zone.call("get_cargo_precision_deliveries"))]
+                    hud.text += "\nLUFTFRACHT: %d/5  SPRINGE AM DOCK!" % int(harbor_zone.call("get_cargo_aerial_deliveries"))
+                    if orbit_active:
+                        hud.text += "\nORBIT-WÄCHTER %d/%d  %s" % [orbit_hp, ORBIT_HEALTH, "PLASMA!" if orbit_warning_left > 0.0 else "ATTACKE LADEN"]
+                if world_choice == 3:
+                    var aurora_progress := [mini(int(glacier_zone.get("completed_gates")), GLACIER_BONUS_TARGET), GLACIER_BONUS_TARGET, mini(int(glacier_zone.call("get_aurora_stream_count")), AURORA_SLIPSTREAM_TARGET), AURORA_SLIPSTREAM_TARGET, int(glacier_zone.call("get_aurora_streak")), int(glacier_zone.call("get_aurora_aerial_catches"))]
+                    # Mobile HUD stays inside the narrow 360px landscape panel.
+                    # The extra airborne goal must not push buttons off-screen.
                     if mobile_hud_layout:
-                        # Short enough for the narrow 16:9/19.5:9 phone HUD.
-                        hud.text += "\nBOSS %d/%d  AUSWEICH %d/3  %s" % [
-                            neon_hp, NEON_BOSS_HEALTH, mini(neon_dodge_streak, 3),
-                            "KONTER!" if neon_parry_armed else ("SWEEP!" if neon_warning_left > 0.0 else "ANGRIFF")]
+                        hud.text += "\nSPRUNG %d/%d  WINDSTROM: %d/%d\nKETTE: %d/4  LUFT: %d/4" % aurora_progress
                     else:
-                        hud.text += "\nNEON-DIRIGENT %d/%d  AUSWEICH %d/3  %s" % [
-                            neon_hp, NEON_BOSS_HEALTH, mini(neon_dodge_streak, 3),
-                            "KONTER BEREIT!" if neon_parry_armed else ("PINKER SWEEP!" if neon_warning_left > 0.0 else "ATTACKE LADEN")]
-            if world_choice == 1:
-                hud.text += "\nKRISTALL-PFADE %d/%d  WECHSEL: %d/4  LINKS: ENERGIE  RECHTS: XP" % [
-                    mini(int(canyon_zone.get("completed_routes")), CANYON_ROUTE_TARGET),
-                    CANYON_ROUTE_TARGET, int(canyon_zone.call("get_switchback_chain"))]
-            if guardian_active and world_choice == 1:
-                hud.text += "\nKRISTALL-WÄCHTER %d/%d  %s" % [guardian_hp, GUARDIAN_HEALTH, "LASER!" if guardian_warning_left > 0.0 else "ANGRIFF LADEN"]
-            if world_choice == 2:
-                hud.text += "\nHAFEN-MISSION: %d/%d ENERGIEKRISTALLE" % [mini(harbor_crystals, HARBOR_BONUS_TARGET), HARBOR_BONUS_TARGET]
-                hud.text += "\nFRACHT-RELAIS %d/%d  SERIE: %d/5  PRAEZ: %d/5" % [mini(int(harbor_zone.call("get_cargo_deliveries")), HARBOR_RELAY_TARGET), HARBOR_RELAY_TARGET, int(harbor_zone.call("get_cargo_streak")), int(harbor_zone.call("get_cargo_precision_deliveries"))]
-                hud.text += "\nLUFTFRACHT: %d/5  SPRINGE AM DOCK!" % int(harbor_zone.call("get_cargo_aerial_deliveries"))
-                if orbit_active:
-                    hud.text += "\nORBIT-WÄCHTER %d/%d  %s" % [orbit_hp, ORBIT_HEALTH, "PLASMA!" if orbit_warning_left > 0.0 else "ATTACKE LADEN"]
-            if world_choice == 3:
-                var aurora_progress := [mini(int(glacier_zone.get("completed_gates")), GLACIER_BONUS_TARGET), GLACIER_BONUS_TARGET, mini(int(glacier_zone.call("get_aurora_stream_count")), AURORA_SLIPSTREAM_TARGET), AURORA_SLIPSTREAM_TARGET, int(glacier_zone.call("get_aurora_streak")), int(glacier_zone.call("get_aurora_aerial_catches"))]
-                # Mobile HUD stays inside the narrow 360px landscape panel.
-                # The extra airborne goal must not push buttons off-screen.
-                if mobile_hud_layout:
-                    hud.text += "\nSPRUNG %d/%d  WINDSTROM: %d/%d\nKETTE: %d/4  LUFT: %d/4" % aurora_progress
-                else:
-                    hud.text += "\nAURORA-SPRUNGTORE: %d/%d  WINDSTROM: %d/%d  KETTE: %d/4  LUFT: %d/4" % aurora_progress
-                if frost_active:
-                    hud.text += "\nFROST-DRACHE %d/%d  %s" % [frost_hp, FROST_HEALTH, "EISWELLE!" if frost_warning_left > 0.0 else "ATTACKE LADEN"]
+                        hud.text += "\nAURORA-SPRUNGTORE: %d/%d  WINDSTROM: %d/%d  KETTE: %d/4  LUFT: %d/4" % aurora_progress
+                    if frost_active:
+                        hud.text += "\nFROST-DRACHE %d/%d  %s" % [frost_hp, FROST_HEALTH, "EISWELLE!" if frost_warning_left > 0.0 else "ATTACKE LADEN"]
+    # Godot containers can retain a taller prior label size after a resize.
+    # Shrink the actual panel to its current three-line contents, then place
+    # mission progress below its measured bottom rather than at a fixed y=91.
+    if hud_panel != null and progress_bar != null:
+        if compact_landscape_hud and phase == "race":
+            hud_panel.reset_size()
+            progress_bar.position.y = maxf(91.0, hud_panel.position.y + hud_panel.size.y + 9.0)
+        else:
+            progress_bar.position.y = 91.0
     if progress_bar != null:
         progress_bar.visible = phase == "race"
         progress_bar.max_value = mission_target

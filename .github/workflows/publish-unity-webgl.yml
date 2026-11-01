@@ -298,28 +298,28 @@ jobs:
           python - <<'PY'
           from urllib.error import HTTPError
           from urllib.request import Request, urlopen
-          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v145/index.html"
+          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v146/index.html"
           try:
               with urlopen(Request(url, headers={"Cache-Control": "no-cache"}), timeout=20):
-                  raise SystemExit("Skyway V145 already exists: refusing to overwrite an immutable release")
+                  raise SystemExit("Skyway V146 already exists: refusing to overwrite an immutable release")
           except HTTPError as error:
               if error.code != 404:
                   raise
-          print("Skyway V145 is not published yet; safe to create")
+          print("Skyway V146 is not published yet; safe to create")
           PY
           # Each release gets a fresh URL; historical folders are never rebuilt from newer exports.
-          mkdir -p _site/skyway-v145
-          cp -a _site/godot/. _site/skyway-v145/
-          echo "$GITHUB_SHA" > _site/skyway-v145/build.txt
+          mkdir -p _site/skyway-v146
+          cp -a _site/godot/. _site/skyway-v146/
+          echo "$GITHUB_SHA" > _site/skyway-v146/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
-          echo "Archived previous versions and prepared immutable Skyway V145"
+          echo "Archived previous versions and prepared immutable Skyway V146"
       - name: Check browser export integrity
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          root = Path("_site/skyway-v145")
+          root = Path("_site/skyway-v146")
           for name in ("index.html", "index.js", "index.wasm", "index.pck"):
               file = root / name
               if not file.is_file() or file.stat().st_size == 0:
@@ -499,7 +499,7 @@ jobs:
           name: learnquest-v144-harbor-skycranes-release-qa
           path: /tmp/learnquest-skycranes-qa/*.png
           if-no-files-found: error
-      - name: Render V145 actual game chase camera before-after in both phone landscape ratios
+      - name: Render V146 actual game chase camera before-after in both phone landscape ratios
         shell: bash
         run: |
           set -euo pipefail
@@ -510,11 +510,11 @@ jobs:
             --script res://landscape_chase_visual_capture_test.gd 2>&1 | tee /tmp/godot-landscape-chase-visual.log
           grep -Fq 'LANDSCAPE CHASE VISUAL QA PASSED' /tmp/godot-landscape-chase-visual.log
           test "$(find /tmp/learnquest-chase-qa -name '*.png' | wc -l)" -eq 12
-      - name: Upload V145 actual chase camera landscape QA
+      - name: Upload V146 actual chase camera landscape QA
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: learnquest-v145-chase-camera-release-qa
+          name: learnquest-v146-chase-camera-release-qa
           path: /tmp/learnquest-chase-qa/*.png
           if-no-files-found: error
       - name: Check Pages configuration
@@ -562,7 +562,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request, urllib.error
-          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v145/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v146/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.js": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
