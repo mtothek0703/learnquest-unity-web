@@ -455,8 +455,8 @@ func _check() -> void:
         # sculpted volume, rather than a nearly flat decorative strip.
         var forward_crest: Vector3 = vanes.call("_fin_point", side, 0.15, PI * 0.5)
         var aft_crest: Vector3 = vanes.call("_fin_point", side, 0.85, PI * 0.5)
-        if aft_crest.y - forward_crest.y < 0.12 or absf(aft_crest.x) < absf(forward_crest.x) + 0.12:
-            _fail("closed aerofoil needs a visible rising, outboard swept aft crest")
+        if aft_crest.y - forward_crest.y < 0.19 or absf(aft_crest.x) < absf(forward_crest.x) + 0.12:
+            _fail("tall swept stabilizer needs at least 0.19 units of aft crest rise and outboard rake")
             return
         for t in [0.15, 0.5, 0.85]:
             var left: Vector3 = vanes.call("_fin_point", -side, t, PI * 0.5)
