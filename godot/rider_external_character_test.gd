@@ -24,6 +24,13 @@ func _check() -> void:
     if not imported.visible or legacy.visible:
         _fail("only real imported CC0 character may be visible when selected")
         return
+    var compact_board := rider.get_node_or_null("LegacyRider/Floating hoverboard") as Node3D
+    if compact_board == null or compact_board.scale.distance_to(Vector3(0.80, 1.0, 0.90)) > 0.001:
+        _fail("CC0-only compact hoverboard footprint not applied")
+        return
+    if compact_board.find_children("*", "CollisionObject3D", true, false).size() > 0:
+        _fail("compact visual board must not add physics collisions")
+        return
     # CC0 opt-in keeps the original aerial mesh, but constrains its
     # enormous striped jump ribbons to subtle shoulder-side streaks.
     var aerial := rider.get_node_or_null("Cinematic aerial choreography") as Node3D
