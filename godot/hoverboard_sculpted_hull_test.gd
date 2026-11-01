@@ -503,6 +503,53 @@ func _check() -> void:
     if starboard_signal.emission_energy_multiplier < port_signal.emission_energy_multiplier + 0.25:
         _fail("right carve must brighten the starboard fin")
         return
+    # The new dual-axis deployment must move the actual outside 3D wing
+    # upward/outward and pitch it, without frame-rate-dependent movement.
+    var lift_30 := 0.0
+    var span_30 := 0.0
+    var pitch_30 := 0.0
+    var hue_30 := Color.BLACK
+    for fps in [30, 60]:
+        for i in range(2):
+            var hinge := hinges[i] as Node3D
+            var side := -1.0 if i == 0 else 1.0
+            hinge.position = Vector3(side * 1.09, 0.59, 0.22)
+            hinge.rotation.x = 0.0
+            (signals[i] as StandardMaterial3D).emission = Color("#25c7e9")
+        for frame in range(3 if fps == 30 else 6):
+            vanes.call("update_state", 0.9, true, 1.0 / float(fps))
+        var outside_fin := hinges[1] as Node3D
+        var inside_fin := hinges[0] as Node3D
+        if outside_fin.position.y < inside_fin.position.y + 0.045 or \
+                outside_fin.position.x < 1.11 or \
+                outside_fin.rotation.x > inside_fin.rotation.x - 0.065:
+            _fail("outside 3D fin must rise, extend and pitch during a boost carve")
+            return
+        var hue := (signals[1] as StandardMaterial3D).emission
+        if hue.r < 0.30 or hue.b < 0.85:
+            _fail("outside fin needs a visible, smoothly blended purple signal")
+            return
+        if fps == 30:
+            lift_30 = outside_fin.position.y
+            span_30 = outside_fin.position.x
+            pitch_30 = outside_fin.rotation.x
+            hue_30 = hue
+        elif absf(outside_fin.position.y - lift_30) > 0.002 or \
+                absf(outside_fin.position.x - span_30) > 0.002 or \
+                absf(outside_fin.rotation.x - pitch_30) > 0.002 or \
+                hue.distance_to(hue_30) > 0.005:
+            _fail("two-axis fin deployment or color changes with 30/60 FPS")
+            return
+    for frame in range(60):
+        vanes.call("update_state", 0.0, false, 1.0 / 60.0)
+    for i in range(2):
+        var hinge := hinges[i] as Node3D
+        var side := -1.0 if i == 0 else 1.0
+        if absf(hinge.position.y - 0.59) > 0.003 or \
+                absf(hinge.position.x - side * 1.09) > 0.003 or \
+                absf(hinge.rotation.x + 0.09) > 0.003:
+            _fail("dual-axis fin must return to its compact idle stance")
+            return
     if not vanes.find_children("*", "CollisionObject3D", true, false).is_empty():
         _fail("articulated board art must never change collision or touch controls")
         return
