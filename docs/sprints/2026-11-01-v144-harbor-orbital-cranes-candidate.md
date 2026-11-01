@@ -24,3 +24,9 @@
 
 ## Track B
 PR #111 remains a separate experiment and must not be merged without a genuine whole-character visual improvement. Its title does not reserve a version number.
+
+## First actual CI / image review and correction
+- Initial candidate headless 3D geometry, scrolling, pause and Web export passed, but the first real landscape QA failed the stricter 1170×540 chase visibility gate: **52 sampled changed pixels**, below required 65. The [original partial images](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41306192702/artifacts/13083755468) were downloaded and visually inspected: the rings and supports were tiny against the existing harbor skyline. **Not acceptable as a stable visible improvement.**
+- The existing V122 isolated drydock QA also fell from its >=65 sample gate to 63 due to new scenery occlusion. Corrected V122 and V123 historical before/after QA to temporarily hide only the later V144 cranes, preserving the original strict pixel thresholds. The new V144 comparison still renders the complete combined harbor.
+- Sculpt revision: move cranes from x=±11.4 to ±9.8, foreground the first root from z=-19 to -12, tighten spacing to 32, enlarge true tubular supports, 3D halos and freight pods. Foundations remain outside the race lanes; no new collision bodies.
+- [ ] Re-run full CI and inspect revised eight landscape frames before any merge. **V144 is not published yet.**
