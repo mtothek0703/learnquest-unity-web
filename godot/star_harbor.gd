@@ -11,6 +11,7 @@ var carrier_hulls: Array[Node3D] = []
 var carrier_rings: Array[Node3D] = []
 var carrier_engines: Array[MeshInstance3D] = []
 var cinematic_drydocks: Node3D
+var cinematic_skycranes: Node3D
 var cargo_relay: Node3D
 
 func _ready() -> void:
@@ -18,6 +19,9 @@ func _ready() -> void:
     cinematic_drydocks = preload("res://cinematic_harbor_drydocks.gd").new() as Node3D
     cinematic_drydocks.name = "Cinematic Star Harbor loading drydocks"
     add_child(cinematic_drydocks)
+    cinematic_skycranes = preload("res://cinematic_harbor_skycranes.gd").new() as Node3D
+    cinematic_skycranes.name = "Cinematic Star Harbor orbital cargo cranes"
+    add_child(cinematic_skycranes)
     cargo_relay = preload("res://harbor_cargo_relay.gd").new() as Node3D
     cargo_relay.name = "Playable Star Harbor cargo relay"
     add_child(cargo_relay)
@@ -295,6 +299,9 @@ func _process(delta: float) -> void:
     if cinematic_drydocks != null:
         cinematic_drydocks.set("running", running)
         cinematic_drydocks.set("travel_speed", travel_speed)
+    if cinematic_skycranes != null:
+        cinematic_skycranes.set("running", running)
+        cinematic_skycranes.set("travel_speed", travel_speed)
     elapsed += delta
     for index in range(rotors.size()):
         rotors[index].rotation.y += delta * (0.55 + float(index % 3) * 0.16)
