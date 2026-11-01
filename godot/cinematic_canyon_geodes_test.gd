@@ -75,5 +75,54 @@ func _check() -> void:
     if not is_equal_approx(reefs[0].position.z, paused_z) or not is_equal_approx(shards[0].rotation.y, paused_rotation):
         _fail("scenery must pause during the three English vocabulary tasks")
         return
+    # V142 candidate: the four monumental arches are genuine 3D, do not
+    # block the racing lanes, and pause with the three-question quiz.
+    var bridge_scene := canyon.get_node_or_null("Cinematic canyon sky bridges") as Node3D
+    if bridge_scene == null:
+        _fail("sculpted canyon bridges missing from the actual world")
+        return
+    var bridges: Array = bridge_scene.get("bridges")
+    var spans: Array = bridge_scene.get("rock_spans")
+    var pendants: Array = bridge_scene.get("pendant_batches")
+    if bridges.size() != 4 or spans.size() != 4 or pendants.size() != 4:
+        _fail("four complete bridge assemblies expected")
+        return
+    for index in range(4):
+        var span := spans[index] as MeshInstance3D
+        var glints := pendants[index] as MultiMeshInstance3D
+        if span == null or not span.mesh is ArrayMesh or glints == null or glints.multimesh == null:
+            _fail("missing continuous sculpted arch or batched crystal pendants")
+            return
+        var mesh := span.mesh as ArrayMesh
+        var arrays: Array = mesh.surface_get_arrays(0)
+        var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+        var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+        var colors: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
+        if verts.size() < 700 or normals.size() != verts.size() or colors.size() != verts.size():
+            _fail("bridges need dense real 3D faceted surfaces and normals")
+            return
+        if mesh.get_aabb().size.x < 21.0 or mesh.get_aabb().size.y < 5.0 or mesh.get_aabb().size.z < 2.8:
+            _fail("bridge silhouette lacks overhead span and depth")
+            return
+        if mesh.get_aabb().position.y < 7.3 or glints.multimesh.instance_count != 7:
+            _fail("bridge clearance or seven hanging crystals invalid")
+            return
+    if bridge_scene.find_children("*", "CollisionObject3D", true, false).size() != 0:
+        _fail("decorative sky bridges must not introduce collisions")
+        return
+    var bridge_start: float = bridges[0].position.z
+    bridge_scene.set("running", true)
+    bridge_scene.set("travel_speed", 12.0)
+    bridge_scene.call("_process", 0.25)
+    if not is_equal_approx(bridges[0].position.z, bridge_start + 3.0):
+        _fail("sky bridges must scroll with the racing level")
+        return
+    bridge_scene.set("running", false)
+    var bridge_pause: float = bridges[0].position.z
+    bridge_scene.call("_process", 0.5)
+    if not is_equal_approx(bridges[0].position.z, bridge_pause):
+        _fail("sky bridges must pause during English questions")
+        return
+    print("CANYON SKY BRIDGES TEST PASSED: four sculpted spans, 28 instanced crystal keystones, safe clearance and pause")
     print("CANYON GEODES TEST PASSED: ten sculpted 360-degree reefs, twenty animated shards, no collisions, safe lanes and pause")
     quit(0)
