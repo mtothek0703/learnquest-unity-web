@@ -61,9 +61,21 @@ func _check() -> void:
             absf(left_spread - right_spread) > 0.30:
         _fail("compact balanced shoulder surf silhouette is missing (rest-relative L/R: %.3f / %.3f)" % [left_spread, right_spread])
         return
-    if left_spread < 1.25 or left_spread > 1.70 or \
-            right_spread < 1.25 or right_spread > 1.70:
+    if left_spread < 1.48 or left_spread > 1.72 or \
+            right_spread < 1.48 or right_spread > 1.72:
         _fail("neutral original-skinned shoulders must form a compact mobile chase silhouette (rest-relative L/R: %.3f / %.3f)" % [left_spread, right_spread])
+        return
+    # Check the actual source-relative imported elbows, not absolute bone
+    # quaternions. Both arms must bend into a riding silhouette while the
+    # original 65-bone Skin remains the sole deformation source.
+    if not source_rotations.has(elbow_id) or not source_rotations.has(right_elbow_id):
+        _fail("missing original CC0 elbow pose references")
+        return
+    var left_elbow_bend := (source_rotations[elbow_id] as Quaternion).angle_to(neutral_elbow)
+    var right_elbow_bend := (source_rotations[right_elbow_id] as Quaternion).angle_to(neutral_right_elbow)
+    if left_elbow_bend < 0.66 or right_elbow_bend < 0.66 or \\
+            absf(left_elbow_bend - right_elbow_bend) > 0.16:
+        _fail("both source-skinned elbows must form symmetric compact riding bends (L/R: %.3f / %.3f)" % [left_elbow_bend, right_elbow_bend])
         return
     if neutral_elbow.get_angle() < 0.45 or neutral_right_elbow.get_angle() < 0.45:
         _fail("both original elbows must remain clearly flexed")
