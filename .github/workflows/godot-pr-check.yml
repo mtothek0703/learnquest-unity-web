@@ -30,6 +30,8 @@ jobs:
           /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path godot --quit 2>&1 | tee /tmp/import.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://smoke_test.gd 2>&1 | tee /tmp/gameplay.log
           grep -Fq 'LEARNQUEST SMOKE TEST PASSED' /tmp/gameplay.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://landscape_chase_camera_test.gd 2>&1 | tee /tmp/landscape-chase-camera.log
+          grep -Fq 'LANDSCAPE CHASE CAMERA TEST PASSED' /tmp/landscape-chase-camera.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://flawless_vocabulary_launch_test.gd 2>&1 | tee /tmp/flawless-vocabulary.log
           grep -Fq 'FLAWLESS VOCABULARY LAUNCH TEST PASSED' /tmp/flawless-vocabulary.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://clean_flight_mastery_test.gd 2>&1 | tee /tmp/clean-flight.log
@@ -312,6 +314,24 @@ jobs:
             --script res://cinematic_harbor_skycranes_visual_capture_test.gd 2>&1 | tee /tmp/harbor-skycranes-visual.log
           grep -Fq 'HARBOR SKYCRANES VISUAL QA PASSED' /tmp/harbor-skycranes-visual.log
           test "$(find /tmp/learnquest-skycranes-qa -name '*.png' | wc -l)" -eq 8
+      - name: Render actual V145 candidate gameplay chase framing at two phone ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-chase-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_CHASE_OUTPUT=/tmp/learnquest-chase-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://landscape_chase_visual_capture_test.gd 2>&1 | tee /tmp/landscape-chase-visual.log
+          grep -Fq 'LANDSCAPE CHASE VISUAL QA PASSED' /tmp/landscape-chase-visual.log
+          test "$(find /tmp/learnquest-chase-qa -name '*.png' | wc -l)" -eq 12
+      - name: Upload V145 candidate actual chase camera before-after
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v145-chase-camera-before-after
+          path: /tmp/learnquest-chase-qa/*.png
+          if-no-files-found: ignore
       - name: Upload V144 orbital crane landscape frames
         if: always()
         uses: actions/upload-artifact@v4

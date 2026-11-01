@@ -2359,7 +2359,7 @@ func _run_checks() -> void:
     if mobile_hud == null or hud_panel == null:
         _fail("Race HUD or its panel is missing")
         return
-    if not mobile_hud.text.contains("V144") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
+    if not mobile_hud.text.contains("V145") or not mobile_hud.text.contains("\n") or not mobile_hud.text.contains("KOMBO x0"):
         _fail("Phone portrait HUD must display version, stats and combo on separate lines")
         return
     if hud_panel.custom_minimum_size.x > 360.0:
@@ -2369,7 +2369,7 @@ func _run_checks() -> void:
     if controls.columns != 4:
         _fail("Desktop controls must return to one row")
         return
-    if not mobile_hud.text.contains("SKYWAY V144") or mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("SKYWAY V145") or mobile_hud.text.contains("\n"):
         _fail("Desktop HUD must return to its single-line layout")
         return
     game.call("_start_game")
@@ -2508,7 +2508,7 @@ func _run_checks() -> void:
     # V59: an iPhone in landscape is wider than 720px but still needs the
     # optional gesture-only mode. Simulate touch hardware in headless CI.
     game.call("_apply_mobile_layout", 844.0, 1, 390.0)
-    if not mobile_hud.text.contains("V144") or not mobile_hud.text.contains("\n"):
+    if not mobile_hud.text.contains("V145") or not mobile_hud.text.contains("\n"):
         _fail("Landscape-first phone layout must use a compact two-line HUD")
         return
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
@@ -2612,11 +2612,11 @@ func _run_checks() -> void:
         return
     game.call("_start_game")
     game.call("_update_camera", 1.0)
-    if portrait_camera.position.z <= 6.0 or portrait_camera.fov < 62.0:
+    if portrait_camera.position.z <= 8.2 or portrait_camera.position.z >= 8.8 or portrait_camera.fov < 62.0 or portrait_camera.fov > 64.0:
         _fail("Racing must transition back to the playable chase camera")
         return
     var hud := game.get("hud") as Label
-    if hud == null or not hud.text.contains("SKYWAY V144") or not hud.text.contains("KOMBO x0"):
+    if hud == null or not hud.text.contains("SKYWAY V145") or not hud.text.contains("KOMBO x0"):
         _fail("Race HUD must show the current version and starting combo")
         return
     if not bool(game.get("started")):
@@ -2671,7 +2671,7 @@ func _run_checks() -> void:
         _fail("Chase camera missing")
         return
     game.call("_update_camera", 0.2)
-    if camera.fov < 63.0:
+    if camera.fov < 62.0 or camera.fov > 64.0:
         _fail("Camera field of view is invalid")
         return
     game.call("_ask")
