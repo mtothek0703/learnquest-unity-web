@@ -40,7 +40,7 @@ func _check() -> void:
     # without hiding the real 65-bone torso, legs, or hoverboard.
     var wing_reach := float(mantle.get("wing_reach"))
     var source_width := source.mesh.get_aabb().size.x
-    if wing_reach < source_width * 0.19 or wing_reach > source_width * 0.225:
+    if wing_reach < source_width * 0.175 or wing_reach > source_width * 0.205:
         _fail("compact coat fins must not become detached airplane wings")
         return
     var active_leg_binds := 0
@@ -186,10 +186,10 @@ func _check() -> void:
         if root_samples < 10 or hem_samples < 10:
             _fail("mantle must have sampled shoulder and wing-tip rows")
             return
-        if mid_max - mid_min > source_width * 0.16:
+        if mid_max - mid_min > source_width * 0.12:
             _fail("split mantle must no longer read as oversized airplane wings")
             return
-        if mid_max - mid_min < source_width * 0.135:
+        if mid_max - mid_min < source_width * 0.095:
             _fail("sculpted four-weight mantle must have a readable chase midspan, not a thin flat strip")
             return
         if mid_max - mid_min < (root_max - root_min) * 1.75:
