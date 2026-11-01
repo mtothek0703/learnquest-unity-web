@@ -3,6 +3,8 @@ extends Node
 ## imported hero's GPU-skinned jacket triangles. They are NOT rigid plates:
 ## every new vertex inherits interpolated weights from the original CC0 Skin.
 ## Panels follow chest/spine/shoulder poses without adding collision shapes.
+## Nov 1 tailoring trial: narrow the REAL clipped chest/back panels by 15-25%,
+## replace glossy cobalt with matte graphite-blue, preserve all source Skin binds.
 var panels: Array[MeshInstance3D] = []
 var vertex_counts: Array[int] = []
 
@@ -14,13 +16,13 @@ func install(jacket: MeshInstance3D, face_sign: float) -> bool:
     var specs := [
         {"name": "SkinnedLeftPectoral", "left": -0.37, "right": -0.025,
             "low": 0.22, "high": 0.88, "front": true,
-            "color": Color(0.055, 0.19, 0.49)},
+            "color": Color(0.045, 0.12, 0.34)},
         {"name": "SkinnedRightPectoral", "left": 0.025, "right": 0.37,
             "low": 0.22, "high": 0.88, "front": true,
-            "color": Color(0.055, 0.19, 0.49)},
+            "color": Color(0.045, 0.12, 0.34)},
         {"name": "SkinnedSpineShield", "left": -0.23, "right": 0.23,
             "low": 0.13, "high": 0.93, "front": false,
-            "color": Color(0.095, 0.08, 0.27)}
+            "color": Color(0.07, 0.09, 0.23)}
     ]
     for spec in specs:
         var mesh := _extract_panel(jacket.mesh, spec, face_sign)
@@ -35,8 +37,8 @@ func install(jacket: MeshInstance3D, face_sign: float) -> bool:
         var material := StandardMaterial3D.new()
         material.albedo_color = Color.WHITE
         material.vertex_color_use_as_albedo = true
-        material.metallic = 0.29
-        material.roughness = 0.47
+        material.metallic = 0.17
+        material.roughness = 0.61
         material.cull_mode = BaseMaterial3D.CULL_DISABLED
         part.material_override = material
         jacket.get_parent().add_child(part)
@@ -107,7 +109,7 @@ func _extract_panel(source: Mesh, spec: Dictionary, face_sign: float) -> ArrayMe
                         smoothstep(0.15, 0.40, v)
                     var border := exp(-pow((u - 0.075) / 0.065, 2.0)) + \
                         exp(-pow((u - 0.925) / 0.065, 2.0))
-                    var color := base_color.lerp(Color(0.09, 0.62, 0.86), clampf(vein * 0.42 + border * 0.16, 0.0, 0.58))
+                    var color := base_color.lerp(Color(0.10, 0.36, 0.48), clampf(vein * 0.42 + border * 0.16, 0.0, 0.58))
                     output.set_color(color)
                     output.set_normal(normal)
                     output.set_bones(vertex["bones"])
@@ -152,7 +154,7 @@ func _profile_edge(bounds: AABB, spec: Dictionary, right_edge: bool, y: float) -
         # The previous monotonically widening plate looked like a broad
         # horizontal shelf behind the head in the actual chase camera.
         var neckline_inset := smoothstep(0.70, 0.98, t)
-        var spine_width := 0.105 + 0.105 * shoulder - 0.070 * neckline_inset
+        var spine_width := 0.085 + 0.095 * shoulder - 0.060 * neckline_inset
         x_fraction = spine_width if right_edge else -spine_width
     else:
         # Keep the weighted chest panels full across the pectorals, but
@@ -160,7 +162,7 @@ func _profile_edge(bounds: AABB, spec: Dictionary, right_edge: bool, y: float) -
         # This is a CURVED cut through the original skinned jacket triangles,
         # not a second rigid shoulder prop or a material-only adjustment.
         var neckline_inset := smoothstep(0.70, 0.98, t)
-        var outer := 0.16 + 0.16 * shoulder - 0.105 * neckline_inset
+        var outer := 0.125 + 0.145 * shoulder - 0.105 * neckline_inset
         var inner := 0.038 + 0.009 * sin(PI * t)
         if float(spec["left"]) < 0.0:
             x_fraction = -inner if right_edge else -outer
