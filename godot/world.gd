@@ -1839,9 +1839,15 @@ func _update_camera(delta: float) -> void:
     if racing:
         # V145: bring the playable course and rider closer in smartphone landscape.
         # Preserve lane-follow, jump and Turbo widen-out; menu portrait is unchanged.
-        target_position = Vector3(rider.position.x * 0.36, 4.15 + rider.position.y * 0.25, 9.1 if boost else 7.75)
+        # Edge-lane riders project lower/larger because of the lateral camera
+        # angle. Pull back slightly when steering to preserve the entire board
+        # and ion wake on 19.5:9 phones, while keeping center-lane 3D large.
+        var edge_lane := clampf(absf(rider.position.x) / 3.1, 0.0, 1.0)
+        var normal_distance := lerpf(7.75, 8.15, edge_lane)
+        var normal_fov := lerpf(60.0, 61.0, edge_lane)
+        target_position = Vector3(rider.position.x * 0.36, 4.15 + rider.position.y * 0.25, 9.1 if boost else normal_distance)
         target_focus = Vector3(rider.position.x * 0.42, 1.5 + rider.position.y * 0.45, 0.5)
-        target_fov = 71.0 if boost else 60.0
+        target_fov = 71.0 if boost else normal_fov
     else:
         showcase_clock += delta
         # Frame the rider to the right of the central menu/quiz panel.
