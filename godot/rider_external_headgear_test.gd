@@ -93,6 +93,21 @@ func _check() -> void:
     if back_hair == null or back_hair.mesh == null or back_hair.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() < 1000:
         _fail("chase camera must have substantial curved back-hair geometry")
         return
+    # Athletic rear-hair trial: all existing hair volumes narrow around the
+    # actual Head-local center, but the 65-bone rig, helmet and readable face
+    # keep their original scale. This is geometry QA, NOT visual acceptance.
+    if absf(back_hair.scale.x - scale_factor * 0.82) > 0.003 or \
+            absf(back_hair.scale.z - scale_factor * 0.92) > 0.003:
+        _fail("rear hair curtain must be close-fitting in chase silhouette")
+        return
+    var crown_volume := crown_locks[0] as MeshInstance3D
+    if absf(crown_volume.scale.x - scale_factor * 0.92) > 0.003:
+        _fail("crown hair must taper less than the long rear curtain")
+        return
+    if absf(helmet.scale.x - scale_factor) > 0.003 or \
+            absf(visor.scale.x - scale_factor) > 0.003:
+        _fail("hair fitting may not shrink the face-framing helmet or visor")
+        return
     # Five broad sculpted locks replace nine narrow parallel striped ribbons.
     # Their broad faces should be much wider than their thickness at midspan.
     var rear_locks := headwear.find_children("WindSweptBackLock*", "MeshInstance3D", false, false)
