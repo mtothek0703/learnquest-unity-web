@@ -74,9 +74,13 @@ func update_visibility_profile(body: MeshInstance3D) -> void:
     integrated_rear_profile = complete
     for nacelle in nacelles:
         nacelle.visible = not complete
-    # The compact cores remain a visible, bone-weighted accent in either mode.
+    # Original pose-locked front/chase A/B frames show that the bright cyan
+    # shoulder cores create a detached toy-like silhouette even after the
+    # large nacelles were retired. Hide them only for a fully fitted source-
+    # skinned jacket/sleeves/mantle; keep both cores and nacelles available
+    # whenever the integrated outfit is incomplete (reversible fallback).
     for core in cores:
-        core.visible = true
+        core.visible = not complete
 
 func _bind(skin: Skin, rig: Skeleton3D, bone_name_text: String) -> int:
     for i in range(skin.get_bind_count()):
