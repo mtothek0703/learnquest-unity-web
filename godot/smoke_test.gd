@@ -2671,7 +2671,7 @@ func _run_checks() -> void:
         _fail("Chase camera missing")
         return
     game.call("_update_camera", 0.2)
-    if camera.fov < 63.0:
+    if camera.fov < 56.0 or camera.fov > 61.0:
         _fail("Camera field of view is invalid")
         return
     game.call("_ask")
