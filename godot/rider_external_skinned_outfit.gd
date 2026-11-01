@@ -308,6 +308,15 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
         smoothstep(0.17, 0.30, x)
     var spine_channel := dorsal * exp(-pow(lateral / 0.09, 2.0)) * \
         exp(-pow((y - 0.62) / 0.13, 2.0))
+    # Chase-view tailoring: two gently raised diagonal back panels converge
+    # toward the waist. Sculpt the ORIGINAL four-weight jacket triangles,
+    # never attach flat decals or rigid plates. Keep the central channel
+    # recessed so mobile lighting reveals the V rather than a barrel back.
+    var rear_v_path := 0.27 - 0.42 * (0.75 - y)
+    var rear_v := dorsal * exp(-pow((x - rear_v_path) / 0.044, 2.0)) * \
+        exp(-pow((y - 0.645) / 0.115, 2.0))
+    var rear_recess := dorsal * exp(-pow(lateral / 0.090, 2.0)) * \
+        exp(-pow((y - 0.625) / 0.115, 2.0))
     # A real athletic V-silhouette is sculpted into the SAME four-weight
     # imported triangles: full upper pectorals and deltoids, a tapered waist,
     # and a controlled central sternum ridge. The prior 0.03-unit shoulder
@@ -319,7 +328,8 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     var depth := 0.012 + 0.055 * chest + 0.040 * shoulder + \
         0.043 * chest_ridge + 0.027 * collar + 0.049 * pectoral + \
         0.025 * deltoid + 0.015 * spine_keel + \
-        0.043 * scapula + 0.026 * dorsal_shoulder + 0.016 * spine_channel
+        0.043 * scapula + 0.026 * dorsal_shoulder + 0.016 * spine_channel + \
+        0.031 * rear_v - 0.009 * rear_recess
     # Shoulder breadth and pectoral depth follow the actual imported Skin;
     # no rigid shoulder boxes or unweighted cosmetic torso are introduced.
     var waist_inset := 0.052 * waist * smoothstep(0.12, 0.35, x)
