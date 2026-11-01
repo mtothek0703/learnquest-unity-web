@@ -88,6 +88,8 @@ jobs:
           grep -Fq 'CANYON ROUTES TEST PASSED' /tmp/canyon-routes.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://cinematic_harbor_drydocks_test.gd 2>&1 | tee /tmp/harbor-drydocks.log
           grep -Fq 'HARBOR DRYDOCKS TEST PASSED' /tmp/harbor-drydocks.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://cinematic_harbor_skycranes_test.gd 2>&1 | tee /tmp/harbor-skycranes.log
+          grep -Fq 'HARBOR SKYCRANES TEST PASSED' /tmp/harbor-skycranes.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://harbor_cargo_relay_test.gd 2>&1 | tee /tmp/harbor-relay.log
           grep -Fq 'HARBOR CARGO RELAY TEST PASSED' /tmp/harbor-relay.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://neon_signal_chain_test.gd 2>&1 | tee /tmp/neon-signal-chain.log
@@ -299,6 +301,24 @@ jobs:
           name: learnquest-v123-harbor-cargo-relay-before-after
           path: /tmp/learnquest-relay-qa/*.png
           if-no-files-found: error
+      - name: Render V144 Star Harbor orbital cranes in both landscape ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-skycranes-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_SKYCRANES_OUTPUT=/tmp/learnquest-skycranes-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://cinematic_harbor_skycranes_visual_capture_test.gd 2>&1 | tee /tmp/harbor-skycranes-visual.log
+          grep -Fq 'HARBOR SKYCRANES VISUAL QA PASSED' /tmp/harbor-skycranes-visual.log
+          test "$(find /tmp/learnquest-skycranes-qa -name '*.png' | wc -l)" -eq 8
+      - name: Upload V144 orbital crane landscape frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v144-harbor-skycranes-before-after
+          path: /tmp/learnquest-skycranes-qa/*.png
+          if-no-files-found: error
       - name: Upload V122 Star Harbor drydock comparison frames
         if: always()
         uses: actions/upload-artifact@v4
@@ -390,6 +410,8 @@ jobs:
             /tmp/canyon-geodes.log
             /tmp/canyon-routes.log
             /tmp/harbor-drydocks.log
+            /tmp/harbor-skycranes.log
+            /tmp/harbor-skycranes-visual.log
             /tmp/harbor-relay.log
             /tmp/neon-conductor.log
             /tmp/aurora-slipstream.log
