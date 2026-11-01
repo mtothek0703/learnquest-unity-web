@@ -26,6 +26,22 @@ func set_visual_scale(factor: float) -> void:
             # Eye ellipsoids store their center in the node transform.
             part.position = center + (part.position - center) * factor
             part.scale *= factor
+    # Sculpt the rear hair as one close-fitting athletic silhouette. The
+    # previous broad, full-scale rear curtain and five weighted locks widened
+    # the chase-view head into a toy-like triangle. Compact only the existing
+    # rear/crown meshes around the sampled Head center, BEFORE their original
+    # four-weight CC0 Skin copies are fitted. Keep face, eyes, helmet and
+    # original Head bone at the readable 1.82 landscape scale.
+    # No new geometry, draw calls, rigid attachments or gameplay collisions.
+    for part in generated_meshes:
+        var label := String(part.name)
+        var rear := label == "SculptedBackHairCurtain" or label.begins_with("WindSweptBackLock")
+        var crown := label.begins_with("SweptHairLock") or label.begins_with("SideHairSweep")
+        if not rear and not crown:
+            continue
+        var fit := Vector3(0.82, 1.0, 0.92) if rear else Vector3(0.92, 1.0, 0.96)
+        part.position = center + (part.position - center) * fit
+        part.scale *= fit
     visual_scale = factor
 
 func install(rig: Skeleton3D, body_meshes: Array[MeshInstance3D]) -> bool:
