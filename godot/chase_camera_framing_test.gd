@@ -35,7 +35,9 @@ func _run() -> void:
             rider.position = Vector3(float(lane) * 3.1, 0.0, 0.2)
             game.set("turbo_left", 0.0)
             game.call("_update_camera", 100.0)
-            if absf(camera.position.z - 7.75) > 0.01 or absf(camera.fov - 60.0) > 0.01:
+            var expected_distance := 7.75 if lane == 0 else 8.15
+            var expected_fov := 60.0 if lane == 0 else 61.0
+            if absf(camera.position.z - expected_distance) > 0.01 or absf(camera.fov - expected_fov) > 0.01:
                 _fail("new normal-race camera is not active")
                 return
             var center := camera.unproject_position(rider.global_position + Vector3(0.0, 2.0, 0.0))
