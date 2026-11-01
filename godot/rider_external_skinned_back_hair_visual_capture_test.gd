@@ -189,6 +189,13 @@ func _capture() -> void:
     if lock_materials.size() != 5:
         _fail("five independent weighted lock shaders required for phase A/B")
         return
+    # Freeze every cosmetic child script AFTER the earlier animation captures.
+    # Otherwise cloth/board effects keep ticking during the five-frame wait
+    # and can masquerade as a difference between the two hair shaders.
+    rider.set_physics_process(false)
+    for animated_node in rider.find_children("*", "Node", true, false):
+        animated_node.set_process(false)
+        animated_node.set_physics_process(false)
     wind.call("set_motion", 0.0, 1.0, 0.0, 2.0)
     var synchronized: Image
     var changed_phase := 0
