@@ -2511,6 +2511,34 @@ func _run_checks() -> void:
     if not mobile_hud.text.contains("V145") or not mobile_hud.text.contains("\n"):
         _fail("Landscape-first phone layout must use a compact two-line HUD")
         return
+    # V146 candidate: during the race, short landscape screens must never
+    # stack world objectives over the mission bar and active touch area.
+    var previous_phase := str(game.get("phase"))
+    var previous_world := int(game.get("world_choice"))
+    game.set("phase", "race")
+    for world_index in range(4):
+        game.set("world_choice", world_index)
+        game.call("_refresh_hud")
+        var short_lines := mobile_hud.text.split("\n")
+        if short_lines.size() != 3:
+            _fail("Short landscape race HUD must use exactly three lines for world %d" % world_index)
+            return
+        for short_line in short_lines:
+            if short_line.length() > 43:
+                _fail("Short landscape race HUD exceeds the 360px text budget: " + short_line)
+                return
+    game.set("world_choice", 0)
+    game.set("neon_active", true)
+    game.set("neon_warning_left", 0.35)
+    game.call("_refresh_hud")
+    if not mobile_hud.text.contains("SWEEP!"):
+        _fail("Short landscape HUD must preserve urgent boss warnings")
+        return
+    game.set("neon_active", false)
+    game.set("neon_warning_left", 0.0)
+    game.set("world_choice", previous_world)
+    game.set("phase", previous_phase)
+    game.call("_refresh_hud")
     if not bool(game.get("touch_screen_mode")) or not restore.visible:
         _fail("V59 landscape touchscreen lost its button-visibility toggle")
         return
