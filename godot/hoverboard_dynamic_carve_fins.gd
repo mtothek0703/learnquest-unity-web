@@ -34,6 +34,14 @@ func _ready() -> void:
         # Visual only: the animated board root and collisions stay unchanged.
         hinge.position = Vector3(side * 1.09, 0.59, 0.22)
         add_child(hinge)
+        # A curved, closed aero-composite mount physically connects the fin
+        # to the existing deck chine. The previous detached leaf silhouette
+        # looked like a floating prop in actual front and chase screenshots.
+        var mount := MeshInstance3D.new()
+        mount.name = "SculptedBoardMount"
+        mount.mesh = _make_mount(side)
+        mount.material_override = fin_material
+        hinge.add_child(mount)
         var aerofoil := MeshInstance3D.new()
         aerofoil.name = "ClosedSweptAerofoil"
         aerofoil.mesh = _make_aerofoil(side)
@@ -50,6 +58,46 @@ func _ready() -> void:
         hinge.add_child(edge)
         fins.append(hinge)
     ready_to_animate = fins.size() == 2
+
+# Eight-sided swept mounting spar, integrated with each animated hinge.
+# Its inboard root overlaps the sculpted hull; its tip enters the aerofoil.
+# No new physics, texture, lights or separate animation is introduced.
+func _mount_point(side: float, t: float, angle: float) -> Vector3:
+    var radius := 0.034 + 0.022 * sin(PI * t)
+    return Vector3(
+        lerpf(-side * 0.49, side * 0.14, t),
+        lerpf(-0.18, 0.055, t) + 0.025 * sin(PI * t) + radius * cos(angle),
+        lerpf(0.05, 0.14, t) + radius * 0.76 * sin(angle))
+
+func _make_mount(side: float) -> ArrayMesh:
+    var tool := SurfaceTool.new()
+    tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+    for segment in range(10):
+        var t0 := float(segment) / 10.0
+        var t1 := float(segment + 1) / 10.0
+        for radial in range(10):
+            var a0 := TAU * float(radial) / 10.0
+            var a1 := TAU * float(radial + 1) / 10.0
+            for sample in [Vector2(t0, a0), Vector2(t1, a0), Vector2(t1, a1),
+                    Vector2(t0, a0), Vector2(t1, a1), Vector2(t0, a1)]:
+                var angle: float = sample.y
+                tool.set_normal(Vector3(0.0, cos(angle), sin(angle)).normalized())
+                tool.set_color(Color("#3c5876").lerp(Color("#a6cfe0"),
+                    0.18 + 0.50 * maxf(0.0, cos(angle))))
+                tool.add_vertex(_mount_point(side, sample.x, angle))
+    for end in [0.0, 1.0]:
+        var center := _mount_point(side, end, 0.0).lerp(
+            _mount_point(side, end, PI), 0.5)
+        for radial in range(10):
+            var a0 := TAU * float(radial) / 10.0
+            var a1 := TAU * float(radial + 1) / 10.0
+            for p in [center,
+                    _mount_point(side, end, a1 if end == 0.0 else a0),
+                    _mount_point(side, end, a0 if end == 0.0 else a1)]:
+                tool.set_normal(Vector3(-side, 0.0, 0.0) if end == 0.0 else Vector3(side, 0.0, 0.0))
+                tool.set_color(Color("#536f89"))
+                tool.add_vertex(p)
+    return tool.commit()
 
 func _fin_point(side: float, t: float, angle: float) -> Vector3:
     # Longitudinal sweep and elliptical section form a genuine closed 3D wing.
