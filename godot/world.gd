@@ -1785,7 +1785,7 @@ func _use_turbo() -> void:
 # preserving world objectives and urgent boss telegraphs.
 func _compact_landscape_hud_text() -> String:
     var first := "%s L%d XP%d E%d%% Kx%d %dm" % [VERSION_LABEL, lives, xp, power, combo, int(distance)]
-    var world_short := ["NEON", "CANYON", "HAFEN", "AURORA"][world_choice]
+    var world_short: String = ["NEON", "CANYON", "HAFEN", "AURORA"][world_choice]
     var second := "%s R%d  %d/%dm  SCH %ds BOOST %ds" % [world_short, round_number, int(distance), int(mission_target), ceili(shield_left), ceili(turbo_left)]
     var status := ""
     match world_choice:
