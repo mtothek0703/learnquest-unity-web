@@ -44,12 +44,12 @@ func _check() -> void:
         for boosted in [false, true]:
             game.set("turbo_left", 1.0 if boosted else 0.0)
             game.call("_update_camera", 100.0)
-            var expected: Dictionary = game.call("_race_camera_targets", boosted, get_viewport().get_visible_rect().size)
+            var expected: Dictionary = game.call("_race_camera_targets", boosted, root.get_visible_rect().size)
             if camera.position.distance_to(expected["position"]) > 0.01 or absf(camera.fov - float(expected["fov"])) > 0.01:
                 _fail("actual camera does not use landscape targets")
                 return
             var subject := camera.unproject_position(rider.global_position + Vector3(0.0, 2.1, 0.0))
-            var bounds := get_viewport().get_visible_rect().size
+            var bounds: Vector2 = root.get_visible_rect().size
             if camera.is_position_behind(rider.global_position + Vector3(0.0, 2.1, 0.0)) or subject.x < bounds.x * 0.08 or subject.x > bounds.x * 0.92 or subject.y < bounds.y * 0.06 or subject.y > bounds.y * 0.85:
                 _fail("rider leaves safe screen area for lane %s, boost %s: %s" % [lane_x, boosted, subject])
                 return
