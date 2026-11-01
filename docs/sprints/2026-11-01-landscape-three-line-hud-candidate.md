@@ -1,0 +1,19 @@
+# 2026-11-01 — Spur A: kompakter Renn-HUD für kurze Smartphone-Querformate (Kandidat)
+
+## Ausgangslage
+Pflichtdateien LEARNQUEST_SPRINTS.md und LEARNQUEST_RELEASE_POLICY.md auf main gelesen; GitHub Primary mtothek0703 verifiziert. Letzte nachgewiesene stabile Version beim Beginn dieses Sprints: Skyway V145 (main aa570902). Experimenteller 65-Bone-PR #111 bleibt DRAFT/VISUAL HOLD.
+
+## Sichtbare Verbesserung
+Das bisherige Renn-HUD konnte auf kurzen 19,5:9-Displays über vier bis sieben Zeilen wachsen und die Missionsfortschrittsleiste bei y=91 überdecken. Bei Touchscreen-Querformat mit Höhe unter 620 Pixeln werden Renninformationen nun in exakt drei Zeilen verdichtet: (1) Leben/XP/Energie/Kombos/Distanz, (2) Welt/Runde/Ziel/Schild/Boost, (3) aktuelle Weltmission oder dringende Bosswarnung. Der bereits vorhandene ProgressBar bleibt bei y=91. Kein neuer Button und keine neue Touch-Totzone; Desktop und Portrait behalten das bisherige HUD.
+
+## Regression
+Der vorhandene Godot-Gameplay-Smoke-Test prüft alle vier Welten mit jeweils drei Textzeilen und einem Textbudget von höchstens 43 Zeichen pro Zeile, dazu die akute Neon-Bosswarnung SWEEP!. Touch-Gesten, drei Englischaufgaben, Boss- und Power-up-Regeln bleiben unverändert.
+
+## Release-Gate
+- [ ] PR-Godot-Gameplay-Tests und Webexport erfolgreich
+- [ ] Tatsächlich gerenderte 1280x720- und 1170x540-Bilder auf HUD/Progressbar-Überlappung geprüft
+- [ ] Archivschutz grün
+- [ ] Erst danach freie immutable Skyway-Version bestimmen, Release-Workflow aktualisieren und main mergen
+- [ ] Main-CI, Pages und fünf HTTP-200-Builddateien sowie build.txt-SHA nachweisen
+
+**Kein Release nur für die Versionsnummer.** Diese Änderung ist ein Kandidat, keine fertige Veröffentlichung. Alte Skyway-URLs und Unity-Archiv nicht verändern; PR #111 separat weiterführen.
