@@ -152,6 +152,17 @@ jobs:
             --script res://cinematic_city_visual_capture_test.gd 2>&1 | tee /tmp/city-visual.log
           grep -Fq 'CITY VISUAL QA PASSED' /tmp/city-visual.log
           test "$(find /tmp/learnquest-city-qa -name '*.png' | wc -l)" -eq 8
+      - name: Render V141 sky terrace-only before-after landscape frames
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-terraces-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_TERRACES_OUTPUT=/tmp/learnquest-terraces-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://cinematic_city_terraces_visual_capture_test.gd 2>&1 | tee /tmp/terraces-visual.log
+          grep -Fq 'CITY SKY TERRACES VISUAL QA PASSED' /tmp/terraces-visual.log
+          test "$(find /tmp/learnquest-terraces-qa -name '*.png' | wc -l)" -eq 8
       - name: Render V119 lightfield before-after landscape frames
         shell: bash
         run: |
@@ -302,6 +313,13 @@ jobs:
         with:
           name: learnquest-v118-neon-city-before-after
           path: /tmp/learnquest-city-qa/*.png
+          if-no-files-found: error
+      - name: Upload V141 sky terrace before-after frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v141-sky-terraces-before-after
+          path: /tmp/learnquest-terraces-qa/*.png
           if-no-files-found: error
       - name: Upload power-up comparison frames
         if: always()
