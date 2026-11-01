@@ -1,5 +1,5 @@
 extends SceneTree
-## DRAFT: sixteen real phone-landscape off/neutral/left/right wake images.
+## DRAFT: twenty real phone-landscape off/neutral/carve/airborne wake images.
 ## Compare steering states in the SAME render session; no visual approval implied.
 const SIZES := [Vector2i(1280, 720), Vector2i(1170, 540)]
 const VIEWS := ["front", "chase"]
@@ -79,6 +79,7 @@ func _capture() -> void:
     var count := 0
     var visible_chase := 0
     var steering_chase := 0
+    var airborne_chase := 0
     for size in SIZES:
         viewport.size = size
         for view in VIEWS:
@@ -86,13 +87,15 @@ func _capture() -> void:
             camera.look_at(Vector3(0.0, 0.8, 0.0), Vector3.UP)
             var baseline: Image
             var left_frame: Image
-            for variant in ["off", "neutral", "left", "right"]:
+            var neutral_frame: Image
+            for variant in ["off", "neutral", "left", "right", "airborne"]:
                 if variant == "off":
                     for part in parts:
                         (part as MeshInstance3D).visible = false
                 else:
                     var steer := -0.85 if variant == "left" else (0.85 if variant == "right" else 0.0)
                     legacy.set("lean", steer)
+                    legacy.set("jump_pose", 0.85 if variant == "airborne" else 0.0)
                     wake.call("_process", 0.60)
                 for frame in range(5):
                     await process_frame
@@ -108,14 +111,17 @@ func _capture() -> void:
                     if variant == "off":
                         baseline = frame_image
                     elif variant == "neutral":
+                        neutral_frame = frame_image
                         visible_chase += _changed_pixels(baseline, frame_image)
                     elif variant == "left":
                         left_frame = frame_image
                     elif variant == "right":
                         steering_chase += _changed_pixels(left_frame, frame_image)
+                    elif variant == "airborne":
+                        airborne_chase += _changed_pixels(neutral_frame, frame_image)
                 count += 1
-    if count != 16 or visible_chase < 35 or steering_chase < 5:
-        _fail("16 landscape frames and visible boost/left-right steering pixel changes required; boost=%d steer=%d" % [visible_chase, steering_chase])
+    if count != 20 or visible_chase < 35 or steering_chase < 5 or airborne_chase < 5:
+        _fail("20 frames and visible boost/carve/airborne changes required; boost=%d steer=%d air=%d" % [visible_chase, steering_chase, airborne_chase])
         return
-    print("BOOST WAKE VISUAL QA PASSED: 16 real landscape frames, boost pixels=%d, left-right pixels=%d; manual art approval pending" % [visible_chase, steering_chase])
+    print("BOOST WAKE VISUAL QA PASSED: 20 real landscape frames, boost pixels=%d, steer=%d, airborne=%d; manual art approval pending" % [visible_chase, steering_chase, airborne_chase])
     quit(0)
