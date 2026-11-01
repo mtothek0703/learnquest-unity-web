@@ -951,12 +951,12 @@ func _create_run_items() -> void:
     # Shared, low-cost 3D waypoint meshes: only gates in a DIFFERENT lane
     # become highlighted after the first catch of the three-gate slalom.
     var weave_halo_mesh := TorusMesh.new()
-    weave_halo_mesh.inner_radius = 0.58
-    weave_halo_mesh.outer_radius = 0.70
+    weave_halo_mesh.inner_radius = 0.74
+    weave_halo_mesh.outer_radius = 0.93
     weave_halo_mesh.rings = 24
     weave_halo_mesh.ring_segments = 8
     var weave_pointer_mesh := PrismMesh.new()
-    weave_pointer_mesh.size = Vector3(0.66, 0.55, 0.22)
+    weave_pointer_mesh.size = Vector3(0.95, 0.75, 0.25)
     var weave_marker_material := mat(Color("#ee53ff"), true)
     for i in range(20):
         var item := Node3D.new()
@@ -1006,7 +1006,7 @@ func _create_run_items() -> void:
             pointer.name = "Slalom beacon pointer"
             pointer.mesh = weave_pointer_mesh
             pointer.material_override = weave_marker_material
-            pointer.position.y = -0.42
+            pointer.position.y = -0.50
             pointer.rotation_degrees.z = 180.0
             pointer.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
             guide.add_child(pointer)
