@@ -47,6 +47,8 @@ func _capture() -> void:
     rider.process_mode = Node.PROCESS_MODE_DISABLED
     for size in SIZES:
         viewport.size = size
+        game.set("xp", 0)
+        game.set("turbo_left", 0.0)
         game.call("_apply_mobile_layout", float(size.x), 1, float(size.y))
         game.call("_refresh_hud")
         var targets: Dictionary = game.call("_race_camera_targets", false, Vector2(size))

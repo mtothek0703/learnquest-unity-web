@@ -915,8 +915,8 @@ func _create_clean_flight_ring() -> void:
 # Reusable 3D pulse; visual only, never a touch or collision target.
 func _create_energy_weave_ring() -> void:
     var torus := TorusMesh.new()
-    torus.inner_radius = 1.45
-    torus.outer_radius = 1.58
+    torus.inner_radius = 1.18
+    torus.outer_radius = 1.28
     torus.rings = 32
     torus.ring_segments = 10
     var material := StandardMaterial3D.new()
@@ -932,7 +932,7 @@ func _create_energy_weave_ring() -> void:
     energy_weave_ring.material_override = material
     energy_weave_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
     # Float just behind the rider silhouette, not inside the torso/board.
-    energy_weave_ring.position = Vector3(0.0, 1.95, 0.80)
+    energy_weave_ring.position = Vector3(0.0, 1.55, 0.80)
     energy_weave_ring.rotation_degrees.x = 90.0
     energy_weave_ring.visible = false
     rider.add_child(energy_weave_ring)
@@ -1290,7 +1290,7 @@ func _update_energy_weave_pulse(delta: float) -> void:
     energy_weave_ring.visible = energy_weave_pulse > 0.0
     if energy_weave_ring.visible:
         var progress := 1.0 - energy_weave_pulse
-        energy_weave_ring.scale = Vector3.ONE * (0.95 + 0.40 * progress)
+        energy_weave_ring.scale = Vector3.ONE * (0.95 + 0.25 * progress)
         energy_weave_ring.rotation.y += delta * 1.6
         var material := energy_weave_ring.material_override as StandardMaterial3D
         var tint := material.albedo_color
