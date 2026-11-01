@@ -277,6 +277,13 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://neon_conductor_visual_capture_test.gd 2>&1 | tee /tmp/godot-neon-conductor-visual.log
           grep -Fq 'NEON CONDUCTOR VISUAL QA PASSED' /tmp/godot-neon-conductor-visual.log
+          mkdir -p /tmp/learnquest-warning-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_WARNING_OUTPUT=/tmp/learnquest-warning-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://neon_warning_visual_capture_test.gd 2>&1 | tee /tmp/godot-neon-warning-visual.log
+          grep -Fq 'NEON WARNING VISUAL QA PASSED' /tmp/godot-neon-warning-visual.log
+          test "$(find /tmp/learnquest-warning-qa -name '*.png' | wc -l)" -eq 8
           mkdir -p /tmp/learnquest-precision-qa
           LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_PRECISION_OUTPUT=/tmp/learnquest-precision-qa \
             timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
@@ -383,6 +390,12 @@ jobs:
             /tmp/godot-canyon-geodes-visual.log
           if-no-files-found: ignore
 
+      - name: Upload raised Neon warning landscape QA
+        uses: actions/upload-artifact@v4
+        with:
+          name: neon-warning-landscape-qa
+          path: /tmp/learnquest-warning-qa/*.png
+          if-no-files-found: error
       - name: Upload V134 Neon precision before-after frames
         if: always()
         uses: actions/upload-artifact@v4
