@@ -20,3 +20,10 @@ Read both mandatory main policies. Verified GitHub Primary account mtothek0703 (
 - [ ] Pages artifact is already over 1.4 GB; preserve existing builds and address storage separately.
 
 No release has been claimed at candidate creation.
+
+## Verified candidate gates (2026-11-01)
+- Godot PR validation [#41296400036](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41296400036) **SUCCESS**: complete headless gameplay/geometry regressions, Web export, all legacy visual tests and sixteen real Canyon landscape frames. Historical archive protection [#41296399818](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41296399818) **SUCCESS**.
+- Isolated same-camera bridge-before/after PNGs from [artifact 13079865354](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41296400036/artifacts/13079865354) inspected in chase and oblique views at both phone ratios.
+- Measured changed pixels (max RGB channel delta >25): 1280x720 chase **11,712 (1.271%)**, oblique **7,625 (0.827%)**; 1170x540 chase **6,594 (1.044%)**, oblique **4,292 (0.679%)**. The near-camera overhead rock span is visibly present with its hanging crystal keystones; no gameplay controls or collisions changed.
+- This proves a distinct substantial 3D landmark, not iPhone frame rate or commercial-grade visual quality.
+- Release commit now prepares **V142** in the world label and immutable Pages workflow, retaining historical V141 sky-terrace QA artifact naming. **No claim of published V142 until main CI and Pages HTTP/build.txt verification.**
