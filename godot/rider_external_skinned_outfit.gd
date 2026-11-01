@@ -93,7 +93,7 @@ func _extract_jacket(body: MeshInstance3D) -> ArrayMesh:
             for vertex_id in ids:
                 polygon.append(_source_corner(verts, normals, bones, weights, vertex_id, arm_binds))
             polygon = _clip_to_height(polygon, waist_y, true)
-            polygon = _clip_to_height(polygon, collar_y, false)
+            polygon = _clip_to_collar(polygon, bounds, collar_y)
             # Source arms can fold inward in the CC0 rest pose even when their
             # four-weight interpolation looks torso-dominant. Keep the jacket
             # inside the imported torso envelope BEFORE sculpting it. The
@@ -161,6 +161,45 @@ func _clip_to_height(polygon: Array[Dictionary], plane_y: float,
             if absf(dy) > 0.0000001:
                 clipped.append(_interpolate_corner(previous, current,
                     clampf((plane_y - previous_point.y) / dy, 0.0, 1.0)))
+        if current_inside:
+            clipped.append(current)
+        previous = current
+    return _deduplicate_polygon(clipped)
+
+# A flat horizontal jacket top read as a toy-like solid collar in actual
+# 16:9 portraits. Open a small V at the FRONT (-Z of the imported CC0 rig),
+# keeping both weighted shoulders and the entire rear neckline at the old
+# height. The original source body remains underneath, with its real 65-bone
+# Skin and all gameplay/board/contact transforms untouched.
+func _collar_limit(point: Vector3, bounds: AABB, top_y: float) -> float:
+    var center := bounds.get_center()
+    var front := smoothstep(0.05, 0.22,
+        (center.z - point.z) / maxf(bounds.size.z, 0.001))
+    var lateral := absf(point.x - center.x) / maxf(bounds.size.x, 0.001)
+    var center_v := 1.0 - smoothstep(0.055, 0.23, lateral)
+    return top_y - bounds.size.y * 0.052 * front * center_v
+
+# Clip source triangles against the curved front-V collar boundary while
+# interpolating their ORIGINAL four Skin influences, as at the waist seams.
+# This removes material; it never introduces rigid or unweighted geometry.
+func _clip_to_collar(polygon: Array[Dictionary], bounds: AABB,
+        top_y: float) -> Array[Dictionary]:
+    var clipped: Array[Dictionary] = []
+    if polygon.is_empty():
+        return clipped
+    var previous: Dictionary = polygon[polygon.size() - 1]
+    for current in polygon:
+        var previous_point: Vector3 = previous["position"]
+        var current_point: Vector3 = current["position"]
+        var previous_distance := previous_point.y - _collar_limit(previous_point, bounds, top_y)
+        var current_distance := current_point.y - _collar_limit(current_point, bounds, top_y)
+        var previous_inside := previous_distance <= 0.0
+        var current_inside := current_distance <= 0.0
+        if previous_inside != current_inside:
+            var difference := previous_distance - current_distance
+            if absf(difference) > 0.0000001:
+                clipped.append(_interpolate_corner(previous, current,
+                    clampf(previous_distance / difference, 0.0, 1.0)))
         if current_inside:
             clipped.append(current)
         previous = current
