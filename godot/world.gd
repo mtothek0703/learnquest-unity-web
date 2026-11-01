@@ -11,7 +11,7 @@ const TASKS_PER_ROUND := 3
 const CLEAN_FLIGHT_STEP := 250.0
 const CLEAN_FLIGHT_LIMIT := 3
 const AERIAL_ENERGY_TARGET := 3
-const VERSION_LABEL := "V144"
+const VERSION_LABEL := "V145"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -1837,9 +1837,17 @@ func _update_camera(delta: float) -> void:
     var target_focus: Vector3
     var target_fov: float
     if racing:
-        target_position = Vector3(rider.position.x * 0.36, 4.3 + rider.position.y * 0.25, 10.1 if boost else 9.0)
-        target_focus = Vector3(rider.position.x * 0.42, 1.5 + rider.position.y * 0.45, 0.5)
-        target_fov = 74.0 if boost else 64.0
+        # V145: bring the playable course and rider closer in smartphone landscape.
+        # Preserve lane-follow, jump and Turbo widen-out; menu portrait is unchanged.
+        # Edge-lane riders project lower/larger because of the lateral camera
+        # angle. Pull back slightly when steering to preserve the entire board
+        # and ion wake on 19.5:9 phones, while keeping center-lane 3D large.
+        var edge_lane := clampf(absf(rider.position.x) / 3.1, 0.0, 1.0)
+        var normal_distance := lerpf(7.75, 8.15, edge_lane)
+        var normal_fov := lerpf(60.0, 61.0, edge_lane)
+        target_position = Vector3(rider.position.x * 0.36, 4.15 + rider.position.y * 0.25, 9.1 if boost else normal_distance)
+        target_focus = Vector3(rider.position.x * 0.42, 1.5 - edge_lane * 0.25 + rider.position.y * 0.45, 0.5)
+        target_fov = 71.0 if boost else normal_fov
     else:
         showcase_clock += delta
         # Frame the rider to the right of the central menu/quiz panel.

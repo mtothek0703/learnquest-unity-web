@@ -30,6 +30,8 @@ jobs:
           /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path godot --quit 2>&1 | tee /tmp/import.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://smoke_test.gd 2>&1 | tee /tmp/gameplay.log
           grep -Fq 'LEARNQUEST SMOKE TEST PASSED' /tmp/gameplay.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://chase_camera_framing_test.gd 2>&1 | tee /tmp/chase-framing.log
+          grep -Fq 'CHASE FRAMING TEST PASSED' /tmp/chase-framing.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://flawless_vocabulary_launch_test.gd 2>&1 | tee /tmp/flawless-vocabulary.log
           grep -Fq 'FLAWLESS VOCABULARY LAUNCH TEST PASSED' /tmp/flawless-vocabulary.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://clean_flight_mastery_test.gd 2>&1 | tee /tmp/clean-flight.log
@@ -318,6 +320,24 @@ jobs:
         with:
           name: learnquest-v144-harbor-skycranes-before-after
           path: /tmp/learnquest-skycranes-qa/*.png
+          if-no-files-found: error
+      - name: Render V145 playable chase framing in both landscape ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-chase-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_CHASE_OUTPUT=/tmp/learnquest-chase-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://chase_camera_visual_capture_test.gd 2>&1 | tee /tmp/chase-camera-visual.log
+          grep -Fq 'CHASE CAMERA VISUAL QA PASSED' /tmp/chase-camera-visual.log
+          test "$(find /tmp/learnquest-chase-qa -name '*.png' | wc -l)" -eq 8
+      - name: Upload V145 chase framing before-after
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v145-chase-camera-before-after
+          path: /tmp/learnquest-chase-qa/*.png
           if-no-files-found: error
       - name: Upload V122 Star Harbor drydock comparison frames
         if: always()
