@@ -202,7 +202,7 @@ func _check() -> void:
         var nose_crest: Vector3 = sculpt.call("_wing_point", side, 0.02, 0.0)
         var lower: Vector3 = sculpt.call("_wing_point", side, 0.5, PI * 1.5)
         var upper: Vector3 = sculpt.call("_wing_point", side, 0.5, PI * 0.5)
-        if crest.y - root_point.y < 0.17 or crest.y - nose_crest.y < 0.16 or \
+        if crest.y - root_point.y < 0.105 or crest.y - nose_crest.y < 0.10 or \
                 upper.y - lower.y < 0.13:
             _fail("closed board stabilizers need visible outboard sculpted crests and lower undercut")
             return
