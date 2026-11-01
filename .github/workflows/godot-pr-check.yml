@@ -235,6 +235,23 @@ jobs:
             --script res://neon_conductor_visual_capture_test.gd 2>&1 | tee /tmp/neon-conductor-visual.log
           grep -Fq 'NEON CONDUCTOR VISUAL QA PASSED' /tmp/neon-conductor-visual.log
           test "$(find /tmp/learnquest-conductor-qa -name '*.png' | wc -l)" -eq 12
+      - name: Render raised Neon boss lane warning in two phone landscape ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-warning-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_WARNING_OUTPUT=/tmp/learnquest-warning-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://neon_warning_visual_capture_test.gd 2>&1 | tee /tmp/neon-warning-visual.log
+          grep -Fq 'NEON WARNING VISUAL QA PASSED' /tmp/neon-warning-visual.log
+          test "$(find /tmp/learnquest-warning-qa -name '*.png' | wc -l)" -eq 8
+      - name: Upload raised Neon warning phone QA
+        uses: actions/upload-artifact@v4
+        with:
+          name: neon-warning-landscape-qa
+          path: /tmp/learnquest-warning-qa/*.png
+          if-no-files-found: error
       - name: Render V134 Neon precision targets in both smartphone landscape ratios
         shell: bash
         run: |
