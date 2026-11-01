@@ -12,6 +12,10 @@ The adjustment uses only transforms on the two already-existing meshes; no extra
 
 `hoverboard_boost_wake_test.gd` extends the existing geometry/boost/carve regression to check both outlet anchors, real downward jet displacement, landing return, and 30/60 FPS frame-rate consistency.
 
+## Extended visual evidence
+
+The existing wake visual capture now produces **20 actual 16:9/19.5:9 frames** (off, neutral boost, left carve, right carve, airborne boost) rather than 16. It compares airborne vs. neutral with a frozen rider pose and the same camera. Both PR and release workflow counts were updated; this is still a DRAFT-only quality gate.
+
 ## Acceptance
 
 - [ ] Final Godot PR CI, 65-bone and gameplay regression, web export.
