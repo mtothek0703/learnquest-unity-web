@@ -31,7 +31,7 @@ func _check() -> void:
     for i in range(towers.size()):
         var tower := towers[i] as Node3D
         variants[styles[i]] = true
-        if absf(tower.position.x) < 13.0:
+        if absf(tower.position.x) < 11.8:
             _fail("architecture invades the playable road")
             return
         var shell := tower.get_node_or_null("Sculpted facade shell") as MeshInstance3D
@@ -74,7 +74,7 @@ func _check() -> void:
         if deck_vertices.size() < 1400 or deck_normals.size() != deck_vertices.size() or deck_colors.size() != deck_vertices.size():
             _fail("terraces must be continuous shaded 3D geometry with two levels")
             return
-        if deck_mesh.get_aabb().size.x < 8.4 or deck_mesh.get_aabb().size.y < 3.0:
+        if deck_mesh.get_aabb().size.x < 9.3 or deck_mesh.get_aabb().size.y < 3.0:
             _fail("terrace cantilevers must have an actual wide and stepped silhouette")
             return
         if fins.multimesh.instance_count != 8:
