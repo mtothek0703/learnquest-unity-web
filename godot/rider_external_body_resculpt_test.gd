@@ -111,8 +111,16 @@ func _check() -> void:
         return
     var armpit := Vector3(outer_right.x,
         bounds.position.y + bounds.size.y * 0.60, outer_right.z)
-    var hand_tip := Vector3(center.x + bounds.size.x * 0.45,
+    # The previous narrow mask missed the outer source-shoulder vertices.
+    # Require a meaningful inward movement near the visible shoulder edge.
+    var shoulder_edge := Vector3(center.x + bounds.size.x * 0.39,
         outer_right.y, outer_right.z)
+    var shoulder_edge_after: Vector3 = sculpt.call("_reshape", shoulder_edge, bounds)
+    if shoulder_edge.x - shoulder_edge_after.x < bounds.size.x * 0.045:
+        _fail("outer source shoulder shelf remains too wide in rest geometry")
+        return
+    var hand_tip := Vector3(center.x + bounds.size.x * 0.45,
+        bounds.position.y + bounds.size.y * 0.50, outer_right.z)
     if (sculpt.call("_reshape", armpit, bounds) as Vector3).distance_to(armpit) > \
             bounds.size.x * 0.0001 or \
             (sculpt.call("_reshape", hand_tip, bounds) as Vector3).distance_to(hand_tip) > 0.00001:
