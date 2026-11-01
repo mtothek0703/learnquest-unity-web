@@ -18,3 +18,9 @@ The original 1280×720 front/chase images show the hoverboard much wider than th
 ## Release gate
 - Await full Godot CI, web export and real visual captures; inspect screenshots before deciding to keep/revert.
 - Even a passing CI does **not** approve the entire character. Keep PR #111 DRAFT until genuine visual quality, clipping and manual iPhone QA pass. Stable track A PR #139 may proceed independently.
+
+## Verified result (2026-11-01)
+- Full GitHub Godot PR validation run [41351104649](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41351104649): **success, 52/52 steps**, including real 65-bone/8,483 weighted vertex regression, gameplay, Web export and visual QA.
+- All **60 real pose-locked phone-landscape PNGs** generated; [artifact 13100564306](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41351104649/artifacts/13100564306).
+- Original vs compact board color samples changed at **1280×720: 541 front / 532 chase** and **1170×540: 439 front / 438 chase** (70 minimum). The full-size and compact captures were visually inspected: the compact board better matches the rider's width, but the overall costume/face remains stylized and has not passed the quality gate.
+- **Decision:** retain reversible board-proportion experiment on PR #111; keep **DRAFT**, no merge and no stable release. iPhone FPS, clipping and complete touch playthrough remain unverified.
