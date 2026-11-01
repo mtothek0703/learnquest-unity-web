@@ -36,3 +36,9 @@ Review real CI logs and screenshot artifact; adjust composition if necessary. If
 - [ ] **Remaining QA issue:** at the outer right lane the trailing hoverboard ion-wake ribbons still approach the bottom edge, particularly at 1280x720. Do not merge this iteration.
 - [x] Third correction: adaptive normal camera pullback from **7.75m / 60° in center** to **8.15m / 61° at outer lanes**. Keep Turbo at 9.1m / 71° and menu unchanged; the camera follows the rider's actual lane position, not a new input mechanism.
 - [ ] Re-run all checks and inspect the new lane1/center 16:9 and 19.5:9 screenshots before merging.
+
+## Third image review — final edge-lane focus adjustment
+- [x] Adaptive distance revision passed [Godot PR CI 41311954192](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41311954192) and [archive protection 41311954044](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41311954044). Downloaded [eight actual frames 13085566597](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41311954192/artifacts/13085566597) and inspected all lane/aspect combinations.
+- [x] At 1280x720, the adaptive center/right-lane views differ from the old chase camera by 55.61% / 45.27% of pixels (>25 RGB-channel difference); at 1170x540 by 54.72% / 44.61%. The rider and road are clearly larger; all three steering lanes remain available.
+- [ ] The **outer-lane wake ribbons still nearly touch the bottom frame edge**. Preserve the more readable zoom but lower the edge-lane focus by 0.25 world units (1.5 -> 1.25), shifting the board upward without moving menu, controls or physics.
+- [ ] Run the updated headless focus assertion and all visual/export/archive checks, inspect the new final frames, and only then decide on immutable V145 release.
