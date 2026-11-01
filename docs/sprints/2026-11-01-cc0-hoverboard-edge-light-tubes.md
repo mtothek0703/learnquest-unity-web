@@ -13,8 +13,8 @@ Vor Änderungen wurden `LEARNQUEST_SPRINTS.md` und `LEARNQUEST_RELEASE_POLICY.md
 
 ## Abnahme-Gates
 
-- [ ] Aktueller vollständiger PR-Godot-Workflow inklusive Export erfolgreich; finale Commit-SHA und Workflow-Link nach Abschluss ergänzen.
-- [ ] Originale 16:9-/19,5:9-Querformatbilder mit/ohne Änderung bei gleicher Pose **tatsächlich ansehen** und bewerten. Mesh-Vertices allein belegen keine sichtbare Qualitätssteigerung.
+- [x] Vollständiger [Godot-PR-Workflow 41330360574](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41330360574) für Code/Test-Head `b05cb54b` **completed/success**: alle **52/52** Schritte erfolgreich, inklusive Import, Gameplay-/Board-/65-Bone-Regressionen, Webexport und tatsächlichen Querformat-Captures.
+- [x] Tatsächliche [24 neue Querformatbilder, Artefakt 13092814261](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41330360574/artifacts/13092814261) gegen [24 vorherige Bilder, Artefakt 13091554704](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41328764388/artifacts/13091554704) heruntergeladen, pixelweise verglichen und 1280×720-Chase-/Schrägansicht visuell betrachtet. Bei RGB-Maxkanalabweichung >25: 2.054 Pixel (0,223 %) Chase neutral und 3.575 Pixel (0,388 %) Schrägansicht neutral; 1170×540-Chase 1.129 Pixel (0,179 %). Die vorher flachen Lichtstreifen erscheinen in der Schrägansicht jetzt als breitere, helle 3D-Kanten. Das ist ein **kleiner, echter sichtbarer Board-Gewinn**, kein nachgewiesener Qualitätssprung der Gesamtfigur. Die 24 Bilder sind fin-an/fin-aus-Frames, kein eigenständiger Pose-Lock-Beweis zwischen unterschiedlichen Runs; reine Pixelunterschiede nicht als objektive Qualitätsnote ausgeben.
 - [ ] Gesamter CC0-Charakter inklusive Board optisch hochwertiger als V123 und reale iPhone-FPS/Clipping/Touchnavigation nach drei Englischfragen freigegeben.
 
 **Entscheidung:** PR #111 bleibt DRAFT / VISUAL HOLD, nicht mergen, keine Release-Nummer reservieren. Stabile Skyway V146 unverändert; späterer Merge nur nach Rebase auf dann aktuelles main und mit nächster freier unveränderlicher Versionsnummer.
