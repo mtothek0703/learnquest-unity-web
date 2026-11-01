@@ -8,7 +8,9 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
-const VERSION_LABEL := "V138"
+const CLEAN_FLIGHT_STEP := 250.0
+const CLEAN_FLIGHT_LIMIT := 3
+const VERSION_LABEL := "V139"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -127,6 +129,12 @@ var run_items: Node3D
 var lives := 3
 var jump_left := 0.0
 var hit_cooldown := 0.0
+var clean_flight_origin := 0.0
+var clean_flight_count := 0
+var clean_flight_rewards := 0
+var clean_flight_mastery := false
+var clean_flight_pulse := 0.0
+var clean_flight_ring: MeshInstance3D
 var end_panel: PanelContainer
 var hud: Label
 var hud_panel: PanelContainer
@@ -268,6 +276,7 @@ func _create_world() -> void:
     rider_lighting.set("rider", rider)
     add_child(rider_lighting)
     _create_powerup_effects()
+    _create_clean_flight_ring()
     hero_gallery = preload("res://hero_gallery.gd").new() as Node3D
     hero_gallery.name = "Cinematic hero gallery"
     hero_gallery.position = Vector3(0.0, 0.0, 0.2)
@@ -385,6 +394,7 @@ func _update_neon_conductor(delta: float) -> void:
                 feedback_time = 1.6
             elif lane == neon_sweep_lane and rider.position.y <= 0.9 and shield_left <= 0.0 and hit_cooldown <= 0.0:
                 lives -= 1
+                _break_clean_flight()
                 hit_cooldown = 1.4
                 neon_dodge_streak = 0
                 info_label.text = "NEON-PULS GETROFFEN! NOCH %d LEBEN" % lives
@@ -471,6 +481,7 @@ func _update_guardian(delta: float) -> void:
             guardian_beam.visible = false
             if lane == guardian_lane and rider.position.y <= 0.85 and shield_left <= 0.0 and turbo_left <= 0.0 and hit_cooldown <= 0.0:
                 lives -= 1
+                _break_clean_flight()
                 hit_cooldown = 1.4
                 info_label.text = "BOSS-LASER! NOCH %d LEBEN" % lives
                 feedback_time = 1.5
@@ -528,6 +539,7 @@ func _update_orbit_sentinel(delta: float) -> void:
             # Unlike the Canyon laser, turbo does not protect against plasma.
             if lane == orbit_lane and rider.position.y <= 1.1 and shield_left <= 0.0 and hit_cooldown <= 0.0:
                 lives -= 1
+                _break_clean_flight()
                 hit_cooldown = 1.4
                 info_label.text = "PLASMA-TREFFER! NOCH %d LEBEN" % lives
                 feedback_time = 1.5
@@ -589,6 +601,7 @@ func _update_frost_warden(delta: float) -> void:
             # also protects the player, even if they stay in a frozen lane.
             if lane != frost_safe_lane and rider.position.y <= 1.45 and shield_left <= 0.0 and hit_cooldown <= 0.0:
                 lives -= 1
+                _break_clean_flight()
                 hit_cooldown = 1.4
                 info_label.text = "FROSTWELLE! NOCH %d LEBEN" % lives
                 feedback_time = 1.5
@@ -818,6 +831,30 @@ func _create_powerup_effects() -> void:
     rider.add_child(attack_visual)
     attack_visual.visible = false
 
+# One reused, visual-only 3D checkpoint ring; no collision or extra input.
+func _create_clean_flight_ring() -> void:
+    var torus := TorusMesh.new()
+    torus.inner_radius = 0.72
+    torus.outer_radius = 0.80
+    torus.rings = 28
+    torus.ring_segments = 8
+    var material := StandardMaterial3D.new()
+    material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    material.albedo_color = Color(0.30, 0.96, 0.88, 0.70)
+    material.emission_enabled = true
+    material.emission = Color(0.16, 0.86, 0.97)
+    material.emission_energy_multiplier = 1.8
+    clean_flight_ring = MeshInstance3D.new()
+    clean_flight_ring.name = "Clean flight mastery ring"
+    clean_flight_ring.mesh = torus
+    clean_flight_ring.material_override = material
+    clean_flight_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    clean_flight_ring.position = Vector3(0.0, 1.35, 0.0)
+    clean_flight_ring.rotation_degrees.x = 90.0
+    clean_flight_ring.visible = false
+    rider.add_child(clean_flight_ring)
+
 func _create_run_items() -> void:
     run_items = Node3D.new()
     run_items.name = "3D obstacles and energy pickups"
@@ -876,6 +913,12 @@ func _reset_run() -> void:
     speed = 14.0
     jump_left = 0.0
     hit_cooldown = 0.0
+    clean_flight_origin = 0.0
+    clean_flight_count = 0
+    clean_flight_rewards = 0
+    clean_flight_mastery = false
+    clean_flight_pulse = 0.0
+    clean_flight_ring.visible = false
     turbo_left = 0.0
     shield_left = 0.0
     attack_left = 0.0
@@ -1063,6 +1106,49 @@ func _use_super_attack() -> void:
     feedback_time = 1.8
     _refresh_hud()
 
+# Real hazard/boss damage breaks consecutive distance; earned XP is retained.
+func _break_clean_flight() -> void:
+    clean_flight_origin = distance
+    clean_flight_count = 0
+    clean_flight_pulse = 0.0
+    clean_flight_ring.visible = false
+
+func _update_clean_flight(delta: float) -> void:
+    if clean_flight_pulse > 0.0:
+        clean_flight_pulse = maxf(0.0, clean_flight_pulse - delta)
+        clean_flight_ring.visible = clean_flight_pulse > 0.0
+        if clean_flight_ring.visible:
+            var t := 1.0 - clean_flight_pulse / 0.85
+            clean_flight_ring.scale = Vector3.ONE * (0.75 + t)
+            var material := clean_flight_ring.material_override as StandardMaterial3D
+            var tint := material.albedo_color
+            tint.a = 0.70 * (1.0 - t)
+            material.albedo_color = tint
+    if phase != "race" or not started or quiz_active or clean_flight_rewards >= CLEAN_FLIGHT_LIMIT:
+        return
+    if distance - clean_flight_origin < CLEAN_FLIGHT_STEP:
+        return
+    clean_flight_origin += CLEAN_FLIGHT_STEP
+    clean_flight_count += 1
+    clean_flight_rewards += 1
+    xp += 25
+    turbo_left = maxf(turbo_left, 0.8)
+    clean_flight_pulse = 0.85
+    clean_flight_ring.scale = Vector3.ONE * 0.75
+    var material := clean_flight_ring.material_override as StandardMaterial3D
+    var tint := material.albedo_color
+    tint.a = 0.70
+    material.albedo_color = tint
+    clean_flight_ring.visible = true
+    if clean_flight_count >= CLEAN_FLIGHT_LIMIT:
+        clean_flight_mastery = true
+        xp += 50
+        turbo_left = maxf(turbo_left, 2.0)
+        info_label.text = "SAUBERER FLUG! 3/3 +125 XP +2s TURBO"
+    else:
+        info_label.text = "SAUBERER FLUG %d/3! +25 XP +0,8s TURBO" % clean_flight_count
+    feedback_time = 1.8
+
 func _update_run_items(delta: float) -> void:
     hit_cooldown = maxf(0.0, hit_cooldown - delta)
     jump_left = maxf(0.0, jump_left - delta)
@@ -1116,6 +1202,7 @@ func _update_run_items(delta: float) -> void:
                     item.visible = false
                 elif hit_cooldown <= 0.0:
                     lives -= 1
+                    _break_clean_flight()
                     combo = 0
                     hit_cooldown = 1.4
                     info_label.text = "TREFFER! NOCH %d LEBEN" % lives
@@ -1138,6 +1225,8 @@ func _finish_run() -> void:
         total_stars += stars_earned
         total_reward_xp += xp
         reward_label.text = "+%d STERNE  |  +%d XP\nGESAMT: %d STERNE" % [stars_earned, xp, total_stars]
+        if clean_flight_mastery:
+            reward_label.text += "\nSAUBERER FLUG: 3/3 STRECKEN +125 XP UND TURBO!"
         if flawless_vocabulary_launch:
             reward_label.text += "\nWORT-MEISTER: 3 FEHLERFREI +60 XP, 2,5s START-TURBO"
         if world_choice == 0 and int(skyway_zone.call("get_signal_count")) >= NEON_SIGNAL_TARGET:
@@ -1642,9 +1731,9 @@ func _use_turbo() -> void:
 func _refresh_hud() -> void:
     if hud != null:
         if mobile_hud_layout:
-            hud.text = "%s  LEBEN %d  XP %d\nENERGIE %d%%  KOMBO x%d  %dm" % [VERSION_LABEL, lives, xp, power, combo, int(distance)]
+            hud.text = "%s  L%d  XP%d  SAUBER %d/3\nENERGIE %d%%  KOMBO x%d  %dm" % [VERSION_LABEL, lives, xp, clean_flight_count, power, combo, int(distance)]
         else:
-            hud.text = "SKYWAY %s   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm" % [VERSION_LABEL, lives, xp, power, combo, int(distance)]
+            hud.text = "SKYWAY %s   LEBEN %d   XP %d   ENERGIE %d%%   KOMBO x%d   %dm   SAUBER %d/3" % [VERSION_LABEL, lives, xp, power, combo, int(distance), clean_flight_count]
         if phase == "race":
             hud.text += "\n%s  RUNDE %d  ZIEL %dm  SCHILD %ds  BOOST %ds" % [WORLD_NAMES[world_choice], round_number, int(mission_target), ceili(shield_left), ceili(turbo_left)]
             if world_choice == 0:
@@ -1783,6 +1872,9 @@ func _process(delta: float) -> void:
     rider.rotation.z = lerpf(rider.rotation.z, (float(lane) * 3.1 - rider.position.x) * -0.14, delta * 5)
     rider.rotation.y = sin(distance * 0.03) * 0.035
     _update_run_items(delta)
+    if not started:
+        return
+    _update_clean_flight(delta)
     _update_neon_signals()
     _update_canyon_routes()
     _update_harbor_cargo_relay()
