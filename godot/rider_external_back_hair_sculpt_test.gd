@@ -77,8 +77,37 @@ func _check() -> void:
     var tip_left: Vector3 = sculpt.sculpt(Vector3.ZERO, size, facing, 0.9, 0.0, true)
     var tip_right: Vector3 = sculpt.sculpt(Vector3.ZERO, size, facing, 0.9, 1.0, true)
     var tip_inset := (tip_left.x - tip_right.x) - (root_left.x - root_right.x)
-    if tip_inset < size.x * 0.055 or tip_inset > size.x * 0.09:
+    if tip_inset < size.x * 0.12 or tip_inset > size.x * 0.16:
         _fail("lower hair must taper symmetrically toward neck, not flare over shoulders")
+        return
+    # The actual Head-local continuous shell must now finish much narrower
+    # than the scalp, while preserving both the five-channel Skin and face.
+    # This catches a regression to the old rectangular shoulder-wide curtain.
+    var center := region.get_center()
+    var crown_y := region.position.y + size.y * 0.85
+    var cap_height := size.y * 0.21
+    var radius_x := size.x * 0.56
+    var radius_z := size.z * 0.57
+    var scalp_a: Vector3 = headwear.call("_back_hair_point", center, size,
+        crown_y, cap_height, radius_x, radius_z, 0.0, 0.0)
+    var scalp_b: Vector3 = headwear.call("_back_hair_point", center, size,
+        crown_y, cap_height, radius_x, radius_z, 0.0, 1.0)
+    var hem_a: Vector3 = headwear.call("_back_hair_point", center, size,
+        crown_y, cap_height, radius_x, radius_z, 1.0, 0.0)
+    var hem_b: Vector3 = headwear.call("_back_hair_point", center, size,
+        crown_y, cap_height, radius_x, radius_z, 1.0, 1.0)
+    var scalp_width := absf(scalp_b.x - scalp_a.x)
+    var hem_width := absf(hem_b.x - hem_a.x)
+    if scalp_width <= size.x * 0.8 or hem_width < scalp_width * 0.48 or \
+            hem_width > scalp_width * 0.64:
+        _fail("weighted back hair must retain broad scalp and sculpted narrow hem")
+        return
+    var lock_left: Vector3 = headwear.call("_rear_lock_curve",
+        Vector3.ZERO, size, 0, 0.95)
+    var lock_right: Vector3 = headwear.call("_rear_lock_curve",
+        Vector3.ZERO, size, 4, 0.95)
+    if lock_left.x <= size.x * 0.045 or lock_right.x >= -size.x * 0.045:
+        _fail("outer GPU-skinned locks must follow the inward tapered curtain")
         return
     # Verify the actual 3D lower silhouette: five hair tips hang below
     # their adjacent grooves, with corresponding rearward depth relief.
