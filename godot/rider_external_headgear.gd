@@ -435,10 +435,10 @@ func _rear_lock_curve(point: Vector3, size: Vector3, strand: int, t: float) -> V
     point.x += size.x * (0.14 * sin(root_to_tip * TAU * 1.25 + phase) +
         0.045 * cos(phase * 0.7)) * swing
     # Keep all five genuinely weighted outer locks aligned with the new
-    # tapered inner curtain; otherwise the shell narrows while its visible
+    # tapered inner curtain (16% inward hem sweep); otherwise the shell narrows while its visible
     # lock volumes still form a wide shoulder-level fan.
     var across := (float(strand) + 0.5) / 5.0
-    point.x += size.x * (0.5 - across) * 0.08 * smoothstep(0.50, 1.0, root_to_tip)
+    point.x += size.x * (0.5 - across) * 0.16 * smoothstep(0.50, 1.0, root_to_tip)
     point.y += size.y * (0.035 * sin(root_to_tip * TAU * 1.5 + phase) * swing +
         0.027 * sin(phase * 1.7) * pow(root_to_tip, 3.0))
     # Match the five actual weighted locks to the new five-lobed underhair
@@ -549,10 +549,11 @@ func _back_hair_point(c: Vector3, s: Vector3, crown_y: float, cap_height: float,
         radius_x: float, radius_z: float, t: float, u: float) -> Vector3:
     # Shorter, more tapered rear drape for the larger mobile-readable head;
     # Sculpted silhouette: broad at shoulder, tapered toward the ends and
-    # split into softly scalloped locks. Avoid a rectangular purple hair slab.
+    # split into softly scalloped locks. A 23% narrower lower hem clears the
+    # shoulders while keeping the original broad scalp and five weighted locks.
     var angle := (u - 0.5) * PI
     var edge := sin(angle)
-    var width_profile := 1.06 + 0.40 * sin(PI * t) - 0.32 * t
+    var width_profile := 1.06 + 0.34 * sin(PI * t) - 0.49 * t
     var strand_wave := 0.065 * sin(7.0 * angle + 2.5 * t) * sin(PI * t)
     var hem := 0.13 * pow(t, 5.0) * (0.5 + 0.5 * cos(7.0 * angle))
     return Vector3(
