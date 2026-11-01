@@ -351,6 +351,51 @@ func _create_neon_conductor() -> void:
     neon_beam.position = Vector3(-3.1, 0.10, -13.0)
     add_child(neon_beam)
     neon_beam.visible = false
+    _create_neon_warning_chevrons()
+
+# Six raised, physically extruded directional chevrons give the three-lane
+# boss warning a clear depth cue in 16:9 and 19.5:9 chase views. All twelve
+# bars share ONE ArrayMesh and material; no collision, input or damage change.
+func _append_neon_warning_bar(tool: SurfaceTool, start: Vector3, finish: Vector3) -> void:
+    var along := (finish - start).normalized()
+    var across := Vector3(-along.z, 0.0, along.x) * 0.095
+    var lift := Vector3(0.0, 0.085, 0.0)
+    var corners := [
+        start - across, start + across, finish + across, finish - across,
+        start - across + lift, start + across + lift,
+        finish + across + lift, finish - across + lift
+    ]
+    for indices in [
+        [0, 3, 2, 0, 2, 1], [4, 5, 6, 4, 6, 7],
+        [0, 1, 5, 0, 5, 4], [3, 7, 6, 3, 6, 2],
+        [0, 4, 7, 0, 7, 3], [1, 2, 6, 1, 6, 5]
+    ]:
+        for index in indices:
+            tool.add_vertex(corners[index])
+
+func _create_neon_warning_chevrons() -> void:
+    var tool := SurfaceTool.new()
+    tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+    for index in range(6):
+        var z := 13.0 - float(index) * 4.8
+        _append_neon_warning_bar(tool, Vector3(-0.58, 0.18, z - 0.65),
+            Vector3(0.0, 0.18, z + 0.42))
+        _append_neon_warning_bar(tool, Vector3(0.58, 0.18, z - 0.65),
+            Vector3(0.0, 0.18, z + 0.42))
+    tool.generate_normals()
+    var chevrons := MeshInstance3D.new()
+    chevrons.name = "RaisedBossLaneChevrons"
+    chevrons.mesh = tool.commit()
+    var surface := StandardMaterial3D.new()
+    surface.albedo_color = Color("#ffe6a3")
+    surface.metallic = 0.12
+    surface.roughness = 0.48
+    surface.emission_enabled = true
+    surface.emission = Color("#ffd568")
+    surface.emission_energy_multiplier = 1.75
+    surface.cull_mode = BaseMaterial3D.CULL_DISABLED
+    chevrons.material_override = surface
+    neon_beam.add_child(chevrons)
 
 func _update_neon_conductor(delta: float) -> void:
     if world_choice != 0 or phase != "race" or not started or quiz_active or neon_defeated:
