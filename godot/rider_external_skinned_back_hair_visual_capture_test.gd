@@ -226,7 +226,7 @@ func _capture() -> void:
     wind.call("set_motion", 0.0, 0.0, 0.0, 0.0)
     if count != 20 or changed_phase < 4 or changed_chase < 12 or changed_wind < 8 or \
             bleached_hair > int(sampled_hair * 0.20):
-        _fail("expected 20 frames, phase-separated locks, visible wind and no white hair regression: %d %d %d/%d" % [changed_chase, changed_wind, bleached_hair, sampled_hair])
+        _fail("expected 20 frames, phase-separated locks, visible wind and no white hair regression: chase=%d wind=%d phase=%d bleached=%d/%d" % [changed_chase, changed_wind, changed_phase, bleached_hair, sampled_hair])
         return
     print("SKINNED BACK HAIR VISUAL QA PASSED: 20 real landscape images, including all five four-weight locks and isolated weighted-hair wind; manual clipping and iPhone FPS still required")
     quit(0)
