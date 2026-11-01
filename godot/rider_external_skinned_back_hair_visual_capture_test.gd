@@ -230,10 +230,44 @@ func _capture() -> void:
                             absf(a.b - b.b))) > 0.08:
                         changed_phase += 1
         count += 1
+    # With ALL original 65-bone poses, board, lights and cosmetic scripts
+    # frozen, isolate the first 33 ms of a hard carve. The only difference
+    # is the new counter-carve shader displacement of six skinned hair tips.
+    var instant: Image
+    var changed_inertia := 0
+    for variant in ["instant", "inertial"]:
+        if variant == "instant":
+            wind.call("set_motion", 0.95, 1.0, 0.6, 2.0)
+        else:
+            wind.set("inertial_steer", 0.0)
+            wind.set("inertial_speed", 0.0)
+            wind.call("set_motion_inertial", 0.95, 1.0, 0.6, 2.0, 1.0 / 30.0)
+        for frame in range(5):
+            await process_frame
+        await RenderingServer.frame_post_draw
+        var inertia_shot := viewport.get_texture().get_image()
+        if inertia_shot.is_empty() or inertia_shot.get_size() != SIZES[0]:
+            _fail("invalid real GPU inertia comparison frame")
+            return
+        if inertia_shot.save_png("%s/1280x720_carve_chase_hair_%s.png" % [
+                folder, variant]) != OK:
+            _fail("could not save isolated counter-carve hair image")
+            return
+        if variant == "instant":
+            instant = inertia_shot
+        else:
+            for y in range(30, 190, 3):
+                for x in range(500, 780, 3):
+                    var a := inertia_shot.get_pixel(x, y)
+                    var b := instant.get_pixel(x, y)
+                    if maxf(absf(a.r - b.r), maxf(absf(a.g - b.g),
+                            absf(a.b - b.b))) > 0.08:
+                        changed_inertia += 1
+        count += 1
     wind.call("set_motion", 0.0, 0.0, 0.0, 0.0)
-    if count != 20 or changed_phase < 4 or changed_chase < 12 or changed_wind < 8 or \
+    if count != 22 or changed_inertia < 4 or changed_phase < 4 or changed_chase < 12 or changed_wind < 8 or \
             bleached_hair > int(sampled_hair * 0.20):
-        _fail("expected 20 frames, phase-separated locks, visible wind and no white hair regression: chase=%d wind=%d phase=%d bleached=%d/%d" % [changed_chase, changed_wind, changed_phase, bleached_hair, sampled_hair])
+        _fail("expected 22 frames, real inertia, phase locks, visible wind, no white hair: chase=%d wind=%d inertia=%d phase=%d bleached=%d/%d" % [changed_chase, changed_wind, changed_inertia, changed_phase, bleached_hair, sampled_hair])
         return
-    print("SKINNED BACK HAIR VISUAL QA PASSED: 20 real landscape images, including all five four-weight locks and isolated weighted-hair wind; manual clipping and iPhone FPS still required")
+    print("SKINNED BACK HAIR VISUAL QA PASSED: 22 real landscape images, including frozen-pose counter-carve inertia and all five four-weight locks; manual clipping and iPhone FPS still required")
     quit(0)

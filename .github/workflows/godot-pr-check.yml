@@ -223,7 +223,7 @@ jobs:
             --script res://rider_external_skinned_portrait_visual_capture_test.gd 2>&1 | tee /tmp/skinned-portrait-visual.log
           grep -Fq 'TRUE SKINNED PORTRAIT VISUAL QA PASSED' /tmp/skinned-portrait-visual.log
           test "$(find /tmp/learnquest-skinned-portrait-qa -name '*.png' | wc -l)" -eq 12
-      - name: Compare rigid versus genuinely skinned rear hair in 16 landscape frames
+      - name: Compare 22 rigid, skinned and inertial CC0 hair landscape frames
         shell: bash
         run: |
           set -euo pipefail
@@ -233,7 +233,7 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://rider_external_skinned_back_hair_visual_capture_test.gd 2>&1 | tee /tmp/skinned-hair-visual.log
           grep -Fq 'SKINNED BACK HAIR VISUAL QA PASSED' /tmp/skinned-hair-visual.log
-          test "$(find /tmp/learnquest-skinned-hair-qa -name '*.png' | wc -l)" -eq 20
+          test "$(find /tmp/learnquest-skinned-hair-qa -name '*.png' | wc -l)" -eq 22
       - name: Capture 12 real neutral and bilateral CC0 carve poses in smartphone landscape
         shell: bash
         run: |
