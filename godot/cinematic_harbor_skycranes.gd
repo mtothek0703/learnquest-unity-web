@@ -1,8 +1,10 @@
 extends Node3D
 ## V144 candidate: four sculpted orbital cargo cranes frame Star Harbor.
 ## Original shared meshes, no collision bodies, new lights, or external assets.
+## Chase-camera QA moved the structures closer and enlarged their silhouette:
+## the first version changed only 52 sampled pixels at 1170x540.
 const CRANE_COUNT := 4
-const CRANE_SPACING := 37.0
+const CRANE_SPACING := 32.0
 const LOOP_LENGTH := CRANE_COUNT * CRANE_SPACING
 var running := false
 var travel_speed := 14.0
@@ -14,7 +16,7 @@ var freight_pods: Array[MeshInstance3D] = []
 
 func _support_point(side: float, t: float, angle: float) -> Vector3:
     # An actual bent, tapered 360-degree tube, not a flat billboard or box stack.
-    var radius := 0.47 - 0.14 * t
+    var radius := 0.61 - 0.19 * t
     return Vector3(-side * (4.65 * t * t) + radius * cos(angle),
         0.4 + 10.8 * t,
         0.34 * sin(PI * t) + radius * sin(angle))
@@ -72,8 +74,8 @@ func _ready() -> void:
     var tube_left := _support_mesh(-1.0)
     var tube_right := _support_mesh(1.0)
     var ring_mesh := TorusMesh.new()
-    ring_mesh.inner_radius = 1.65
-    ring_mesh.outer_radius = 1.89
+    ring_mesh.inner_radius = 2.20
+    ring_mesh.outer_radius = 2.50
     ring_mesh.rings = 40
     ring_mesh.ring_segments = 10
     var pod_mesh := SphereMesh.new()
@@ -88,8 +90,8 @@ func _ready() -> void:
         var side := -1.0 if index % 2 == 0 else 1.0
         var root_node := Node3D.new()
         root_node.name = "Orbital transfer crane %02d" % index
-        root_node.position = Vector3(side * 11.4, 0.0,
-            -19.0 - float(index) * CRANE_SPACING)
+        root_node.position = Vector3(side * 9.8, 0.0,
+            -12.0 - float(index) * CRANE_SPACING)
         add_child(root_node)
         cranes.append(root_node)
         supports.append(_attach(root_node, "Sculpted tapered orbital support",
@@ -104,7 +106,7 @@ func _ready() -> void:
             var pod_x := -side * (4.65 + offset)
             var pod := _attach(root_node, "Suspended freight shuttle %d" % pod_index,
                 pod_mesh, Vector3(pod_x, 6.6 + float(pod_index) * 0.35, 0.0), pod_metal)
-            pod.scale = Vector3(0.84, 0.60, 1.70)
+            pod.scale = Vector3(1.05, 0.72, 1.90)
             freight_pods.append(pod)
             _attach(root_node, "Visible cargo hoist cable %d" % pod_index,
                 cable_mesh, Vector3(pod_x, 8.2, 0.0), metal)
