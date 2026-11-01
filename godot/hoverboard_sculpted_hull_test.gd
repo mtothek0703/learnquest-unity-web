@@ -404,6 +404,27 @@ func _check() -> void:
         if vertices.size() < 1500 or normals.size() != vertices.size():
             _fail("carve fin must be a smooth, substantial 3D aerofoil")
             return
+        # V124 draft: the steer-reactive emissive trim must be a closed,
+        # tapered 3D tube, not the former flat two-triangle stripe.
+        var edge_arrays: Array = edge.mesh.surface_get_arrays(0)
+        var edge_vertices: PackedVector3Array = edge_arrays[Mesh.ARRAY_VERTEX]
+        var edge_normals: PackedVector3Array = edge_arrays[Mesh.ARRAY_NORMAL]
+        if edge_vertices.size() < 1000 or edge_normals.size() != edge_vertices.size():
+            _fail("signal edge must have real 3D tube geometry and normals")
+            return
+        var crest_outer: Vector3 = vanes.call("_edge_point", side, 0.5, 0.0)
+        var crest_inner: Vector3 = vanes.call("_edge_point", side, 0.5, PI)
+        var crest_up: Vector3 = vanes.call("_edge_point", side, 0.5, PI * 0.5)
+        var crest_down: Vector3 = vanes.call("_edge_point", side, 0.5, PI * 1.5)
+        if crest_outer.distance_to(crest_inner) < 0.050 or \
+                crest_up.distance_to(crest_down) < 0.050:
+            _fail("emissive rail has collapsed to a flat decal")
+            return
+        var front_radius: Vector3 = vanes.call("_edge_point", side, 0.0, 0.0)
+        var front_other: Vector3 = vanes.call("_edge_point", side, 0.0, PI)
+        if front_radius.distance_to(front_other) >= crest_outer.distance_to(crest_inner) * 0.50:
+            _fail("emissive rail must taper towards its tips")
+            return
         # Previously the entire vane sat inside the old side wing: the
         # OpenGL chase-camera A/B image changed exactly zero pixels.
         var side := -1.0 if (hinge as Node3D).name.begins_with("Port") else 1.0
