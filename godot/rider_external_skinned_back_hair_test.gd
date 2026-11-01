@@ -180,6 +180,16 @@ func _check() -> void:
         if not lock_tint.is_equal_approx(original_mat.albedo_color):
             _fail("rear lock %d lost original chestnut color or root-anchored wind shader" % i)
             return
+        # Each original four-weight rear lock must now move independently,
+        # with mirrored lateral sway, distinct phases and zero scalp motion.
+        if absf(float(dye.get_shader_parameter("lock_side")) - float(i - 2) * 0.5) > 0.001 or \
+                absf(float(dye.get_shader_parameter("lock_phase")) - float(i) * 0.63) > 0.001:
+            _fail("rear lock %d lost its mirrored phase-offset 3D flutter" % i)
+            return
+        if not dye.shader.code.contains("layered_sway") or \
+                not dye.shader.code.contains("lock_side * flutter"):
+            _fail("GPU lock tips must fan independently while scalp stays anchored")
+            return
     weighted_controller.call("set_motion", 0.85, 1.0, 0.6, 2.0)
     for material in weighted_materials:
         var active := material as ShaderMaterial
