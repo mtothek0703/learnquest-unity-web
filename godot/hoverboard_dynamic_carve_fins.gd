@@ -136,7 +136,7 @@ func _make_edge(side: float) -> ArrayMesh:
             var v := TAU * float(j + 1) / 8.0
             for sample in [Vector2(a, u), Vector2(b, u), Vector2(b, v),
                     Vector2(a, u), Vector2(b, v), Vector2(a, v)]:
-                var angle := sample.y
+                var angle: float = sample.y
                 tool.set_normal(Vector3(cos(angle), sin(angle), 0.0))
                 tool.add_vertex(_edge_point(side, sample.x, angle))
     # Close both narrow ends: the luminous trim is a volume, not a decal.
