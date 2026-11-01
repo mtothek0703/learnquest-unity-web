@@ -229,14 +229,14 @@ func _sculpt_offset(point: Vector3, normal: Vector3, bounds: AABB, is_boot: bool
     var heel := exp(-pow((y - 0.069) / 0.034, 2.0))
     var sole := exp(-pow((y - 0.045) / 0.014, 2.0))
     var boot := 1.0 if is_boot else 0.0
-    # Ankle deliberately narrows between the broad foot and raised calf.
+    # Keep knee armor sculpted, but avoid the inflated trouser cylinders\n    # seen in the actual front/chase landscape portrait QA.\n    # Ankle deliberately narrows between the broad foot and raised calf.
     # The old uniform +0.029 shell and swollen shin/knee read as two tubes.
-    var depth := 0.010 + 0.014 * thigh + 0.020 * knee + boot * (
+    var depth := 0.010 + 0.008 * thigh + 0.014 * knee + boot * (
         0.019 * calf + 0.008 * ankle + 0.031 * top_cuff +
         0.030 * toe + 0.033 * instep * front +
         0.028 * calf * front * centerline +
         0.022 * heel * back + 0.031 * sole)
-    var side_spread := outside * (0.012 * thigh + 0.024 * knee + boot * (
+    var side_spread := outside * (0.008 * thigh + 0.018 * knee + boot * (
         0.017 * calf - 0.010 * ankle + 0.043 * top_cuff +
         0.037 * forefoot + 0.030 * toe + 0.023 * sole))
     # Swept toe, raised instep and independent heel counter form a readable
