@@ -27,3 +27,7 @@ No release has been claimed at candidate creation.
 - Measured changed pixels (max RGB channel delta >25): 1280x720 chase **11,712 (1.271%)**, oblique **7,625 (0.827%)**; 1170x540 chase **6,594 (1.044%)**, oblique **4,292 (0.679%)**. The near-camera overhead rock span is visibly present with its hanging crystal keystones; no gameplay controls or collisions changed.
 - This proves a distinct substantial 3D landmark, not iPhone frame rate or commercial-grade visual quality.
 - Release commit now prepares **V142** in the world label and immutable Pages workflow, retaining historical V141 sky-terrace QA artifact naming. **No claim of published V142 until main CI and Pages HTTP/build.txt verification.**
+
+## CI repair before release
+- Initial version-label candidate CI [#41296669514](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41296669514) failed the existing phone-portrait/race HUD smoke assertions because four expectations still required `V141` after the actual game label was upgraded to `V142`. No release was performed.
+- Updated those four assertions to match the new version; gameplay and test semantics remain unchanged. A fresh full CI run must pass before merge.
