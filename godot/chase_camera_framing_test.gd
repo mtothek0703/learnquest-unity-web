@@ -35,7 +35,7 @@ func _run() -> void:
             rider.position = Vector3(float(lane) * 3.1, 0.0, 0.2)
             game.set("turbo_left", 0.0)
             game.call("_update_camera", 100.0)
-            if absf(camera.position.z - 7.15) > 0.01 or absf(camera.fov - 58.0) > 0.01:
+            if absf(camera.position.z - 7.75) > 0.01 or absf(camera.fov - 60.0) > 0.01:
                 _fail("new normal-race camera is not active")
                 return
             var center := camera.unproject_position(rider.global_position + Vector3(0.0, 2.0, 0.0))
@@ -47,7 +47,7 @@ func _run() -> void:
                 return
             game.set("turbo_left", 4.0)
             game.call("_update_camera", 100.0)
-            if absf(camera.position.z - 8.7) > 0.01 or absf(camera.fov - 70.0) > 0.01:
+            if absf(camera.position.z - 9.1) > 0.01 or absf(camera.fov - 71.0) > 0.01:
                 _fail("Turbo does not widen the chase view")
                 return
     game.set("phase", "menu")
