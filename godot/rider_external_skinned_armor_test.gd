@@ -130,6 +130,13 @@ func _check() -> void:
         # envelopes covered the articulated sleeve/arm silhouette in the
         # phone chase view. Require a real geometric taper on both sides,
         # not merely a different color or shader setting.
+        # Draft visual gate: actual imported-Skin panel geometry, not merely
+        # a darker shader, must occupy less torso width in chase/front view.
+        # This catches a return to the inflated V124 pectoral/spine armor.
+        var tailored_mid_limit := 0.24 if bool(spec["front"]) else 0.39
+        if middle_width >= jacket_bounds.size.x * tailored_mid_limit:
+            _fail("tailored source-skinned chest/back panel is still too wide")
+            return
         var max_fraction := 0.31 if bool(spec["front"]) else 0.44
         if high_width > jacket_bounds.size.x * max_fraction:
             _fail("skinned armor shoulder profile still creates broad wings")
