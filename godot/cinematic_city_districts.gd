@@ -181,9 +181,9 @@ func _sky_terrace_mesh(height: float, style: int) -> ArrayMesh:
     var rim_tint: Color = edge_tints[style]
     for level in range(2):
         var y := height * (0.42 if level == 0 else 0.70)
-        var outer_radius := 4.30 if level == 0 else 3.55
+        var outer_radius := 4.70 if level == 0 else 4.00
         var inner_radius := _profile(y / height, style) - 0.10
-        var underside := y - (0.28 if level == 0 else 0.20)
+        var underside := y - (0.48 if level == 0 else 0.32)
         for segment in range(32):
             var a0 := TAU * float(segment) / 32.0
             var a1 := TAU * float(segment + 1) / 32.0
@@ -231,13 +231,15 @@ func _build_sky_terraces(tower: Node3D, height: float, style: int,
 func _ready() -> void:
     var facade := _facade_material()
     var glow := _glow_material()
+    # Pull the moving foreground facades into the phone chase composition;
+    # even the wider lower terrace remains outside the playable road.
     for index in range(BUILDING_COUNT):
         var side := -1.0 if index % 2 == 0 else 1.0
         var style := index % 3
         var height := 15.0 + float((index * 5) % 14)
         var tower := Node3D.new()
         tower.name = "Architectural district tower %02d" % index
-        tower.position = Vector3(side * (14.3 + float(index % 3) * 1.4), 0.0, -16.0 - float(index) * SPACING)
+        tower.position = Vector3(side * (12.2 + float(index % 3) * 1.4), 0.0, -8.0 - float(index) * SPACING)
         add_child(tower)
         towers.append(tower)
         district_styles.append(style)
