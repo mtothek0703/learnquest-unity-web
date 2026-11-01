@@ -337,8 +337,10 @@ func _wing_point(side: float, t: float, angle: float) -> Vector3:
     # Both fade at the nose/tail and keep the previous maximum board width.
     var outboard := pow(maxf(0.0, cos(angle)), 2.0)
     var underside := pow(maxf(0.0, -sin(angle)), 2.0)
-    var crest := 0.12 * pow(swell, 1.4) * outboard
-    var undercut := 0.028 * swell * underside
+    # DRAFT: deeper continuous gull-wing shoulder with a clearly raised
+    # outboard chine; unchanged span, existing mesh and no collision.
+    var crest := 0.19 * pow(swell, 1.4) * outboard
+    var undercut := 0.040 * swell * underside
     return Vector3(side * (center + radius * cos(angle)),
         0.295 + curl + crest - undercut + (0.035 + 0.022 * swell) * sin(angle), z)
 
@@ -367,7 +369,7 @@ func _make_wing(side: float) -> ArrayMesh:
                 var chine := pow(maxf(0.0, sin(PI * sample.x)), 1.15) * \
                     pow(maxf(0.0, cos(sample.y)), 2.0)
                 tool.set_color(Color("#152640").lerp(Color("#779db6"),
-                    0.18 + 0.35 * highlight + 0.07 * sin(PI * sample.x) + 0.28 * chine))
+                    0.18 + 0.35 * highlight + 0.07 * sin(PI * sample.x) + 0.35 * chine))
                 tool.set_normal(_wing_normal(side, sample.x, sample.y))
                 tool.add_vertex(point)
     # Both aerofoil ends now have real 3D caps, avoiding open tubular wings.
