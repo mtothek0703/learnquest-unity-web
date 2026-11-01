@@ -30,3 +30,11 @@ PR #111 remains a separate experiment and must not be merged without a genuine w
 - The existing V122 isolated drydock QA also fell from its >=65 sample gate to 63 due to new scenery occlusion. Corrected V122 and V123 historical before/after QA to temporarily hide only the later V144 cranes, preserving the original strict pixel thresholds. The new V144 comparison still renders the complete combined harbor.
 - Sculpt revision: move cranes from x=±11.4 to ±9.8, foreground the first root from z=-19 to -12, tighten spacing to 32, enlarge true tubular supports, 3D halos and freight pods. Foundations remain outside the race lanes; no new collision bodies.
 - [ ] Re-run full CI and inspect revised eight landscape frames before any merge. **V144 is not published yet.**
+
+## Final verified stable release — 2026-11-01
+- [x] PR #132 merged into `main` as `f7a8a9d59a0dd37d7990595cc49f7e3cf1017387`, retaining independent DRAFT PR #111.
+- [x] [Main Godot CI 41306881512](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41306881512), [historical archive check 41306881533](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41306881533), [health check 41306881513](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41306881513) and [Pages 41306881518](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41306881518) all `completed/success`.
+- [x] Pages log verified new immutable `https://mtothek0703.github.io/learnquest-unity-web/skyway-v144/`: `build.txt` matched the exact release commit, and `index.html`, `index.js`, `index.wasm`, `index.pck` each returned HTTP 200 at 12:44 UTC.
+- [x] Release log: **141 historical version directories preserved**, Unity archive prepared. No prior Skyway path overwritten.
+- [x] Final Pages artifact **1,453,422,140 bytes**, exceeding the 1-GB warning despite successful deployment. Optimize size without deleting historical releases.
+- [ ] Manual physical iPhone Safari FPS, all-pose clipping and complete touch round remain unverified. CI/landscape render tests are not substitutes.
