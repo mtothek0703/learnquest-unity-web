@@ -49,6 +49,12 @@ func _capture() -> void:
     if docks == null:
         _fail("drydock scenery missing from actual harbor")
         return
+    # Isolate the historical V122 drydock A/B from later V144 crane occlusion.
+    # Keep the original >=65 changed-pixel requirement unchanged. The V144
+    # comparison separately renders both scenery systems together.
+    var new_cranes := harbor.get_node_or_null("Cinematic Star Harbor orbital cargo cranes") as Node3D
+    if new_cranes != null:
+        new_cranes.visible = false
     var count := 0
     for size in SIZES:
         viewport.size = size
