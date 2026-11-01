@@ -14,3 +14,8 @@ Read both required policy files on main and verified Primary GitHub account `mto
 - [ ] If visually too tall or obstructive, revise/revert on DRAFT branch. Never merge to main without a full-character/board visual acceptance.
 - [ ] Real iPhone FPS and full three-question touch-controlled round remain unverified.
 - [ ] Stable track A has separate V144 orbital-crane candidate PR #132; do not let this draft block it.
+
+## Actual QA outcome
+- [x] [Godot PR CI 41306036023](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41306036023) **SUCCESS** after code and geometry-test commits. Includes the full 52-step Godot pipeline, Web export and 24 OpenGL fin frames.
+- [x] [24 real landscape frames (artifact 13082623742)](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41306036023/artifacts/13082623742) downloaded and visually inspected. 1280×720 right-carve A/B (fin hidden versus visible) changes 2,651 pixels (0.288%) in chase and 5,078 pixels (0.551%) in three-quarter camera at >25 RGB-channel difference. This is a fin visibility metric, **not** proof of improvement versus the previous fin geometry.
+- [ ] The taller aft vanes are visibly present but the full rider/board remains overly toy-like, with broad shoulder/back hardware and a crowded chase silhouette. **Visual approval withheld; PR #111 remains DRAFT, no merge/release.**
