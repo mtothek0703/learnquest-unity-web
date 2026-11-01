@@ -1852,6 +1852,15 @@ func _refresh_hud() -> void:
                         hud.text += "\nAURORA-SPRUNGTORE: %d/%d  WINDSTROM: %d/%d  KETTE: %d/4  LUFT: %d/4" % aurora_progress
                     if frost_active:
                         hud.text += "\nFROST-DRACHE %d/%d  %s" % [frost_hp, FROST_HEALTH, "EISWELLE!" if frost_warning_left > 0.0 else "ATTACKE LADEN"]
+    # Godot containers can retain a taller prior label size after a resize.
+    # Shrink the actual panel to its current three-line contents, then place
+    # mission progress below its measured bottom rather than at a fixed y=91.
+    if hud_panel != null and progress_bar != null:
+        if compact_landscape_hud and phase == "race":
+            hud_panel.reset_size()
+            progress_bar.position.y = maxf(91.0, hud_panel.position.y + hud_panel.size.y + 9.0)
+        else:
+            progress_bar.position.y = 91.0
     if progress_bar != null:
         progress_bar.visible = phase == "race"
         progress_bar.max_value = mission_target
