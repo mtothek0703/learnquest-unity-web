@@ -11,6 +11,7 @@ var travel_speed := 14.0
 var elapsed := 0.0
 var cranes: Array[Node3D] = []
 var supports: Array[MeshInstance3D] = []
+var overhead_bridges: Array[MeshInstance3D] = []
 var transfer_rings: Array[MeshInstance3D] = []
 var freight_pods: Array[MeshInstance3D] = []
 
@@ -37,6 +38,51 @@ func _support_mesh(side: float) -> ArrayMesh:
                     Vector2(t0, a0), Vector2(t1, a1), Vector2(t0, a1)]:
                 tool.set_color(tint)
                 tool.add_vertex(_support_point(side, sample.x, sample.y))
+    tool.generate_normals()
+    return tool.commit()
+
+# Four continuous, shaded 3D transit arches link the outer crane pylons
+# above the racing corridor. The rails are scenery only: no collision body,
+# extra light source or change to the three-question gameplay pause.
+func _bridge_point(side: float, t: float, angle: float) -> Vector3:
+    var crest := sin(PI * t)
+    var center_x := -side * (4.65 + 10.30 * t)
+    var center_y := 7.65 + 2.15 * crest
+    var center_z := 0.35 + 0.42 * crest
+    return Vector3(center_x,
+        center_y + (0.28 + 0.12 * crest) * sin(angle),
+        center_z + (0.34 + 0.06 * crest) * cos(angle))
+
+func _bridge_mesh(side: float) -> ArrayMesh:
+    var tool := SurfaceTool.new()
+    tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+    for step in range(36):
+        var a := float(step) / 36.0
+        var b := float(step + 1) / 36.0
+        for radial in range(12):
+            var u := TAU * float(radial) / 12.0
+            var v := TAU * float(radial + 1) / 12.0
+            for sample in [Vector2(a, u), Vector2(b, u), Vector2(b, v),
+                    Vector2(a, u), Vector2(b, v), Vector2(a, v)]:
+                var band := 0.55 if int(floor(sample.x * 12.0)) % 3 == 0 else 0.0
+                var upper := maxf(0.0, sin(sample.y))
+                var tint := Color("#29445d").lerp(Color("#9be4ed"),
+                    0.20 + 0.54 * upper + 0.22 * band)
+                tool.set_color(tint)
+                tool.add_vertex(_bridge_point(side, sample.x, sample.y))
+    # Closed ends give the arch true volume, not an unlit ribbon.
+    for end in [0.0, 1.0]:
+        var center := _bridge_point(side, end, 0.0)
+        center.y = 7.65
+        center.z = 0.35
+        for radial in range(12):
+            var u := TAU * float(radial) / 12.0
+            var v := TAU * float(radial + 1) / 12.0
+            for point in [center,
+                    _bridge_point(side, end, v if end == 0.0 else u),
+                    _bridge_point(side, end, u if end == 0.0 else v)]:
+                tool.set_color(Color("#29445d"))
+                tool.add_vertex(point)
     tool.generate_normals()
     return tool.commit()
 
@@ -71,6 +117,14 @@ func _ready() -> void:
     gold.emission_enabled = true
     gold.emission = Color("#ff9e53")
     gold.emission_energy_multiplier = 1.45
+    var bridge_metal := metal.duplicate() as StandardMaterial3D
+    bridge_metal.metallic = 0.30
+    bridge_metal.roughness = 0.44
+    bridge_metal.emission_enabled = true
+    bridge_metal.emission = Color("#3d8394")
+    bridge_metal.emission_energy_multiplier = 0.42
+    var bridge_left := _bridge_mesh(-1.0)
+    var bridge_right := _bridge_mesh(1.0)
     var tube_left := _support_mesh(-1.0)
     var tube_right := _support_mesh(1.0)
     var ring_mesh := TorusMesh.new()
@@ -96,6 +150,8 @@ func _ready() -> void:
         cranes.append(root_node)
         supports.append(_attach(root_node, "Sculpted tapered orbital support",
             tube_left if side < 0.0 else tube_right, Vector3.ZERO, metal))
+        overhead_bridges.append(_attach(root_node, "Sculpted overhead transit arch",
+            bridge_left if side < 0.0 else bridge_right, Vector3.ZERO, bridge_metal))
         var ring := _attach(root_node, "Three-dimensional cargo docking halo",
             ring_mesh, Vector3(-side * 4.65, 10.5, 0.35),
             cyan if index % 2 == 0 else gold)
