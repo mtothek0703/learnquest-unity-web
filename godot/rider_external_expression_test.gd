@@ -71,6 +71,34 @@ func _check() -> void:
     if original_iris_pos.x - iris.position.x < dimensions.x * visual_scale * 0.008:
         _fail("real gameplay pose adapter must drive face in opposite steering direction")
         return
+    # A sudden steering reversal must retain gaze momentum for a frame,
+    # then settle to the new target without overshooting the eye surface.
+    acting.call("animate", 1.0, false, 0.0, 0.0, 0.0)
+    acting.call("animate", -1.0, false, 0.0, 1.0 / 60.0, 0.0)
+    if iris.position.x <= original_iris_pos.x:
+        _fail("eye gaze must trail an abrupt carve instead of snapping")
+        return
+    acting.call("animate", -1.0, false, 0.0, 0.30, 0.0)
+    if iris.position.x >= original_iris_pos.x - dimensions.x * visual_scale * 0.013:
+        _fail("eye gaze must converge on the opposite turn")
+        return
+    # Equal elapsed time at 30 and 60 FPS must produce the same eye pose.
+    acting.call("animate", 1.0, false, 0.0, -1.0, 0.0)
+    acting.call("animate", 1.0, false, 0.0, 0.0, 0.0)
+    for frame in range(1, 10):
+        acting.call("animate", -1.0, false, 0.0, float(frame) / 30.0, 0.0)
+    var gaze_30 := iris.position.x
+    acting.call("animate", 1.0, false, 0.0, -1.0, 0.0)
+    acting.call("animate", 1.0, false, 0.0, 0.0, 0.0)
+    for frame in range(1, 19):
+        acting.call("animate", -1.0, false, 0.0, float(frame) / 60.0, 0.0)
+    if absf(iris.position.x - gaze_30) > dimensions.x * visual_scale * 0.0002:
+        _fail("inertial gaze must match at 30 and 60 FPS")
+        return
+    acting.call("animate", 0.0, false, 0.0, -1.0, 0.0)
+    if iris.position.distance_to(original_iris_pos) > 0.0001:
+        _fail("rewound clock must reset gaze without drift")
+        return
     if head.find_children("*", "CollisionObject3D", true, false).size() > 0:
         _fail("face animation may not add gameplay collisions")
         return
@@ -78,5 +106,5 @@ func _check() -> void:
     if source == null or source.skin == null or source.skin.get_bind_count() < 50:
         _fail("original GPU-skinned body must remain unchanged")
         return
-    print("EXTERNAL EXPRESSION TEST PASSED: gaze, boost brows, blink, smile, neutral reset, original 65-bone Skin")
+    print("EXTERNAL EXPRESSION TEST PASSED: damped 30/60-FPS gaze, steering reversal, boost brows, blink, reset, original 65-bone Skin")
     quit(0)
