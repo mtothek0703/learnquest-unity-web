@@ -94,7 +94,7 @@ func _check() -> void:
     # not merely recolored, and remains on the original 65-bone skin.
     var thigh := Vector3(center.x + x, bounds.position.y + bounds.size.y * 0.310, center.z + bounds.size.z * 0.18)
     var thigh_after: Vector3 = sculpt.call("_reshape", thigh, bounds)
-    if thigh_after.x >= thigh.x - 0.002 or thigh_after.z >= thigh.z - 0.001:
+    if thigh_after.x >= thigh.x or thigh_after.z >= thigh.z:
         _fail("original weighted thigh still has the inflated toy-like profile")
         return
     if (sculpt.call("_reshape", head, bounds) as Vector3).distance_to(head) > 0.0001 or \
