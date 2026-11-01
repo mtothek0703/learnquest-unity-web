@@ -15,8 +15,11 @@ var icicle_batches: Array[MultiMeshInstance3D] = []
 func _point(row: int, column: int, rear: bool) -> Vector3:
     var t := float(row) / 18.0
     var u := float(column) / 12.0
-    var x := (u - 0.5) * 5.0 + 0.26 * sin(t * 6.0 + u * 11.0)
-    var y := 0.45 + 12.4 * t
+    # Irregular fluted ice crown and tapered feet avoid a rectangular wall.
+    var taper := 0.82 + 0.18 * sin(PI * t) + 0.05 * sin(u * 14.0 + t * 6.0)
+    var x := (u - 0.5) * 5.0 * taper + 0.26 * sin(t * 6.0 + u * 11.0)
+    var crown := 12.4 + 0.88 * sin(u * 8.0) + 0.34 * cos(u * 19.0)
+    var y := lerpf(0.45 + 0.18 * sin(u * 14.0), crown, t)
     # A deeply folded surface with actual front/back volume, not a billboard.
     var z := 0.45 * sin(u * 9.0 + t * 4.0) + 0.24 * sin(u * 23.0 - t * 7.0)
     if rear:
@@ -108,7 +111,7 @@ func _ready() -> void:
             var size := 0.62 + 0.13 * float((index + shard) % 4)
             batch.set_instance_transform(shard, Transform3D(
                 Basis().scaled(Vector3(size, size, size)),
-                Vector3(x, y, -0.58)))
+                Vector3(x, y, 1.05)))
         var icicles := MultiMeshInstance3D.new()
         icicles.name = "Twelve batched luminous icicles"
         icicles.multimesh = batch
