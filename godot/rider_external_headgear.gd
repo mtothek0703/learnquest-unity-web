@@ -553,7 +553,7 @@ func _back_hair_point(c: Vector3, s: Vector3, crown_y: float, cap_height: float,
     # shoulders while keeping the original broad scalp and five weighted locks.
     var angle := (u - 0.5) * PI
     var edge := sin(angle)
-    var width_profile := 1.06 + 0.34 * sin(PI * t) - 0.49 * t
+    var width_profile := 1.06 + 0.50 * sin(PI * t) - 0.49 * t
     var strand_wave := 0.065 * sin(7.0 * angle + 2.5 * t) * sin(PI * t)
     var hem := 0.13 * pow(t, 5.0) * (0.5 + 0.5 * cos(7.0 * angle))
     return Vector3(
