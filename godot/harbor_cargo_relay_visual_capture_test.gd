@@ -50,6 +50,11 @@ func _capture() -> void:
     if relay == null:
         _fail("cargo relay gates are missing from the actual Harbor scene")
         return
+    # Preserve V123 relay-only A/B visibility under later V144 crane scenery.
+    # V144 itself has a separate whole-harbor visual comparison.
+    var new_cranes := harbor.get_node_or_null("Cinematic Star Harbor orbital cargo cranes") as Node3D
+    if new_cranes != null:
+        new_cranes.visible = false
     var stations: Array = relay.get("stations")
     # Keep the first real gate prominent in both wide views. Previous oblique
     # capture occasionally yielded 39/40 samples; do not lower the QA bar.
