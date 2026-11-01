@@ -25,11 +25,13 @@ func sculpt(point: Vector3, size: Vector3, face_sign: float,
     result.z -= face_sign * depth * (1.0 if outer else 0.16)
     # Pull the loose lower curtain toward the neck instead of letting its
     # five channels form a wide rectangular shelf over the shoulder armor.
-    # The scalp/upper half is untouched; both side edges taper symmetrically
+    # The scalp/upper half is untouched; a stronger 16% hem taper keeps
+    # the original weighted curtain inside the shoulder silhouette.
+    # Both side edges taper symmetrically
     # toward the center and the weighted source-Skin remains unchanged.
-    var tip_inset := 0.08 * smoothstep(0.50, 1.0, t)
+    var tip_inset := 0.16 * smoothstep(0.50, 1.0, t)
     result.x += size.x * (0.5 - u) * tip_inset
-    result.x += size.x * 0.024 * taper * sin(TAU * (u + 0.27 * t))
+    result.x += size.x * 0.038 * taper * sin(TAU * (u + 0.27 * t))
     result.y += size.y * 0.018 * taper * cos(TAU * float(CHANNELS) * u)
     # A five-lobed, physically sculpted lower hem replaces the ruler-straight
     # edge seen in chase QA. Groove valleys lift clear of shoulder armor while
@@ -37,8 +39,8 @@ func sculpt(point: Vector3, size: Vector3, face_sign: float,
     # exactly fixed, preserving original Head/Neck/Spine skin and scalp seam.
     var hem := smoothstep(0.58, 1.0, t)
     var groove := 0.5 + 0.5 * cos(TAU * float(CHANNELS) * u)
-    result.y += size.y * hem * (0.025 + 0.035 * groove)
-    result.z -= face_sign * size.z * hem * (0.020 + 0.018 * groove)
+    result.y += size.y * hem * (0.025 + 0.055 * groove)
+    result.z -= face_sign * size.z * hem * (0.020 + 0.028 * groove)
     return result
 
 func tone(t: float, u: float, outer: bool) -> Color:
