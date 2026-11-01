@@ -53,7 +53,7 @@ func _check() -> void:
             if camera.is_position_behind(rider.global_position + Vector3(0.0, 2.1, 0.0)) or subject.x < bounds.x * 0.08 or subject.x > bounds.x * 0.92 or subject.y < bounds.y * 0.06 or subject.y > bounds.y * 0.85:
                 _fail("rider leaves safe screen area for lane %s, boost %s: %s" % [lane_x, boosted, subject])
                 return
-    if int(game.get("TASKS_PER_ROUND")) != 3:
+    if int(game.get_script().get_script_constant_map().get("TASKS_PER_ROUND", 0)) != 3:
         _fail("three mandatory vocabulary tasks changed")
         return
     print("LANDSCAPE CHASE CAMERA TEST PASSED: three phone ratios, desktop unchanged, lane/turbo framing and vocabulary rules")
