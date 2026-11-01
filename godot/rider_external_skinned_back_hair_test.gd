@@ -198,6 +198,37 @@ func _check() -> void:
                 absf(float(active.get_shader_parameter("jump_amount")) - 0.6) > 0.001:
             _fail("all five weighted locks must respond to steering, boost and jump")
             return
+    # A single actual steering reversal must leave the weighted tips behind
+    # the board, without moving the scalp or introducing frame-rate drift.
+    var thirty := preload("res://rider_external_skinned_back_hair.gd").new() as Node
+    var sixty := preload("res://rider_external_skinned_back_hair.gd").new() as Node
+    for frame in range(30):
+        thirty.call("set_motion_inertial", 1.0, 0.0, 0.0, float(frame) / 30.0, 1.0 / 30.0)
+    for frame in range(60):
+        sixty.call("set_motion_inertial", 1.0, 0.0, 0.0, float(frame) / 60.0, 1.0 / 60.0)
+    var follow_30 := float(thirty.get("inertial_steer"))
+    var follow_60 := float(sixty.get("inertial_steer"))
+    if absf(follow_30 - follow_60) > 0.002 or follow_30 < 0.99:
+        _fail("true-skinned hair inertia must converge identically at 30 and 60 FPS")
+        return
+    thirty.call("set_motion_inertial", -1.0, 0.0, 0.0, 1.1, 1.0 / 30.0)
+    if float(thirty.get("turn_lag")) > -0.8 or \
+            absf(float(thirty.get("inertial_steer"))) > 1.0:
+        _fail("hair tips must trail the first frame of a reverse carve")
+        return
+    controller.call("set_motion_inertial", 1.0, 1.0, 0.5, 3.0, 1.0 / 30.0)
+    var actual_lag := float(controller.get("turn_lag"))
+    if actual_lag < 0.8 or absf(float(wind.get_shader_parameter("turn_lag")) - actual_lag) > 0.001:
+        _fail("true skinned hair curtain must receive physical carve lag")
+        return
+    for material in weighted_materials:
+        var active := material as ShaderMaterial
+        if absf(float(active.get_shader_parameter("turn_lag")) - actual_lag) > 0.001:
+            _fail("all five original-skinned locks must receive the same lag")
+            return
+    if not wind.shader.code.contains("turn_lag * 0.055"):
+        _fail("root-anchored shader must visibly counter-swing only the weighted tips")
+        return
     var head_id := rig.find_bone("Head")
     var neck_id := rig.find_bone("neck_01")
     var before := rig.get_bone_pose_rotation(head_id)

@@ -10,6 +10,11 @@ var root_head_weight: float = 0.0
 var tip_head_weight: float = 0.0
 var wind_material: ShaderMaterial
 var weighted_locks: Node
+# A critically damped, time-step-independent visual hair follow-through.
+# Gameplay steering and original imported Skin remain fully untouched.
+var inertial_steer: float = 0.0
+var inertial_speed: float = 0.0
+var turn_lag: float = 0.0
 
 func install(source_meshes: Array[MeshInstance3D], rig: Skeleton3D,
         headwear: BoneAttachment3D) -> bool:
@@ -114,11 +119,33 @@ func set_motion(steer: float, boost: float, jump: float, phase: float) -> void:
     if wind_material == null:
         return
     wind_material.set_shader_parameter("steer_amount", clampf(steer, -1.0, 1.0))
+    wind_material.set_shader_parameter("turn_lag", 0.0)
     wind_material.set_shader_parameter("boost_amount", clampf(boost, 0.0, 1.0))
     wind_material.set_shader_parameter("jump_amount", clampf(jump, 0.0, 1.0))
     wind_material.set_shader_parameter("motion_phase", maxf(phase, 0.0))
     if weighted_locks != null:
         weighted_locks.call("set_motion", steer, boost, jump, phase)
+        weighted_locks.call("set_turn_lag", 0.0)
+
+# The original rider calls this only for the experimental CC0 visual path.
+# The exact critically damped solution avoids 30/60 FPS animation drift.
+# A bounded 50 ms step also avoids a huge hair snap after Safari tab resume.
+func set_motion_inertial(steer: float, boost: float, jump: float,
+        phase: float, delta: float) -> void:
+    var dt := clampf(delta, 0.0, 0.05)
+    var target := clampf(steer, -1.0, 1.0)
+    var omega := 9.0
+    var error := inertial_steer - target
+    var correction := (inertial_speed + omega * error) * dt
+    var decay := exp(-omega * dt)
+    inertial_steer = clampf(target + (error + correction) * decay, -1.0, 1.0)
+    inertial_speed = (inertial_speed - omega * correction) * decay
+    turn_lag = clampf(target - inertial_steer, -1.0, 1.0)
+    set_motion(inertial_steer, boost, jump, phase)
+    if wind_material != null:
+        wind_material.set_shader_parameter("turn_lag", turn_lag)
+    if weighted_locks != null:
+        weighted_locks.call("set_turn_lag", turn_lag)
 
 func _bind(skin: Skin, rig: Skeleton3D, target: String) -> int:
     for index in range(skin.get_bind_count()):

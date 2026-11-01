@@ -4,6 +4,9 @@ render_mode cull_back, diffuse_burley, specular_schlick_ggx;
 // UV.y is root-to-tip distance in the sculpted rest mesh. Skinning stays
 // enabled by Godot after this small, root-anchored local-space displacement.
 uniform float steer_amount : hint_range(-1.0, 1.0) = 0.0;
+// Counter-steering inertia on the same six skinned volumes. The roots remain
+// anchored by flutter=0; no added meshes, bones, textures or render passes.
+uniform float turn_lag : hint_range(-1.0, 1.0) = 0.0;
 uniform float boost_amount : hint_range(0.0, 1.0) = 0.0;
 uniform float jump_amount : hint_range(0.0, 1.0) = 0.0;
 uniform float motion_phase = 0.0;
@@ -34,7 +37,7 @@ void vertex() {
     float layered_sway = lock_side * flutter
         * (0.014 + boost_amount * 0.034)
         * (0.5 + 0.5 * sin(motion_phase * 1.7 + lock_phase));
-    VERTEX.x += flutter * (steer_amount * 0.042
+    VERTEX.x += flutter * (steer_amount * 0.042 - turn_lag * 0.055
         + wave * (0.006 + boost_amount * 0.020)) + layered_sway;
     VERTEX.z += wind_back_sign * flutter *
         (boost_amount * 0.032 + jump_amount * 0.016);

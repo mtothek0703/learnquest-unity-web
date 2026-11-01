@@ -112,3 +112,9 @@ func set_motion(steer: float, boost: float, jump: float, phase: float) -> void:
         material.set_shader_parameter("boost_amount", clampf(boost, 0.0, 1.0))
         material.set_shader_parameter("jump_amount", clampf(jump, 0.0, 1.0))
         material.set_shader_parameter("motion_phase", maxf(phase, 0.0))
+
+# The original Head/Neck/Spine weighted locks share the same counter-carve
+# follow-through as the curtain; only a shader uniform changes per frame.
+func set_turn_lag(value: float) -> void:
+    for material in materials:
+        material.set_shader_parameter("turn_lag", clampf(value, -1.0, 1.0))

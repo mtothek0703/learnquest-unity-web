@@ -431,7 +431,7 @@ func _process(delta: float) -> void:
     if hair_dynamics != null:
         hair_dynamics.call("set_motion", steer, boost, last_jump, elapsed)
     if skinned_hair_motion != null:
-        skinned_hair_motion.call("set_motion", steer, boost, last_jump, elapsed)
+        skinned_hair_motion.call("set_motion_inertial", steer, boost, last_jump, elapsed, delta)
 
 func fit_to_board() -> bool:
     # Normalize different glTF unit conventions without touching the Skin.
