@@ -90,6 +90,34 @@ func _check() -> void:
     if shoulder_after.z - shoulder.z >= chest_after.z - chest.z:
         _fail("original shoulder depth still balloons beyond the sculpted chest")
         return
+    # Isolated source-only frames showed the OUTER original deltoid, not
+    # the overlaid graphite armor, still forming a wide shoulder shelf.
+    # Verify actual rest-space vertex contraction, bilateral symmetry,
+    # armpit falloff and unchanged hands on the original 65-bone mesh.
+    var outer_right := Vector3(center.x + bounds.size.x * 0.275,
+        bounds.position.y + bounds.size.y * 0.738,
+        center.z + bounds.size.z * 0.18)
+    var outer_left := Vector3(center.x - bounds.size.x * 0.275,
+        outer_right.y, outer_right.z)
+    var tapered_right: Vector3 = sculpt.call("_reshape", outer_right, bounds)
+    var tapered_left: Vector3 = sculpt.call("_reshape", outer_left, bounds)
+    if outer_right.x - tapered_right.x < bounds.size.x * 0.020 or \
+            outer_right.z - tapered_right.z < bounds.size.z * 0.006:
+        _fail("original outer deltoid must narrow in both real geometry axes")
+        return
+    if absf(tapered_right.x + tapered_left.x - 2.0 * center.x) > 0.00001 or \
+            absf(tapered_right.z - tapered_left.z) > 0.00001:
+        _fail("source-skinned deltoid tailoring must be bilaterally symmetric")
+        return
+    var armpit := Vector3(outer_right.x,
+        bounds.position.y + bounds.size.y * 0.60, outer_right.z)
+    var hand_tip := Vector3(center.x + bounds.size.x * 0.45,
+        outer_right.y, outer_right.z)
+    if (sculpt.call("_reshape", armpit, bounds) as Vector3).distance_to(armpit) > \
+            bounds.size.x * 0.0001 or \
+            (sculpt.call("_reshape", hand_tip, bounds) as Vector3).distance_to(hand_tip) > 0.00001:
+        _fail("shoulder taper must fade before armpit and outer hand")
+        return
     # The new athletic thigh is narrower in BOTH axes than the source body,
     # not merely recolored, and remains on the original 65-bone skin.
     var thigh := Vector3(center.x + x, bounds.position.y + bounds.size.y * 0.310, center.z + bounds.size.z * 0.18)
