@@ -277,6 +277,13 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://neon_conductor_visual_capture_test.gd 2>&1 | tee /tmp/godot-neon-conductor-visual.log
           grep -Fq 'NEON CONDUCTOR VISUAL QA PASSED' /tmp/godot-neon-conductor-visual.log
+          mkdir -p /tmp/learnquest-warning-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_WARNING_OUTPUT=/tmp/learnquest-warning-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://neon_warning_visual_capture_test.gd 2>&1 | tee /tmp/godot-neon-warning-visual.log
+          grep -Fq 'NEON WARNING VISUAL QA PASSED' /tmp/godot-neon-warning-visual.log
+          test "$(find /tmp/learnquest-warning-qa -name '*.png' | wc -l)" -eq 8
           mkdir -p /tmp/learnquest-precision-qa
           LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_PRECISION_OUTPUT=/tmp/learnquest-precision-qa \
             timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
@@ -298,28 +305,28 @@ jobs:
           python - <<'PY'
           from urllib.error import HTTPError
           from urllib.request import Request, urlopen
-          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v146/index.html"
+          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v147/index.html"
           try:
               with urlopen(Request(url, headers={"Cache-Control": "no-cache"}), timeout=20):
-                  raise SystemExit("Skyway V146 already exists: refusing to overwrite an immutable release")
+                  raise SystemExit("Skyway V147 already exists: refusing to overwrite an immutable release")
           except HTTPError as error:
               if error.code != 404:
                   raise
-          print("Skyway V146 is not published yet; safe to create")
+          print("Skyway V147 is not published yet; safe to create")
           PY
           # Each release gets a fresh URL; historical folders are never rebuilt from newer exports.
-          mkdir -p _site/skyway-v146
-          cp -a _site/godot/. _site/skyway-v146/
-          echo "$GITHUB_SHA" > _site/skyway-v146/build.txt
+          mkdir -p _site/skyway-v147
+          cp -a _site/godot/. _site/skyway-v147/
+          echo "$GITHUB_SHA" > _site/skyway-v147/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
-          echo "Archived previous versions and prepared immutable Skyway V146"
+          echo "Archived previous versions and prepared immutable Skyway V147"
       - name: Check browser export integrity
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          root = Path("_site/skyway-v146")
+          root = Path("_site/skyway-v147")
           for name in ("index.html", "index.js", "index.wasm", "index.pck"):
               file = root / name
               if not file.is_file() or file.stat().st_size == 0:
@@ -383,6 +390,12 @@ jobs:
             /tmp/godot-canyon-geodes-visual.log
           if-no-files-found: ignore
 
+      - name: Upload raised Neon warning landscape QA
+        uses: actions/upload-artifact@v4
+        with:
+          name: neon-warning-landscape-qa
+          path: /tmp/learnquest-warning-qa/*.png
+          if-no-files-found: error
       - name: Upload V134 Neon precision before-after frames
         if: always()
         uses: actions/upload-artifact@v4
@@ -562,7 +575,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request, urllib.error
-          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v146/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v147/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.js": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
