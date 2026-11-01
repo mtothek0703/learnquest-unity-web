@@ -33,9 +33,9 @@ func _check() -> void:
     if shells.size() != 2 or cores.size() != 2:
         _fail("both shoulders need a weighted nacelle and illuminated core")
         return
-    # The previously oversized shoulder housings obscured the actual
-    # four-weight jacket/mantle in chase. Only recessed cores render when
-    # all fitted garment layers are available, with a safe missing-layer fallback.
+    # Real front/chase isolation frames show both luminous shoulder cores
+    # create detached fins. A complete weighted suit hides both cores and
+    # nacelles; missing fitted sleeves must restore the original fallback.
     if not bool(controller.get("integrated_rear_profile")):
         _fail("complete fitted jacket/sleeves/mantle must activate recessed shoulder profile")
         return
@@ -44,8 +44,8 @@ func _check() -> void:
             _fail("large weighted shoulder housing still covers the source-skin jacket")
             return
     for core in cores:
-        if not (core as MeshInstance3D).visible:
-            _fail("small luminous weighted shoulder accent disappeared")
+        if (core as MeshInstance3D).visible:
+            _fail("detached shoulder core remains visible over the complete fitted suit")
             return
     var sleeves := hero.get_node_or_null("ExternalSkinnedFlightSleeves") as Node
     if sleeves == null:
@@ -56,12 +56,14 @@ func _check() -> void:
     left_sleeve.visible = false
     controller.call("update_visibility_profile", source)
     if bool(controller.get("integrated_rear_profile")) or not (shells[0] as MeshInstance3D).visible or \
-            not (shells[1] as MeshInstance3D).visible:
+            not (shells[1] as MeshInstance3D).visible or not (cores[0] as MeshInstance3D).visible or \
+            not (cores[1] as MeshInstance3D).visible:
         _fail("incomplete sleeve installation must restore both original weighted nacelles")
         return
     left_sleeve.visible = true
     controller.call("update_visibility_profile", source)
-    if not bool(controller.get("integrated_rear_profile")) or (shells[0] as MeshInstance3D).visible:
+    if not bool(controller.get("integrated_rear_profile")) or (shells[0] as MeshInstance3D).visible or \
+            (cores[0] as MeshInstance3D).visible or (cores[1] as MeshInstance3D).visible:
         _fail("complete fitted suit must return to the compact shoulder profile")
         return
     if float(controller.get("shoulder_span")) < source.mesh.get_aabb().size.x * 0.44:
@@ -157,5 +159,5 @@ func _check() -> void:
     if rider.get_node_or_null("LegacyRider") == null:
         _fail("V123 fallback and board must remain intact")
         return
-    print("EXTERNAL SKINNED THRUSTERS TEST PASSED: %d vertices, two fallback nacelles and visible integrated cores, larger readable head" % int(controller.get("generated_vertices")))
+    print("EXTERNAL SKINNED THRUSTERS TEST PASSED: %d vertices, two reversible fallback nacelles/cores and clean integrated shoulders, larger readable head" % int(controller.get("generated_vertices")))
     quit(0)
