@@ -561,6 +561,24 @@ jobs:
               print("::error::GitHub Pages is not set to GitHub Actions. In Settings > Pages, choose Source: GitHub Actions.")
               raise SystemExit(1)
           PY
+      - name: Render V149 Energy Weave real gameplay 3D pulse at two phone ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-weave-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_WEAVE_OUTPUT=/tmp/learnquest-weave-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://energy_weave_visual_capture_test.gd 2>&1 | tee /tmp/energy-weave-visual.log
+          grep -Fq 'ENERGY WEAVE VISUAL QA PASSED' /tmp/energy-weave-visual.log
+          test "$(find /tmp/learnquest-weave-qa -name '*.png' | wc -l)" -eq 4
+      - name: Upload V149 Energy Weave gameplay pulse frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v149-energy-weave-qa
+          path: /tmp/learnquest-weave-qa/*.png
+          if-no-files-found: error
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload website

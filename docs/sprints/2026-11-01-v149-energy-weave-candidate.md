@@ -9,3 +9,6 @@ New `godot/energy_weave_mastery_test.gd` tests real pickups, hazard damage, stre
 
 ## Track B
 PR #111 stays DRAFT; the 65-bone character remains independent and is not version-reserved or merged.
+
+## Visual capture gate
+New `godot/energy_weave_visual_capture_test.gd` renders real 1280×720 and 1170×540 chase frames before and after the earned 3D pulse. Both PR and publish workflows require four PNGs and a measurable on-screen difference; results must be reviewed before claiming a visual upgrade.
