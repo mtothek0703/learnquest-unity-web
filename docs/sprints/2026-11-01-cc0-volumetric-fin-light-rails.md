@@ -13,7 +13,7 @@
 
 ## Acceptance
 - Geometry commit `c2ccd536`; regression commit `c1e08bb1`.
-- [ ] Final Godot CI / Web export / 24 landscape images verified.
-- [ ] Actual before/after frames inspected for excessive glow, clipping or paddle-like silhouette.
+- [x] Final [Godot CI #41280688224](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41280688224) **SUCCESS**, 52/52 steps, including headless gameplay/rig regressions, Web export and 24 OpenGL landscape frames. The first runs failed due a GDScript inferred angle type and a test variable declared after use; corrected in commits `e8c9a90c` and `e2ea29c6` before the successful run.
+- [x] Downloaded [24 current frames](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41280688224/artifacts/13073485525) and [24 previous frames](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41276285234/artifacts/13071582324), compared same-camera PNGs. Pixel threshold max RGB channel >25/255: 1280x720 chase right **512 px (0.0556%)**, chase left **513 px (0.0557%)**, three-quarter right **253 px (0.0275%)**, three-quarter left **666 px (0.0723%)**. The rail geometry is technically volumetric, but its on-screen visual contribution is **very small**; no claim of a significant aesthetic upgrade. The figure remains toy-like and overall quality gate is NOT passed.
 - [ ] Manual iPhone Safari FPS, three-English-question-to-full-round touch test, all-pose clipping and overall superior character quality remain outstanding.
 - **NO MERGE, NO RELEASE:** PR #111 stays DRAFT / visual hold. V124 in historical branch naming reserves no release number. Preserve main, all immutable Skyway versions, four worlds, bosses, four powers and Unity archive.
