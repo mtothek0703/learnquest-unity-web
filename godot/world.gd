@@ -957,7 +957,7 @@ func _create_run_items() -> void:
     weave_halo_mesh.ring_segments = 8
     var weave_pointer_mesh := PrismMesh.new()
     weave_pointer_mesh.size = Vector3(0.95, 0.75, 0.25)
-    var weave_marker_material := mat(Color("#ee53ff"), true)
+    var weave_marker_material := mat(Color("#baff49"), true)
     for i in range(20):
         var item := Node3D.new()
         var good: bool = i % 3 == 0
