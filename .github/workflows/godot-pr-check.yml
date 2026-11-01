@@ -98,6 +98,8 @@ jobs:
           grep -Fq 'NEON CONDUCTOR TEST PASSED' /tmp/neon-conductor.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://aurora_slipstream_test.gd 2>&1 | tee /tmp/aurora-slipstream.log
           grep -Fq 'AURORA SLIPSTREAM TEST PASSED' /tmp/aurora-slipstream.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://cinematic_glacier_icefalls_test.gd 2>&1 | tee /tmp/glacier-icefalls.log
+          grep -Fq 'GLACIER ICEFALLS TEST PASSED' /tmp/glacier-icefalls.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://aurora_perfect_line_test.gd 2>&1 | tee /tmp/aurora-perfect-line.log
           grep -Fq 'AURORA PERFECT LINE TEST PASSED' /tmp/aurora-perfect-line.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_skinned_lower_body_test.gd 2>&1 | tee /tmp/skinned-lower-body.log
@@ -257,6 +259,24 @@ jobs:
         with:
           name: learnquest-v134-neon-precision-before-after
           path: /tmp/learnquest-precision-qa/*.png
+          if-no-files-found: error
+      - name: Render V143 glacier icefalls in both smartphone landscape ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-icefalls-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_ICEFALLS_OUTPUT=/tmp/learnquest-icefalls-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://cinematic_glacier_icefalls_visual_capture_test.gd 2>&1 | tee /tmp/glacier-icefalls-visual.log
+          grep -Fq 'GLACIER ICEFALLS VISUAL QA PASSED' /tmp/glacier-icefalls-visual.log
+          test "$(find /tmp/learnquest-icefalls-qa -name '*.png' | wc -l)" -eq 8
+      - name: Upload V143 glacier icefall landscape comparison frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v143-glacier-icefalls-before-after
+          path: /tmp/learnquest-icefalls-qa/*.png
           if-no-files-found: error
       - name: Upload V126 Aurora slipstream comparison frames
         if: always()
