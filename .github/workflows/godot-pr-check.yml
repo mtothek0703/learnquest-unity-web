@@ -34,6 +34,8 @@ jobs:
           grep -Fq 'FLAWLESS VOCABULARY LAUNCH TEST PASSED' /tmp/flawless-vocabulary.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://clean_flight_mastery_test.gd 2>&1 | tee /tmp/clean-flight.log
           grep -Fq 'CLEAN FLIGHT MASTERY TEST PASSED' /tmp/clean-flight.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://aerial_energy_mastery_test.gd 2>&1 | tee /tmp/aerial-energy.log
+          grep -Fq 'AERIAL ENERGY MASTERY TEST PASSED' /tmp/aerial-energy.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_original_body_skin_test.gd 2>&1 | tee /tmp/original-body-skin.log
           grep -Fq 'ORIGINAL BODY SKIN TEST PASSED' /tmp/original-body-skin.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_costume_skin_follow_test.gd 2>&1 | tee /tmp/costume-skin-follow.log
