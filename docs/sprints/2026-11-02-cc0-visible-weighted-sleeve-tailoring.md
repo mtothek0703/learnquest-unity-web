@@ -21,4 +21,13 @@ The preceding original-CC0-body sculpt passed [52/52 CI](https://github.com/mtot
 
 Code commits: [f5ecc509](https://github.com/mtothek0703/learnquest-unity-web/commit/f5ecc509562438ab1eb81e762fce37ea3d5e7124), [0c16ece9](https://github.com/mtothek0703/learnquest-unity-web/commit/0c16ece94d867586c3eccfdc8cd2ed03ca2769e8).
 
-Status: **experimental / CI and visual comparison pending**. Do not claim high-end acceptance or stable release.
+Status: **52/52 CI success, real landscape comparison completed; overall visual acceptance NOT achieved**. No high-end claim or stable release.
+
+## Final CI and actual 108-frame visual comparison
+- [Final Godot PR CI 41362731621](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41362731621): **52/52 steps SUCCESS**, including original 65-bone Skin, gameplay regression, Godot Webexport and 108 genuine isolated costume frames. The final documentation-only commit does not change tested runtime code.
+- Downloaded the new [108-layer artifact 13105829152](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41362731621/artifacts/13105829152) and the prior [108-layer artifact 13106180271](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41362116915/artifacts/13106180271); inspected matching 1280×720 and 1170×540 front/chase images and computed RGB max-channel >25 pixel differences.
+- **1280×720 front:** weighted-sleeves isolated 2,812 pixels (0.305%) changed; source-only control 1,130 (0.123%). Full rider with sleeves 4,925 (0.534%); without-sleeves control 3,801 (0.412%).
+- **1280×720 chase:** weighted-sleeves isolated 3,122 (0.339%); source-only control 1,148 (0.125%). Full rider with sleeves 9,841 (1.068%); without-sleeves control 8,804 (0.955%).
+- **1170×540 chase:** isolated sleeves 1,743 (0.276%); source-only control 658 (0.104%). Full rider with sleeves 5,530 (0.875%); without-sleeves control 4,969 (0.786%).
+- Genuine side-by-side review: the source-skinned sleeve caps are subtly slimmer, but the **complete hero still has a wide jacket/collar/upper-torso shelf and exaggerated head**. Much of the full-frame change is unrelated pose/render drift, as shown by the controls. **No convincing high-end visual quality gain**; PR remains DRAFT and no new Skyway version is justified.
+- Keep the slimmer source-weighted sleeve geometry as an isolated, reversible DRAFT groundwork, not a release-approved feature. Next effort must reshape the *combined* upper jacket neckline and sleeve shoulder envelope in one coordinated silhouette, rather than adding more microdetails.
