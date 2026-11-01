@@ -64,7 +64,10 @@ func _fin_point(side: float, t: float, angle: float) -> Vector3:
     var center := 0.11 + 0.18 * t
     var half_span := 0.012 + 0.145 * taper
     var thickness := 0.010 + 0.030 * taper
-    var swept_lift := 0.025 + 0.075 * sin(PI * t) + 0.18 * t * t
+    # Taller rearward-raked stabilizer trial: the aft tip rises clearly above
+    # the traction deck in chase view, while the root remains tucked in.
+    # Do not widen the chord: the prior broad silhouette looked like a paddle.
+    var swept_lift := 0.025 + 0.075 * sin(PI * t) + 0.30 * t * t
     return Vector3(side * (center + half_span * cos(angle)),
         swept_lift + thickness * sin(angle),
         lerpf(-0.62, 0.87, t))
