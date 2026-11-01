@@ -22,3 +22,14 @@
 
 ## Track B
 - PR #111 (CC0 65-bone character) stays DRAFT until meaningful full-figure visual QA. It does not block independent camera feature releases.
+
+## Actual QA, correction and release candidate gate
+- First [full PR Godot CI run 41313070121](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41313070121) passed import, gameplay, Web export and 12 original Godot gameplay camera renders. Actual 1280x720 chase image inspection showed substantially larger racer, board, road and buildings: center 491,597 pixels (53.34%) changed with max RGB-channel difference >25; right lane 457,961 (49.69%); Turbo 352,598 (38.26%).
+- **Important real visual defect found before release:** at 1170x540 the initial 16:9 zoom moved the board partly behind the lower touch buttons. No release was made.
+- Corrected the camera to use two phone-landscape safe areas: 1280x720 keeps the more cinematic 7.55-unit / 58-degree chase view; short screens below 620px height use a conservative 8.5-unit / 63-degree view (Turbo 9.7 / 73) to preserve the mission HUD and two rows of controls. Desktop remains exactly unchanged.
+- [Corrected PR Godot CI 41313459496](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41313459496) **completed/success** before release wiring changes; full Godot smoke/landscape regression, Web export, all existing 3D QA and 12 original game frames passed.
+- Downloaded and visually inspected corrected 1170x540 center, right-lane and Turbo before/after. Touch buttons remain legible and usable; rider and board remain visible in the central play corridor with no *new* obvious control overlap. Preexisting HUD/hair overlap on short screens remains a separate UI improvement opportunity.
+- Corrected 1170x540 image differences (>25 max RGB channel): center 110,631 pixels (17.51%); right lane 109,201 (17.28%); Turbo 74,644 (11.81%). These are camera/world pixels, **not** FPS or a full physical-device visual approval.
+- Release wiring now targets the next immutable `skyway-v145/` only, with the original V144 archived and the V145 camera regression and actual gameplay render test included in release CI.
+- [ ] Final candidate CI after version label/workflow change and PR archive protection.
+- [ ] Merge only after both are green, then verify main CI, Pages deployment, five HTTP 200 files and exact build SHA.
