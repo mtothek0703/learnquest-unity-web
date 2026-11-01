@@ -38,6 +38,8 @@ jobs:
           grep -Fq 'CLEAN FLIGHT MASTERY TEST PASSED' /tmp/clean-flight.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://aerial_energy_mastery_test.gd 2>&1 | tee /tmp/aerial-energy.log
           grep -Fq 'AERIAL ENERGY MASTERY TEST PASSED' /tmp/aerial-energy.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://energy_weave_mastery_test.gd 2>&1 | tee /tmp/energy-weave.log
+          grep -Fq 'ENERGY WEAVE MASTERY TEST PASSED' /tmp/energy-weave.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_original_body_skin_test.gd 2>&1 | tee /tmp/original-body-skin.log
           grep -Fq 'ORIGINAL BODY SKIN TEST PASSED' /tmp/original-body-skin.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_costume_skin_follow_test.gd 2>&1 | tee /tmp/costume-skin-follow.log
@@ -342,6 +344,24 @@ jobs:
             --script res://landscape_chase_visual_capture_test.gd 2>&1 | tee /tmp/landscape-chase-visual.log
           grep -Fq 'LANDSCAPE CHASE VISUAL QA PASSED' /tmp/landscape-chase-visual.log
           test "$(find /tmp/learnquest-chase-qa -name '*.png' | wc -l)" -eq 12
+      - name: Render V149 Energy Weave real gameplay 3D pulse at two phone ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-weave-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_WEAVE_OUTPUT=/tmp/learnquest-weave-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://energy_weave_visual_capture_test.gd 2>&1 | tee /tmp/energy-weave-visual.log
+          grep -Fq 'ENERGY WEAVE VISUAL QA PASSED' /tmp/energy-weave-visual.log
+          test "$(find /tmp/learnquest-weave-qa -name '*.png' | wc -l)" -eq 4
+      - name: Upload V149 Energy Weave gameplay pulse frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v149-energy-weave-qa
+          path: /tmp/learnquest-weave-qa/*.png
+          if-no-files-found: error
       - name: Upload V145 candidate actual chase camera before-after
         if: always()
         uses: actions/upload-artifact@v4

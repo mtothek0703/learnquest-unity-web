@@ -11,7 +11,8 @@ const TASKS_PER_ROUND := 3
 const CLEAN_FLIGHT_STEP := 250.0
 const CLEAN_FLIGHT_LIMIT := 3
 const AERIAL_ENERGY_TARGET := 3
-const VERSION_LABEL := "V147"
+const ENERGY_WEAVE_TARGET := 3
+const VERSION_LABEL := "V149"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -138,6 +139,11 @@ var clean_flight_pulse := 0.0
 var clean_flight_ring: MeshInstance3D
 var aerial_energy_count := 0
 var aerial_energy_mastery := false
+var energy_weave_streak := 0
+var energy_weave_last_lane := 99
+var energy_weave_mastery := false
+var energy_weave_pulse := 0.0
+var energy_weave_ring: MeshInstance3D
 var end_panel: PanelContainer
 var hud: Label
 var hud_panel: PanelContainer
@@ -282,6 +288,7 @@ func _create_world() -> void:
     add_child(rider_lighting)
     _create_powerup_effects()
     _create_clean_flight_ring()
+    _create_energy_weave_ring()
     hero_gallery = preload("res://hero_gallery.gd").new() as Node3D
     hero_gallery.name = "Cinematic hero gallery"
     hero_gallery.position = Vector3(0.0, 0.0, 0.2)
@@ -905,6 +912,31 @@ func _create_clean_flight_ring() -> void:
     clean_flight_ring.visible = false
     rider.add_child(clean_flight_ring)
 
+# Reusable 3D pulse; visual only, never a touch or collision target.
+func _create_energy_weave_ring() -> void:
+    var torus := TorusMesh.new()
+    torus.inner_radius = 1.18
+    torus.outer_radius = 1.28
+    torus.rings = 32
+    torus.ring_segments = 10
+    var material := StandardMaterial3D.new()
+    material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    material.albedo_color = Color(0.94, 0.28, 0.95, 0.75)
+    material.emission_enabled = true
+    material.emission = Color(0.84, 0.13, 0.95)
+    material.emission_energy_multiplier = 2.4
+    energy_weave_ring = MeshInstance3D.new()
+    energy_weave_ring.name = "Energy weave mastery ring"
+    energy_weave_ring.mesh = torus
+    energy_weave_ring.material_override = material
+    energy_weave_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    # Float just behind the rider silhouette, not inside the torso/board.
+    energy_weave_ring.position = Vector3(0.0, 1.55, 0.80)
+    energy_weave_ring.rotation_degrees.x = 90.0
+    energy_weave_ring.visible = false
+    rider.add_child(energy_weave_ring)
+
 func _create_run_items() -> void:
     run_items = Node3D.new()
     run_items.name = "3D obstacles and energy pickups"
@@ -986,6 +1018,11 @@ func _reset_run() -> void:
     clean_flight_ring.visible = false
     aerial_energy_count = 0
     aerial_energy_mastery = false
+    energy_weave_streak = 0
+    energy_weave_last_lane = 99
+    energy_weave_mastery = false
+    energy_weave_pulse = 0.0
+    energy_weave_ring.visible = false
     turbo_left = 0.0
     shield_left = 0.0
     attack_left = 0.0
@@ -1216,7 +1253,52 @@ func _update_clean_flight(delta: float) -> void:
         info_label.text = "SAUBERER FLUG %d/3! +25 XP +0,8s TURBO" % clean_flight_count
     feedback_time = 1.8
 
+# Three energy gates in alternating lanes reward active touch steering.
+# Staying in one lane resets the sequence; barrier damage breaks it.
+# One capped reward per race, independent of aerial and clean-flight bonuses.
+func _register_energy_weave(pickup_x: float) -> void:
+    if phase != "race" or not started or energy_weave_mastery:
+        return
+    var caught_lane := clampi(roundi(pickup_x / 3.1), -1, 1)
+    if energy_weave_streak == 0 or caught_lane != energy_weave_last_lane:
+        energy_weave_streak += 1
+    else:
+        energy_weave_streak = 1
+    energy_weave_last_lane = caught_lane
+    if energy_weave_streak >= ENERGY_WEAVE_TARGET:
+        energy_weave_mastery = true
+        xp += 75
+        turbo_left = maxf(turbo_left, 2.0)
+        energy_weave_pulse = 1.0
+        energy_weave_ring.scale = Vector3.ONE * 0.95
+        var material := energy_weave_ring.material_override as StandardMaterial3D
+        var tint := material.albedo_color
+        tint.a = 0.75
+        material.albedo_color = tint
+        energy_weave_ring.visible = true
+        info_label.text = "ENERGIE-SLALOM! 3/3 +75 XP +2s TURBO"
+        feedback_time = 1.8
+    elif energy_weave_streak == 2:
+        info_label.text = "ENERGIE-SLALOM 2/3! NAECHSTES TOR IN ANDERER SPUR"
+        feedback_time = 1.5
+
+func _update_energy_weave_pulse(delta: float) -> void:
+    if energy_weave_pulse <= 0.0:
+        energy_weave_ring.visible = false
+        return
+    energy_weave_pulse = maxf(0.0, energy_weave_pulse - maxf(delta, 0.0))
+    energy_weave_ring.visible = energy_weave_pulse > 0.0
+    if energy_weave_ring.visible:
+        var progress := 1.0 - energy_weave_pulse
+        energy_weave_ring.scale = Vector3.ONE * (0.95 + 0.25 * progress)
+        energy_weave_ring.rotation.y += delta * 1.6
+        var material := energy_weave_ring.material_override as StandardMaterial3D
+        var tint := material.albedo_color
+        tint.a = 0.75 * energy_weave_pulse
+        material.albedo_color = tint
+
 func _update_run_items(delta: float) -> void:
+    _update_energy_weave_pulse(delta)
     hit_cooldown = maxf(0.0, hit_cooldown - delta)
     jump_left = maxf(0.0, jump_left - delta)
     rider.position.y = sin((1.0 - jump_left / jump_duration) * PI) * jump_height if jump_left > 0.0 else 0.0
@@ -1272,6 +1354,7 @@ func _update_run_items(delta: float) -> void:
                             turbo_left = maxf(turbo_left, 2.0)
                             info_label.text = "LUFT-ENERGIE MEISTER! 3/3 +100 XP +2s TURBO"
                     feedback_time = 1.5 if aerial_energy_mastery else 1.2
+                    _register_energy_weave(item.position.x)
                 elif rider.position.y > 0.85:
                     xp += 10
                     info_label.text = "SPRUNG! +10 XP"
@@ -1287,6 +1370,8 @@ func _update_run_items(delta: float) -> void:
                 elif hit_cooldown <= 0.0:
                     lives -= 1
                     _break_clean_flight()
+                    energy_weave_streak = 0
+                    energy_weave_last_lane = 99
                     combo = 0
                     hit_cooldown = 1.4
                     info_label.text = "TREFFER! NOCH %d LEBEN" % lives
@@ -1313,6 +1398,8 @@ func _finish_run() -> void:
             reward_label.text += "\nSAUBERER FLUG: 3/3 STRECKEN +125 XP UND TURBO!"
         if aerial_energy_mastery:
             reward_label.text += "\nLUFT-ENERGIE: 3/3 SPRUNGTREFFER +100 XP UND TURBO!"
+        if energy_weave_mastery:
+            reward_label.text += "\nENERGIE-SLALOM: 3 TORE MIT SPURWECHSEL +75 XP UND TURBO!"
         if flawless_vocabulary_launch:
             reward_label.text += "\nWORT-MEISTER: 3 FEHLERFREI +60 XP, 2,5s START-TURBO"
         if world_choice == 0 and int(skyway_zone.call("get_signal_count")) >= NEON_SIGNAL_TARGET:
@@ -1360,6 +1447,8 @@ func _finish_run() -> void:
     phase = "results"
     clean_flight_pulse = 0.0
     clean_flight_ring.visible = false
+    energy_weave_pulse = 0.0
+    energy_weave_ring.visible = false
     neon_conductor.visible = false
     neon_conductor.set("active", false)
     neon_beam.visible = false
