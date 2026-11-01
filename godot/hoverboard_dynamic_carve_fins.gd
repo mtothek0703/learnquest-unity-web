@@ -14,8 +14,8 @@ func _ready() -> void:
     fin_material = StandardMaterial3D.new()
     fin_material.albedo_color = Color.WHITE
     fin_material.vertex_color_use_as_albedo = true
-    fin_material.metallic = 0.18
-    fin_material.roughness = 0.62
+    fin_material.metallic = 0.12
+    fin_material.roughness = 0.70
     fin_material.cull_mode = BaseMaterial3D.CULL_DISABLED
     edge_material = StandardMaterial3D.new()
     edge_material.albedo_color = Color("#53d9ed")
@@ -57,10 +57,13 @@ func _fin_point(side: float, t: float, angle: float) -> Vector3:
     # The previous nearly flat vane was hard to distinguish from the deck.
     # A curved, rising aft crest now exposes a genuine swept 3D silhouette
     # during carving without adding geometry, materials or collisions.
-    var taper := pow(maxf(0.0, sin(PI * t)), 0.85)
+    # The former near-constant chord at both tips read as a dark paddle in
+    # the real 3/4 chase captures. A narrow root and swept trailing taper
+    # give the stabilizer an aircraft-like pointed planform, not a shovel.
+    var taper := pow(maxf(0.0, sin(PI * t)), 1.35)
     var center := 0.11 + 0.18 * t
-    var half_span := 0.055 + 0.17 * taper
-    var thickness := 0.016 + 0.038 * taper
+    var half_span := 0.012 + 0.145 * taper
+    var thickness := 0.010 + 0.030 * taper
     var swept_lift := 0.025 + 0.075 * sin(PI * t) + 0.18 * t * t
     return Vector3(side * (center + half_span * cos(angle)),
         swept_lift + thickness * sin(angle),
@@ -80,8 +83,10 @@ func _fin_normal(side: float, t: float, angle: float) -> Vector3:
 
 func _emit_fin(tool: SurfaceTool, side: float, t: float, angle: float) -> void:
     var upper := maxf(0.0, sin(angle))
-    tool.set_color(Color("#304563").lerp(Color("#829ab4"),
-        0.16 + 0.50 * upper + 0.12 * sin(PI * t)))
+    # Lighter satin composite keeps the lower surface readable in the
+    # phone's oblique camera instead of becoming a black flat silhouette.
+    tool.set_color(Color("#536f89").lerp(Color("#b7d1e1"),
+        0.23 + 0.46 * upper + 0.10 * sin(PI * t)))
     tool.set_normal(_fin_normal(side, t, angle))
     tool.add_vertex(_fin_point(side, t, angle))
 
@@ -106,7 +111,7 @@ func _make_aerofoil(side: float) -> ArrayMesh:
             for point in [center,
                 _fin_point(side, end, v if end == 0.0 else u),
                 _fin_point(side, end, u if end == 0.0 else v)]:
-                tool.set_color(Color("#253956"))
+                tool.set_color(Color("#536f89"))
                 tool.set_normal(Vector3.FORWARD if end == 0.0 else Vector3.BACK)
                 tool.add_vertex(point)
     return tool.commit()
