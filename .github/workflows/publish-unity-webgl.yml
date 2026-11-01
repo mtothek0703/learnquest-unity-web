@@ -307,28 +307,28 @@ jobs:
           python - <<'PY'
           from urllib.error import HTTPError
           from urllib.request import Request, urlopen
-          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v149/index.html"
+          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v150/index.html"
           try:
               with urlopen(Request(url, headers={"Cache-Control": "no-cache"}), timeout=20):
-                  raise SystemExit("Skyway V149 already exists: refusing to overwrite an immutable release")
+                  raise SystemExit("Skyway V150 already exists: refusing to overwrite an immutable release")
           except HTTPError as error:
               if error.code != 404:
                   raise
-          print("Skyway V149 is not published yet; safe to create")
+          print("Skyway V150 is not published yet; safe to create")
           PY
           # Each release gets a fresh URL; historical folders are never rebuilt from newer exports.
-          mkdir -p _site/skyway-v149
-          cp -a _site/godot/. _site/skyway-v149/
-          echo "$GITHUB_SHA" > _site/skyway-v149/build.txt
+          mkdir -p _site/skyway-v150
+          cp -a _site/godot/. _site/skyway-v150/
+          echo "$GITHUB_SHA" > _site/skyway-v150/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
-          echo "Archived previous versions and prepared immutable Skyway V149"
+          echo "Archived previous versions and prepared immutable Skyway V150"
       - name: Check browser export integrity
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          root = Path("_site/skyway-v149")
+          root = Path("_site/skyway-v150")
           for name in ("index.html", "index.js", "index.wasm", "index.pck"):
               file = root / name
               if not file.is_file() or file.stat().st_size == 0:
@@ -561,7 +561,7 @@ jobs:
               print("::error::GitHub Pages is not set to GitHub Actions. In Settings > Pages, choose Source: GitHub Actions.")
               raise SystemExit(1)
           PY
-      - name: Render V149 Energy Weave real gameplay 3D pulse at two phone ratios
+      - name: Render V150 Energy Weave pulse and 3D lane beacon at two phone ratios
         shell: bash
         run: |
           set -euo pipefail
@@ -571,12 +571,12 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://energy_weave_visual_capture_test.gd 2>&1 | tee /tmp/energy-weave-visual.log
           grep -Fq 'ENERGY WEAVE VISUAL QA PASSED' /tmp/energy-weave-visual.log
-          test "$(find /tmp/learnquest-weave-qa -name '*.png' | wc -l)" -eq 4
-      - name: Upload V149 Energy Weave gameplay pulse frames
+          test "$(find /tmp/learnquest-weave-qa -name '*.png' | wc -l)" -eq 8
+      - name: Upload V150 Energy Weave pulse and lane beacon frames
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: learnquest-v149-energy-weave-qa
+          name: learnquest-v150-energy-weave-qa
           path: /tmp/learnquest-weave-qa/*.png
           if-no-files-found: error
       - name: Configure Pages
@@ -595,7 +595,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request, urllib.error
-          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v149/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v150/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.js": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
