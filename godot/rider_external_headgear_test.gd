@@ -30,12 +30,12 @@ func _check() -> void:
     if headwear == null or headwear.bone_name != "Head":
         _fail("headwear must be attached to original Head bone")
         return
-    # Landscape proportion trial: shrink the ENTIRE generated Head-attached
-    # portrait from 1.96 to 1.82 (7.1%), without scaling the imported Skin.
+    # Landscape athletic-proportion trial: shrink the ENTIRE Head-attached
+    # portrait from 1.82 to 1.68 (7.7%), without scaling the imported Skin.
     # This is a structural regression, NOT an automatic visual approval.
     var scale_factor := float(headwear.get("visual_scale"))
-    if scale_factor < 1.80 or scale_factor > 1.84:
-        _fail("compact portrait trial must not regress to inflated 1.96 silhouette")
+    if scale_factor < 1.66 or scale_factor > 1.70:
+        _fail("athletic portrait trial must remain near 1.68 without changing original Skin")
         return
     if rig.get_bone_count() != 65 or absf(rig.scale.x - 1.0) > 0.001:
         _fail("portrait fitting must not scale the original 65-bone skeleton")
