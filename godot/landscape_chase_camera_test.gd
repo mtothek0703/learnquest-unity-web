@@ -27,11 +27,11 @@ func _check() -> void:
     for screen in [Vector2(1280, 720), Vector2(1170, 540), Vector2(852, 393)]:
         var normal: Dictionary = game.call("_race_camera_targets", false, screen)
         var turbo: Dictionary = game.call("_race_camera_targets", true, screen)
-        var compact := screen.y < 620.0
-        var normal_fov := 63.0 if compact else 58.0
-        var turbo_fov := 73.0 if compact else 70.0
-        var normal_z := 8.5 if compact else 7.55
-        var turbo_z := 9.7 if compact else 8.65
+        var compact: bool = screen.y < 620.0
+        var normal_fov: float = 63.0 if compact else 58.0
+        var turbo_fov: float = 73.0 if compact else 70.0
+        var normal_z: float = 8.5 if compact else 7.55
+        var turbo_z: float = 9.7 if compact else 8.65
         if not is_equal_approx(float(normal["fov"]), normal_fov) or not is_equal_approx(float(turbo["fov"]), turbo_fov):
             _fail("phone landscape FOV regression at " + str(screen))
             return
