@@ -114,6 +114,8 @@ jobs:
           grep -Fq "FLAWLESS VOCABULARY LAUNCH TEST PASSED" /tmp/godot-flawless-vocabulary.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://clean_flight_mastery_test.gd 2>&1 | tee /tmp/godot-clean-flight.log
           grep -Fq "CLEAN FLIGHT MASTERY TEST PASSED" /tmp/godot-clean-flight.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://aerial_energy_mastery_test.gd 2>&1 | tee /tmp/godot-aerial-energy.log
+          grep -Fq "AERIAL ENERGY MASTERY TEST PASSED" /tmp/godot-aerial-energy.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_original_body_skin_test.gd 2>&1 | tee /tmp/godot-original-body-skin.log
           grep -Fq "ORIGINAL BODY SKIN TEST PASSED" /tmp/godot-original-body-skin.log
           echo "Original glTF body skinning regression passed"
@@ -283,28 +285,28 @@ jobs:
           python - <<'PY'
           from urllib.error import HTTPError
           from urllib.request import Request, urlopen
-          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v139/index.html"
+          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v140/index.html"
           try:
               with urlopen(Request(url, headers={"Cache-Control": "no-cache"}), timeout=20):
-                  raise SystemExit("Skyway V139 already exists: refusing to overwrite an immutable release")
+                  raise SystemExit("Skyway V140 already exists: refusing to overwrite an immutable release")
           except HTTPError as error:
               if error.code != 404:
                   raise
-          print("Skyway V139 is not published yet; safe to create")
+          print("Skyway V140 is not published yet; safe to create")
           PY
           # Each release gets a fresh URL; historical folders are never rebuilt from newer exports.
-          mkdir -p _site/skyway-v139
-          cp -a _site/godot/. _site/skyway-v139/
-          echo "$GITHUB_SHA" > _site/skyway-v139/build.txt
+          mkdir -p _site/skyway-v140
+          cp -a _site/godot/. _site/skyway-v140/
+          echo "$GITHUB_SHA" > _site/skyway-v140/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
-          echo "Archived previous versions and prepared immutable Skyway V139"
+          echo "Archived previous versions and prepared immutable Skyway V140"
       - name: Check browser export integrity
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          root = Path("_site/skyway-v139")
+          root = Path("_site/skyway-v140")
           for name in ("index.html", "index.js", "index.wasm", "index.pck"):
               file = root / name
               if not file.is_file() or file.stat().st_size == 0:
@@ -484,7 +486,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request, urllib.error
-          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v139/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v140/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.js": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
