@@ -20,3 +20,11 @@ Beide Pflichtdateien auf `main` gelesen; GitHub-Primary `mtothek0703` und `mtoth
 - [ ] Reale iPhone-FPS und vollständige Touch-Runde nach drei Englischfragen bleiben offen
 
 Dieser Sprint ist ein **reversibler DRAFT-Qualitätsversuch**, kein V147-Kandidat.
+
+## Ergebnis der zweiten Iteration: nach Bildabnahme bewusst zurückgenommen
+- [x] [Finale Taper-CI 41328306521](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41328306521) **52/52 Schritte erfolgreich**: echter CC0-65-Bone-Skin, Gameplay, Webexport und 108/48 Querformatbilder.
+- [x] [108 Taper-Originalbilder](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41328306521/artifacts/13091658526) und [48 vollständige Figurenbilder](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41328306521/artifacts/13092002771) heruntergeladen und mit der vorherigen V-Halslinien-Fassung aus CI 41327806544 bei identischer 1280x720-Kamera verglichen.
+- **Negatives visuelles Gate:** Nur **119 Pixel / 0,013 %** im isolierten Front-Jackenbild ändern sich (RGB-Maxkanalabweichung >25); Front-Gesamtfigur **988 / 0,107 %**, Chase **2.259 / 0,245 %**. Die horizontal breite blaue Schulterbrücke bleibt optisch bestehen. Diese neue Begrenzung ist im tatsächlichen Mesh kaum aktiv und erreicht **keinen** relevanten Mehrwert.
+- [x] **Experiment deshalb zurückgenommen**, statt wirkungslose Geometrie- und Testkomplexität dauerhaft aufzubauen: Jacket-Code-Revert `6a3a1b8a3895a1c5fa6c2d8abdfe937e559e5aad`, Regression-Revert `db4e8ca6c72db16fedc498786b4370281d4cb05d`. Die erste technisch geprüfte Front-V-Halslinie bleibt im DRAFT.
+- [ ] Nach Revert erneute CI des finalen DRAFT-Heads kontrollieren; weiterhin **kein Merge/kein Release**.
+- **Nächste echte Qualitätsaufgabe:** Die dominierende breite cyanfarbene Jacken-/Brustform direkt an ihrer sichtbaren 3D-Oberfläche und ihrer Materialaufteilung überarbeiten, statt nur eine außerhalb der sichtbaren Meshflächen liegende Clipgrenze zu verschieben. Vor einer Freigabe tatsächliche Front- und Chase-Gesamtbilder beurteilen.
