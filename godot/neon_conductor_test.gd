@@ -81,6 +81,38 @@ func _check() -> void:
     if not warning.visible or int(game.get("neon_sweep_lane")) != -1:
         _fail("first sweep beat must visibly telegraph the left lane")
         return
+    # Directional warning is a genuine closed 3D mesh on the EXISTING beam.
+    # It inherits lane x-position and visibility, never adds collision bodies.
+    var raised := warning.get_node_or_null("RaisedBossLaneChevrons") as MeshInstance3D
+    if raised == null or not raised.mesh is ArrayMesh or \
+            raised.mesh.get_surface_count() != 1 or \
+            raised.mesh.surface_get_array_len(0) != 432:
+        _fail("boss warning needs six modeled 3D chevrons in one draw call")
+        return
+    var warning_arrays: Array = raised.mesh.surface_get_arrays(0)
+    var warning_vertices: PackedVector3Array = warning_arrays[Mesh.ARRAY_VERTEX]
+    var warning_normals: PackedVector3Array = warning_arrays[Mesh.ARRAY_NORMAL]
+    if warning_normals.size() != warning_vertices.size():
+        _fail("raised boss lane warning must have surface normals")
+        return
+    var min_z := 100.0
+    var max_z := -100.0
+    var min_y := 100.0
+    var max_y := -100.0
+    for vertex in warning_vertices:
+        if absf(vertex.x) > 0.73 or vertex.z < -17.0 or vertex.z > 17.0:
+            _fail("chevrons must stay inside the actual warned touch lane")
+            return
+        min_z = minf(min_z, vertex.z)
+        max_z = maxf(max_z, vertex.z)
+        min_y = minf(min_y, vertex.y)
+        max_y = maxf(max_y, vertex.y)
+    if max_z - min_z < 24.0 or max_y - min_y < 0.075 or min_y < 0.17:
+        _fail("boss warning must have chase-visible 3D height and road depth")
+        return
+    if raised.find_children("*", "CollisionObject3D", true, false).size() != 0:
+        _fail("directional warning may not change boss collision or touch controls")
+        return
     var hero := game.get("rider") as Node3D
     hero.position.y = 0.0
     game.set("lane", 1)
