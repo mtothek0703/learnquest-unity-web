@@ -7,8 +7,8 @@
 - Separate CC0 65-bone PR #111 remains **DRAFT**; no changes or version reservation in that branch.
 
 ## Playable improvement
-- Reframe the **actual gameplay chase camera** for a more readable 3D rider and race corridor on phone landscape: normal camera distance 9.0 -> 7.15, vertical position 4.3 -> 4.05, field of view 64 -> 58 degrees.
-- Turbo retains a deliberate wide-angle pullback: distance 10.1 -> 8.7 and FOV 74 -> 70. Front-facing menu camera and all gameplay/touch/physics remain unchanged.
+- Reframe the **actual gameplay chase camera** for a more readable 3D rider and race corridor on phone landscape: normal camera distance 9.0 -> 7.75, vertical position 4.3 -> 4.15, field of view 64 -> 60 degrees.
+- Turbo retains a deliberate wide-angle pullback: distance 10.1 -> 9.1 and FOV 74 -> 71. Front-facing menu camera and all gameplay/touch/physics remain unchanged.
 - New headless regression `chase_camera_framing_test.gd` checks all three lanes at 1280x720 and 1170x540, Turbo widening and unchanged menu view.
 - New real OpenGL `chase_camera_visual_capture_test.gd` renders eight actual race before/after images (center/right lane, both ratios) and checks >=15% projected rider-size increase plus nontrivial image difference.
 - PR CI integrates both tests and uploads the eight screenshots for **human visual QA**. A rendered-image threshold alone does not establish no clipping, premium quality or physical iPhone FPS.
@@ -23,3 +23,9 @@
 
 ## Next step
 Review real CI logs and screenshot artifact; adjust composition if necessary. If visual quality fails, retain as candidate rather than publishing a number-only release.
+
+## Actual V145 image inspection and corrective pass
+- [x] Initial candidate passed full PR CI and archive protection: [Godot run 41311046684](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41311046684), [archive run 41311041739](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41311041739). Eight actual before/after OpenGL frames were downloaded from artifact `13085675191` and inspected at both 1280x720 and 1170x540.
+- [x] The original 7.15m / 58-degree zoom was clearly more legible, but **too aggressive**: helmet nearly touched the top and the hoverboard ion-wake tails were clipped at the bottom, especially at 1170x540. Do **not** release this version.
+- [x] Corrected the camera to 7.75m / 60 degrees and 4.15m elevation; Turbo uses 9.1m / 71 degrees. Kept the >=15% larger projected rider gate and all three lanes visible.
+- [ ] Repeat full CI, download the revised eight frames, visually check actual margins, then release only if the composition is better without cropping.
