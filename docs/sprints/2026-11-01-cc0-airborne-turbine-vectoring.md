@@ -24,3 +24,9 @@ The existing wake visual capture now produces **20 actual 16:9/19.5:9 frames** (
 - [ ] Do not merge until the complete character/hoverboard passes visual review; later rebase on then-current main and use the next genuinely free immutable Skyway release number.
 
 **Decision:** independent experimental improvement; not published.
+
+## Verified results – 2026-11-01, 19:30 CET
+
+- [x] [Final Godot PR CI 41336459536](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41336459536) **completed/success, 52/52** including original 65-bone/board/gameplay regressions, Web export and twenty actual phone-landscape wake frames.
+- [x] [20 original rendered images, artifact 13095876234](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41336459536/artifacts/13095876234) downloaded and visually compared. The two jets visibly tilt downward in the chase view when airborne, while both turbine roots remain attached. RGB max-channel difference >25, neutral vs airborne: **9,099 pixels (0.987%)** 1280×720 chase, **5,187 (0.821%)** 1170×540 chase; front view only **164 (0.018%)** and **102 (0.016%)**, consistent with the rear-facing jets.
+- [ ] Full character quality still **NOT approved**: static diagnostic poses still show wide T-posed arms, cartoon-like torso/costume and potentially problematic proportions; a real gameplay animation sequence and iPhone FPS/clip/touch tests are required. No merge.
