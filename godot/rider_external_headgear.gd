@@ -571,64 +571,65 @@ func _build_expression(c: Vector3, s: Vector3) -> void:
     var face_material := _material(Color.WHITE, 0.0, 0.71)
     face_material.vertex_color_use_as_albedo = true
     _mesh("SculptedContinuousFace", _face_surface(c, s), face_material)
-    var white := _material(Color(0.96, 0.98, 1.0), 0.0, 0.25)
-    var iris := _material(Color(0.10, 0.70, 0.91), 0.04, 0.24)
+    var white := _material(Color(0.90, 0.93, 0.96), 0.0, 0.45)
+    var iris := _material(Color(0.18, 0.42, 0.64), 0.02, 0.36)
     var pupil := _material(Color(0.025, 0.038, 0.11), 0.0, 0.22)
-    var eye_glint := _material(Color(0.96, 0.98, 1.0), 0.0, 0.16)
+    var eye_glint := _material(Color(0.94, 0.97, 1.0), 0.0, 0.30)
     eye_glint.emission_enabled = true
     eye_glint.emission = Color(0.30, 0.52, 0.70)
-    eye_glint.emission_energy_multiplier = 0.45
-    var ink := _material(Color(0.14, 0.075, 0.22), 0.0, 0.76)
-    var lid_mat := _material(Color(0.30, 0.14, 0.28), 0.0, 0.66)
-    var blush := _material(Color(0.77, 0.36, 0.43), 0.0, 0.79)
-    # After side-by-side V123/V124 portrait QA: calm the oversized cyan irises,\n    # give pupils more expression, strengthen brows, and soften the nose,\n    # cheek marks and smile curvature as one coherent mobile facial design.\n    # A more athletic portrait uses smaller almond eyes, restrained facial
-    # accents, a shorter smile and a tapered jaw. All remain on the same
-    # continuous Head-bone facial surface; no floating face plane is added.
+    eye_glint.emission_energy_multiplier = 0.26
+    var ink := _material(Color(0.13, 0.095, 0.17), 0.0, 0.82)
+    var lid_mat := _material(Color(0.29, 0.17, 0.22), 0.0, 0.75)
+    var blush := _material(Color(0.71, 0.42, 0.44), 0.0, 0.84)
+    # After side-by-side V123/V124 portrait QA: calm the oversized cyan irises,\n    # give pupils more expression, strengthen brows, and soften the nose,\n    # cheek marks and smile curvature as one coherent mobile facial design.\n    # DRAFT portrait pass: narrow the wide-eyed doll expression into a more
+    # focused athletic gaze. Eye sockets, lashes, eyebrows and mouth are all
+    # refitted together on the SAME genuinely weighted continuous face.
+    # No new textures, meshes, bone binds, collisions or draw calls.
     var eye_y := head_bounds.position.y + s.y * 0.59
     for side in [-1.0, 1.0]:
-        var eye_x: float = c.x + side * s.x * 0.225
+        var eye_x: float = c.x + side * s.x * 0.195
         var base := _face_front_point(c, s, eye_x, eye_y)
         _ellipsoid("EyeWhite%s" % str(side),
-            base + Vector3(0.0, 0.0, face_sign * s.z * 0.024),
-            Vector3(s.x * 0.106, s.y * 0.069, s.z * 0.042), white)
+            base + Vector3(0.0, 0.0, face_sign * s.z * 0.020),
+            Vector3(s.x * 0.088, s.y * 0.051, s.z * 0.037), white)
         _ellipsoid("Iris%s" % str(side),
-            base + Vector3(0.0, 0.0, face_sign * s.z * 0.062),
-            Vector3(s.x * 0.044, s.y * 0.048, s.z * 0.020), iris)
+            base + Vector3(0.0, 0.0, face_sign * s.z * 0.055),
+            Vector3(s.x * 0.036, s.y * 0.036, s.z * 0.017), iris)
         _ellipsoid("Pupil%s" % str(side),
-            base + Vector3(0.0, 0.0, face_sign * s.z * 0.073),
-            Vector3(s.x * 0.027, s.y * 0.034, s.z * 0.014), pupil)
+            base + Vector3(0.0, 0.0, face_sign * s.z * 0.066),
+            Vector3(s.x * 0.022, s.y * 0.026, s.z * 0.012), pupil)
         # Two small highlights are embedded in each iris, not floating props.
         # They remain visible in the 1280x720 and 1170x540 front cameras.
         _ellipsoid("IrisCatchlight%s_Main" % str(side),
-            base + Vector3(-s.x * 0.012, s.y * 0.016, face_sign * s.z * 0.083),
-            Vector3(s.x * 0.012, s.y * 0.016, s.z * 0.007), eye_glint)
+            base + Vector3(-s.x * 0.010, s.y * 0.012, face_sign * s.z * 0.075),
+            Vector3(s.x * 0.009, s.y * 0.012, s.z * 0.006), eye_glint)
         _ellipsoid("IrisCatchlight%s_Small" % str(side),
-            base + Vector3(s.x * 0.015, -s.y * 0.013, face_sign * s.z * 0.082),
-            Vector3(s.x * 0.006, s.y * 0.008, s.z * 0.005), eye_glint)
+            base + Vector3(s.x * 0.012, -s.y * 0.010, face_sign * s.z * 0.074),
+            Vector3(s.x * 0.005, s.y * 0.006, s.z * 0.004), eye_glint)
         var upper_lid: Array[Vector3] = []
         var lower_lid: Array[Vector3] = []
         var brow: Array[Vector3] = []
         var cheek: Array[Vector3] = []
         for i in range(17):
             var t := float(i) / 16.0
-            var x := eye_x + (t - 0.5) * s.x * 0.218
+            var x := eye_x + (t - 0.5) * s.x * 0.186
             var arc := sin(t * PI)
-            var upper_y := eye_y + s.y * (0.009 + 0.068 * arc)
-            var lower_y := eye_y - s.y * (0.012 + 0.056 * arc)
+            var upper_y := eye_y + s.y * (0.008 + 0.052 * arc)
+            var lower_y := eye_y - s.y * (0.011 + 0.041 * arc)
             upper_lid.append(_face_front_point(c, s, x, upper_y) +
                 Vector3(0.0, 0.0, face_sign * s.z * 0.069))
             lower_lid.append(_face_front_point(c, s, x, lower_y) +
                 Vector3(0.0, 0.0, face_sign * s.z * 0.058))
-            var brow_y := eye_y + s.y * (0.143 + 0.021 * arc)
+            var brow_y := eye_y + s.y * (0.125 + 0.016 * arc)
             brow.append(_face_front_point(c, s, x, brow_y) +
                 Vector3(0.0, 0.0, face_sign * s.z * 0.027))
-            var cheek_y := eye_y - s.y * (0.156 + 0.012 * arc)
+            var cheek_y := eye_y - s.y * (0.147 + 0.009 * arc)
             cheek.append(_face_front_point(c, s, x, cheek_y) +
                 Vector3(0.0, 0.0, face_sign * s.z * 0.020))
         _mesh("UpperLid%s" % str(side), _tube(upper_lid, s.x * 0.013, 6), lid_mat)
         _mesh("LowerLid%s" % str(side), _tube(lower_lid, s.x * 0.009, 6), lid_mat)
-        _mesh("CurvedBrow%s" % str(side), _tube(brow, s.x * 0.027, 6), ink)
-        _mesh("CheekAccent%s" % str(side), _tube(cheek, s.x * 0.010, 6), blush)
+        _mesh("CurvedBrow%s" % str(side), _tube(brow, s.x * 0.020, 6), ink)
+        _mesh("CheekAccent%s" % str(side), _tube(cheek, s.x * 0.006, 6), blush)
     var nose_bridge: Array[Vector3] = []
     for i in range(13):
         var t := float(i) / 12.0
@@ -641,14 +642,14 @@ func _build_expression(c: Vector3, s: Vector3) -> void:
     var lower_lip: Array[Vector3] = []
     for i in range(21):
         var t := float(i) / 20.0
-        var x := c.x + (t - 0.5) * s.x * 0.47
-        var y := head_bounds.position.y + s.y * (0.313 + 0.028 * pow(2.0 * t - 1.0, 2.0))
+        var x := c.x + (t - 0.5) * s.x * 0.40
+        var y := head_bounds.position.y + s.y * (0.313 + 0.013 * pow(2.0 * t - 1.0, 2.0))
         smile.append(_face_front_point(c, s, x, y) +
             Vector3(0.0, 0.0, face_sign * s.z * 0.026))
-        lower_lip.append(_face_front_point(c, s, x, y - s.y * 0.024 * sin(t * PI)) +
+        lower_lip.append(_face_front_point(c, s, x, y - s.y * 0.016 * sin(t * PI)) +
             Vector3(0.0, 0.0, face_sign * s.z * 0.023))
-    _mesh("CurvedSmile", _tube(smile, s.x * 0.011, 6), ink)
-    _mesh("LowerLipContour", _tube(lower_lip, s.x * 0.008, 6), blush)
+    _mesh("CurvedSmile", _tube(smile, s.x * 0.008, 6), ink)
+    _mesh("LowerLipContour", _tube(lower_lip, s.x * 0.006, 6), blush)
 
 func _face_jaw(v: float) -> float:
     # Sculpt the original 360-degree head with a broad upper cranium and a

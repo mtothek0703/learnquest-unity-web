@@ -184,8 +184,8 @@ func _check() -> void:
         _fail("forehead locks must be broad curved ribbons, not round hair rollers")
         return
     # Mobile-scale expression proportions are actual Head-attached geometry.
-    # The face must have a rounded jaw, legible eyes and a broad smile, not
-    # the previous narrow chin / tiny stare. Source Skin stays unchanged.
+    # The face must retain an anatomical jaw and focused, less doll-like eyes.
+    # The smaller features must still be readable in both landscape formats. Source Skin stays unchanged.
     var mobile_face_region := headwear.get("head_bounds") as AABB
     var mobile_face_center := mobile_face_region.get_center()
     var mobile_face_size := mobile_face_region.size
@@ -249,8 +249,20 @@ func _check() -> void:
         _fail("both modeled eyes must remain visible")
         return
     var eye_width_ratio := eye_white.scale.x / (mobile_face_size.x * float(headwear.get("visual_scale")))
-    if eye_width_ratio < 0.098 or eye_width_ratio > 0.114:
+    if eye_width_ratio < 0.084 or eye_width_ratio > 0.093:
         _fail("athletic portrait eyes must be readable without oversized cartoon proportions")
+        return
+    # Verify that BOTH almond eyes move inwards symmetrically instead of
+    # shrinking while keeping the old doll-like separation.
+    var paired_eyes := headwear.find_children("EyeWhite*", "MeshInstance3D", false, false)
+    if paired_eyes.size() != 2:
+        _fail("both smaller athletic eye meshes are required")
+        return
+    var eye_separation := absf((paired_eyes[0] as MeshInstance3D).position.x -
+        (paired_eyes[1] as MeshInstance3D).position.x) / (
+        mobile_face_size.x * float(headwear.get("visual_scale")))
+    if eye_separation < 0.37 or eye_separation > 0.41:
+        _fail("eyes must sit symmetrically closer to the nose on the weighted face")
         return
     var iris_width_ratio := iris_left.scale.x / eye_white.scale.x
     var pupil_width_ratio := pupil_left.scale.x / iris_left.scale.x
@@ -258,8 +270,8 @@ func _check() -> void:
             pupil_width_ratio < 0.54 or pupil_width_ratio > 0.69:
         _fail("smaller eye, iris and pupil proportions must remain coordinated")
         return
-    if smile_mesh == null or smile_mesh.mesh.get_aabb().size.x < mobile_face_size.x * 0.42 or \
-            smile_mesh.mesh.get_aabb().size.x > mobile_face_size.x * 0.53:
+    if smile_mesh == null or smile_mesh.mesh.get_aabb().size.x < mobile_face_size.x * 0.37 or \
+            smile_mesh.mesh.get_aabb().size.x > mobile_face_size.x * 0.44:
         _fail("sculpted smile must span the wider rounded jaw")
         return
     var rear_arrays: Array = back_hair.mesh.surface_get_arrays(0)
@@ -507,8 +519,8 @@ func _check() -> void:
         _fail("athletic portrait needs a genuinely tapered jaw, not a round face mask")
         return
     var portrait_smile := headwear.get_node_or_null("CurvedSmile") as MeshInstance3D
-    if portrait_smile == null or portrait_smile.mesh.get_aabb().size.x < face_size.x * 0.42 or \
-            portrait_smile.mesh.get_aabb().size.x > face_size.x * 0.53:
+    if portrait_smile == null or portrait_smile.mesh.get_aabb().size.x < face_size.x * 0.37 or \
+            portrait_smile.mesh.get_aabb().size.x > face_size.x * 0.44:
         _fail("restrained smile must remain actual curved facial geometry")
         return
     var highlights := headwear.find_children("IrisCatchlight*", "MeshInstance3D", false, false)
