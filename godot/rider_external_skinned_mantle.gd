@@ -216,17 +216,19 @@ func _mantle_point(bounds: AABB, back: float, back_sign: float,
 func _mantle_normal(bounds: AABB, back: float, back_sign: float,
         side: float, u: float, t: float, surface_sign: float) -> Vector3:
     var h := 0.001
+    # Shade both thin cloth faces from the same smooth mid-surface.
+    # Differentiating the slightly offset faces separately caused divergent
+    # normals at the narrowed coat hem, despite opposing winding.
     var tangent_u := _mantle_point(bounds, back, back_sign, side,
-        clampf(u + h, 0.0, 1.0), t, surface_sign) - \
+        clampf(u + h, 0.0, 1.0), t, 0.0) - \
         _mantle_point(bounds, back, back_sign, side,
-        clampf(u - h, 0.0, 1.0), t, surface_sign)
+        clampf(u - h, 0.0, 1.0), t, 0.0)
     var tangent_t := _mantle_point(bounds, back, back_sign, side,
-        u, clampf(t + h, 0.0, 1.0), surface_sign) - \
+        u, clampf(t + h, 0.0, 1.0), 0.0) - \
         _mantle_point(bounds, back, back_sign, side,
-        u, clampf(t - h, 0.0, 1.0), surface_sign)
-    # Front/back are emitted with opposite triangle winding.
-    return (tangent_t.cross(tangent_u) if surface_sign > 0.0 else
-        tangent_u.cross(tangent_t)).normalized()
+        u, clampf(t - h, 0.0, 1.0), 0.0)
+    var outward := tangent_t.cross(tangent_u).normalized()
+    return outward if surface_sign > 0.0 else -outward
 
 func _vertex(tool: SurfaceTool, bounds: AABB, back: float, back_sign: float,
         side: float, u: float, t: float, binds: PackedInt32Array,
