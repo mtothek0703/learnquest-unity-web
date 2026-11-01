@@ -9,6 +9,7 @@ var elapsed := 0.0
 var moving_parts: Array[Node3D] = []
 var crystal_pivots: Array[Node3D] = []
 var cinematic_geodes: Node3D
+var cinematic_bridges: Node3D
 var route_choices: Node3D
 var completed_routes := 0
 
@@ -17,6 +18,9 @@ func _ready() -> void:
     cinematic_geodes = preload("res://cinematic_canyon_geodes.gd").new() as Node3D
     cinematic_geodes.name = "Cinematic floating geode reefs"
     add_child(cinematic_geodes)
+    cinematic_bridges = preload("res://cinematic_canyon_bridges.gd").new() as Node3D
+    cinematic_bridges.name = "Cinematic canyon sky bridges"
+    add_child(cinematic_bridges)
     route_choices = preload("res://canyon_route_choices.gd").new() as Node3D
     route_choices.name = "Playable canyon route choices"
     add_child(route_choices)
@@ -180,6 +184,9 @@ func check_route_choices(rider_x: float) -> Dictionary:
 
 func _process(delta: float) -> void:
     elapsed += delta
+    if cinematic_bridges != null:
+        cinematic_bridges.set("running", running)
+        cinematic_bridges.set("travel_speed", travel_speed)
     if cinematic_geodes != null:
         cinematic_geodes.set("running", running)
         cinematic_geodes.set("travel_speed", travel_speed)
