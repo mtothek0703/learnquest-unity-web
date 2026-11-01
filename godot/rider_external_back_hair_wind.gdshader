@@ -8,6 +8,10 @@ uniform float boost_amount : hint_range(0.0, 1.0) = 0.0;
 uniform float jump_amount : hint_range(0.0, 1.0) = 0.0;
 uniform float motion_phase = 0.0;
 uniform float wind_back_sign : hint_range(-1.0, 1.0) = 1.0;
+// Five weighted rear locks each have a fixed left/right position and a
+// distinct flutter phase. The center curtain keeps both values at zero.
+uniform float lock_side : hint_range(-1.0, 1.0) = 0.0;
+uniform float lock_phase = 0.0;
 // The original StandardMaterial multiplied the sculpt's COLOR by a very dark
 // chestnut albedo. Preserve that factor when moving to a ShaderMaterial.
 uniform vec4 hair_base_tint : source_color = vec4(0.065, 0.048, 0.060, 1.0);
@@ -20,11 +24,18 @@ void vertex() {
     float tip = smoothstep(0.14, 0.98, UV.y);
     float flutter = tip * tip;
     float wave = sin(motion_phase * (2.2 + boost_amount * 1.7)
-        + UV.x * 8.0 + UV.y * 4.2);
+        + UV.x * 8.0 + UV.y * 4.2 + lock_phase);
     // Zero displacement at scalp. Boost and carve produce distinct, modest
     // 3D motion; the original Head/Neck/Spine skin still owns the main pose.
+    // A restrained outward fan at the five tips breaks the former perfectly
+    // synchronized silhouette. Root stays fixed (flutter=0), so the original
+    // Head/Neck/Spine skin still determines scalp and shoulder attachment.
+    // No extra bones, geometry, draw calls or per-frame CPU allocations.
+    float layered_sway = lock_side * flutter
+        * (0.014 + boost_amount * 0.034)
+        * (0.5 + 0.5 * sin(motion_phase * 1.7 + lock_phase));
     VERTEX.x += flutter * (steer_amount * 0.042
-        + wave * (0.006 + boost_amount * 0.020));
+        + wave * (0.006 + boost_amount * 0.020)) + layered_sway;
     VERTEX.z += wind_back_sign * flutter *
         (boost_amount * 0.032 + jump_amount * 0.016);
 }
