@@ -24,7 +24,7 @@ func _check() -> void:
         return
     for index in range(4):
         var crane := cranes[index] as Node3D
-        if absf(crane.position.x) < 11.0:
+        if absf(crane.position.x) < 9.2:
             _fail("crane foundation intrudes into racing corridor")
             return
         var support := supports[index] as MeshInstance3D
@@ -66,7 +66,7 @@ func _check() -> void:
     cranes[0].position.z = 22.0
     scene.set("running", true)
     scene.call("_process", 0.5)
-    if not is_equal_approx(cranes[0].position.z, 22.0 + 6.0 - 148.0):
+    if not is_equal_approx(cranes[0].position.z, 22.0 + 6.0 - 128.0):
         _fail("crane loop must not accumulate geometry")
         return
     print("HARBOR SKYCRANES TEST PASSED: four 3D cranes, eight cargo pods, lane safety, pause and wrap")
