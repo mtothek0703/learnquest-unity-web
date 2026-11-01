@@ -98,11 +98,9 @@ func _extract_jacket(body: MeshInstance3D) -> ArrayMesh:
             # four-weight interpolation looks torso-dominant. Keep the jacket
             # inside the imported torso envelope BEFORE sculpting it. The
             # source arms remain untouched; only this duplicate shell is cut.
-            # Taper the actual weighted jacket toward the collar, where
-            # the previous constant-width cut left a broad horizontal toy
-            # shoulder bar. The separate true-Skin sleeves cover the deltoids.
-            polygon = _clip_to_tapered_lateral(polygon, bounds, true)
-            polygon = _clip_to_tapered_lateral(polygon, bounds, false)
+            var torso_half_width := bounds.size.x * 0.24
+            polygon = _clip_to_lateral(polygon, bounds.get_center().x - torso_half_width, true)
+            polygon = _clip_to_lateral(polygon, bounds.get_center().x + torso_half_width, false)
             # Keep the torso-dominant skin only: the separate weighted sleeves
             # already cover the shoulder transition. A 48% arm allowance
             # retained inflated forearm/hand duplicates in the chase view.
@@ -227,42 +225,6 @@ func _clip_to_lateral(polygon: Array[Dictionary], plane_x: float,
             if absf(dx) > 0.0000001:
                 clipped.append(_interpolate_corner(previous, current,
                     clampf((plane_x - previous_point.x) / dx, 0.0, 1.0)))
-        if current_inside:
-            clipped.append(current)
-        previous = current
-    return _deduplicate_polygon(clipped)
-
-# Narrow the ORIGINAL four-weight jacket shell from 24% of source body width
-# at the chest/waist to 18% at the collar. Both real skinned sleeves remain
-# intact, so this removes the oversized horizontal shoulder bar rather than
-# adding a new rigid shoulder part.
-func _jacket_half_width(point: Vector3, bounds: AABB) -> float:
-    var y := (point.y - bounds.position.y) / maxf(bounds.size.y, 0.001)
-    return bounds.size.x * (0.24 - 0.060 * smoothstep(0.62, 0.77, y))
-
-func _clip_to_tapered_lateral(polygon: Array[Dictionary], bounds: AABB,
-        keep_right: bool) -> Array[Dictionary]:
-    var clipped: Array[Dictionary] = []
-    if polygon.is_empty():
-        return clipped
-    var center_x := bounds.get_center().x
-    var previous: Dictionary = polygon[polygon.size() - 1]
-    for current in polygon:
-        var previous_point: Vector3 = previous["position"]
-        var current_point: Vector3 = current["position"]
-        var previous_half := _jacket_half_width(previous_point, bounds)
-        var current_half := _jacket_half_width(current_point, bounds)
-        var previous_distance := previous_point.x - center_x + previous_half if keep_right else \
-            center_x + previous_half - previous_point.x
-        var current_distance := current_point.x - center_x + current_half if keep_right else \
-            center_x + current_half - current_point.x
-        var previous_inside := previous_distance >= 0.0
-        var current_inside := current_distance >= 0.0
-        if previous_inside != current_inside:
-            var difference := previous_distance - current_distance
-            if absf(difference) > 0.0000001:
-                clipped.append(_interpolate_corner(previous, current,
-                    clampf(previous_distance / difference, 0.0, 1.0)))
         if current_inside:
             clipped.append(current)
         previous = current
