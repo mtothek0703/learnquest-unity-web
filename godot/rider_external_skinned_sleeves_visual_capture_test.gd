@@ -142,11 +142,14 @@ func _capture() -> void:
             shoulder_names.append(String(mesh.name))
     print("COSTUME GROUP INVENTORY (visible meshes): ", group_counts)
     print("VISIBLE SHOULDER MESHES: ", shoulder_names)
-    if int(group_counts["shoulder_thrusters"]) < 2 or \
+    # The fully fitted silhouette now retires both detached luminous cores.
+    # Keep the empty shoulder-only frame as a negative control; the original
+    # 65-bone meshes remain available for the separate fallback regression.
+    if int(group_counts["shoulder_thrusters"]) != 0 or \
             int(group_counts["tailored_jacket"]) != 1 or \
             int(group_counts["weighted_sleeves"]) != 2 or \
             int(group_counts["skinned_armor"]) != 3:
-        _fail("expected visible shoulder cores, one jacket, two weighted sleeves and three original-Skin armor panels")
+        _fail("expected clean shoulder silhouette, one jacket, two weighted sleeves and three original-Skin armor panels")
         return
     # With fitted jacket and sleeves, both the shoulder bridge and the
     # inflated neck ring are hidden. Preserve both as isolated QA controls,
