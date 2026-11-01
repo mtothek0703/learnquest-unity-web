@@ -323,7 +323,11 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     # Shoulder breadth and pectoral depth follow the actual imported Skin;
     # no rigid shoulder boxes or unweighted cosmetic torso are introduced.
     var waist_inset := 0.052 * waist * smoothstep(0.12, 0.35, x)
-    # Lower the broad, toy-like deltoid wings while keeping a continuous\n    # original-Skin V taper and genuine dorsal scapula relief. The chest\n    # remains full; the jacket's shoulder expansion is ~25% narrower in\n    # the same rest-space QA pose (0.0575 -> 0.0416 source units).\n    var spread := 0.043 * shoulder + 0.031 * deltoid - waist_inset + \
+    # Lower the broad, toy-like deltoid wings while keeping a continuous
+    # original-Skin V taper and genuine dorsal scapula relief. The chest
+    # remains full; the jacket's shoulder expansion is ~25% narrower in
+    # the same rest-space QA pose (0.0575 -> 0.0416 source units).
+    var spread := 0.043 * shoulder + 0.031 * deltoid - waist_inset + \
         0.028 * dorsal_shoulder
     return normal * depth + Vector3(signf(lateral) * spread, 0.006 * shoulder, 0.0)
 
