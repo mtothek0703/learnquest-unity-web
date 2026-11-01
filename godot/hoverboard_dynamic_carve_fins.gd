@@ -63,11 +63,15 @@ func _ready() -> void:
 # Its inboard root overlaps the sculpted hull; its tip enters the aerofoil.
 # No new physics, texture, lights or separate animation is introduced.
 func _mount_point(side: float, t: float, angle: float) -> Vector3:
-    var radius := 0.034 + 0.022 * sin(PI * t)
+    # Broad low-profile deck fairing, not a bright round external strut.
+    # Flatten the vertical section and broaden the chord in Z so the
+    # connector reads as part of the original composite board shell.
+    var height_radius := 0.014 + 0.012 * sin(PI * t)
+    var chord_radius := 0.085 + 0.035 * sin(PI * t)
     return Vector3(
         lerpf(-side * 0.49, side * 0.14, t),
-        lerpf(-0.18, 0.055, t) + 0.025 * sin(PI * t) + radius * cos(angle),
-        lerpf(0.05, 0.14, t) + radius * 0.76 * sin(angle))
+        lerpf(-0.18, 0.055, t) + 0.025 * sin(PI * t) + height_radius * cos(angle),
+        lerpf(0.05, 0.14, t) + chord_radius * sin(angle))
 
 func _make_mount(side: float) -> ArrayMesh:
     var tool := SurfaceTool.new()
@@ -82,8 +86,8 @@ func _make_mount(side: float) -> ArrayMesh:
                     Vector2(t0, a0), Vector2(t1, a1), Vector2(t0, a1)]:
                 var angle: float = sample.y
                 tool.set_normal(Vector3(0.0, cos(angle), sin(angle)).normalized())
-                tool.set_color(Color("#3c5876").lerp(Color("#a6cfe0"),
-                    0.18 + 0.50 * maxf(0.0, cos(angle))))
+                tool.set_color(Color("#172d4b").lerp(Color("#537c9d"),
+                    0.12 + 0.24 * maxf(0.0, cos(angle))))
                 tool.add_vertex(_mount_point(side, sample.x, angle))
     for end in [0.0, 1.0]:
         var center := _mount_point(side, end, 0.0).lerp(
@@ -95,7 +99,7 @@ func _make_mount(side: float) -> ArrayMesh:
                     _mount_point(side, end, a1 if end == 0.0 else a0),
                     _mount_point(side, end, a0 if end == 0.0 else a1)]:
                 tool.set_normal(Vector3(-side, 0.0, 0.0) if end == 0.0 else Vector3(side, 0.0, 0.0))
-                tool.set_color(Color("#536f89"))
+                tool.set_color(Color("#263e5b"))
                 tool.add_vertex(p)
     return tool.commit()
 
