@@ -223,6 +223,13 @@ jobs:
             --script res://cinematic_city_visual_capture_test.gd 2>&1 | tee /tmp/godot-city-visual.log
           grep -Fq 'CITY VISUAL QA PASSED' /tmp/godot-city-visual.log
           test "$(find /tmp/learnquest-city-qa -name '*.png' | wc -l)" -eq 8
+          mkdir -p /tmp/learnquest-terraces-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_TERRACES_OUTPUT=/tmp/learnquest-terraces-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://cinematic_city_terraces_visual_capture_test.gd 2>&1 | tee /tmp/godot-terraces-visual.log
+          grep -Fq 'CITY SKY TERRACES VISUAL QA PASSED' /tmp/godot-terraces-visual.log
+          test "$(find /tmp/learnquest-terraces-qa -name '*.png' | wc -l)" -eq 8
           mkdir -p /tmp/learnquest-lightfields-qa
           LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_LIGHTFIELDS_OUTPUT=/tmp/learnquest-lightfields-qa \
             timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
@@ -285,28 +292,28 @@ jobs:
           python - <<'PY'
           from urllib.error import HTTPError
           from urllib.request import Request, urlopen
-          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v140/index.html"
+          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v141/index.html"
           try:
               with urlopen(Request(url, headers={"Cache-Control": "no-cache"}), timeout=20):
-                  raise SystemExit("Skyway V140 already exists: refusing to overwrite an immutable release")
+                  raise SystemExit("Skyway V141 already exists: refusing to overwrite an immutable release")
           except HTTPError as error:
               if error.code != 404:
                   raise
-          print("Skyway V140 is not published yet; safe to create")
+          print("Skyway V141 is not published yet; safe to create")
           PY
           # Each release gets a fresh URL; historical folders are never rebuilt from newer exports.
-          mkdir -p _site/skyway-v140
-          cp -a _site/godot/. _site/skyway-v140/
-          echo "$GITHUB_SHA" > _site/skyway-v140/build.txt
+          mkdir -p _site/skyway-v141
+          cp -a _site/godot/. _site/skyway-v141/
+          echo "$GITHUB_SHA" > _site/skyway-v141/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
-          echo "Archived previous versions and prepared immutable Skyway V140"
+          echo "Archived previous versions and prepared immutable Skyway V141"
       - name: Check browser export integrity
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          root = Path("_site/skyway-v140")
+          root = Path("_site/skyway-v141")
           for name in ("index.html", "index.js", "index.wasm", "index.pck"):
               file = root / name
               if not file.is_file() or file.stat().st_size == 0:
@@ -433,6 +440,13 @@ jobs:
           name: learnquest-v118-neon-city-before-after
           path: /tmp/learnquest-city-qa/*.png
           if-no-files-found: error
+      - name: Upload V141 sky terrace visual QA images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v141-sky-terraces-release-qa
+          path: /tmp/learnquest-terraces-qa/*.png
+          if-no-files-found: error
       - name: Upload power-up V117 visual QA images
         if: always()
         uses: actions/upload-artifact@v4
@@ -486,7 +500,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request, urllib.error
-          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v140/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v141/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.js": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):

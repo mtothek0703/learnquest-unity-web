@@ -13,6 +13,8 @@ var travel_speed := 14.0
 var towers: Array[Node3D] = []
 var window_batches: Array[MultiMeshInstance3D] = []
 var roof_crowns: Array[MeshInstance3D] = []
+var sky_terraces: Array[MeshInstance3D] = []
+var terrace_supports: Array[MultiMeshInstance3D] = []
 var district_styles: Array[int] = []
 var elapsed := 0.0
 
@@ -161,16 +163,83 @@ func _build_roof(tower: Node3D, height: float, style: int, material: StandardMat
     spire.position.y = height + 1.15
     tower.add_child(spire)
 
+
+# V141: two continuous, volumetric cantilevered terraces on every building.
+# A single vertex-colored mesh per tower makes their stepped silhouettes
+# legible in the landscape chase view without extra textures or collision.
+func _terrace_quad(tool: SurfaceTool, a: Vector3, b: Vector3,
+        c: Vector3, d: Vector3, tint: Color) -> void:
+    for point in [a, b, c, a, c, d]:
+        _emit(tool, point, tint)
+
+func _sky_terrace_mesh(height: float, style: int) -> ArrayMesh:
+    var tool := SurfaceTool.new()
+    tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+    var edge_tints: Array[Color] = [
+        Color("#60dce7"), Color("#ec89cb"), Color("#a2ebcf")
+    ]
+    var rim_tint: Color = edge_tints[style]
+    for level in range(2):
+        var y := height * (0.42 if level == 0 else 0.70)
+        var outer_radius := 4.70 if level == 0 else 4.00
+        var inner_radius := _profile(y / height, style) - 0.10
+        var underside := y - (0.48 if level == 0 else 0.32)
+        for segment in range(32):
+            var a0 := TAU * float(segment) / 32.0
+            var a1 := TAU * float(segment + 1) / 32.0
+            var i0 := Vector3(cos(a0) * inner_radius, y, sin(a0) * inner_radius)
+            var i1 := Vector3(cos(a1) * inner_radius, y, sin(a1) * inner_radius)
+            var o0 := Vector3(cos(a0) * outer_radius, y, sin(a0) * outer_radius)
+            var o1 := Vector3(cos(a1) * outer_radius, y, sin(a1) * outer_radius)
+            var ib0 := Vector3(i0.x, underside, i0.z)
+            var ib1 := Vector3(i1.x, underside, i1.z)
+            var ob0 := Vector3(o0.x, underside, o0.z)
+            var ob1 := Vector3(o1.x, underside, o1.z)
+            _terrace_quad(tool, i0, o0, o1, i1, rim_tint.darkened(0.48))
+            _terrace_quad(tool, ib1, ob1, ob0, ib0, rim_tint.darkened(0.73))
+            _terrace_quad(tool, o0, ob0, ob1, o1, rim_tint)
+            _terrace_quad(tool, ib1, ib0, i0, i1, rim_tint.darkened(0.62))
+    tool.generate_normals()
+    return tool.commit()
+
+func _build_sky_terraces(tower: Node3D, height: float, style: int,
+        facade: StandardMaterial3D, glow: StandardMaterial3D) -> void:
+    var deck := MeshInstance3D.new()
+    deck.name = "Twin sculpted cantilevered sky terraces"
+    deck.mesh = _sky_terrace_mesh(height, style)
+    deck.material_override = facade
+    tower.add_child(deck)
+    sky_terraces.append(deck)
+    # Eight repeated illuminated supports, batched into ONE multimesh.
+    # The supports sit outside the facade, never inside a racing lane.
+    var fin := BoxMesh.new()
+    fin.size = Vector3(0.18, 1.0, 0.50)
+    var transforms: Array[Transform3D] = []
+    var colors: Array[Color] = []
+    for index in range(8):
+        var angle := TAU * float(index) / 8.0
+        var radius := 2.85
+        var y := height * 0.56
+        var basis := Basis(Vector3.UP, angle).scaled(
+            Vector3(1.0, height * 0.24, 1.0))
+        transforms.append(Transform3D(basis,
+            Vector3(cos(angle) * radius, y, sin(angle) * radius)))
+        colors.append(Color("#6ef8f2") if style != 1 else Color("#ff96d4"))
+    terrace_supports.append(_batch(fin, transforms, colors,
+        "Eight instanced sky terrace supports", tower, glow))
+
 func _ready() -> void:
     var facade := _facade_material()
     var glow := _glow_material()
+    # Pull the moving foreground facades into the phone chase composition;
+    # even the wider lower terrace remains outside the playable road.
     for index in range(BUILDING_COUNT):
         var side := -1.0 if index % 2 == 0 else 1.0
         var style := index % 3
         var height := 15.0 + float((index * 5) % 14)
         var tower := Node3D.new()
         tower.name = "Architectural district tower %02d" % index
-        tower.position = Vector3(side * (14.3 + float(index % 3) * 1.4), 0.0, -16.0 - float(index) * SPACING)
+        tower.position = Vector3(side * (12.2 + float(index % 3) * 1.4), 0.0, -8.0 - float(index) * SPACING)
         add_child(tower)
         towers.append(tower)
         district_styles.append(style)
@@ -182,6 +251,7 @@ func _ready() -> void:
         _build_facade_windows(tower, height, style, side, glow)
         _build_vertical_ribs(tower, height, style, glow)
         _build_roof(tower, height, style, glow)
+        _build_sky_terraces(tower, height, style, facade, glow)
 
 func _process(delta: float) -> void:
     if not running:
