@@ -38,3 +38,8 @@ PR #111 remains a separate experiment and must not be merged without a genuine w
 - [x] Release log: **141 historical version directories preserved**, Unity archive prepared. No prior Skyway path overwritten.
 - [x] Final Pages artifact **1,453,422,140 bytes**, exceeding the 1-GB warning despite successful deployment. Optimize size without deleting historical releases.
 - [ ] Manual physical iPhone Safari FPS, all-pose clipping and complete touch round remain unverified. CI/landscape render tests are not substitutes.
+
+## Independent original-frame review after deployment
+- Downloaded the actual [eight-frame V144 Godot OpenGL QA artifact](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41306881518/artifacts/13084425308), extracted it and inspected the 1280×720 chase/oblique before/after frames side by side.
+- At identical camera, RGB max-channel difference >25: **7,030 px (0.763%) chase** and **6,719 px (0.729%) oblique** at 1280×720; **3,773 px (0.597%) chase** and **3,673 px (0.581%) oblique** at 1170×540.
+- New cyan 3D crane rings and supports are discernible, but the entire racing environment occupies a small central part of the frame with large empty dark margins. This is **not** a demonstrated premium overall 3D quality leap. Future stable work should improve real chase-camera composition and world-scale readability at phone landscape resolutions, with gameplay and touch UI protected.
