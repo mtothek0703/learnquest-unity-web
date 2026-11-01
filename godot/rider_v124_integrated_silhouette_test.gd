@@ -25,7 +25,7 @@ func _check() -> void:
         _fail("the original 65-bone skeleton was changed")
         return
     var headwear := rig.get_node_or_null("ExternalHeroHeadgear") as BoneAttachment3D
-    if headwear == null or absf(float(headwear.get("visual_scale")) - 1.96) > 0.01:
+    if headwear == null or absf(float(headwear.get("visual_scale")) - 1.82) > 0.01:
         _fail("compact balanced mobile portrait scale missing")
         return
     var head_bounds: AABB = headwear.get("head_bounds")
