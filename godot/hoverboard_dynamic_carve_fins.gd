@@ -116,17 +116,40 @@ func _make_aerofoil(side: float) -> ArrayMesh:
                 tool.add_vertex(point)
     return tool.commit()
 
+# The old two-triangle signal stripe was flat and disappeared in oblique
+# lighting. A small, eight-sided luminous rail now hugs the sculpted upper
+# crest in real 3D, with smooth analytic normals and tapered ends. Same mesh
+# instance and draw-call budget; no new textures or collision.
+func _edge_point(side: float, t: float, angle: float) -> Vector3:
+    var center := _fin_point(side, t, PI * 0.5) + Vector3.UP * 0.006
+    var radius := 0.009 + 0.018 * sin(PI * t)
+    return center + Vector3(cos(angle) * radius, sin(angle) * radius, 0.0)
+
 func _make_edge(side: float) -> ArrayMesh:
     var tool := SurfaceTool.new()
     tool.begin(Mesh.PRIMITIVE_TRIANGLES)
     for i in range(LENGTH_SEGMENTS):
         var a := float(i) / float(LENGTH_SEGMENTS)
         var b := float(i + 1) / float(LENGTH_SEGMENTS)
-        for sample in [Vector2(a, PI * 0.40), Vector2(b, PI * 0.40),
-            Vector2(b, PI * 0.60), Vector2(a, PI * 0.40),
-            Vector2(b, PI * 0.60), Vector2(a, PI * 0.60)]:
-            tool.add_vertex(_fin_point(side, sample.x, sample.y) + Vector3.UP * 0.003)
-    tool.generate_normals()
+        for j in range(8):
+            var u := TAU * float(j) / 8.0
+            var v := TAU * float(j + 1) / 8.0
+            for sample in [Vector2(a, u), Vector2(b, u), Vector2(b, v),
+                    Vector2(a, u), Vector2(b, v), Vector2(a, v)]:
+                var angle := sample.y
+                tool.set_normal(Vector3(cos(angle), sin(angle), 0.0))
+                tool.add_vertex(_edge_point(side, sample.x, angle))
+    # Close both narrow ends: the luminous trim is a volume, not a decal.
+    for end in [0.0, 1.0]:
+        var center := _fin_point(side, end, PI * 0.5) + Vector3.UP * 0.006
+        for j in range(8):
+            var u := TAU * float(j) / 8.0
+            var v := TAU * float(j + 1) / 8.0
+            for point in [center,
+                    _edge_point(side, end, v if end == 0.0 else u),
+                    _edge_point(side, end, u if end == 0.0 else v)]:
+                tool.set_normal(Vector3.FORWARD if end == 0.0 else Vector3.BACK)
+                tool.add_vertex(point)
     return tool.commit()
 
 func update_state(lean: float, boosting: bool, delta: float) -> void:
