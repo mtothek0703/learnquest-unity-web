@@ -107,7 +107,10 @@ func _sculpt_arm(body: MeshInstance3D, upper: int, lower: int, hand: int) -> Arr
                     var normal: Vector3 = vertex["normal"]
                     var point: Vector3 = vertex["position"]
                     var shaped := point + _sculpt_offset(point, normal, bounds, inf)
-                    output.set_normal(normal)
+                    # The displaced deltoid/elbow profile needs its OWN
+                    # lighting normal. Keeping the original body's normal
+                    # made curved sleeve relief shade like a flat arm.
+                    output.set_normal(_sculpt_normal(point, normal, bounds, inf))
                     output.set_color(Color(inf.y, inf.x, _armor_panel(inf), 1.0))
                     output.set_bones(vertex["bones"])
                     output.set_weights(vertex["weights"])
@@ -231,6 +234,29 @@ func _sculpt_offset(point: Vector3, normal: Vector3, bounds: AABB,
     var side_sweep := 0.014 * shoulder + 0.010 * elbow + 0.008 * forearm_clearance + 0.007 * cap_crest
     return normal * shell + Vector3(lateral * side_sweep,
         0.010 * shoulder + 0.014 * cap_crest, 0.0)
+
+# Finite-difference normal of the actual source-skinned sculpted surface.
+# Uses the SAME four-weight arm influence for nearby samples; no extra
+# mesh, normal-map texture, light or draw call. Runs only when building mesh.
+func _sculpt_normal(point: Vector3, source_normal: Vector3,
+        bounds: AABB, inf: Vector2) -> Vector3:
+    var n := source_normal.normalized()
+    if n.length_squared() < 0.5:
+        return source_normal
+    var tangent := n.cross(Vector3.UP if absf(n.y) < 0.88 else Vector3.FORWARD).normalized()
+    var bitangent := n.cross(tangent).normalized()
+    var step := clampf(bounds.size.y * 0.002, 0.001, 0.015)
+    var pt := point + tangent * step
+    var mt := point - tangent * step
+    var pb := point + bitangent * step
+    var mb := point - bitangent * step
+    var dt: Vector3 = (pt + _sculpt_offset(pt, n, bounds, inf)) - (mt + _sculpt_offset(mt, n, bounds, inf))
+    var db: Vector3 = (pb + _sculpt_offset(pb, n, bounds, inf)) - (mb + _sculpt_offset(mb, n, bounds, inf))
+    var result := dt.cross(db).normalized()
+    # Reject unstable and flipped normals around imported shoulder seams.
+    if not result.is_finite() or result.length_squared() < 0.5 or result.dot(n) < 0.55:
+        return n
+    return result
 
 func _armor_panel(inf: Vector2) -> float:
     # Stored as COLOR.b, interpolated by GPU; visible broad armor zones rather
