@@ -759,6 +759,14 @@ func _try_load_cc0_hero() -> void:
         return
     external_hero = model
     external_pose = controller
+    # The original full-size board is visually much wider than the 65-bone
+    # rider in real landscape captures. A CC0-only compact board footprint
+    # gives the skinned boots a more credible surfboard proportion. Keep its
+    # vertical hover/bob, jets, steering and all collision/input code intact.
+    # This is reversible draft visual QA, never a stable V150 dependency.
+    var flight_board := legacy_rider.get_node_or_null("Floating hoverboard") as Node3D
+    if flight_board != null:
+        flight_board.scale = Vector3(0.80, 1.0, 0.90)
     # Hide the old *visual* character only; its original skeleton and all
     # V123 regressions remain available, while the hoverboard stays visible.
     if is_instance_valid(active_model):
