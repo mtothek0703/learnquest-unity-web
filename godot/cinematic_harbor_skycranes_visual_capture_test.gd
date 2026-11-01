@@ -1,5 +1,5 @@
 extends SceneTree
-## V144: actual Godot OpenGL landscape before/after for the orbital cranes.
+## V148: actual Godot OpenGL landscape before/after for the overhead transit arches.
 const SIZES := [Vector2i(1280, 720), Vector2i(1170, 540)]
 const VIEWS := ["chase", "oblique"]
 
@@ -49,6 +49,10 @@ func _capture() -> void:
     if cranes == null:
         _fail("cranes not integrated into actual Harbor")
         return
+    var bridges: Array = cranes.get("overhead_bridges")
+    if bridges.size() != 4:
+        _fail("four overhead transit arches are required for isolated visual QA")
+        return
     var captures := 0
     for size in SIZES:
         viewport.size = size
@@ -61,7 +65,10 @@ func _capture() -> void:
                 camera.look_at(Vector3(0.0, 8.0, -34.0), Vector3.UP)
             var baseline: Image
             for state in ["before", "after"]:
-                cranes.visible = state == "after"
+                # Isolate only the NEW arch geometry. Original cranes, pods,
+                # world and camera remain identical in both screenshots.
+                for bridge in bridges:
+                    (bridge as MeshInstance3D).visible = state == "after"
                 for frame in range(5):
                     await process_frame
                 await RenderingServer.frame_post_draw
@@ -85,11 +92,11 @@ func _capture() -> void:
                             if absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b) > 0.18:
                                 changed += 1
                     if changed < 65:
-                        _fail("new 3D cranes too subtle in %s %s (%d changed samples)" % [str(size), view, changed])
+                        _fail("new overhead 3D transit arches too subtle in %s %s (%d changed samples)" % [str(size), view, changed])
                         return
                 captures += 1
     if captures != 8:
         _fail("expected eight real before-after landscape frames")
         return
-    print("HARBOR SKYCRANES VISUAL QA PASSED: eight actual 16:9 and 19.5:9 comparison frames")
+    print("HARBOR SKYCRANES VISUAL QA PASSED: eight isolated overhead-arch 16:9 and 19.5:9 frames")
     quit(0)
