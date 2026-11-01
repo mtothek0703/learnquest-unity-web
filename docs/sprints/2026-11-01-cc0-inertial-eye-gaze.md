@@ -13,3 +13,10 @@ Keine neuen Assets, Materialien, Meshes, Drawcalls, Kollisionen, Touch-Eingaben 
 
 ## Zwei-Spuren-Regel
 **Spur A:** Skyway V141 bleibt stabil; keine V142 nur zur Versionssteigerung. Alle historischen Skyway-Builds und das Unity-Archiv bleiben unverändert. **Spur B:** PR #111 bleibt DRAFT und VISUAL HOLD; ein natürlicherer Blick allein genügt nicht für die hochwertige Gesamtfigur. Nächste Priorität: deutlicherer Silhouetten-/Gesichts-/Hoverboard-Qualitätssprung in echten 1280×720/1170×540 Bildern, danach reale iPhone-FPS, Clipping und vollständige Touch-Runde.
+
+## Nachgewiesene CI-Abnahme
+- [Godot-PR-Validierung 41284431489](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41284431489) auf Testcommit `a94dec6645b42ed6914f619378fb0a852e651e3f`: **completed/success, 52/52 Jobschritte**. Import, Headless-Gameplay, alle CC0-Rig-/Skinning-/Facial-Regressionen, Webexport und OpenGL-Renderstufen erfolgreich.
+- Log bestätigt wörtlich: `EXTERNAL EXPRESSION TEST PASSED: damped 30/60-FPS gaze, steering reversal, boost brows, blink, reset, original 65-bone Skin`.
+- [Acht echte 1280×720/1170×540 Neutral-/Action-Frames als CI-Artefakt 13074895662](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41284431489/artifacts/13074895662) erzeugt. **Kein neuer direkter Bildvergleich und keine visuelle Qualitätsfreigabe** in diesem Durchlauf; der algorithmische Test ist kein Beweis für deutlich hochwertigere Gesamtoptik.
+- Godot schreibt weiterhin bekannte nicht-fatalen `Parameter "t" is null`- und Render-Capture-`ERR_CANT_OPEN`-Meldungen in den Log; trotz grüner CI separat untersuchen, nicht als makellose Bildabnahme ausgeben.
+- Kein Merge und kein neuer Pages-Release. `main` blieb auf `4b6bf0e2`, Skyway V141 bleibt stabil. PR #111 bleibt DRAFT/VISUAL HOLD.
