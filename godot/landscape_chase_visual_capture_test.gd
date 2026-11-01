@@ -44,7 +44,7 @@ func _capture() -> void:
         viewport.size = size
         for pose in POSES:
             rider.position.x = 3.1 if pose == "right_lane" else 0.0
-            var boost := pose == "turbo"
+            var boost: bool = pose == "turbo"
             game.set("turbo_left", 1.0 if boost else 0.0)
             var original: Image
             for variant in ["before", "after"]:
