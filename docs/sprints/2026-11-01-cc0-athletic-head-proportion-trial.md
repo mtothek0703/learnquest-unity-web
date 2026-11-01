@@ -18,3 +18,8 @@ Changes:
 - [ ] Do not merge PR #111 unless the whole character and hoverboard visibly exceed stable quality; if eventually approved, rebase on latest main and choose next free immutable Skyway number.
 
 This is a **testable visual hypothesis, not a proven quality improvement**. If the portrait is too small, revert the trial rather than merging it. The stable release track remains independent; latest observed main during this run is V149 commit `bc3f9ac1d576d261509c210cf1c39dc60483bff8`, whose Pages workflow was still running at initial inspection. Do not claim it live without deployment verification.
+
+## Outcome — rejected and reverted
+- [x] [Godot CI 41348115310](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41348115310) **FAILED** at the pre-existing, independent mobile-readability guard: `EXTERNAL HEADGEAR TEST FAILED: portrait too small for the experimental landscape review`. Missing subsequent render artifacts are consequences of this early failure, not a passed visual gate.
+- [x] Restored the prior 1.82 head scale and its original independent test without weakening acceptance criteria (commits `37cc71a5` and `7bbe9a0e`). Final branch comparison against previously green `df2f3f679e` confirms the experimental character/gameplay code is unchanged; only sprint documentation remains.
+- [ ] The smaller head was **not** visually accepted, merged, or released. A future redesign should preserve face readability and use actual matched chase/menu render images and real iPhone testing.
