@@ -28,3 +28,8 @@ Bei identischen 1280×720-Frames (RGB-Maxkanal-Differenz >25) ändern sich durch
 
 ### Erste CI des Sichtbarkeitsversuchs: bewusst noch keine Freigabe
 [Godot-Lauf 41326295834](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41326295834) erreichte Import, Gameplay, Webexport und die 48-Bild-Hauptdiagnose, scheiterte aber an einer **veralteten 108-Bild-Diagnoseassertion**, die weiterhin zwei sichtbare Schulterkerne verlangte. Das ist eine echte rote CI, kein bestandener Sprint. Der Test wurde auf die neue bewusst **leere Schulter-Only-Kontrollgruppe** angepasst; die zwei ursprünglichen GPU-geskinnten Kerne und ihr Fallback bleiben separat im Thruster-Regressionstest nachweisbar. Erneute vollständige CI und Bildabnahme ausstehend.
+
+## Abschließender technischer Stand
+- [x] [Godot-CI 41326626477](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41326626477) **52/52 Schritte erfolgreich** nach Anpassung der 108-Frame-Inventur: Original-65-Bone-Skin, Rückfall auf fehlende Ärmel, Gameplay, Webexport und die 48 realen Silhouetten-Frames bestanden.
+- [x] [Neue 48 Original-PNGs](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41326626477/artifacts/13091204453) heruntergeladen und vier Front-/Chase-Detailvarianten tatsächlich verglichen: Der vollständige Anzug ohne Kerne hat eine **ruhigere, weniger flügelartige Schulterkontur**; `after_with_thrusters` zeigt die zuvor dominierenden cyanfarbenen Spitzen wieder. Die Körper-/Gesichtsqualität bleibt trotzdem deutlich unter dem Ziel.
+- [ ] PR #111 **DRAFT/VISUAL HOLD**, kein Merge; reale iPhone-Performance, Clipping und End-to-End-Touch-Spielrunde fehlen.
