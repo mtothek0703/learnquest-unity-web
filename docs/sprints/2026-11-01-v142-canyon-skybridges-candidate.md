@@ -31,3 +31,12 @@ No release has been claimed at candidate creation.
 ## CI repair before release
 - Initial version-label candidate CI [#41296669514](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41296669514) failed the existing phone-portrait/race HUD smoke assertions because four expectations still required `V141` after the actual game label was upgraded to `V142`. No release was performed.
 - Updated those four assertions to match the new version; gameplay and test semantics remain unchanged. A fresh full CI run must pass before merge.
+
+## Final V142 release verification (2026-11-01)
+- [x] Stable [PR #130](https://github.com/mtothek0703/learnquest-unity-web/pull/130) squash-merged to main at gameplay release commit `fe450cf366b40a9df0e28731b9826e9913ac8544`.
+- [x] Main [Godot CI #41296982880](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41296982880) SUCCESS, [archive preservation #41296982834](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41296982834) SUCCESS, [health check #41296982890](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41296982890) SUCCESS.
+- [x] [Pages publish #41296982946](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41296982946) SUCCESS, immutable [Skyway V142](https://mtothek0703.github.io/learnquest-unity-web/skyway-v142/) live. The workflow independently checked `build.txt` equals the release commit and HTTP 200 for `build.txt`, `index.html`, `index.js`, `index.wasm`, `index.pck`.
+- [x] **139 historical version directories** restored unchanged before adding V142, including Skyway V141 and the original Unity archive.
+- [x] Pages artifact size **1,432,433,117 bytes**; upload and deployment succeeded despite the ongoing 1-GB warning. Storage growth needs a separate safe fix, never delete historical versions.
+- [ ] Real iPhone Safari frame rate, collision/clipping across full playthrough and manually controlled three-question round remain unverified.
+- [ ] Experimental CC0 PR #111 remains DRAFT and does not block this stable release.
