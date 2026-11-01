@@ -60,6 +60,11 @@ func _capture() -> void:
     if rig == null or rig.get_node_or_null("ExternalHeroHeadgear") == null:
         _fail("real Head-bone helmet/hair must appear in V124 comparison frames")
         return
+    var mantle_meshes := hero.find_children("*WeightedFlightMantle", "MeshInstance3D", true, false)
+    var core_meshes := hero.find_children("*SkinnedThrusterCore", "MeshInstance3D", true, false)
+    if mantle_meshes.size() != 2 or core_meshes.size() != 2:
+        _fail("expected two actual GPU-skinned mantle tails and two shoulder thruster cores")
+        return
     # Lock both actual characters at the SAME rest/hover pose before the
     # paired capture. Previously the V123 animation kept running while the
     # V124 image was taken, so position/pose drift polluted A/B differences.
@@ -110,9 +115,16 @@ func _capture() -> void:
                 "right_profile":
                     camera.position = Vector3(5.6, 2.15, 0.0)
             camera.look_at(Vector3(0.0, 1.8 if view.ends_with("detail") else 1.7, 0.0), Vector3.UP)
-            for variant in ["before", "after"]:
+            # Preserve the original paired frames; two extra isolation states
+            # reveal whether broad weighted tails or glowing shoulder cores
+            # are responsible for the toy-like rear silhouette.
+            for variant in ["before", "after", "after_no_mantle", "after_no_thrusters"]:
                 old.visible = variant == "before"
-                hero.visible = variant == "after"
+                hero.visible = variant != "before"
+                for mesh in mantle_meshes:
+                    mesh.visible = variant != "after_no_mantle"
+                for mesh in core_meshes:
+                    mesh.visible = variant != "after_no_thrusters"
                 old.global_transform = locked_old
                 hero.global_transform = locked_hero
                 for skeleton_node in bone_locks.keys():
@@ -136,8 +148,8 @@ func _capture() -> void:
                     _fail("could not save actual rendered PNG")
                     return
                 count += 1
-    if count != 24:
-        _fail("expected twenty-four actual wide/detail/profile landscape before/after images")
+    if count != 48:
+        _fail("expected 48 actual paired and costume-isolated landscape images")
         return
-    print("QUATERNIUS VISUAL QA PASSED: 24 pose-locked V123/V124 wide/detail/profile landscape PNGs (manual quality review still required)")
+    print("QUATERNIUS VISUAL QA PASSED: 48 pose-locked V123/V124 and mantle/thruster isolation PNGs (manual quality review still required)")
     quit(0)
