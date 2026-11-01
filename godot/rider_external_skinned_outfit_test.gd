@@ -164,6 +164,66 @@ func _check() -> void:
             absf(v_back.x + v_mirror.x) > 0.001:
         _fail("dorsal V-panel sculpt must be mirrored across the original rig")
         return
+    # The imported CC0 hero faces -Z. The weighted jacket must expose a
+    # genuine V-shaped front neckline, rather than a flat, oversized collar.
+    # Rear and lateral shoulders stay high; only the front center is lowered.
+    var collar_top := test_bounds.position.y + test_bounds.size.y * 0.78
+    var front_v: float = outfit.call("_collar_limit",
+        Vector3(0.0, collar_top, -0.30), test_bounds, collar_top)
+    var side_top: float = outfit.call("_collar_limit",
+        Vector3(0.42, collar_top, -0.30), test_bounds, collar_top)
+    var rear_top: float = outfit.call("_collar_limit",
+        Vector3(0.0, collar_top, 0.30), test_bounds, collar_top)
+    var mirrored_v: float = outfit.call("_collar_limit",
+        Vector3(-0.12, collar_top, -0.30), test_bounds, collar_top)
+    var other_v: float = outfit.call("_collar_limit",
+        Vector3(0.12, collar_top, -0.30), test_bounds, collar_top)
+    if side_top - front_v < test_bounds.size.y * 0.045 or \
+            absf(rear_top - collar_top) > 0.001 or \
+            absf(side_top - collar_top) > 0.001 or \
+            absf(mirrored_v - other_v) > 0.001:
+        _fail("source-Skin jacket must have a symmetric low front V, not a flat collar")
+        return
+    # Intersect a real four-weight test triangle with the new V curve.
+    # No dropped crossing triangle, unweighted seam or collar vertex above
+    # the sculpted opening may survive the extraction.
+    var neckline: Array[Dictionary] = [
+        {"position": Vector3(-0.12, 2.16, -0.30), "normal": Vector3.FORWARD,
+            "bones": PackedInt32Array([0, 1, 2, 3]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
+        {"position": Vector3(0.0, 2.40, -0.30), "normal": Vector3.FORWARD,
+            "bones": PackedInt32Array([4, 5, 6, 7]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
+        {"position": Vector3(0.12, 2.16, -0.30), "normal": Vector3.FORWARD,
+            "bones": PackedInt32Array([0, 1, 2, 3]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])}
+    ]
+    var v_clipped: Array[Dictionary] = outfit.call(
+        "_clip_to_collar", neckline, test_bounds, collar_top)
+    if v_clipped.size() < 3:
+        _fail("front V collar discarded the intersecting original-Skin triangle")
+        return
+    var has_cut_edge := false
+    for corner in v_clipped:
+        var p: Vector3 = corner["position"]
+        var limit: float = outfit.call("_collar_limit", p, test_bounds, collar_top)
+        if p.y > limit + 0.012:
+            _fail("front V collar retained geometry above its shaped neckline")
+            return
+        if absf(p.y - limit) < 0.012:
+            has_cut_edge = true
+        var skin_weights: PackedFloat32Array = corner["weights"]
+        var skin_bones: PackedInt32Array = corner["bones"]
+        var weight_total := 0.0
+        for w in skin_weights:
+            weight_total += w
+        if skin_weights.size() != 4 or skin_bones.size() != 4 or \
+                absf(weight_total - 1.0) > 0.001:
+            _fail("front V collar must preserve four normalized source Skin weights")
+            return
+    if not has_cut_edge:
+        _fail("front V collar did not interpolate any new skinned seam vertices")
+        return
     # The garment must keep EVERY intersecting source triangle instead of
     # dropping the neckline/waist triangles and exposing the naked CC0 torso.
     # Synthetic clipping also exercises interpolation of real skin influences.
