@@ -110,6 +110,10 @@ func _process(delta: float) -> void:
     var response := 1.0 - exp(-10.0 * maxf(delta, 0.0))
     intensity = lerpf(intensity, 1.0 if boost else 0.0, response)
     var carve := clampf(float(controller.get("lean")), -1.0, 1.0)
+    # Real LegacyRider jump arc drives the jet vector: while airborne the
+    # turbines aim their actual 3D filament geometry slightly downward.
+    # Exponential smoothing keeps this action readable at 30/60/120 FPS.
+    var jump := clampf(float(controller.get("jump_pose")), 0.0, 1.0)
     for i in range(wake_meshes.size()):
         var side := -1.0 if i == 0 else 1.0
         var part := wake_meshes[i]
@@ -123,7 +127,11 @@ func _process(delta: float) -> void:
         var trail_length := 0.75 + 0.25 * intensity + 0.30 * outside * intensity
         part.scale = Vector3(1.0 + 0.20 * outside * intensity,
             1.0 + 0.12 * outside * intensity, trail_length)
-        part.position.z = 1.58 * (1.0 - trail_length)
-        part.position.x = carve * 0.08
+        part.rotation.x = lerpf(part.rotation.x, jump * 0.24, response)
+        # Pivot around the ACTUAL turbine outlet rather than the board origin.
+        # Even at full jump/boost the first filament ring stays attached to
+        # its corresponding nozzle; no mesh regeneration or physics changes.
+        var nozzle := Vector3(side * 0.88, 0.24, 1.58)
+        part.position = nozzle - Basis(Vector3.RIGHT, part.rotation.x) * (nozzle * part.scale)
         wake_materials[i].emission_energy_multiplier = intensity * (
             2.3 + outside * 0.75)
