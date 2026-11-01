@@ -329,7 +329,7 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
         0.043 * chest_ridge + 0.027 * collar + 0.049 * pectoral + \
         0.025 * deltoid + 0.015 * spine_keel + \
         0.043 * scapula + 0.026 * dorsal_shoulder + 0.016 * spine_channel + \
-        0.031 * rear_v - 0.009 * rear_recess
+        0.024 * rear_v - 0.009 * rear_recess
     # Shoulder breadth and pectoral depth follow the actual imported Skin;
     # no rigid shoulder boxes or unweighted cosmetic torso are introduced.
     var waist_inset := 0.052 * waist * smoothstep(0.12, 0.35, x)
