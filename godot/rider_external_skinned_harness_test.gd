@@ -41,6 +41,10 @@ func _check() -> void:
     if harness.find_children("*", "CollisionObject3D", true, false).size() > 0:
         _fail("harness may not introduce gameplay collisions")
         return
+    var finish := harness.material_override as StandardMaterial3D
+    if finish == null or finish.metallic > 0.20 or finish.roughness < 0.60:
+        _fail("flight harness must be matte fitted fabric, not glossy floating plastic")
+        return
     var front_count := int(harness_node.get("front_vertices"))
     var rear_count := int(harness_node.get("rear_vertices"))
     if front_count < 120 or rear_count < 120:
@@ -59,9 +63,14 @@ func _check() -> void:
     var max_x := -INF
     var cyan := 0
     var magenta := 0
+    var jacket_bounds := jacket.mesh.get_aabb()
+    var widest_band := 0.0
     for i in range(vertices.size()):
         min_x = minf(min_x, vertices[i].x)
         max_x = maxf(max_x, vertices[i].x)
+        var left_distance := absf(float(harness_node.call("_signed_band", vertices[i], jacket_bounds, -1.0)))
+        var right_distance := absf(float(harness_node.call("_signed_band", vertices[i], jacket_bounds, 1.0)))
+        widest_band = maxf(widest_band, minf(left_distance, right_distance))
         if colors[i].g > colors[i].r:
             cyan += 1
         else:
@@ -76,6 +85,9 @@ func _check() -> void:
         if absf(sum - 1.0) > 0.025:
             _fail("interpolated seam weights not normalized")
             return
+    if widest_band > 0.0345:
+        _fail("actual weighted harness extends beyond the slim fitted 3D seam envelope")
+        return
     if min_x >= -0.03 or max_x <= 0.03 or cyan < 90 or magenta < 90:
         _fail("mirrored front/back two-tone sculpt collapsed")
         return
@@ -88,7 +100,7 @@ func _check() -> void:
             "normal": Vector3.FORWARD,
             "bones": PackedInt32Array([0, 1, 2, 3]),
             "weights": PackedFloat32Array([0.7, 0.2, 0.1, 0.0])})
-    var clipped: Array[Dictionary] = harness_node.call("_clip_band", source, bounds, 1.0, 0.052)
+    var clipped: Array[Dictionary] = harness_node.call("_clip_band", source, bounds, 1.0, 0.034)
     if clipped.size() < 3:
         _fail("diagonal seam clipping dropped an intersecting triangle")
         return
@@ -96,10 +108,10 @@ func _check() -> void:
     for corner in clipped:
         var position: Vector3 = corner["position"]
         var distance := absf(float(harness_node.call("_signed_band", position, bounds, 1.0)))
-        if distance > 0.0521 or position.y < 0.2299 or position.y > 0.8301:
+        if distance > 0.0341 or position.y < 0.2299 or position.y > 0.8301:
             _fail("diagonal strip contains points outside fitted boundary")
             return
-        if absf(distance - 0.052) < 0.0002:
+        if absf(distance - 0.034) < 0.0002:
             on_boundary = true
         var blend_weights: PackedFloat32Array = corner["weights"]
         if blend_weights.size() != 4 or absf(blend_weights[0] + blend_weights[1] + blend_weights[2] + blend_weights[3] - 1.0) > 0.001:
@@ -108,5 +120,5 @@ func _check() -> void:
     if not on_boundary:
         _fail("no weighted intersection vertices generated")
         return
-    print("EXTERNAL SKINNED HARNESS TEST PASSED: %d front, %d rear, four diagonal original-Skin bands" % [front_count, rear_count])
+    print("EXTERNAL SKINNED HARNESS TEST PASSED: %d front, %d rear, four matte fitted original-Skin bands (max width %.4f)" % [front_count, rear_count, widest_band])
     quit(0)
