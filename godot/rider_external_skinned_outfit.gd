@@ -175,15 +175,11 @@ func _clip_to_height(polygon: Array[Dictionary], plane_y: float,
 # Skin and all gameplay/board/contact transforms untouched.
 func _collar_limit(point: Vector3, bounds: AABB, top_y: float) -> float:
     var center := bounds.get_center()
-    # DRAFT 02 Nov: a deeper, wider cutout exposes the real neck/chest
-    # instead of retaining a nearly horizontal toy-like collar. The V is
-    # curved across BOTH x and z and stays high over the rear shoulders.
-    # It is clipped on original four-weight triangles, not a floating prop.
-    var front := smoothstep(0.02, 0.18,
+    var front := smoothstep(0.05, 0.22,
         (center.z - point.z) / maxf(bounds.size.z, 0.001))
     var lateral := absf(point.x - center.x) / maxf(bounds.size.x, 0.001)
-    var center_v := 1.0 - smoothstep(0.075, 0.28, lateral)
-    return top_y - bounds.size.y * 0.095 * front * center_v
+    var center_v := 1.0 - smoothstep(0.055, 0.23, lateral)
+    return top_y - bounds.size.y * 0.068 * front * center_v
 
 # Clip source triangles against the curved front-V collar boundary while
 # interpolating their ORIGINAL four Skin influences, as at the waist seams.
