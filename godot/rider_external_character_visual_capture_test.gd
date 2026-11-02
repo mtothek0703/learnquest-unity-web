@@ -159,10 +159,10 @@ func _capture() -> void:
                 old.visible = variant == "before"
                 hero.visible = variant != "before"
                 source_body.visible = variant != "after_no_source"
-                fitted_jacket.visible = not variant in ["after_no_jacket",
-                    "after_no_jacket_no_harness", "after_no_jacket_no_harness_no_sleeves"]
-                harness_mesh.visible = harness_was_visible and not variant in [
-                    "after_no_jacket_no_harness", "after_no_jacket_no_harness_no_sleeves"]
+                fitted_jacket.visible = not (variant in ["after_no_jacket",
+                    "after_no_jacket_no_harness", "after_no_jacket_no_harness_no_sleeves"])
+                harness_mesh.visible = harness_was_visible and not (variant in [
+                    "after_no_jacket_no_harness", "after_no_jacket_no_harness_no_sleeves"])
                 for sleeve_index in range(sleeve_meshes.size()):
                     (sleeve_meshes[sleeve_index] as MeshInstance3D).visible = \
                         sleeves_were_visible[sleeve_index] and \
