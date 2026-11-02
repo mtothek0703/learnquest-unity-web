@@ -182,6 +182,7 @@ func _check() -> void:
     # The imported CC0 hero faces -Z. The weighted jacket must expose a
     # genuine V-shaped front neckline, rather than a flat, oversized collar.
     # Rear and lateral shoulders stay high; only the front center is lowered.
+    # Require the deeper real-geometry opening, not a shader-only recolor.
     var collar_top := test_bounds.position.y + test_bounds.size.y * 0.78
     var front_v: float = outfit.call("_collar_limit",
         Vector3(0.0, collar_top, -0.30), test_bounds, collar_top)
@@ -193,7 +194,7 @@ func _check() -> void:
         Vector3(-0.12, collar_top, -0.30), test_bounds, collar_top)
     var other_v: float = outfit.call("_collar_limit",
         Vector3(0.12, collar_top, -0.30), test_bounds, collar_top)
-    if side_top - front_v < test_bounds.size.y * 0.062 or \
+    if side_top - front_v < test_bounds.size.y * 0.095 or \
             absf(rear_top - collar_top) > 0.001 or \
             absf(side_top - collar_top) > 0.001 or \
             absf(mirrored_v - other_v) > 0.001:
