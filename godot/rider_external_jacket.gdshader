@@ -72,13 +72,7 @@ void fragment() {
     // All bands are in the imported rest pose so they follow GPU skinning.
     float armor_field = clamp(center_armor * torso * 0.83
         + pectoral_panel * 0.47 + shoulder * 0.25, 0.0, 1.0);
-    // The previous horizontal stripe survived even after the V-cut because
-    // the highlight ignored the actual weighted geometry neckline.
-    float collar_front = smoothstep(0.05, 0.22,
-        (rest_center_z - rest_vertex.z) / max(rest_depth, 0.001));
-    float collar_v = 1.0 - smoothstep(0.055, 0.23, x);
-    float collar_edge = 0.78 - 0.068 * collar_front * collar_v;
-    float collar_lip = exp(-pow((y - (collar_edge - 0.015)) * 95.0, 2.0))
+    float collar_lip = exp(-pow((y - 0.766) * 95.0, 2.0))
         * (1.0 - smoothstep(0.25, 0.40, x));
     float chest_panel_seam = exp(-pow((y - 0.604 - 0.085 * x) * 92.0, 2.0))
         * torso * (1.0 - smoothstep(0.32, 0.44, x));

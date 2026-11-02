@@ -345,14 +345,7 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     var waist := exp(-pow((y - 0.465) / 0.065, 2.0))
     var diagonal := x - (0.11 + 0.28 * (y - 0.55))
     var chest_ridge := exp(-pow(diagonal / 0.055, 2.0)) * exp(-pow((y - 0.635) / 0.115, 2.0))
-    # Follow the SAME curved front V as _collar_limit instead of raising a
-    # horizontal ring through the chest. Preserve the original rear collar.
-    var collar_front := smoothstep(0.05, 0.22,
-        (bounds.get_center().z - point.z) / maxf(bounds.size.z, 0.001))
-    var collar_v := 1.0 - smoothstep(0.055, 0.23, x)
-    var collar_edge := 0.78 - 0.068 * collar_front * collar_v
-    var collar := exp(-pow((y - (collar_edge - 0.015)) / 0.026, 2.0)) * \
-        (1.0 - smoothstep(0.17, 0.38, x))
+    var collar := exp(-pow((y - 0.765) / 0.026, 2.0)) * (1.0 - smoothstep(0.17, 0.38, x))
     var pectoral := exp(-pow((y - 0.655) / 0.075, 2.0)) * exp(-pow((x - 0.17) / 0.11, 2.0))
     var deltoid := exp(-pow((y - 0.715) / 0.055, 2.0)) * smoothstep(0.18, 0.32, x)
     var spine_keel := exp(-pow(lateral / 0.065, 2.0)) * exp(-pow((y - 0.61) / 0.13, 2.0))
