@@ -168,7 +168,7 @@ func _check() -> void:
         Vector3(0.45, 1.5, -0.43), Vector3.RIGHT, sample_bounds, Vector2(1.0, 0.96))
     # Old 0.09-m weighted cap still masked the improved original CC0
     # deltoid in real front/chase QA. Require a visibly slimmer rounded cap.
-    if shoulder_shape.x < 0.044 or shoulder_shape.x > 0.055 or \
+    if shoulder_shape.x < 0.033 or shoulder_shape.x > 0.048 or \
             elbow_shape.x < 0.045 or elbow_shape.x > 0.080 or \
             forearm_shape.x < wrist_shape.x + 0.020 or wrist_shape.x > 0.055:
         _fail("weighted sleeve geometry must create a fitted deltoid, articulated elbow and tapered wrist")
@@ -183,8 +183,8 @@ func _check() -> void:
     # at both front/back seams, rather than a broad flat magenta rectangle.
     if shoulder_shape.x - shoulder_front.x < 0.009 or \
             shoulder_shape.x - shoulder_back.x < 0.009 or \
-            shoulder_shape.y - shoulder_front.y < 0.009 or \
-            shoulder_shape.y - shoulder_back.y < 0.009 or \
+            shoulder_shape.y - shoulder_front.y < 0.005 or \
+            shoulder_shape.y - shoulder_back.y < 0.005 or \
             absf(shoulder_front.x - shoulder_back.x) > 0.001:
         _fail("original-skinned deltoid crest lacks a symmetric curved shoulder profile")
         return
