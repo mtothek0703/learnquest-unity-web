@@ -97,6 +97,16 @@ func _capture() -> void:
     if board == null:
         _fail("CC0 board comparison needs the original animated board")
         return
+    # Diagnostic A/B: isolate the real imported source torso from the
+    # true weighted jacket. A previous deeper V cut looked unchanged in
+    # front and revealed a broad purple band in chase; do not guess which
+    # original-Skin layer creates the horizontal collar.
+    var source_body := hero.find_child("SuperHero_Male", true, false) as MeshInstance3D
+    var fitted_jacket := hero.find_child("TrueSkinnedTailoredJacket", true, false) as MeshInstance3D
+    if source_body == null or fitted_jacket == null or \
+            source_body.skin == null or fitted_jacket.skin != source_body.skin:
+        _fail("collar isolation requires original CC0 Skin and fitted jacket")
+        return
     var count := 0
     for size in SIZES:
         viewport.size = size
@@ -123,9 +133,12 @@ func _capture() -> void:
             # reveal whether broad weighted tails or glowing shoulder cores
             # are responsible for the toy-like rear silhouette.
             var compact_board_frame: Image
-            for variant in ["before", "after", "after_no_mantle", "after_with_thrusters", "after_original_board"]:
+            for variant in ["before", "after", "after_no_mantle", "after_with_thrusters",
+                    "after_no_source", "after_no_jacket", "after_original_board"]:
                 old.visible = variant == "before"
                 hero.visible = variant != "before"
+                source_body.visible = variant != "after_no_source"
+                fitted_jacket.visible = variant != "after_no_jacket"
                 board.scale = Vector3.ONE if variant in ["before", "after_original_board"] else Vector3(0.80, 1.0, 0.90)
                 for mesh in mantle_meshes:
                     mesh.visible = variant != "after_no_mantle"
@@ -170,8 +183,10 @@ func _capture() -> void:
                         return
                     print("CC0 compact-board real landscape changed samples %s %s: %d" % [size, view, changed])
                 count += 1
-    if count != 60:
-        _fail("expected 60 actual paired, board-footprint and costume-isolated landscape images")
+    source_body.visible = true
+    fitted_jacket.visible = true
+    if count != 84:
+        _fail("expected 84 actual paired, source/jacket-isolated and board-footprint landscape images")
         return
-    print("QUATERNIUS VISUAL QA PASSED: 60 pose-locked V123/V124, compact-board and costume-isolated PNGs (manual quality review still required)")
+    print("QUATERNIUS VISUAL QA PASSED: 84 pose-locked V123/V124, source/jacket-isolated, compact-board and costume PNGs (manual quality review still required)")
     quit(0)
