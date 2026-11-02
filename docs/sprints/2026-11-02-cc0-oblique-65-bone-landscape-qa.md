@@ -15,6 +15,9 @@
 ## Test and visual acceptance
 - Final code/CI configuration commit: `866daa29841dea2d97cf07d9e6b0f2e0a2f88a6c`.
 - [GitHub Actions PR validation](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41526781490) started; result **pending at documentation time**. Do not claim the new 36-image capture passed until this specific run completes successfully.
+- The 36 PNGs are already available in [GitHub Actions artifact 13180118549](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41526781490/artifacts/13180118549); extracted and checked all 36 actual images (not a simulated preview). The new rear-oblique neutral and both carve angles show a protruding front chest, large side cape/upper-arm overlays and a visually bulky board/boot composition. This is a **visual quality blocker**, not a passed aesthetic gate.
+- Quantitative signal at a maximum RGB channel delta >25/255: opposite-carve poses differ in **5.70% left / 5.84% right** of 1280×720 oblique pixels and **4.68% / 4.79%** at 1170×540. These are pose differences, **not proof of better art**. Compared with the previous 24-frame successful baseline, unchanged 1280×720 neutral views differ by only **0.0001% front, 0.025% chase, 0.022% left profile and 0.038% right profile**, showing low cross-run control drift.
+- The CI step **“Capture 36 bilateral CC0 carve poses including rear oblique views”** completed successfully, as did Godot import/gameplay and the existing regression steps. The overall workflow may still be finalizing artifacts; report its final conclusion separately.
 - This is **better visual QA coverage, not a claim of better graphics**. The source model's oversized torso, shoulders and costume silhouette remain a known visual blocker. Real iPhone Safari FPS, all-pose clothing clipping and one complete touch-driven round after three English tasks remain unverified.
 
 ## Next step
