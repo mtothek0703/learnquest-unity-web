@@ -18,3 +18,9 @@ The current full-front 1280×720 CC0 portrait still shows a broad nearly horizon
 
 ## Next
 Continue a coherent front/chase character and board silhouette pass, prioritizing original mesh proportions and actual skinning over stacked ornaments. Only after visual acceptance, rebase PR #111 onto current main and choose the next unused immutable release version.
+
+## Actual first-pass CI and image review (02 Nov)
+- [Godot CI 41393022889](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41393022889) **SUCCESS** on `39ca86e51`, after correcting a synthetic neckline triangle fixture whose old corners were no longer inside the deeper cut.
+- Downloaded real pose-locked 1280×720 `front_detail_after` and `chase_detail_after` frames from artifacts 13118137326 and baseline 13116627229. With maximum RGB channel difference >30 in a fixed 360×260 torso region, **223 front pixels (0.24%)** and **2,746 chase pixels (2.93%)** changed. These are difference counts, **not visual-quality scores**.
+- **First pass visually insufficient:** the front still shows the old horizontal blue source-body collar; chase reveals an even larger purple underlayer. Do not approve, merge or release based on this geometry-only trial.
+- Follow-up: traced the horizontal glow to `rider_quaternius_suit.gdshader` on the ORIGINAL CC0 body. Added a dark, matte neck underlay and reduced the redundant cyan collar emission, with an explicit shader regression in `rider_external_silhouette_material_test.gd`. This is a second DRAFT A/B trial; **new CI and paired rendered-image comparison required** before retaining it.
