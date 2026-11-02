@@ -133,6 +133,28 @@ func _check() -> void:
             (sculpt.call("_reshape", hand_tip, bounds) as Vector3).distance_to(hand_tip) > 0.00001:
         _fail("shoulder taper must fade before armpit and outer hand")
         return
+    # Check the original 65-bone neck band rather than a hidden collar prop.
+    # The source neckline now tucks in bilaterally at the real shoulder-to-head
+    # transition, but leaves chest, hands, head and hoverboard contact intact.
+    var neck_right := Vector3(center.x + bounds.size.x * 0.18,
+        bounds.position.y + bounds.size.y * 0.815, center.z + bounds.size.z * 0.18)
+    var neck_left := Vector3(center.x - bounds.size.x * 0.18,
+        neck_right.y, neck_right.z)
+    var neck_right_after: Vector3 = sculpt.call("_reshape", neck_right, bounds)
+    var neck_left_after: Vector3 = sculpt.call("_reshape", neck_left, bounds)
+    if neck_right.x - neck_right_after.x < bounds.size.x * 0.016 or \
+            neck_right.z - neck_right_after.z < bounds.size.z * 0.005:
+        _fail("real original-skin neckline still forms a wide shoulder shelf")
+        return
+    if absf(neck_right_after.x + neck_left_after.x - 2.0 * center.x) > 0.00001 or \
+            absf(neck_right_after.z - neck_left_after.z) > 0.00001:
+        _fail("original neck sculpt must remain symmetric")
+        return
+    var face_base := Vector3(neck_right.x,
+        bounds.position.y + bounds.size.y * 0.93, neck_right.z)
+    if (sculpt.call("_reshape", face_base, bounds) as Vector3).distance_to(face_base) > 0.0001:
+        _fail("neck tailoring must not deform the head/face")
+        return
     # The new athletic thigh is narrower in BOTH axes than the source body,
     # not merely recolored, and remains on the original 65-bone skin.
     var thigh := Vector3(center.x + x, bounds.position.y + bounds.size.y * 0.310, center.z + bounds.size.z * 0.18)

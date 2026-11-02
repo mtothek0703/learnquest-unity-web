@@ -229,7 +229,7 @@ func _sculpt_offset(point: Vector3, normal: Vector3, bounds: AABB,
     # body, still form the bulbous shoulder shelf in the 108-layer OpenGL QA.
     # Reduce only the upper-arm shell relief, keeping real four-weight elbow
     # articulation, a curved deltoid crest and the full forearm taper.
-    var shell := 0.012 + 0.023 * shoulder + 0.024 * elbow + 0.026 * forearm_clearance + 0.010 * cap_crest
+    var shell := 0.012 + 0.019 * shoulder + 0.024 * elbow + 0.026 * forearm_clearance + 0.008 * cap_crest
     var lateral := signf(point.x - bounds.get_center().x)
     # Coordinated torso/sleeve pass: reduce the outer weighted cap along with
     # the imported source deltoid, rather than leaving an oversized overlay.
@@ -237,7 +237,7 @@ func _sculpt_offset(point: Vector3, normal: Vector3, bounds: AABB,
     # bulk while preserving a true rounded GPU-skinned cap and elbow motion.
     # The shoulder stays connected to the arm, with a raised, softly
     # convex top rather than a flat shoulder slab in the chase camera.
-    var side_sweep := 0.007 * shoulder + 0.010 * elbow + 0.008 * forearm_clearance + 0.004 * cap_crest
+    var side_sweep := 0.004 * shoulder + 0.010 * elbow + 0.008 * forearm_clearance + 0.003 * cap_crest
     return normal * shell + Vector3(lateral * side_sweep,
         0.010 * shoulder + 0.014 * cap_crest, 0.0)
 
