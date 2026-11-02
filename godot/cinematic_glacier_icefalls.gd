@@ -75,11 +75,11 @@ func _flow_point(t: float, lane: int, across: float) -> Vector3:
     var u := 0.24 + float(lane) * 0.26
     var taper := 0.82 + 0.18 * sin(PI * t) + 0.05 * sin(u * 14.0 + t * 6.0)
     var x := (u - 0.5) * 5.0 * taper + 0.26 * sin(t * 6.0 + u * 11.0)
-    x += across * (0.18 + 0.045 * sin(t * 12.0 + float(lane)))
+    x += across * (0.42 + 0.060 * sin(t * 12.0 + float(lane)))
     var crown := 12.4 + 0.88 * sin(u * 8.0) + 0.34 * cos(u * 19.0)
     var y := lerpf(0.45 + 0.18 * sin(u * 14.0), crown, t)
     var ice_z := 0.45 * sin(u * 9.0 + t * 4.0) + 0.24 * sin(u * 23.0 - t * 7.0)
-    var crest := 0.14 * (1.0 - absf(across))
+    var crest := 0.25 * (1.0 - absf(across))
     return Vector3(x, y, ice_z + 0.10 + crest)
 
 func _flow_mesh(lane: int) -> ArrayMesh:
@@ -110,9 +110,9 @@ render_mode unshaded, cull_disabled;
 void fragment() {
     float streak = pow(max(0.0, sin(UV.y * 38.0 - TIME * 4.5)), 3.0);
     float edge = 1.0 - abs(UV.x * 2.0 - 1.0);
-    float intensity = 0.28 + 0.50 * streak + 0.22 * edge;
+    float intensity = 0.48 + 0.60 * streak + 0.30 * edge;
     ALBEDO = vec3(0.10, 0.42, 0.65) * intensity;
-    EMISSION = vec3(0.20, 0.86, 1.0) * intensity * 1.7;
+    EMISSION = vec3(0.22, 0.92, 1.0) * intensity * 2.4;
 }
 """
     var material := ShaderMaterial.new()
