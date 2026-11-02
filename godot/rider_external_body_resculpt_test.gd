@@ -134,7 +134,7 @@ func _check() -> void:
     var shoulder_edge := Vector3(center.x + bounds.size.x * 0.39,
         outer_right.y, outer_right.z)
     var shoulder_edge_after: Vector3 = sculpt.call("_reshape", shoulder_edge, bounds)
-    if shoulder_edge.x - shoulder_edge_after.x < bounds.size.x * 0.055:
+    if shoulder_edge.x - shoulder_edge_after.x < bounds.size.x * 0.070:
         _fail("outer source shoulder shelf remains too wide in rest geometry")
         return
     var hand_tip := Vector3(center.x + bounds.size.x * 0.45,
@@ -174,7 +174,7 @@ func _check() -> void:
         slope_edge.y, slope_edge.z)
     var sloped: Vector3 = sculpt.call("_reshape", slope_edge, bounds)
     var centered: Vector3 = sculpt.call("_reshape", slope_center, bounds)
-    if slope_edge.y - sloped.y < bounds.size.y * 0.020 or \
+    if slope_edge.y - sloped.y < bounds.size.y * 0.030 or \
             absf(slope_center.y - centered.y) > bounds.size.y * 0.001:
         _fail("real 65-bone shoulder must slope downward without moving the neck")
         return
@@ -190,7 +190,7 @@ func _check() -> void:
     var recessed_front: Vector3 = sculpt.call("_reshape", front_chest, bounds)
     var sculpted_back: Vector3 = sculpt.call("_reshape", back_chest, bounds)
     var recessed_mirror: Vector3 = sculpt.call("_reshape", mirror_front, bounds)
-    if recessed_front.z - front_chest.z < bounds.size.z * 0.050 or \
+    if recessed_front.z - front_chest.z < bounds.size.z * 0.070 or \
             absf(sculpted_back.z - back_chest.z) > bounds.size.z * 0.040:
         _fail("source-skinned pectoral profile must recede in front without flattening the back")
         return
