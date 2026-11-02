@@ -447,8 +447,15 @@ func _process(delta: float) -> void:
         # pitch one arm forward to read the route and the other behind for
         # balance. Carving changes their reach without touching input or
         # collision; original four-weight sleeves follow both joints.
-        var reach_pitch := (-0.56 if side < 0 else 0.16) - boost * 0.30 - \
-            outside * 0.12 + inside * 0.10 + landing_impact * 0.14
+        # A strong RIGHT carve swaps which genuine shoulder reaches ahead:
+        # the route-side arm leads while the other counterbalances behind.
+        # Smoothstep avoids a snapping arm when the touch lane changes;
+        # neutral and left-carve preserve the tested original surf stance.
+        var right_lead := smoothstep(0.18, 0.82, steer)
+        var neutral_reach := -0.56 if side < 0 else 0.16
+        var switched_reach := 0.16 if side < 0 else -0.56
+        var reach_pitch := lerpf(neutral_reach, switched_reach, right_lead) - \
+            boost * 0.30 - outside * 0.12 + inside * 0.10 + landing_impact * 0.14
         _pose(["upperarm_l" if side < 0 else "upperarm_r", prefix + "UpperArm", prefix + "Arm"],
             Quaternion(Vector3.FORWARD, spread - torso_follow * 0.13) *
             Quaternion(Vector3.RIGHT, reach_pitch), blend)
