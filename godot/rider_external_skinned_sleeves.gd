@@ -241,8 +241,16 @@ func _sculpt_offset(point: Vector3, normal: Vector3, bounds: AABB,
     # horizontal upper-arm shelf. Preserve the raised central deltoid crest
     # and the elbow/forearm shape, with less lateral and vertical bulk.
     var side_sweep := 0.002 * shoulder + 0.010 * elbow + 0.008 * forearm_clearance + 0.003 * cap_crest
+    # An anatomical deltoid descends from the neck toward the outer arm.
+    # The earlier uniform upward offset made the imported weighted shoulder
+    # look like a horizontal shelf, even after reducing its lateral volume.
+    # Use the source mesh's rest-space half-span, not world coordinates, so
+    # the same continuous falloff is mirrored on both original 65-bone arms.
+    var outer_span := clampf(absf(point.x - bounds.get_center().x) /
+        maxf(0.001, bounds.size.x * 0.5), 0.0, 1.0)
+    var shoulder_descent := 0.038 * shoulder * pow(outer_span, 1.6)
     return normal * shell + Vector3(lateral * side_sweep,
-        0.004 * shoulder + 0.009 * cap_crest, 0.0)
+        0.004 * shoulder + 0.009 * cap_crest - shoulder_descent, 0.0)
 
 # Finite-difference normal of the actual source-skinned sculpted surface.
 # Uses the SAME four-weight arm influence for nearby samples; no extra
