@@ -40,6 +40,8 @@ jobs:
           grep -Fq 'AERIAL ENERGY MASTERY TEST PASSED' /tmp/aerial-energy.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://energy_weave_mastery_test.gd 2>&1 | tee /tmp/energy-weave.log
           grep -Fq 'ENERGY WEAVE MASTERY TEST PASSED' /tmp/energy-weave.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://alternating_near_miss_test.gd 2>&1 | tee /tmp/near-miss.log
+          grep -Fq 'ALTERNATING NEAR MISS TEST PASSED' /tmp/near-miss.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_original_body_skin_test.gd 2>&1 | tee /tmp/original-body-skin.log
           grep -Fq 'ORIGINAL BODY SKIN TEST PASSED' /tmp/original-body-skin.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_costume_skin_follow_test.gd 2>&1 | tee /tmp/costume-skin-follow.log
