@@ -65,6 +65,18 @@ func _check() -> void:
             right_spread < 1.48 or right_spread > 1.72:
         _fail("neutral original-skinned shoulders must form a compact mobile chase silhouette (rest-relative L/R: %.3f / %.3f)" % [left_spread, right_spread])
         return
+    # The new lead/trailing-arm stance must use the ACTUAL 65-bone
+    # shoulders: one real skinned arm reaches forward and the other balances
+    # behind the torso. A symmetric T-pose or two arms hidden at the hips
+    # cannot pass this test, even if cosmetic shoulder shells look correct.
+    var lead_expected := left_rest * Quaternion(Vector3.FORWARD, 1.57) * \
+        Quaternion(Vector3.RIGHT, -0.56)
+    var trailing_expected := right_rest * Quaternion(Vector3.FORWARD, -1.57) * \
+        Quaternion(Vector3.RIGHT, 0.16)
+    if neutral_left_shoulder.angle_to(lead_expected) > 0.025 or \
+            neutral_right_shoulder.angle_to(trailing_expected) > 0.025:
+        _fail("real skinned arms must form forward-lead / rear-balance surf stance")
+        return
     # Check the actual source-relative imported elbows, not absolute bone
     # quaternions. Both arms must bend into a riding silhouette while the
     # original 65-bone Skin remains the sole deformation source.
