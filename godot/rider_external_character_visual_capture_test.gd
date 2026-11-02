@@ -6,6 +6,7 @@ const VIEWS := ["front", "chase", "front_detail", "chase_detail",
 func _initialize() -> void:
     call_deferred("_capture")
 func _fail(message: String) -> void:
+    Engine.time_scale = 1.0
     push_error("QUATERNIUS VISUAL QA FAILED: " + message)
     quit(1)
 func _capture() -> void:
@@ -91,6 +92,10 @@ func _capture() -> void:
         elif node is AnimationTree:
             (node as AnimationTree).active = false
     rider.process_mode = Node.PROCESS_MODE_DISABLED
+    # Freeze shader TIME as well as both skeletons and the board. Without
+    # this, unchanged source-only A/B controls drift between CI runs and
+    # small visual edits cannot be attributed reliably to their geometry.
+    Engine.time_scale = 0.0
     for frame in range(4):
         await process_frame
     var board := rider.get_node_or_null("LegacyRider/Floating hoverboard") as Node3D
@@ -228,5 +233,6 @@ func _capture() -> void:
     if count != 132:
         _fail("expected 132 actual paired, upper-jacket, harness and sleeve-isolated landscape images")
         return
-    print("QUATERNIUS VISUAL QA PASSED: 132 pose-locked V123/V124, source/jacket/harness/sleeve-isolated, compact-board and costume PNGs (manual quality review still required)")
+    Engine.time_scale = 1.0
+    print("QUATERNIUS VISUAL QA PASSED: 132 shader-time/pose-locked V123/V124, source/jacket/harness/sleeve-isolated, compact-board and costume PNGs (manual quality review still required)")
     quit(0)
