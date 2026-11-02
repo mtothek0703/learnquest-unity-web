@@ -347,6 +347,67 @@ func _check() -> void:
     if not lateral_boundary:
         _fail("jacket lateral clipping did not create a real seam boundary")
         return
+    # The jacket must NOT be a constant-width vertical slab. Verify the
+    # actual curved waist/pectoral/clavicle profile in source-AABB units.
+    var waist_y := test_bounds.position.y + test_bounds.size.y * 0.43
+    var mid_y := test_bounds.position.y + test_bounds.size.y * 0.605
+    var neck_y := test_bounds.position.y + test_bounds.size.y * 0.78
+    var waist_edge: float = outfit.call("_torso_profile_edge", test_bounds, waist_y, true)
+    var chest_edge: float = outfit.call("_torso_profile_edge", test_bounds, mid_y, true)
+    var neck_edge: float = outfit.call("_torso_profile_edge", test_bounds, neck_y, true)
+    if chest_edge < waist_edge + test_bounds.size.x * 0.050 or \
+            neck_edge > waist_edge - test_bounds.size.x * 0.030:
+        _fail("real weighted jacket needs a broad chest, tapered waist and narrow clavicles")
+        return
+    for y in [waist_y, mid_y, neck_y]:
+        var left_edge: float = outfit.call("_torso_profile_edge", test_bounds, y, false)
+        var right_edge: float = outfit.call("_torso_profile_edge", test_bounds, y, true)
+        if absf(left_edge + right_edge - 2.0 * test_bounds.get_center().x) > 0.00001:
+            _fail("curved torso edge must remain bilaterally symmetric")
+            return
+    # A large triangle crossing BOTH curved boundaries must keep its original
+    # four-weight Skin at each new seam vertex, with no protruding triangles.
+    var profile_triangle: Array[Dictionary] = [
+        {"position": Vector3(-0.60, 1.80, 0.0), "normal": Vector3.FORWARD,
+            "bones": PackedInt32Array([0, 1, 2, 3]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
+        {"position": Vector3(0.60, 1.80, 0.0), "normal": Vector3.FORWARD,
+            "bones": PackedInt32Array([4, 5, 6, 7]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
+        {"position": Vector3(0.0, 2.22, 0.0), "normal": Vector3.FORWARD,
+            "bones": PackedInt32Array([8, 9, 10, 11]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])}
+    ]
+    var tailored: Array[Dictionary] = outfit.call(
+        "_clip_to_torso_profile", profile_triangle, test_bounds, false)
+    tailored = outfit.call("_clip_to_torso_profile", tailored, test_bounds, true)
+    if tailored.size() < 3:
+        _fail("curved torso cut removed the weighted source triangle")
+        return
+    var left_seams := 0
+    var right_seams := 0
+    for corner in tailored:
+        var p: Vector3 = corner["position"]
+        var left: float = outfit.call("_torso_profile_edge", test_bounds, p.y, false)
+        var right: float = outfit.call("_torso_profile_edge", test_bounds, p.y, true)
+        if p.x < left - 0.0005 or p.x > right + 0.0005:
+            _fail("curved weighted jacket cut left geometry outside the anatomical outline")
+            return
+        if absf(p.x - left) < 0.0005:
+            left_seams += 1
+        if absf(p.x - right) < 0.0005:
+            right_seams += 1
+        var weights: PackedFloat32Array = corner["weights"]
+        var bones: PackedInt32Array = corner["bones"]
+        var total := 0.0
+        for w in weights:
+            total += w
+        if weights.size() != 4 or bones.size() != 4 or absf(total - 1.0) > 0.001:
+            _fail("curved jacket seam broke the original four normalized Skin weights")
+            return
+    if left_seams < 1 or right_seams < 1:
+        _fail("both curved torso seams must interpolate real skinned vertices")
+        return
     var middle: Dictionary = outfit.call("_interpolate_corner", corner_a, corner_b, 0.5)
     var middle_weights: PackedFloat32Array = middle["weights"]
     if absf(middle_weights[0] - 0.5) > 0.001 or absf(middle_weights[1] - 0.5) > 0.001:
