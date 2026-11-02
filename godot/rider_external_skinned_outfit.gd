@@ -231,11 +231,7 @@ func _torso_profile_edge(bounds: AABB, y: float, right_edge: bool) -> float:
     var waist_y := bounds.position.y + bounds.size.y * 0.43
     var collar_y := bounds.position.y + bounds.size.y * 0.78
     var t := clampf((y - waist_y) / maxf(collar_y - waist_y, 0.0001), 0.0, 1.0)
-    # Keep the lower-rib rest sculpt narrow while retaining sufficient
-    # four-weight jacket coverage after clipping the actual imported torso.
-    # CI measures garment/source width, so the source sculpt cannot silently
-    # collapse the visible jacket in the mobile chase camera.
-    var half_width := 0.190 + 0.060 * sin(PI * t) - 0.035 * smoothstep(0.70, 1.0, t)
+    var half_width := 0.180 + 0.060 * sin(PI * t) - 0.035 * smoothstep(0.70, 1.0, t)
     return bounds.get_center().x + bounds.size.x * half_width * (1.0 if right_edge else -1.0)
 
 # Cut original imported triangles against the CURVED waist/shoulder outline.
