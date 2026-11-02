@@ -202,13 +202,13 @@ func _check() -> void:
     # No dropped crossing triangle, unweighted seam or collar vertex above
     # the sculpted opening may survive the extraction.
     var neckline: Array[Dictionary] = [
-        {"position": Vector3(-0.12, 2.10, -0.30), "normal": Vector3.FORWARD,
+        {"position": Vector3(-0.12, 1.95, -0.30), "normal": Vector3.FORWARD,
             "bones": PackedInt32Array([0, 1, 2, 3]),
             "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
         {"position": Vector3(0.0, 2.40, -0.30), "normal": Vector3.FORWARD,
             "bones": PackedInt32Array([4, 5, 6, 7]),
             "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
-        {"position": Vector3(0.12, 2.10, -0.30), "normal": Vector3.FORWARD,
+        {"position": Vector3(0.12, 1.95, -0.30), "normal": Vector3.FORWARD,
             "bones": PackedInt32Array([0, 1, 2, 3]),
             "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])}
     ]
