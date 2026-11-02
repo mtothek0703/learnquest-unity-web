@@ -40,7 +40,8 @@ func _capture() -> void:
     var rider := game.get("rider") as Node3D
     var camera := game.get("chase_camera") as Camera3D
     var ring := game.get("near_miss_ring") as MeshInstance3D
-    if rider == null or camera == null or ring == null:
+    var arcs: Array = game.get("near_miss_progress")
+    if rider == null or camera == null or ring == null or arcs.size() != 3:
         _fail("real game chase camera, rider or near-miss VFX missing")
         return
     rider.process_mode = Node.PROCESS_MODE_DISABLED
@@ -61,18 +62,27 @@ func _capture() -> void:
         game.set("near_miss_last_rider_lane", 99)
         game.set("near_miss_mastery", false)
         ring.visible = false
+        game.call("_sync_near_miss_progress")
         var baseline: Image
-        for variant in ["before", "after"]:
-            if variant == "after":
-                for maneuver in [Vector2(-3.1, 0.0), Vector2(0.0, -3.1), Vector2(-3.1, 0.0)]:
-                    rider.position.x = maneuver.y
-                    game.call("_register_near_miss", maneuver.x)
-                # Restore the exact baseline rider position for the A/B render.
+        for variant in ["before", "one", "two", "after"]:
+            if variant != "before":
+                var maneuver := Vector2(-3.1, 0.0)
+                if variant == "two":
+                    maneuver = Vector2(0.0, -3.1)
+                rider.position.x = maneuver.y
+                game.call("_register_near_miss", maneuver.x)
                 rider.position.x = 0.0
-                if not bool(game.get("near_miss_mastery")) or not ring.visible:
-                    _fail("three alternating hazards did not reveal the 3D board pulse")
-                    return
-                # Hold HUD and game world identical: count real VFX pixels,
+                if variant == "after":
+                    if not bool(game.get("near_miss_mastery")) or not ring.visible:
+                        _fail("three alternating hazards did not reveal the 3D board pulse")
+                        return
+                else:
+                    var expected := 1 if variant == "one" else 2
+                    for arc_index in range(3):
+                        if (arcs[arc_index] as MeshInstance3D).visible != (arc_index < expected):
+                            _fail("actual skill arcs do not track the 1/3 or 2/3 chain")
+                            return
+                # Hold HUD and game world identical: count 3D VFX pixels,
                 # not the XP or Turbo numbers earned by the challenge.
                 game.set("xp", 0)
                 game.set("turbo_left", 0.0)
@@ -100,9 +110,10 @@ func _capture() -> void:
                         var b := shot.get_pixel(px, py)
                         if absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b) > 0.16:
                             changed += 1
-                if changed < 24:
-                    _fail("3D near-miss pulse is invisible/occluded in %s: %d changed samples" % [size, changed])
+                var minimum := 24 if variant == "after" else 3
+                if changed < minimum:
+                    _fail("3D near-miss %s VFX is invisible/occluded in %s: %d changed samples" % [variant, size, changed])
                     return
                 print("Near-miss 3D board pulse at %s: %d changed gameplay samples" % [size, changed])
-    print("NEAR MISS VISUAL QA PASSED: four real 1280x720/1170x540 same-camera before/after game frames")
+    print("NEAR MISS VISUAL QA PASSED: eight real 1280x720/1170x540 same-camera progress and reward frames")
     quit(0)

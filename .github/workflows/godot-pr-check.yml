@@ -364,7 +364,7 @@ jobs:
           name: learnquest-v150-energy-weave-qa
           path: /tmp/learnquest-weave-qa/*.png
           if-no-files-found: error
-      - name: Render V151 actual near-miss board shockwave at two phone ratios
+      - name: Render V153 actual near-miss progress and board shockwave at two phone ratios
         shell: bash
         run: |
           set -euo pipefail
@@ -374,12 +374,12 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://near_miss_visual_capture_test.gd 2>&1 | tee /tmp/near-miss-visual.log
           grep -Fq 'NEAR MISS VISUAL QA PASSED' /tmp/near-miss-visual.log
-          test "$(find /tmp/learnquest-near-miss-qa -name '*.png' | wc -l)" -eq 4
-      - name: Upload V151 near-miss board shockwave landscape frames
+          test "$(find /tmp/learnquest-near-miss-qa -name '*.png' | wc -l)" -eq 8
+      - name: Upload V153 near-miss progress and shockwave landscape frames
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: learnquest-v151-near-miss-qa
+          name: learnquest-v153-near-miss-qa
           path: /tmp/learnquest-near-miss-qa/*.png
           if-no-files-found: error
       - name: Upload V145 candidate actual chase camera before-after
