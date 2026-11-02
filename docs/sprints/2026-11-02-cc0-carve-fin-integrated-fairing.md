@@ -16,3 +16,7 @@ Run Godot PR checks (gameplay, original skin, fin geometry, landscape capture, W
 ## Outcome
 
 Code and tests committed to DRAFT branch; CI and rendered-frame review must be recorded separately once available. Stable main remains on its latest independently verified immutable Skyway release.
+
+## CI recovery
+
+The first [Godot PR validation 41536660229](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41536660229) failed at the new fairing assertion. Cause: the preceding board-lighting tests had already raised the hinge in a boost/carve pose; the new test incorrectly compared its **deployed** deck root against the **neutral** hull top. The assertion now uses the fixed neutral rest hinge for deck embed, while measuring the tip-to-fin gap relative to the same actual animated hinge. This corrects the QA reference frame, not the sculpt. Re-run required; no quality/release approval inferred from the failed run.

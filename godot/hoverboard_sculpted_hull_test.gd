@@ -488,14 +488,20 @@ func _check() -> void:
         # not merely that both meshes exist at separate floating positions.
         # The fairing root must disappear into the hull top and its tip
         # must reach the fin near 42% span in the neutral rest pose.
-        var mount_root: Vector3 = (hinge as Node3D).position + vanes.call(
+        # Earlier board glow tests have already deployed/raised this hinge.
+        # Check deck penetration in its NEUTRAL rest pose, not the raised
+        # boost pose. Fin-to-fairing distance is translation-invariant.
+        var rest_hinge := Vector3(mount_side * 0.99, 0.525, 0.22)
+        var mount_root: Vector3 = rest_hinge + vanes.call(
             "_mount_point", mount_side, 0.0, 0.0)
         var mount_tip: Vector3 = (hinge as Node3D).position + vanes.call(
             "_mount_point", mount_side, 1.0, 0.0)
         var aerofoil_join: Vector3 = (hinge as Node3D).position + vanes.call(
             "_fin_point", mount_side, 0.42, PI * 0.5)
-        if mount_root.y > 0.42 or mount_tip.distance_to(aerofoil_join) > 0.075:
-            _fail("carve fin mount has a visible air gap to the actual swept aerofoil")
+        var join_gap := mount_tip.distance_to(aerofoil_join)
+        if mount_root.y > 0.42 or join_gap > 0.075:
+            _fail("fin fairing does not join: neutral deck root y=%.4f, aerofoil gap=%.4f" % [
+                mount_root.y, join_gap])
             return
         var edge := (hinge as Node3D).get_node_or_null("CurvedSignalEdge") as MeshInstance3D
         if aerofoil == null or edge == null or aerofoil.mesh == null or edge.mesh == null:
