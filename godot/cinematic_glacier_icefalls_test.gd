@@ -22,6 +22,23 @@ func _check() -> void:
     if channels.size() != 18:
         _fail("six icefalls require three sculpted flowing channels each")
         return
+    var canopies: Array = falls.get("overhead_flows")
+    if canopies.size() != 6:
+        _fail("six visible sculpted overhead glacial flows required")
+        return
+    for canopy in canopies:
+        var arch := canopy as MeshInstance3D
+        if arch == null or not arch.mesh is ArrayMesh or not arch.visible:
+            _fail("overhead flow must be an actual visible 3D surface")
+            return
+        var points: PackedVector3Array = arch.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+        var span := arch.mesh.get_aabb().size
+        if points.size() < 700 or span.x < 7.0 or span.y < 1.5 or span.z < 0.5:
+            _fail("overhead glacial flow lacks substantial curved 3D volume")
+            return
+        if arch.mesh.get_aabb().position.y < 8.0:
+            _fail("overhead flow must remain safely above playable lanes")
+            return
     var shared_material: ShaderMaterial
     for channel in channels:
         var flow := channel as MeshInstance3D
@@ -98,5 +115,5 @@ func _check() -> void:
     if not is_equal_approx(roots[0].position.z, 22.0 + 3.0 - 162.0):
         _fail("icefall loop must not accumulate geometry")
         return
-    print("GLACIER ICEFALLS TEST PASSED: six volumetric cascades, 72 instanced icicles, 18 sculpted flowing streams, no collisions, scroll/pause/wrap")
+    print("GLACIER ICEFALLS TEST PASSED: six volumetric cascades, 72 instanced icicles, 18 wall streams and six 3D overhead glacial flows, no collisions, scroll/pause/wrap")
     quit(0)
