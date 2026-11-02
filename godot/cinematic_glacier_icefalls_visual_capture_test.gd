@@ -88,8 +88,56 @@ func _capture() -> void:
                         _fail("sculpted icefalls not visibly distinct in %s %s (%d samples)" % [str(size), view, changed])
                         return
                 count += 1
+    # Isolate the NEW sculpted flow from the existing V143 ice walls.
+    # Whole-icefall before/after alone cannot prove V154 adds visible value.
+    var channels: Array = falls.get("flow_channels")
+    var stream_images := 0
+    for size in SIZES:
+        viewport.size = size
+        for view in VIEWS:
+            if view == "chase":
+                camera.position = Vector3(0.0, 5.5, 14.0)
+                camera.look_at(Vector3(0.0, 6.0, -35.0), Vector3.UP)
+            else:
+                camera.position = Vector3(4.0, 8.0, 16.0)
+                camera.look_at(Vector3(0.0, 7.0, -38.0), Vector3.UP)
+            falls.visible = true
+            var without_streams: Image
+            for state in ["streams_off", "streams_on"]:
+                var show_streams := state == "streams_on"
+                for channel in channels:
+                    (channel as MeshInstance3D).visible = show_streams
+                for frame in range(5):
+                    await process_frame
+                await RenderingServer.frame_post_draw
+                var shot := viewport.get_texture().get_image()
+                if shot.is_empty() or shot.get_width() != size.x or shot.get_height() != size.y:
+                    _fail("invalid streaming glacier landscape capture")
+                    return
+                if shot.save_png("%s/%dx%d_%s_%s.png" % [output, size.x, size.y, view, state]) != OK:
+                    _fail("cannot save streaming glacier QA image")
+                    return
+                if not show_streams:
+                    without_streams = shot
+                else:
+                    var changed := 0
+                    for y in range(108):
+                        for x in range(192):
+                            var px := int(float(size.x - 1) * float(x) / 191.0)
+                            var py := int(float(size.y - 1) * float(y) / 107.0)
+                            var a := without_streams.get_pixel(px, py)
+                            var b := shot.get_pixel(px, py)
+                            if absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b) > 0.16:
+                                changed += 1
+                    if changed < 8:
+                        _fail("new raised flowing streams are not visibly distinct in %s %s (%d samples)" % [str(size), view, changed])
+                        return
+                stream_images += 1
+    if stream_images != 8:
+        _fail("expected eight isolated flowing-stream landscape images")
+        return
     if count != 8:
         _fail("expected eight real landscape comparison images")
         return
-    print("GLACIER ICEFALLS VISUAL QA PASSED: eight original 16:9 and 19.5:9 before/after images")
+    print("GLACIER ICEFALLS VISUAL QA PASSED: eight icefall and eight isolated streaming-channel 16:9/wide landscape images")
     quit(0)
