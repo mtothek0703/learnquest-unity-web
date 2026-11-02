@@ -45,7 +45,15 @@ void fragment() {
     float uncovered = clamp(max(face, hands), 0.0, 1.0);
     vec3 skin = vec3(0.87, 0.59, 0.46);
     float seams = exp(-pow((x - 0.22) * 34.0, 2.0)) * torso;
-    float collar = exp(-pow((y - 0.78) * 40.0, 2.0)) * (1.0 - uncovered);
+    // The actual imported torso remains visible beneath the weighted V cut.
+    // Its former saturated blue emissive neck ring crossed the new sculpted
+    // opening as a horizontal toy-like bar. Keep a recessed graphite textile
+    // underlayer instead of lighting the entire neck circumference.
+    float underlay_neck = exp(-pow((y - 0.78) * 22.0, 2.0))
+        * (1.0 - uncovered);
+    cloth = mix(cloth, midnight * 0.78, underlay_neck * 0.82);
+    float collar = exp(-pow((y - 0.78) * 40.0, 2.0))
+        * (1.0 - uncovered);
     float knee = exp(-pow((y - 0.30) * 28.0, 2.0)) * outer;
     // The imported 65-bone under-suit now shares the tailored jacket and
     // lower garment's normalized fabric grain. This avoids a smooth plastic
@@ -62,7 +70,7 @@ void fragment() {
     METALLIC = mix(0.21 + boots * 0.13, 0.02, uncovered);
     ROUGHNESS = mix(0.52 - boots * 0.13 + weave * 0.016 * (1.0 - under_armor)
         - carbon_fiber * 0.018 * under_armor, 0.72, uncovered);
-    EMISSION = vec3(0.04, 0.51, 0.80) * (seams * 0.38 + collar * 0.36)
+    EMISSION = vec3(0.04, 0.51, 0.80) * (seams * 0.38 + collar * 0.07)
         + magenta * knee * 0.12;
     float silhouette_rim = pow(1.0 - abs(dot(normalize(NORMAL), normalize(VIEW))), 2.6);
     ALBEDO = min(ALBEDO * (1.0 + silhouette_rim * 0.18), vec3(1.0));
