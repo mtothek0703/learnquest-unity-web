@@ -73,6 +73,17 @@ func _half_width(t: float) -> float:
     var tail := smoothstep(0.78, 1.0, t)
     return 0.77 * (0.48 + 0.52 * nose) * (1.0 - 0.16 * tail)
 
+# Twin physical bow chines are carved into the existing 360-degree chassis,
+# rather than hidden behind the legacy flat purple nose prism. Their relief
+# fades before the footbeds: no new mesh, draw call, collision or input.
+func _bow_chines(t: float, angle: float) -> float:
+    var nose_fade := 1.0 - smoothstep(0.28, 0.63, t)
+    var upper := smoothstep(0.18, 0.82, sin(angle))
+    var across := absf(cos(angle))
+    var raised_pair := exp(-pow((across - 0.58) / 0.18, 2.0))
+    var center_groove := exp(-pow(across / 0.23, 2.0))
+    return nose_fade * upper * (0.105 * raised_pair - 0.022 * center_groove)
+
 func _shell_point(t: float, angle: float) -> Vector3:
     var z := lerpf(-1.37, 1.33, t)
     var width := _half_width(t)
@@ -80,13 +91,17 @@ func _shell_point(t: float, angle: float) -> Vector3:
     var rear_sweep := 0.025 * smoothstep(0.76, 1.0, t)
     var thickness := 0.105 + 0.025 * sin(PI * t)
     return Vector3(width * cos(angle),
-        0.285 + raised_nose + rear_sweep + thickness * sin(angle), z)
+        0.285 + raised_nose + rear_sweep + thickness * sin(angle) +
+        _bow_chines(t, angle), z)
 
 func _emit_shell(tool: SurfaceTool, t: float, angle: float) -> void:
     var edge := absf(cos(angle))
     var upper := maxf(0.0, sin(angle))
     var color := Color("#101a34").lerp(Color("#44587d"), upper * 0.65)
     color = color.lerp(Color("#754b9b"), edge * (0.14 + 0.20 * t))
+    # A satin highlight follows the actual raised geometry, not a flat decal.
+    var bow_highlight := clampf(_bow_chines(t, angle) / 0.105, 0.0, 1.0)
+    color = color.lerp(Color("#7c9ab8"), bow_highlight * 0.36)
     tool.set_color(color)
     tool.add_vertex(_shell_point(t, angle))
 
