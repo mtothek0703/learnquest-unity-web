@@ -9,7 +9,10 @@
 ## Genuine change
 - Six existing Aurora icefalls now have 18 raised, curved 3D meltwater channels (three per icefall).
 - Each channel has 384 vertices, raised center ridge and UV flow along the real folded ice geometry.
-- Three reusable ArrayMeshes and one opaque unshaded emissive ShaderMaterial with traveling light pulses; no new asset license, collision, lights, touch input, gameplay rules or historical build changes.
+- Added six large curved overhead flow ribbons, each with real three-dimensional thickness, extending from the icefall toward the track at least eight meters above the play surface. These are scenery only; no collision or input changes.
+- After a genuine first QA failure (only three changed 192×108 samples in 1170×540 chase), widened/brightened the wall streams and added overhead ribbons instead of weakening the visibility threshold.
+- The isolated V154 on/off test now saves eight additional frames (16 total across the whole-icefall and new-flow comparisons); both PR and release workflows check the revised image count.
+- Three reusable wall ArrayMeshes, two shared overhead meshes and one opaque unshaded emissive ShaderMaterial with traveling light pulses; no new asset license, collision, lights, touch input, gameplay rules or historical build changes.
 - Regression checks actual 3D geometry/depth/height, material reuse, lane clearance, scrolling, pause and wrap.
 
 ## Acceptance gate
