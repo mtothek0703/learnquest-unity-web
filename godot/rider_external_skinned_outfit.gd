@@ -390,7 +390,12 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     # the broad lateral jacket shelf; no new mesh or Skin bind is introduced.
     var spread := 0.025 * shoulder + 0.025 * deltoid - waist_inset + \
         0.022 * dorsal_shoulder
-    return normal * depth + Vector3(signf(lateral) * spread, 0.006 * shoulder, 0.0)
+    # The previous positive shoulder lift rebuilt a horizontal ledge over the
+    # newly sloped 65-bone source trapezius. Continue the REAL weighted
+    # shoulder descent through the jacket, fading to zero at the central
+    # neckline and below the deltoid (no separate mesh or new collision).
+    var shoulder_drop := 0.035 * shoulder * smoothstep(0.14, 0.31, x)
+    return normal * depth + Vector3(signf(lateral) * spread, -shoulder_drop, 0.0)
 
 func _jacket_material(bounds: AABB) -> ShaderMaterial:
     var material := ShaderMaterial.new()

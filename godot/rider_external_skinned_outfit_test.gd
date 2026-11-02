@@ -92,6 +92,18 @@ func _check() -> void:
     # At actual mobile camera distance the previous thin CC0 jacket lost
     # its pectoral/deltoid silhouette. Check the new three-dimensional
     # athletic V-shape, not just a cosmetic color change.
+    # The skinned jacket must continue the original CC0 shoulder slope,
+    # rather than adding a raised horizontal shelf above the real arm bones.
+    var outer_slope: Vector3 = outfit.call("_tailored_offset",
+        Vector3(0.42, 2.205, 0.30), forward, test_bounds)
+    var opposite_slope: Vector3 = outfit.call("_tailored_offset",
+        Vector3(-0.42, 2.205, 0.30), forward, test_bounds)
+    var central_neck: Vector3 = outfit.call("_tailored_offset",
+        Vector3(0.04, 2.205, 0.30), forward, test_bounds)
+    if outer_slope.y > -0.022 or absf(outer_slope.y - opposite_slope.y) > 0.001 or \\
+            absf(central_neck.y) > 0.001:
+        _fail("weighted jacket shoulder must slope bilaterally without dropping central neckline")
+        return
     # The joint neck/jacket/sleeve pass deliberately withdraws the broad
     # lateral cap. Retain measurable 3D shoulder relief without requiring
     # the previous toy-like horizontal shelf.
