@@ -91,13 +91,13 @@ func _reshape(point: Vector3, bounds: AABB) -> Vector3:
     # Keep the chest athletic while letting the original arm bones read clearly.
     var width_scale := 1.0 + torso * (0.15 * chest + 0.015 * shoulder -
         0.12 * waist + 0.035 * hip) - leg * 0.025 * thigh
-    # The original outer shoulder/upper arm now contracts by up to 16% in
-    # width and 6.5% in depth, fading before the hands and below the armpit.
+    # The original outer shoulder/upper arm now contracts by up to 19% in
+    # width and 7.5% in depth, fading before the hands and below the armpit.
     # Existing chest/waist tailoring and all gameplay physics are untouched.
-    width_scale -= 0.16 * shoulder_taper
+    width_scale -= 0.19 * shoulder_taper
     var depth_scale := 1.0 + torso * (0.12 * chest + 0.020 * shoulder -
         0.07 * waist + 0.03 * hip) - leg * 0.012 * thigh
-    depth_scale -= 0.065 * shoulder_taper
+    depth_scale -= 0.075 * shoulder_taper
     var center := bounds.get_center()
     return Vector3(center.x + (point.x - center.x) * width_scale,
         point.y, center.z + (point.z - center.z) * depth_scale)

@@ -101,7 +101,7 @@ func _check() -> void:
         outer_right.y, outer_right.z)
     var tapered_right: Vector3 = sculpt.call("_reshape", outer_right, bounds)
     var tapered_left: Vector3 = sculpt.call("_reshape", outer_left, bounds)
-    if outer_right.x - tapered_right.x < bounds.size.x * 0.020 or \
+    if outer_right.x - tapered_right.x < bounds.size.x * 0.026 or \
             outer_right.z - tapered_right.z < bounds.size.z * 0.006:
         _fail("original outer deltoid must narrow in both real geometry axes")
         return
@@ -116,7 +116,7 @@ func _check() -> void:
     var shoulder_edge := Vector3(center.x + bounds.size.x * 0.39,
         outer_right.y, outer_right.z)
     var shoulder_edge_after: Vector3 = sculpt.call("_reshape", shoulder_edge, bounds)
-    if shoulder_edge.x - shoulder_edge_after.x < bounds.size.x * 0.045:
+    if shoulder_edge.x - shoulder_edge_after.x < bounds.size.x * 0.055:
         _fail("outer source shoulder shelf remains too wide in rest geometry")
         return
     var hand_tip := Vector3(center.x + bounds.size.x * 0.45,

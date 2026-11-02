@@ -98,7 +98,9 @@ func _extract_jacket(body: MeshInstance3D) -> ArrayMesh:
             # four-weight interpolation looks torso-dominant. Keep the jacket
             # inside the imported torso envelope BEFORE sculpting it. The
             # source arms remain untouched; only this duplicate shell is cut.
-            var torso_half_width := bounds.size.x * 0.24
+            # The narrower 22%-half-width shell follows the coordinated
+            # original-body and weighted-sleeve shoulder taper.
+            var torso_half_width := bounds.size.x * 0.22
             polygon = _clip_to_lateral(polygon, bounds.get_center().x - torso_half_width, true)
             polygon = _clip_to_lateral(polygon, bounds.get_center().x + torso_half_width, false)
             # Keep the torso-dominant skin only: the separate weighted sleeves
