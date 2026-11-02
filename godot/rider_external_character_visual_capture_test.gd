@@ -112,6 +112,20 @@ func _capture() -> void:
             not jacket_shader.shader.code.contains("qa_upper_jacket_mode"):
         _fail("upper-jacket diagnostic requires the original four-weight jacket shader")
         return
+    # Diagnostic-only layer switches; preserve every mesh's original state.
+    var harness_mesh := hero.find_child("FourWeightSculptedFlightHarness", true, false) as MeshInstance3D
+    var sleeve_meshes := hero.find_children("*WeightedFlightSleeve", "MeshInstance3D", true, false)
+    if harness_mesh == null or harness_mesh.skin != source_body.skin or sleeve_meshes.size() != 2:
+        _fail("layer isolation needs the four-weight harness and both sleeves")
+        return
+    var harness_was_visible := harness_mesh.visible
+    var sleeves_were_visible: Array[bool] = []
+    for sleeve in sleeve_meshes:
+        var part := sleeve as MeshInstance3D
+        if part == null or part.skin != source_body.skin:
+            _fail("layer isolation sleeve must share the original imported Skin")
+            return
+        sleeves_were_visible.append(part.visible)
     var count := 0
     for size in SIZES:
         viewport.size = size
@@ -140,11 +154,19 @@ func _capture() -> void:
             var compact_board_frame: Image
             for variant in ["before", "after", "after_no_mantle", "after_with_thrusters",
                     "after_no_source", "after_no_jacket", "after_upper_jacket_only",
-                    "after_without_upper_jacket", "after_original_board"]:
+                    "after_without_upper_jacket", "after_no_jacket_no_harness",
+                    "after_no_jacket_no_harness_no_sleeves", "after_original_board"]:
                 old.visible = variant == "before"
                 hero.visible = variant != "before"
                 source_body.visible = variant != "after_no_source"
-                fitted_jacket.visible = variant != "after_no_jacket"
+                fitted_jacket.visible = not variant in ["after_no_jacket",
+                    "after_no_jacket_no_harness", "after_no_jacket_no_harness_no_sleeves"]
+                harness_mesh.visible = harness_was_visible and not variant in [
+                    "after_no_jacket_no_harness", "after_no_jacket_no_harness_no_sleeves"]
+                for sleeve_index in range(sleeve_meshes.size()):
+                    (sleeve_meshes[sleeve_index] as MeshInstance3D).visible = \
+                        sleeves_were_visible[sleeve_index] and \
+                        variant != "after_no_jacket_no_harness_no_sleeves"
                 # Both modes use the SAME original Skin, pose and camera. Only
                 # fragment visibility changes; this is not a game costume edit.
                 var isolation_mode := 0
@@ -199,9 +221,12 @@ func _capture() -> void:
                 count += 1
     source_body.visible = true
     fitted_jacket.visible = true
+    harness_mesh.visible = harness_was_visible
+    for sleeve_index in range(sleeve_meshes.size()):
+        (sleeve_meshes[sleeve_index] as MeshInstance3D).visible = sleeves_were_visible[sleeve_index]
     jacket_shader.set_shader_parameter("qa_upper_jacket_mode", 0)
-    if count != 108:
-        _fail("expected 108 actual paired, upper-jacket-isolated and board-footprint landscape images")
+    if count != 132:
+        _fail("expected 132 actual paired, upper-jacket, harness and sleeve-isolated landscape images")
         return
-    print("QUATERNIUS VISUAL QA PASSED: 108 pose-locked V123/V124, source/jacket/upper-collar-isolated, compact-board and costume PNGs (manual quality review still required)")
+    print("QUATERNIUS VISUAL QA PASSED: 132 pose-locked V123/V124, source/jacket/harness/sleeve-isolated, compact-board and costume PNGs (manual quality review still required)")
     quit(0)
