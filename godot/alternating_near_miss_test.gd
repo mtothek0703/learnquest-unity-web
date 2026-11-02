@@ -8,10 +8,10 @@ func _fail(reason: String) -> void:
     push_error("ALTERNATING NEAR MISS TEST FAILED: " + reason)
     quit(1)
 
-func _pass(game: Node3D, hazard: Node3D, lane_x: float) -> void:
+func _pass(game: Node3D, hazard: Node3D, hazard_x: float, rider_x: float) -> void:
     var rider := game.get("rider") as Node3D
-    rider.position.x = 0.0
-    hazard.position = Vector3(lane_x, 0.0, rider.position.z - 0.20)
+    rider.position.x = rider_x
+    hazard.position = Vector3(hazard_x, 0.0, rider.position.z - 0.20)
     hazard.set_meta("collected", false)
     hazard.visible = true
     game.call("_update_run_items", 0.03)
@@ -52,41 +52,47 @@ func _check() -> void:
     game.set("shield_left", 0.0)
     game.set("attack_left", 0.0)
     var start_xp := int(game.get("xp"))
-    _pass(game, hazards[0], -3.1)
+    _pass(game, hazards[0], -3.1, 0.0)
     if int(game.get("near_miss_streak")) != 1:
         _fail("first real adjacent-lane hazard did not register")
         return
-    _pass(game, hazards[1], -3.1)
+    _pass(game, hazards[1], -3.1, 0.0)
     if int(game.get("near_miss_streak")) != 1:
         _fail("same-side dodge must reset the alternating chain")
         return
-    _pass(game, hazards[2], 3.1)
+    # Merely watching random left/right hazards while remaining in the
+    # center lane is NOT a playable skill challenge.
+    _pass(game, hazards[2], 3.1, 0.0)
+    if int(game.get("near_miss_streak")) != 1:
+        _fail("stationary rider must not earn a chain from random alternating barriers")
+        return
+    _pass(game, hazards[2], 0.0, -3.1)
     if int(game.get("near_miss_streak")) != 2:
         _fail("opposite-side dodge must advance the chain")
         return
     # Jumping safely above the obstacle is not a ground-level near miss.
     game.set("jump_left", 0.50)
-    _pass(game, hazards[3], -3.1)
+    _pass(game, hazards[3], -3.1, 0.0)
     if int(game.get("near_miss_streak")) != 2:
         _fail("jumped barrier falsely counted as a near miss")
         return
     game.set("jump_left", 0.0)
     # A real hit breaks the chain; XP from earlier rewards is unaffected.
-    _pass(game, hazards[4], 0.0)
+    _pass(game, hazards[4], 0.0, 0.0)
     if int(game.get("lives")) != 2 or int(game.get("near_miss_streak")) != 0:
         _fail("actual barrier damage did not reset near-miss streak")
         return
     game.set("hit_cooldown", 0.0)
     # A shielded adjacent barrier cannot earn a near-miss streak.
     game.set("shield_left", 2.0)
-    _pass(game, hazards[5], -3.1)
+    _pass(game, hazards[5], -3.1, 0.0)
     if int(game.get("near_miss_streak")) != 0:
         _fail("shielded barrier incorrectly counted")
         return
     game.set("shield_left", 0.0)
-    _pass(game, hazards[6], -3.1)
-    _pass(game, hazards[7], 3.1)
-    _pass(game, hazards[8], -3.1)
+    _pass(game, hazards[6], -3.1, 0.0)
+    _pass(game, hazards[7], 0.0, -3.1)
+    _pass(game, hazards[8], -3.1, 0.0)
     if not bool(game.get("near_miss_mastery")) or int(game.get("near_miss_streak")) != 3:
         _fail("three real alternating ground-level dodges did not complete mastery")
         return
@@ -98,7 +104,7 @@ func _check() -> void:
         _fail("3D ring must expire automatically")
         return
     game.set("turbo_left", 0.0)
-    _pass(game, hazards[9], 3.1)
+    _pass(game, hazards[9], 0.0, -3.1)
     if int(game.get("xp")) != start_xp + 70:
         _fail("repeat hazards must never farm the completed bonus")
         return
