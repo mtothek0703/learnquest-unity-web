@@ -178,7 +178,7 @@ func _check() -> void:
         Vector3(-0.12, collar_top, -0.30), test_bounds, collar_top)
     var other_v: float = outfit.call("_collar_limit",
         Vector3(0.12, collar_top, -0.30), test_bounds, collar_top)
-    if side_top - front_v < test_bounds.size.y * 0.045 or \
+    if side_top - front_v < test_bounds.size.y * 0.062 or \
             absf(rear_top - collar_top) > 0.001 or \
             absf(side_top - collar_top) > 0.001 or \
             absf(mirrored_v - other_v) > 0.001:
@@ -188,13 +188,13 @@ func _check() -> void:
     # No dropped crossing triangle, unweighted seam or collar vertex above
     # the sculpted opening may survive the extraction.
     var neckline: Array[Dictionary] = [
-        {"position": Vector3(-0.12, 2.16, -0.30), "normal": Vector3.FORWARD,
+        {"position": Vector3(-0.12, 2.10, -0.30), "normal": Vector3.FORWARD,
             "bones": PackedInt32Array([0, 1, 2, 3]),
             "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
         {"position": Vector3(0.0, 2.40, -0.30), "normal": Vector3.FORWARD,
             "bones": PackedInt32Array([4, 5, 6, 7]),
             "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
-        {"position": Vector3(0.12, 2.16, -0.30), "normal": Vector3.FORWARD,
+        {"position": Vector3(0.12, 2.10, -0.30), "normal": Vector3.FORWARD,
             "bones": PackedInt32Array([0, 1, 2, 3]),
             "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])}
     ]
@@ -207,10 +207,10 @@ func _check() -> void:
     for corner in v_clipped:
         var p: Vector3 = corner["position"]
         var limit: float = outfit.call("_collar_limit", p, test_bounds, collar_top)
-        if p.y > limit + 0.012:
+        if p.y > limit + 0.001:
             _fail("front V collar retained geometry above its shaped neckline")
             return
-        if absf(p.y - limit) < 0.012:
+        if absf(p.y - limit) < 0.001:
             has_cut_edge = true
         var skin_weights: PackedFloat32Array = corner["weights"]
         var skin_bones: PackedInt32Array = corner["bones"]
@@ -223,6 +223,41 @@ func _check() -> void:
             return
     if not has_cut_edge:
         _fail("front V collar did not interpolate any new skinned seam vertices")
+        return
+    # A nonlinear diagonal crossing must be solved against the ACTUAL curved
+    # V boundary, not the straight line between endpoint signed distances.
+    # Both intersections must be accurate to <1 mm in this 3m sample mesh.
+    var diagonal_triangle: Array[Dictionary] = [
+        {"position": Vector3(-0.20, 2.05, -0.32), "normal": Vector3.FORWARD,
+            "bones": PackedInt32Array([0, 1, 2, 3]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
+        {"position": Vector3(0.0, 2.39, -0.25), "normal": Vector3.FORWARD,
+            "bones": PackedInt32Array([4, 5, 6, 7]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
+        {"position": Vector3(0.20, 2.05, -0.32), "normal": Vector3.FORWARD,
+            "bones": PackedInt32Array([8, 9, 10, 11]),
+            "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])}
+    ]
+    var diagonal_cut: Array[Dictionary] = outfit.call(
+        "_clip_to_collar", diagonal_triangle, test_bounds, collar_top)
+    var seam_hits := 0
+    for corner in diagonal_cut:
+        var p: Vector3 = corner["position"]
+        var error := p.y - float(outfit.call("_collar_limit", p, test_bounds, collar_top))
+        if error > 0.001:
+            _fail("curved neckline clipping left a vertex above the real V surface")
+            return
+        if absf(error) < 0.001:
+            seam_hits += 1
+        var weights: PackedFloat32Array = corner["weights"]
+        var total_weight := 0.0
+        for weight in weights:
+            total_weight += weight
+        if weights.size() != 4 or absf(total_weight - 1.0) > 0.001:
+            _fail("curved neckline interpolation broke the original four Skin weights")
+            return
+    if seam_hits != 2:
+        _fail("curved V collar must preserve two accurate weighted seam crossings")
         return
     # The garment must keep EVERY intersecting source triangle instead of
     # dropping the neckline/waist triangles and exposing the naked CC0 torso.
