@@ -40,6 +40,8 @@ jobs:
           grep -Fq 'AERIAL ENERGY MASTERY TEST PASSED' /tmp/aerial-energy.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://energy_weave_mastery_test.gd 2>&1 | tee /tmp/energy-weave.log
           grep -Fq 'ENERGY WEAVE MASTERY TEST PASSED' /tmp/energy-weave.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://alternating_near_miss_test.gd 2>&1 | tee /tmp/near-miss.log
+          grep -Fq 'ALTERNATING NEAR MISS TEST PASSED' /tmp/near-miss.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_original_body_skin_test.gd 2>&1 | tee /tmp/original-body-skin.log
           grep -Fq 'ORIGINAL BODY SKIN TEST PASSED' /tmp/original-body-skin.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_costume_skin_follow_test.gd 2>&1 | tee /tmp/costume-skin-follow.log
@@ -361,6 +363,24 @@ jobs:
         with:
           name: learnquest-v150-energy-weave-qa
           path: /tmp/learnquest-weave-qa/*.png
+          if-no-files-found: error
+      - name: Render V151 actual near-miss board shockwave at two phone ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-near-miss-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_NEAR_MISS_OUTPUT=/tmp/learnquest-near-miss-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://near_miss_visual_capture_test.gd 2>&1 | tee /tmp/near-miss-visual.log
+          grep -Fq 'NEAR MISS VISUAL QA PASSED' /tmp/near-miss-visual.log
+          test "$(find /tmp/learnquest-near-miss-qa -name '*.png' | wc -l)" -eq 4
+      - name: Upload V151 near-miss board shockwave landscape frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v151-near-miss-qa
+          path: /tmp/learnquest-near-miss-qa/*.png
           if-no-files-found: error
       - name: Upload V145 candidate actual chase camera before-after
         if: always()

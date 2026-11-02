@@ -12,7 +12,8 @@ const CLEAN_FLIGHT_STEP := 250.0
 const CLEAN_FLIGHT_LIMIT := 3
 const AERIAL_ENERGY_TARGET := 3
 const ENERGY_WEAVE_TARGET := 3
-const VERSION_LABEL := "V150"
+const NEAR_MISS_TARGET := 3
+const VERSION_LABEL := "V151"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -144,6 +145,12 @@ var energy_weave_last_lane := 99
 var energy_weave_mastery := false
 var energy_weave_pulse := 0.0
 var energy_weave_ring: MeshInstance3D
+var near_miss_streak := 0
+var near_miss_last_side := 0
+var near_miss_last_rider_lane := 99
+var near_miss_mastery := false
+var near_miss_pulse := 0.0
+var near_miss_ring: MeshInstance3D
 var end_panel: PanelContainer
 var hud: Label
 var hud_panel: PanelContainer
@@ -289,6 +296,7 @@ func _create_world() -> void:
     _create_powerup_effects()
     _create_clean_flight_ring()
     _create_energy_weave_ring()
+    _create_near_miss_ring()
     hero_gallery = preload("res://hero_gallery.gd").new() as Node3D
     hero_gallery.name = "Cinematic hero gallery"
     hero_gallery.position = Vector3(0.0, 0.0, 0.2)
@@ -937,6 +945,30 @@ func _create_energy_weave_ring() -> void:
     energy_weave_ring.visible = false
     rider.add_child(energy_weave_ring)
 
+# A single low-cost horizontal 3D ring celebrates an actual alternating
+# near-miss chain. It never changes steering, collision or touch targets.
+func _create_near_miss_ring() -> void:
+    var torus := TorusMesh.new()
+    torus.inner_radius = 1.62
+    torus.outer_radius = 1.77
+    torus.rings = 32
+    torus.ring_segments = 8
+    var material := StandardMaterial3D.new()
+    material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    material.albedo_color = Color(0.18, 0.90, 1.0, 0.78)
+    material.emission_enabled = true
+    material.emission = Color(0.08, 0.72, 1.0)
+    material.emission_energy_multiplier = 2.5
+    near_miss_ring = MeshInstance3D.new()
+    near_miss_ring.name = "Alternating near miss board shockwave"
+    near_miss_ring.mesh = torus
+    near_miss_ring.material_override = material
+    near_miss_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    near_miss_ring.position = Vector3(0.0, 0.37, 0.0)
+    near_miss_ring.visible = false
+    rider.add_child(near_miss_ring)
+
 func _create_run_items() -> void:
     run_items = Node3D.new()
     run_items.name = "3D obstacles and energy pickups"
@@ -1055,6 +1087,12 @@ func _reset_run() -> void:
     energy_weave_mastery = false
     energy_weave_pulse = 0.0
     energy_weave_ring.visible = false
+    near_miss_streak = 0
+    near_miss_last_side = 0
+    near_miss_last_rider_lane = 99
+    near_miss_mastery = false
+    near_miss_pulse = 0.0
+    near_miss_ring.visible = false
     turbo_left = 0.0
     shield_left = 0.0
     attack_left = 0.0
@@ -1249,6 +1287,9 @@ func _break_clean_flight() -> void:
     clean_flight_count = 0
     clean_flight_pulse = 0.0
     clean_flight_ring.visible = false
+    near_miss_streak = 0
+    near_miss_last_side = 0
+    near_miss_last_rider_lane = 99
 
 func _update_clean_flight(delta: float) -> void:
     if clean_flight_pulse > 0.0:
@@ -1344,8 +1385,60 @@ func _update_energy_weave_pulse(delta: float) -> void:
         tint.a = 0.75 * energy_weave_pulse
         material.albedo_color = tint
 
+# Three genuinely dodged barriers on alternating sides of the board reward
+# precise touch lane positioning. Jump, shield, turbo, invulnerability and
+# destroyed barriers cannot farm the bonus. One reward per complete race.
+func _register_near_miss(hazard_x: float) -> void:
+    if phase != "race" or not started or quiz_active or near_miss_mastery:
+        return
+    if rider.position.y > 0.85 or turbo_left > 0.0 or shield_left > 0.0 or \
+            attack_left > 0.0 or hit_cooldown > 0.0:
+        return
+    var offset := hazard_x - rider.position.x
+    if absf(offset) < 1.45 or absf(offset) > 3.7:
+        return
+    var side := -1 if offset < 0.0 else 1
+    var rider_lane := clampi(roundi(rider.position.x / 3.1), -1, 1)
+    # A player parked in the center lane must NOT earn a mastery merely
+    # because randomly spawned barriers alternate sides. Require a genuine
+    # touch-steered lane change AND an opposite-side pass for every step.
+    if near_miss_streak > 0 and near_miss_last_side == -side and \
+            near_miss_last_rider_lane != rider_lane:
+        near_miss_streak += 1
+    else:
+        near_miss_streak = 1
+    near_miss_last_side = side
+    near_miss_last_rider_lane = rider_lane
+    if near_miss_streak >= NEAR_MISS_TARGET:
+        near_miss_mastery = true
+        xp += 70
+        turbo_left = maxf(turbo_left, 1.75)
+        near_miss_pulse = 1.0
+        near_miss_ring.scale = Vector3.ONE
+        near_miss_ring.visible = true
+        info_label.text = "HAARSCHARF! 3 AUSWEICHER +70 XP +1,75s TURBO"
+        feedback_time = 1.8
+    elif near_miss_streak == 2:
+        info_label.text = "HAARSCHARF 2/3! SPUR UND AUSWEICHSEITE WECHSELN"
+        feedback_time = 1.5
+    else:
+        info_label.text = "HAARSCHARF 1/3! SPUR UND SEITE WECHSELN"
+        feedback_time = 1.2
+
+func _update_near_miss_pulse(delta: float) -> void:
+    near_miss_pulse = maxf(0.0, near_miss_pulse - maxf(delta, 0.0))
+    near_miss_ring.visible = near_miss_pulse > 0.0
+    if near_miss_ring.visible:
+        var progress := 1.0 - near_miss_pulse
+        near_miss_ring.scale = Vector3.ONE * (1.0 + 0.85 * progress)
+        var material := near_miss_ring.material_override as StandardMaterial3D
+        var tint := material.albedo_color
+        tint.a = 0.78 * near_miss_pulse
+        material.albedo_color = tint
+
 func _update_run_items(delta: float) -> void:
     _update_energy_weave_pulse(delta)
+    _update_near_miss_pulse(delta)
     hit_cooldown = maxf(0.0, hit_cooldown - delta)
     jump_left = maxf(0.0, jump_left - delta)
     rider.position.y = sin((1.0 - jump_left / jump_duration) * PI) * jump_height if jump_left > 0.0 else 0.0
@@ -1430,6 +1523,8 @@ func _update_run_items(delta: float) -> void:
                     if lives <= 0:
                         _finish_run()
                         return
+            elif not is_energy:
+                _register_near_miss(item.position.x)
         if item.position.z > 10.0:
             item.position.z = -190.0 - float(randi_range(0, 65))
             item.position.x = float(randi_range(-1, 1)) * 3.1
@@ -1452,6 +1547,8 @@ func _finish_run() -> void:
             reward_label.text += "\nLUFT-ENERGIE: 3/3 SPRUNGTREFFER +100 XP UND TURBO!"
         if energy_weave_mastery:
             reward_label.text += "\nENERGIE-SLALOM: 3 TORE MIT SPURWECHSEL +75 XP UND TURBO!"
+        if near_miss_mastery:
+            reward_label.text += "\nHAARSCHARF: 3 WECHSELSEITIGE AUSWEICHER +70 XP UND TURBO!"
         if flawless_vocabulary_launch:
             reward_label.text += "\nWORT-MEISTER: 3 FEHLERFREI +60 XP, 2,5s START-TURBO"
         if world_choice == 0 and int(skyway_zone.call("get_signal_count")) >= NEON_SIGNAL_TARGET:
@@ -1502,6 +1599,8 @@ func _finish_run() -> void:
     clean_flight_ring.visible = false
     energy_weave_pulse = 0.0
     energy_weave_ring.visible = false
+    near_miss_pulse = 0.0
+    near_miss_ring.visible = false
     neon_conductor.visible = false
     neon_conductor.set("active", false)
     neon_beam.visible = false
