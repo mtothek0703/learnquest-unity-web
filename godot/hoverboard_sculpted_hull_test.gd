@@ -481,8 +481,21 @@ func _check() -> void:
         var mount_side := -1.0 if (hinge as Node3D).name.begins_with("Port") else 1.0
         var inboard: Vector3 = (hinge as Node3D).position + vanes.call("_mount_point", mount_side, 0.0, 0.0)
         var outboard: Vector3 = (hinge as Node3D).position + vanes.call("_mount_point", mount_side, 1.0, 0.0)
-        if absf(inboard.x) > 0.72 or absf(outboard.x) < 1.17:
+        if absf(inboard.x) > 0.65 or absf(outboard.x) < 1.10:
             _fail("carve mount must start inside the hull chine and end at the fin")
+            return
+        # Prove the *actual* closed mount intersects the real swept aerofoil,
+        # not merely that both meshes exist at separate floating positions.
+        # The fairing root must disappear into the hull top and its tip
+        # must reach the fin near 42% span in the neutral rest pose.
+        var mount_root: Vector3 = (hinge as Node3D).position + vanes.call(
+            "_mount_point", mount_side, 0.0, 0.0)
+        var mount_tip: Vector3 = (hinge as Node3D).position + vanes.call(
+            "_mount_point", mount_side, 1.0, 0.0)
+        var aerofoil_join: Vector3 = (hinge as Node3D).position + vanes.call(
+            "_fin_point", mount_side, 0.42, PI * 0.5)
+        if mount_root.y > 0.42 or mount_tip.distance_to(aerofoil_join) > 0.075:
+            _fail("carve fin mount has a visible air gap to the actual swept aerofoil")
             return
         var edge := (hinge as Node3D).get_node_or_null("CurvedSignalEdge") as MeshInstance3D
         if aerofoil == null or edge == null or aerofoil.mesh == null or edge.mesh == null:
@@ -640,7 +653,7 @@ func _check() -> void:
         for i in range(2):
             var hinge := hinges[i] as Node3D
             var side := -1.0 if i == 0 else 1.0
-            hinge.position = Vector3(side * 1.09, 0.59, 0.22)
+            hinge.position = Vector3(side * 0.99, 0.525, 0.22)
             hinge.rotation.x = 0.0
             (signals[i] as StandardMaterial3D).emission = Color("#25c7e9")
         for frame in range(3 if fps == 30 else 6):
@@ -648,7 +661,7 @@ func _check() -> void:
         var outside_fin := hinges[1] as Node3D
         var inside_fin := hinges[0] as Node3D
         if outside_fin.position.y < inside_fin.position.y + 0.030 or \
-                outside_fin.position.x < 1.11 or \
+                outside_fin.position.x < 1.01 or \
                 outside_fin.rotation.x > inside_fin.rotation.x - 0.035:
             _fail("outside 3D fin must rise, extend and pitch during a boost carve")
             return
@@ -674,8 +687,8 @@ func _check() -> void:
     for i in range(2):
         var hinge := hinges[i] as Node3D
         var side := -1.0 if i == 0 else 1.0
-        if absf(hinge.position.y - 0.59) > 0.003 or \
-                absf(hinge.position.x - side * 1.09) > 0.003 or \
+        if absf(hinge.position.y - 0.525) > 0.003 or \
+                absf(hinge.position.x - side * 0.99) > 0.003 or \
                 absf(hinge.rotation.x + 0.09) > 0.003:
             _fail("dual-axis fin must return to its compact idle stance")
             return

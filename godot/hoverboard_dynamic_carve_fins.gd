@@ -27,16 +27,15 @@ func _ready() -> void:
     for side in [-1.0, 1.0]:
         var hinge := Node3D.new()
         hinge.name = "PortArticulatedVane" if side < 0.0 else "StarboardArticulatedVane"
-        # The former hinge was buried inside the 1.2-unit sculpted side wing:
-        # zero visible pixels changed in the actual rear chase camera. Mount
-        # this closed aerofoil on the outboard upper chine, slightly aft, so
-        # the deployed wing and emissive edge contribute to the board outline.
+        # Inset and lower the fin hinge so its sculpted fairing overlaps both
+        # the chassis top and the aerofoil. The previous floating silhouette
+        # was visually disconnected in actual landscape chase captures.
         # Visual only: the animated board root and collisions stay unchanged.
-        hinge.position = Vector3(side * 1.09, 0.59, 0.22)
+        hinge.position = Vector3(side * 0.99, 0.525, 0.22)
         add_child(hinge)
-        # A curved, closed aero-composite mount physically connects the fin
-        # to the existing deck chine. The previous detached leaf silhouette
-        # looked like a floating prop in actual front and chase screenshots.
+        # The closed mount now starts INSIDE the hull and terminates inside the
+        # swept aerofoil near its 42% span. Earlier mounting ended short of
+        # the fin, leaving a floating leaf in real landscape chase captures.
         var mount := MeshInstance3D.new()
         mount.name = "SculptedBoardMount"
         mount.mesh = _make_mount(side)
@@ -63,15 +62,16 @@ func _ready() -> void:
 # Its inboard root overlaps the sculpted hull; its tip enters the aerofoil.
 # No new physics, texture, lights or separate animation is introduced.
 func _mount_point(side: float, t: float, angle: float) -> Vector3:
-    # Broad low-profile deck fairing, not a bright round external strut.
-    # Flatten the vertical section and broaden the chord in Z so the
-    # connector reads as part of the original composite board shell.
+    # Closed, tapered deck fairing. Its inboard root is embedded in the
+    # original chassis top, while the outboard tip intersects the real
+    # aerofoil around t=0.42 (same local Z, X and Y). No floating gap.
+    # A brighter upper satin face makes the connection legible on phones.
     var height_radius := 0.014 + 0.012 * sin(PI * t)
     var chord_radius := 0.085 + 0.035 * sin(PI * t)
     return Vector3(
-        lerpf(-side * 0.49, side * 0.14, t),
-        lerpf(-0.18, 0.055, t) + 0.025 * sin(PI * t) + height_radius * cos(angle),
-        lerpf(0.05, 0.14, t) + chord_radius * sin(angle))
+        lerpf(-side * 0.49, side * 0.20, t),
+        lerpf(-0.18, 0.15, t) + 0.025 * sin(PI * t) + height_radius * cos(angle),
+        lerpf(0.05, 0.01, t) + chord_radius * sin(angle))
 
 func _make_mount(side: float) -> ArrayMesh:
     var tool := SurfaceTool.new()
@@ -87,7 +87,7 @@ func _make_mount(side: float) -> ArrayMesh:
                 var angle: float = sample.y
                 tool.set_normal(Vector3(0.0, cos(angle), sin(angle)).normalized())
                 tool.set_color(Color("#172d4b").lerp(Color("#537c9d"),
-                    0.12 + 0.24 * maxf(0.0, cos(angle))))
+                    0.18 + 0.42 * maxf(0.0, cos(angle))))
                 tool.add_vertex(_mount_point(side, sample.x, angle))
     for end in [0.0, 1.0]:
         var center := _mount_point(side, end, 0.0).lerp(
@@ -222,8 +222,8 @@ func update_state(lean: float, boosting: bool, delta: float) -> void:
         # the whole closed 3D aerofoil readable in a landscape chase camera.
         # It is attached to the existing visual board; physics stays intact.
         var deployment := clampf(carve + (0.35 if boosting else 0.0), 0.0, 1.0)
-        var target_height := 0.59 + 0.10 * deployment
-        var target_outboard := side * (1.09 + 0.045 * carve)
+        var target_height := 0.525 + 0.10 * deployment
+        var target_outboard := side * (0.99 + 0.045 * carve)
         var target_pitch := -0.09 - 0.08 * carve - (0.035 if boosting else 0.0)
         fins[i].position.y = lerpf(fins[i].position.y, target_height, response)
         fins[i].position.x = lerpf(fins[i].position.x, target_outboard, response)
