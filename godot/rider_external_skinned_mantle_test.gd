@@ -32,9 +32,9 @@ func _check() -> void:
     if panels.size() != 2 or int(mantle.get("generated_vertices")) < 2000:
         _fail("two substantial curved mesh panels required")
         return
-    if float(mantle.get("mantle_span")) < source.mesh.get_aabb().size.y * 0.38 or \
-            float(mantle.get("mantle_span")) > source.mesh.get_aabb().size.y * 0.40:
-        _fail("full-length weighted coat tails must reach the thighs without covering the board")
+    if float(mantle.get("mantle_span")) < source.mesh.get_aabb().size.y * 0.30 or \
+            float(mantle.get("mantle_span")) > source.mesh.get_aabb().size.y * 0.32:
+        _fail("weighted flight-jacket tabs must end above thighs and clear the board")
         return
     # Narrow matte fabric tails must occupy the chase silhouette
     # without hiding the real 65-bone torso, legs, or hoverboard.
@@ -199,8 +199,8 @@ func _check() -> void:
             _fail("fin tip must taper rather than become a skirt-like hem")
             return
         var hem_fraction := (lowest_y - source.mesh.get_aabb().position.y) / source.mesh.get_aabb().size.y
-        if hem_fraction < 0.35 or hem_fraction > 0.40:
-            _fail("long coat hem must reach the thigh but clear the skinned boots and board")
+        if hem_fraction < 0.44 or hem_fraction > 0.48:
+            _fail("compact weighted jacket hem must clear thighs, boots and board")
             return
         if airfoil_max_z - airfoil_min_z < source.mesh.get_aabb().size.x * 0.025:
             _fail("flight fins need real front/back airfoil volume, not flat double-sided cloth")
