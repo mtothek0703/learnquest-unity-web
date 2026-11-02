@@ -13,7 +13,7 @@ const CLEAN_FLIGHT_LIMIT := 3
 const AERIAL_ENERGY_TARGET := 3
 const ENERGY_WEAVE_TARGET := 3
 const NEAR_MISS_TARGET := 3
-const VERSION_LABEL := "V151"
+const VERSION_LABEL := "V153"
 const TouchGestures = preload("res://touch_gestures.gd")
 const WORLD_NAMES := ["NEON CITY", "KRISTALL-CANYON", "STERNEN-HAFEN", "AURORA-GLETSCHER"]
 const WORLD_GOALS := [800.0, 950.0, 1100.0, 1200.0]
@@ -151,6 +151,7 @@ var near_miss_last_rider_lane := 99
 var near_miss_mastery := false
 var near_miss_pulse := 0.0
 var near_miss_ring: MeshInstance3D
+var near_miss_progress: Array[MeshInstance3D] = []
 var end_panel: PanelContainer
 var hud: Label
 var hud_panel: PanelContainer
@@ -968,6 +969,49 @@ func _create_near_miss_ring() -> void:
     near_miss_ring.position = Vector3(0.0, 0.37, 0.0)
     near_miss_ring.visible = false
     rider.add_child(near_miss_ring)
+    _create_near_miss_progress()
+
+# Three genuinely 3D arc sectors behind the board let the player see their
+# active 1/3 and 2/3 dodge chain without reading a disappearing HUD toast.
+# One small mesh per sector; no collision, new touch gesture or new asset.
+func _create_near_miss_progress() -> void:
+    for sector in range(NEAR_MISS_TARGET):
+        var arc := SurfaceTool.new()
+        arc.begin(Mesh.PRIMITIVE_TRIANGLES)
+        for slice in range(8):
+            var a := deg_to_rad(-78.0 + float(sector) * 54.0 + float(slice) * 5.25)
+            var b := a + deg_to_rad(5.25)
+            var inner := 1.13
+            var outer := 1.29
+            var p0 := Vector3(sin(a) * inner, 0.0, cos(a) * inner)
+            var p1 := Vector3(sin(a) * outer, 0.0, cos(a) * outer)
+            var p2 := Vector3(sin(b) * outer, 0.0, cos(b) * outer)
+            var p3 := Vector3(sin(b) * inner, 0.0, cos(b) * inner)
+            for point in [p0, p1, p2, p0, p2, p3]:
+                arc.set_normal(Vector3.UP)
+                arc.add_vertex(point)
+        var material := StandardMaterial3D.new()
+        material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+        material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        material.cull_mode = BaseMaterial3D.CULL_DISABLED
+        material.albedo_color = Color(0.10, 0.79, 1.0, 0.90)
+        material.emission_enabled = true
+        material.emission = Color(0.08, 0.65, 1.0)
+        material.emission_energy_multiplier = 2.1
+        var segment := MeshInstance3D.new()
+        segment.name = "Near miss skill arc %d" % (sector + 1)
+        segment.mesh = arc.commit()
+        segment.material_override = material
+        segment.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+        segment.position = Vector3(0.0, 0.48, 0.35)
+        segment.visible = false
+        rider.add_child(segment)
+        near_miss_progress.append(segment)
+
+func _sync_near_miss_progress() -> void:
+    var show := phase == "race" and started and not quiz_active and not near_miss_mastery
+    for i in range(near_miss_progress.size()):
+        near_miss_progress[i].visible = show and i < near_miss_streak
 
 func _create_run_items() -> void:
     run_items = Node3D.new()
@@ -1093,6 +1137,7 @@ func _reset_run() -> void:
     near_miss_mastery = false
     near_miss_pulse = 0.0
     near_miss_ring.visible = false
+    _sync_near_miss_progress()
     turbo_left = 0.0
     shield_left = 0.0
     attack_left = 0.0
@@ -1290,6 +1335,7 @@ func _break_clean_flight() -> void:
     near_miss_streak = 0
     near_miss_last_side = 0
     near_miss_last_rider_lane = 99
+    _sync_near_miss_progress()
 
 func _update_clean_flight(delta: float) -> void:
     if clean_flight_pulse > 0.0:
@@ -1409,8 +1455,10 @@ func _register_near_miss(hazard_x: float) -> void:
         near_miss_streak = 1
     near_miss_last_side = side
     near_miss_last_rider_lane = rider_lane
+    _sync_near_miss_progress()
     if near_miss_streak >= NEAR_MISS_TARGET:
         near_miss_mastery = true
+        _sync_near_miss_progress()
         xp += 70
         turbo_left = maxf(turbo_left, 1.75)
         near_miss_pulse = 1.0

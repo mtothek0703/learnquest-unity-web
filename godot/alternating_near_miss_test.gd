@@ -32,6 +32,18 @@ func _check() -> void:
         _fail("three correct tasks did not unlock the race")
         return
     var ring := game.get("near_miss_ring") as MeshInstance3D
+    var arcs: Array = game.get("near_miss_progress")
+    if arcs.size() != 3:
+        _fail("three real 3D board skill arcs missing")
+        return
+    for arc in arcs:
+        if not (arc is MeshInstance3D) or arc.mesh == null or arc.visible or \
+                arc.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() < 40:
+            _fail("skill arcs must start hidden and contain actual triangle geometry")
+            return
+        if not arc.find_children("*", "CollisionObject3D", true, false).is_empty():
+            _fail("skill arcs must not create gameplay collisions")
+            return
     if ring == null or not (ring.mesh is TorusMesh) or ring.visible:
         _fail("initially hidden real 3D board shockwave missing")
         return
@@ -53,8 +65,8 @@ func _check() -> void:
     game.set("attack_left", 0.0)
     var start_xp := int(game.get("xp"))
     _pass(game, hazards[0], -3.1, 0.0)
-    if int(game.get("near_miss_streak")) != 1:
-        _fail("first real adjacent-lane hazard did not register")
+    if int(game.get("near_miss_streak")) != 1 or not arcs[0].visible or arcs[1].visible or arcs[2].visible:
+        _fail("first real adjacent-lane hazard did not light exactly one board arc")
         return
     _pass(game, hazards[1], -3.1, 0.0)
     if int(game.get("near_miss_streak")) != 1:
@@ -70,8 +82,8 @@ func _check() -> void:
     # pass a center-lane hazard on the opposite side.
     _pass(game, hazards[2], -3.1, 0.0)
     _pass(game, hazards[2], 0.0, -3.1)
-    if int(game.get("near_miss_streak")) != 2:
-        _fail("opposite-side dodge must advance the chain")
+    if int(game.get("near_miss_streak")) != 2 or not arcs[0].visible or not arcs[1].visible or arcs[2].visible:
+        _fail("opposite-side dodge must light two board arcs")
         return
     # Jumping safely above the obstacle is not a ground-level near miss.
     game.set("jump_left", 0.50)
@@ -82,7 +94,7 @@ func _check() -> void:
     game.set("jump_left", 0.0)
     # A real hit breaks the chain; XP from earlier rewards is unaffected.
     _pass(game, hazards[4], 0.0, 0.0)
-    if int(game.get("lives")) != 2 or int(game.get("near_miss_streak")) != 0:
+    if int(game.get("lives")) != 2 or int(game.get("near_miss_streak")) != 0 or arcs[0].visible or arcs[1].visible:
         _fail("actual barrier damage did not reset near-miss streak")
         return
     game.set("hit_cooldown", 0.0)
@@ -99,7 +111,7 @@ func _check() -> void:
     if not bool(game.get("near_miss_mastery")) or int(game.get("near_miss_streak")) != 3:
         _fail("three real alternating ground-level dodges did not complete mastery")
         return
-    if int(game.get("xp")) != start_xp + 70 or float(game.get("turbo_left")) < 1.70 or not ring.visible:
+    if int(game.get("xp")) != start_xp + 70 or float(game.get("turbo_left")) < 1.70 or not ring.visible or arcs[0].visible or arcs[1].visible or arcs[2].visible:
         _fail("one-shot XP, Turbo and 3D ring reward missing")
         return
     game.call("_update_near_miss_pulse", 1.2)
@@ -121,7 +133,7 @@ func _check() -> void:
     for i in range(3):
         var answers: Array = game.get("options")
         game.call("_answer", answers.find(int(game.get("correct_index"))))
-    if bool(game.get("near_miss_mastery")) or int(game.get("near_miss_streak")) != 0 or ring.visible:
+    if bool(game.get("near_miss_mastery")) or int(game.get("near_miss_streak")) != 0 or ring.visible or arcs[0].visible:
         _fail("new full race did not reset the near-miss challenge")
         return
     print("ALTERNATING NEAR MISS TEST PASSED: three English tasks, real barrier crossings, side alternation, jump/shield exclusions, damage reset, 3D reward, replay")

@@ -309,28 +309,28 @@ jobs:
           python - <<'PY'
           from urllib.error import HTTPError
           from urllib.request import Request, urlopen
-          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v152/index.html"
+          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v153/index.html"
           try:
               with urlopen(Request(url, headers={"Cache-Control": "no-cache"}), timeout=20):
-                  raise SystemExit("Skyway V152 already exists: refusing to overwrite an immutable release")
+                  raise SystemExit("Skyway V153 already exists: refusing to overwrite an immutable release")
           except HTTPError as error:
               if error.code != 404:
                   raise
-          print("Skyway V152 is not published yet; safe to create")
+          print("Skyway V153 is not published yet; safe to create")
           PY
           # Each release gets a fresh URL; historical folders are never rebuilt from newer exports.
-          mkdir -p _site/skyway-v152
-          cp -a _site/godot/. _site/skyway-v152/
-          echo "$GITHUB_SHA" > _site/skyway-v152/build.txt
+          mkdir -p _site/skyway-v153
+          cp -a _site/godot/. _site/skyway-v153/
+          echo "$GITHUB_SHA" > _site/skyway-v153/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
-          echo "Archived previous versions and prepared immutable Skyway V152"
+          echo "Archived previous versions and prepared immutable Skyway V153"
       - name: Check browser export integrity
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          root = Path("_site/skyway-v152")
+          root = Path("_site/skyway-v153")
           for name in ("index.html", "index.js", "index.wasm", "index.pck"):
               file = root / name
               if not file.is_file() or file.stat().st_size == 0:
@@ -581,7 +581,7 @@ jobs:
           name: learnquest-v151-energy-weave-qa
           path: /tmp/learnquest-weave-qa/*.png
           if-no-files-found: error
-      - name: Render V151 actual near-miss board shockwave at two phone ratios
+      - name: Render V153 actual near-miss progress and board shockwave at two phone ratios
         shell: bash
         run: |
           set -euo pipefail
@@ -591,12 +591,12 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://near_miss_visual_capture_test.gd 2>&1 | tee /tmp/near-miss-visual.log
           grep -Fq 'NEAR MISS VISUAL QA PASSED' /tmp/near-miss-visual.log
-          test "$(find /tmp/learnquest-near-miss-qa -name '*.png' | wc -l)" -eq 4
-      - name: Upload V151 near-miss board shockwave landscape frames
+          test "$(find /tmp/learnquest-near-miss-qa -name '*.png' | wc -l)" -eq 8
+      - name: Upload V153 near-miss progress and shockwave landscape frames
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: learnquest-v151-near-miss-qa
+          name: learnquest-v153-near-miss-qa
           path: /tmp/learnquest-near-miss-qa/*.png
           if-no-files-found: error
       - name: Configure Pages
@@ -615,7 +615,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request, urllib.error
-          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v152/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v153/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.js": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
