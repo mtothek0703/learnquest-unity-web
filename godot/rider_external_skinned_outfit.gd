@@ -424,14 +424,14 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     # Mobile chase QA still showed a swollen upper-torso silhouette. Keep
     # the genuine sculpted chest and scapula relief, but pull the four-weight
     # jacket closer to the original athletic body (no rigid substitute).
-    var depth := 0.012 + 0.055 * chest + 0.032 * shoulder + \
+    var depth := 0.012 + 0.045 * chest + 0.032 * shoulder + \
         0.043 * chest_ridge + 0.012 * collar + 0.049 * pectoral + \
         0.025 * deltoid + 0.015 * spine_keel + \
         0.043 * scapula + 0.018 * dorsal_shoulder + 0.016 * spine_channel + \
         0.024 * rear_v - 0.009 * rear_recess
     # Shoulder breadth and pectoral depth follow the actual imported Skin;
     # no rigid shoulder boxes or unweighted cosmetic torso are introduced.
-    var waist_inset := 0.052 * waist * smoothstep(0.12, 0.35, x)
+    var waist_inset := 0.073 * waist * smoothstep(0.12, 0.35, x)
     # Coordinate the fitted jacket edge with the now-tapered source neck
     # and real weighted sleeves. Retain scapular relief while withdrawing
     # the broad lateral jacket shelf; no new mesh or Skin bind is introduced.
@@ -449,6 +449,9 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     var upper_arch := exp(-pow((y - 0.738) / 0.052, 2.0)) * \
         smoothstep(0.16, 0.29, x) * (1.0 - smoothstep(0.34, 0.43, x))
     depth = maxf(0.006, depth - 0.020 * upper_arch)
+    # Coordinate the chest-to-waist tailoring with the imported CC0 source:
+    # reduce front pectoral projection while pulling the weighted waist seam
+    # inward, keeping the rear scapular relief and 65-bone skin untouched.
     # Coordinate with the imported source body's front-pectoral recess:
     # flatten the SAME weighted jacket triangles on the ventral (-Z) chest,
     # not the rear scapular V or the arms. A broad Gaussian blends into the
@@ -456,7 +459,7 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     var ventral := smoothstep(0.18, 0.75, -normal.z)
     var front_chest := ventral * exp(-pow((y - 0.645) / 0.115, 2.0)) * \
         (1.0 - smoothstep(0.15, 0.26, x))
-    depth = maxf(0.006, depth - 0.030 * front_chest)
+    depth = maxf(0.006, depth - 0.050 * front_chest)
     spread -= 0.014 * upper_arch
     var shoulder_drop := 0.035 * shoulder * smoothstep(0.14, 0.31, x) + \
         0.018 * upper_arch
