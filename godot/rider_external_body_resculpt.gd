@@ -74,9 +74,13 @@ func _reshape(point: Vector3, bounds: AABB) -> Vector3:
     var leg := 1.0 - smoothstep(0.22, 0.42, side)
     var chest := exp(-pow((y - 0.665) / 0.078, 2.0))
     var shoulder := exp(-pow((y - 0.738) / 0.048, 2.0))
-    var waist := exp(-pow((y - 0.465) / 0.055, 2.0))
+    var waist := exp(-pow((y - 0.465) / 0.075, 2.0))
+    var lower_rib := exp(-pow((y - 0.560) / 0.055, 2.0))
     var hip := exp(-pow((y - 0.398) / 0.055, 2.0))
     var thigh := exp(-pow((y - 0.310) / 0.060, 2.0))
+    # Cohesive athletic rest sculpt: a tapered lower ribcage and waist, not
+    # a separate hard waist ring, blend into the source-skinned pectorals.
+    # The original four-weight binding and all foot-contact points are intact.
     # The imported CC0 shoulder/upper-arm triangles, not the overlaid armor,
     # form the wide horizontal shelf in isolated source-only mobile captures.
     # Pull only the OUTER trapezius/deltoid zone toward the real spine. Keep
@@ -105,14 +109,14 @@ func _reshape(point: Vector3, bounds: AABB) -> Vector3:
     # Original CC0 deltoids are already broad. The previous extra 24% swell
     # created a horizontal inflated shoulder bar even with the collar hidden.
     # Keep the chest athletic while letting the original arm bones read clearly.
-    var width_scale := 1.0 + torso * (0.07 * chest + 0.015 * shoulder -
-        0.12 * waist + 0.035 * hip) - leg * 0.025 * thigh
+    var width_scale := 1.0 + torso * (0.06 * chest + 0.015 * shoulder -
+        0.18 * waist - 0.052 * lower_rib + 0.035 * hip) - leg * 0.025 * thigh
     # The original outer shoulder/upper arm now contracts by up to 19% in
     # width and 7.5% in depth, fading before the hands and below the armpit.
     # Existing chest/waist tailoring and all gameplay physics are untouched.
     width_scale -= 0.19 * shoulder_taper + 0.12 * neckline
-    var depth_scale := 1.0 + torso * (0.06 * chest + 0.020 * shoulder -
-        0.07 * waist + 0.03 * hip) - leg * 0.012 * thigh
+    var depth_scale := 1.0 + torso * (0.05 * chest + 0.020 * shoulder -
+        0.10 * waist - 0.030 * lower_rib + 0.03 * hip) - leg * 0.012 * thigh
     depth_scale -= 0.075 * shoulder_taper + 0.045 * neckline
     var center := bounds.get_center()
     # Side-profile QA: the ORIGINAL front sternum and pectorals still project
@@ -122,9 +126,9 @@ func _reshape(point: Vector3, bounds: AABB) -> Vector3:
     # This is genuine rest-space mesh sculpting, not a camera/shader trick.
     var frontness := smoothstep(0.08, 0.65,
         (center.z - point.z) / maxf(bounds.size.z * 0.5, 0.001))
-    var sternum := exp(-pow((y - 0.645) / 0.125, 2.0)) * \
-        (1.0 - smoothstep(0.25, 0.45, side))
-    var front_recess := bounds.size.z * 0.055 * frontness * sternum
+    var sternum := exp(-pow((y - 0.645) / 0.155, 2.0)) * \
+        (1.0 - smoothstep(0.27, 0.50, side))
+    var front_recess := bounds.size.z * 0.095 * frontness * sternum
     return Vector3(center.x + (point.x - center.x) * width_scale,
         point.y - bounds.size.y * 0.028 * shoulder_slope,
         center.z + (point.z - center.z) * depth_scale + front_recess)
