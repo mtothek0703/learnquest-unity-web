@@ -50,11 +50,12 @@ func _check() -> void:
             return
         for i in range(original.size()):
             var delta := reshaped[i] - original[i]
-            if absf(delta.y) > 0.000001 or not reshaped[i].is_finite() or \
+            if delta.y > 0.000001 or delta.y < -before.get_aabb().size.y * 0.033 or \
+                    not reshaped[i].is_finite() or \
                     not normals[i].is_finite() or absf(normals[i].length() - 1.0) > 0.002:
                 _fail("invalid rest vertex, vertical foot-contact drift or lighting normal")
                 return
-            if delta.length() > before.get_aabb().size.x * 0.08:
+            if delta.length() > before.get_aabb().size.x * 0.115:
                 _fail("sculpt exceeds safe original-skeleton deformation envelope")
                 return
             if delta.length_squared() > 0.00000001:
@@ -154,6 +155,18 @@ func _check() -> void:
         bounds.position.y + bounds.size.y * 0.93, neck_right.z)
     if (sculpt.call("_reshape", face_base, bounds) as Vector3).distance_to(face_base) > 0.0001:
         _fail("neck tailoring must not deform the head/face")
+        return
+    # A true sloped shoulder must descend away from the neck in the original
+    # rest-space triangles, not be simulated with a painted collar highlight.
+    var slope_edge := Vector3(center.x + bounds.size.x * 0.34,
+        bounds.position.y + bounds.size.y * 0.738, center.z + bounds.size.z * 0.18)
+    var slope_center := Vector3(center.x + bounds.size.x * 0.10,
+        slope_edge.y, slope_edge.z)
+    var sloped: Vector3 = sculpt.call("_reshape", slope_edge, bounds)
+    var centered: Vector3 = sculpt.call("_reshape", slope_center, bounds)
+    if slope_edge.y - sloped.y < bounds.size.y * 0.020 or \
+            absf(slope_center.y - centered.y) > bounds.size.y * 0.001:
+        _fail("real 65-bone shoulder must slope downward without moving the neck")
         return
     # The new athletic thigh is narrower in BOTH axes than the source body,
     # not merely recolored, and remains on the original 65-bone skin.

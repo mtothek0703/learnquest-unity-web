@@ -86,6 +86,12 @@ func _reshape(point: Vector3, bounds: AABB) -> Vector3:
     var outer_deltoid := smoothstep(0.24, 0.42, side) * (
         1.0 - smoothstep(0.80, 0.98, side))
     var shoulder_taper := upper_shoulder * outer_deltoid
+    # The imported CC0 shoulder shelf is almost horizontal in the actual
+    # 16:9 front/chase frames. Lower its outer trapezius/deltoid triangles
+    # smoothly while keeping the central neck, face, fingers and soles fixed.
+    # This reshapes the SAME 65-bone source mesh before jacket/sleeve fitting.
+    var shoulder_slope := upper_shoulder * smoothstep(0.26, 0.68, side) * \
+        (1.0 - smoothstep(0.87, 0.99, side))
     # Pull the original, still-visible neck/upper trapezius inward as a
     # continuous four-weight surface. Earlier jacket-only collar experiments
     # left a broad violet source-body band exposed beneath the neckline.
@@ -110,7 +116,8 @@ func _reshape(point: Vector3, bounds: AABB) -> Vector3:
     depth_scale -= 0.075 * shoulder_taper + 0.045 * neckline
     var center := bounds.get_center()
     return Vector3(center.x + (point.x - center.x) * width_scale,
-        point.y, center.z + (point.z - center.z) * depth_scale)
+        point.y - bounds.size.y * 0.028 * shoulder_slope,
+        center.z + (point.z - center.z) * depth_scale)
 
 func _normal(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     var step := maxf(bounds.size.y * 0.0005, 0.0001)
