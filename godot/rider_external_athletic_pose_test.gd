@@ -102,6 +102,8 @@ func _check() -> void:
     rider.set("boosting", true)
     rider.position.y = 0.90
     adapter.call("_process", 0.25)
+    var right_carve_left_arm := rig.get_bone_pose_rotation(left_shoulder_id)
+    var right_carve_right_arm := rig.get_bone_pose_rotation(right_shoulder_id)
     if rig.get_bone_pose_rotation(pelvis_id).angle_to(neutral_pelvis) < 0.10 or \
             rig.get_bone_pose_rotation(calf_id).angle_to(neutral_calf) < 0.07:
         _fail("turn/boost/jump must alter real hip and knee balance")
@@ -128,6 +130,16 @@ func _check() -> void:
     rider.set("lean", -0.90)
     rider.set("boosting", true)
     adapter.call("_process", 0.55)
+    var left_carve_left_arm := rig.get_bone_pose_rotation(left_shoulder_id)
+    var left_carve_right_arm := rig.get_bone_pose_rotation(right_shoulder_id)
+    # The NEW turn-side surf lead must visibly swap between opposite touch
+    # carves. The old always-left-leading pose only changed shoulder spread
+    # by a few tenths of a radian; both source-skinned shoulder rotations
+    # must now differ by at least 0.42 rad across opposite directions.
+    if right_carve_left_arm.angle_to(left_carve_left_arm) < 0.42 or \
+            right_carve_right_arm.angle_to(left_carve_right_arm) < 0.42:
+        _fail("right/left touch carves must switch the original 65-bone lead and trailing arms")
+        return
     var negative_left_delta := rig.get_bone_pose_rotation(left_shoulder_id).angle_to(neutral_left_shoulder)
     var negative_right_delta := rig.get_bone_pose_rotation(right_shoulder_id).angle_to(neutral_right_shoulder)
     if negative_left_delta < negative_right_delta + 0.10:
