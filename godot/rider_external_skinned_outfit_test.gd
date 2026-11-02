@@ -183,7 +183,7 @@ func _check() -> void:
     var inner_v: float = outfit.call("_collar_limit",
         Vector3(0.12, collar_top, -0.30), test_bounds, collar_top)
     var outer_v: float = outfit.call("_collar_limit",
-        Vector3(0.28, collar_top, -0.30), test_bounds, collar_top)
+        Vector3(test_bounds.size.x * 0.28, collar_top, -0.30), test_bounds, collar_top)
     if side_top - front_v < test_bounds.size.y * 0.090 or \
             inner_v <= front_v or outer_v <= inner_v or \
             absf(outer_v - collar_top) > 0.001 or \
