@@ -100,7 +100,7 @@ func _check() -> void:
         Vector3(-0.42, 2.205, 0.30), forward, test_bounds)
     var central_neck: Vector3 = outfit.call("_tailored_offset",
         Vector3(0.04, 2.205, 0.30), forward, test_bounds)
-    if outer_slope.y > -0.027 or absf(outer_slope.y - opposite_slope.y) > 0.001 or \
+    if outer_slope.y > -0.045 or absf(outer_slope.y - opposite_slope.y) > 0.001 or \
             absf(central_neck.y) > 0.001:
         _fail("weighted jacket shoulder must slope bilaterally without dropping central neckline")
         return
@@ -114,7 +114,7 @@ func _check() -> void:
     # wings in the 1280x720 and 1170x540 chase camera.
     # The previous sculpt measured ~0.0575 in this fixed CC0 rest pose.
     # Reject that broad toy-like shoulder while retaining the genuine V.
-    if shoulder.x > 0.033:
+    if shoulder.x > 0.024 or shoulder.z > 0.120:
         _fail("weighted jacket shoulder has regressed to the wide pre-tailoring silhouette")
         return
     if opposite.x > -0.018 or absf(shoulder.x + opposite.x) > 0.002:
