@@ -86,6 +86,16 @@ func _check() -> void:
     if chest_after.x <= chest.x + 0.007 or waist_after.x >= waist.x - 0.008:
         _fail("sculpt must create athletic chest-to-waist taper on original triangles")
         return
+    # Regression for the full torso redesign, not only a tiny collar change:
+    # the original four-weight source skin must narrow through the waist AND
+    # lower ribs while retaining the existing broader athletic chest.
+    var lower_rib := Vector3(center.x + x,
+        bounds.position.y + bounds.size.y * 0.560, chest.z)
+    var rib_after: Vector3 = sculpt.call("_reshape", lower_rib, bounds)
+    if waist.x - waist_after.x < bounds.size.x * 0.014 or \
+            lower_rib.x - rib_after.x < bounds.size.x * 0.007:
+        _fail("source-skinned torso lacks a continuous chest-to-waist taper")
+        return
     # The old extra 24% shoulder expansion inflated the CC0 body's upper
     # trapezius into a horizontal bar, visible even in source-only captures.
     # Protect the slimmer real shoulder contour, not just a material change.
@@ -180,7 +190,7 @@ func _check() -> void:
     var recessed_front: Vector3 = sculpt.call("_reshape", front_chest, bounds)
     var sculpted_back: Vector3 = sculpt.call("_reshape", back_chest, bounds)
     var recessed_mirror: Vector3 = sculpt.call("_reshape", mirror_front, bounds)
-    if recessed_front.z - front_chest.z < bounds.size.z * 0.020 or \
+    if recessed_front.z - front_chest.z < bounds.size.z * 0.050 or \
             absf(sculpted_back.z - back_chest.z) > bounds.size.z * 0.040:
         _fail("source-skinned pectoral profile must recede in front without flattening the back")
         return
