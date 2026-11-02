@@ -1,5 +1,5 @@
 extends Node
-## V124 draft: one coherent four-band racing harness sculpted directly from the
+## V124 draft: slim matte four-band racing harness sculpted directly from the
 ## imported CC0 jacket triangles. Unlike rigid decals, EVERY triangle retains
 ## four original Skin influences, including interpolated diagonal seam cuts.
 ## Two front shoulder-to-waist bands and two rear waist-to-shoulder bands make
@@ -20,11 +20,12 @@ func install(jacket: MeshInstance3D, face_sign: float) -> bool:
     harness.skin = jacket.skin
     harness.skeleton = jacket.skeleton
     harness.transform = jacket.transform
+    # Tailored bands sit close to the four-weight jacket: no glossy raised ribbons.
     var material := StandardMaterial3D.new()
     material.vertex_color_use_as_albedo = true
     material.albedo_color = Color.WHITE
-    material.metallic = 0.34
-    material.roughness = 0.35
+    material.metallic = 0.12
+    material.roughness = 0.69
     material.cull_mode = BaseMaterial3D.CULL_DISABLED
     harness.material_override = material
     jacket.get_parent().add_child(harness)
@@ -68,7 +69,7 @@ func _sculpt(source: Mesh, face_sign: float) -> ArrayMesh:
                 continue
             var front := facing > 0.0
             for side in [-1.0, 1.0]:
-                var clipped := _clip_band(source_corners, bounds, side, 0.052)
+                var clipped := _clip_band(source_corners, bounds, side, 0.034)
                 if clipped.size() < 3:
                     continue
                 for j in range(1, clipped.size() - 1):
@@ -77,11 +78,11 @@ func _sculpt(source: Mesh, face_sign: float) -> ArrayMesh:
                         var normal: Vector3 = corner["normal"]
                         var v := (point.y - bounds.position.y) / bounds.size.y
                         var u := (point.x - bounds.get_center().x) / bounds.size.x
-                        var stripe := absf(_signed_band(point, bounds, side)) / 0.052
-                        var relief := 0.008 + 0.015 * (1.0 - smoothstep(0.20, 1.0, stripe))
-                        var highlight := 0.15 * sin(PI * clampf((v - 0.23) / 0.60, 0.0, 1.0))
-                        var base := Color(0.38, 0.11, 0.56) if front else Color(0.06, 0.32, 0.51)
-                        var tint := Color(0.84, 0.26, 0.66) if front else Color(0.16, 0.79, 0.94)
+                        var stripe := absf(_signed_band(point, bounds, side)) / 0.034
+                        var relief := 0.005 + 0.009 * (1.0 - smoothstep(0.20, 1.0, stripe))
+                        var highlight := 0.08 * sin(PI * clampf((v - 0.23) / 0.60, 0.0, 1.0))
+                        var base := Color(0.22, 0.10, 0.26) if front else Color(0.06, 0.23, 0.31)
+                        var tint := Color(0.42, 0.23, 0.40) if front else Color(0.18, 0.54, 0.62)
                         tool.set_color(base.lerp(tint, clampf(0.40 + highlight + (1.0 - stripe) * 0.24, 0.0, 0.85)))
                         tool.set_normal(normal)
                         tool.set_bones(corner["bones"])
