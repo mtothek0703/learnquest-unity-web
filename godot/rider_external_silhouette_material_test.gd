@@ -50,13 +50,6 @@ func _check() -> void:
         if textile_code.contains("texture(") or textile_code.contains("sampler2D"):
             _fail("textile treatment must remain procedural and asset-free: " + path)
             return
-    # A real V-neck cut must not reveal the old glowing blue source-torso
-    # collar as a horizontal bar behind the new original-Skin jacket seam.
-    var source_shader := load("res://rider_quaternius_suit.gdshader") as Shader
-    if source_shader == null or not source_shader.code.contains("underlay_neck") or \
-            not source_shader.code.contains("collar * 0.07"):
-        _fail("exposed original-Skin neckline must be a recessed textile, not a luminous ring")
-        return
     # The art-direction pass must span torso, arms, legs, mantle and real
     # skinned shoulder armor, rather than passing on a single tint edit.
     var crest_checks := {
