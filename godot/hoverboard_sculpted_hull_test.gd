@@ -479,6 +479,33 @@ func _check() -> void:
             _fail("carve fin mount must bridge deck and aerofoil in three dimensions")
             return
         var mount_side := -1.0 if (hinge as Node3D).name.begins_with("Port") else 1.0
+        # Verify a true sculpted dorsal chine and the actual mesh's
+        # sweep-corrected normals, not only a decorative material change.
+        var top_mid: Vector3 = vanes.call("_mount_point", mount_side, 0.5, 0.0)
+        var bottom_mid: Vector3 = vanes.call("_mount_point", mount_side, 0.5, PI)
+        if top_mid.y - bottom_mid.y < 0.067:
+            _fail("board fairing is still a round tube without raised 3D dorsal chine")
+            return
+        var mount_arrays: Array = mount.mesh.surface_get_arrays(0)
+        var mount_normals: PackedVector3Array = mount_arrays[Mesh.ARRAY_NORMAL]
+        var mount_vertices: PackedVector3Array = mount_arrays[Mesh.ARRAY_VERTEX]
+        if mount_normals.size() != mount_vertices.size() or mount_normals.size() < 600:
+            _fail("swept fairing lacks real smooth mesh normals")
+            return
+        var first_expected: Vector3 = vanes.call("_mount_normal", mount_side, 0.0, 0.0)
+        if mount_normals[0].dot(first_expected) < 0.999:
+            _fail("fairing mesh still emits old cylindrical normals")
+            return
+        for sample_t in [0.15, 0.5, 0.85]:
+            for sample_angle in [0.0, PI * 0.5, PI, PI * 1.5]:
+                var smooth_normal: Vector3 = vanes.call(
+                    "_mount_normal", mount_side, sample_t, sample_angle)
+                var radial := Vector3(0.0, cos(sample_angle), sin(sample_angle))
+                if not smooth_normal.is_finite() or \
+                        absf(smooth_normal.length() - 1.0) > 0.002 or \
+                        smooth_normal.dot(radial) < 0.55:
+                    _fail("swept fairing normals are flipped or unstable")
+                    return
         var inboard: Vector3 = (hinge as Node3D).position + vanes.call("_mount_point", mount_side, 0.0, 0.0)
         var outboard: Vector3 = (hinge as Node3D).position + vanes.call("_mount_point", mount_side, 1.0, 0.0)
         if absf(inboard.x) > 0.65 or absf(outboard.x) < 1.10:

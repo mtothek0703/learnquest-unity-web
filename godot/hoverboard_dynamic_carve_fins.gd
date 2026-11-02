@@ -66,12 +66,32 @@ func _mount_point(side: float, t: float, angle: float) -> Vector3:
     # original chassis top, while the outboard tip intersects the real
     # aerofoil around t=0.42 (same local Z, X and Y). No floating gap.
     # A brighter upper satin face makes the connection legible on phones.
-    var height_radius := 0.014 + 0.012 * sin(PI * t)
-    var chord_radius := 0.085 + 0.035 * sin(PI * t)
+    var sweep := sin(PI * t)
+    var height_radius := 0.014 + 0.012 * sweep
+    var chord_radius := 0.085 + 0.035 * sweep
+    # Mold a raised, smoothly blended dorsal chine into the SAME closed
+    # fairing surface. A circular tube made the deck-to-fin joint look like
+    # an exposed pipe in the oblique landscape camera.
+    var dorsal_chine := 0.022 * sweep * pow(maxf(0.0, cos(angle)), 4.0)
     return Vector3(
         lerpf(-side * 0.49, side * 0.20, t),
-        lerpf(-0.18, 0.15, t) + 0.025 * sin(PI * t) + height_radius * cos(angle),
+        lerpf(-0.18, 0.15, t) + 0.025 * sweep +
+            height_radius * cos(angle) + dorsal_chine,
         lerpf(0.05, 0.01, t) + chord_radius * sin(angle))
+
+# The mounting fairing climbs and sweeps sideways as it meets the aerofoil.
+# Cylindrical (0, cos, sin) normals lit it like a separate straight pipe.
+# Calculate the real curved-surface normal; no extra draw call or shader.
+func _mount_normal(side: float, t: float, angle: float) -> Vector3:
+    var h := 0.001
+    var along := _mount_point(side, clampf(t + h, 0.0, 1.0), angle) - \
+        _mount_point(side, clampf(t - h, 0.0, 1.0), angle)
+    var around := _mount_point(side, t, angle + h) - \
+        _mount_point(side, t, angle - h)
+    var result := around.cross(along) * side
+    if not result.is_finite() or result.length_squared() < 0.000001:
+        return Vector3(0.0, cos(angle), sin(angle)).normalized()
+    return result.normalized()
 
 func _make_mount(side: float) -> ArrayMesh:
     var tool := SurfaceTool.new()
@@ -85,9 +105,16 @@ func _make_mount(side: float) -> ArrayMesh:
             for sample in [Vector2(t0, a0), Vector2(t1, a0), Vector2(t1, a1),
                     Vector2(t0, a0), Vector2(t1, a1), Vector2(t0, a1)]:
                 var angle: float = sample.y
-                tool.set_normal(Vector3(0.0, cos(angle), sin(angle)).normalized())
-                tool.set_color(Color("#172d4b").lerp(Color("#537c9d"),
-                    0.18 + 0.42 * maxf(0.0, cos(angle))))
+                tool.set_normal(_mount_normal(side, sample.x, angle))
+                var upper := maxf(0.0, cos(angle))
+                var deck_tone := Color("#172d4b").lerp(Color("#638ea8"),
+                    0.22 + 0.44 * upper)
+                var wing_tone := Color("#536f89").lerp(Color("#b7d1e1"),
+                    0.23 + 0.46 * upper)
+                # Transition toward the existing aerofoil's satin composite
+                # instead of ending the dark fairing in a bright hard seam.
+                tool.set_color(deck_tone.lerp(wing_tone,
+                    0.62 * smoothstep(0.56, 1.0, sample.x)))
                 tool.add_vertex(_mount_point(side, sample.x, angle))
     for end in [0.0, 1.0]:
         var center := _mount_point(side, end, 0.0).lerp(
