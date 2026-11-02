@@ -147,6 +147,7 @@ var energy_weave_pulse := 0.0
 var energy_weave_ring: MeshInstance3D
 var near_miss_streak := 0
 var near_miss_last_side := 0
+var near_miss_last_rider_lane := 99
 var near_miss_mastery := false
 var near_miss_pulse := 0.0
 var near_miss_ring: MeshInstance3D
@@ -1088,6 +1089,7 @@ func _reset_run() -> void:
     energy_weave_ring.visible = false
     near_miss_streak = 0
     near_miss_last_side = 0
+    near_miss_last_rider_lane = 99
     near_miss_mastery = false
     near_miss_pulse = 0.0
     near_miss_ring.visible = false
@@ -1287,6 +1289,7 @@ func _break_clean_flight() -> void:
     clean_flight_ring.visible = false
     near_miss_streak = 0
     near_miss_last_side = 0
+    near_miss_last_rider_lane = 99
 
 func _update_clean_flight(delta: float) -> void:
     if clean_flight_pulse > 0.0:
@@ -1395,8 +1398,17 @@ func _register_near_miss(hazard_x: float) -> void:
     if absf(offset) < 1.45 or absf(offset) > 3.7:
         return
     var side := -1 if offset < 0.0 else 1
-    near_miss_streak = near_miss_streak + 1 if near_miss_last_side == -side else 1
+    var rider_lane := clampi(roundi(rider.position.x / 3.1), -1, 1)
+    # A player parked in the center lane must NOT earn a mastery merely
+    # because randomly spawned barriers alternate sides. Require a genuine
+    # touch-steered lane change AND an opposite-side pass for every step.
+    if near_miss_streak > 0 and near_miss_last_side == -side and \
+            near_miss_last_rider_lane != rider_lane:
+        near_miss_streak += 1
+    else:
+        near_miss_streak = 1
     near_miss_last_side = side
+    near_miss_last_rider_lane = rider_lane
     if near_miss_streak >= NEAR_MISS_TARGET:
         near_miss_mastery = true
         xp += 70
@@ -1407,10 +1419,10 @@ func _register_near_miss(hazard_x: float) -> void:
         info_label.text = "HAARSCHARF! 3 AUSWEICHER +70 XP +1,75s TURBO"
         feedback_time = 1.8
     elif near_miss_streak == 2:
-        info_label.text = "HAARSCHARF 2/3! NAECHSTE BARRIERE ANDERE SEITE"
+        info_label.text = "HAARSCHARF 2/3! SPUR UND AUSWEICHSEITE WECHSELN"
         feedback_time = 1.5
     else:
-        info_label.text = "HAARSCHARF 1/3! WECHSLE DIE AUSWEICHSEITE"
+        info_label.text = "HAARSCHARF 1/3! SPUR UND SEITE WECHSELN"
         feedback_time = 1.2
 
 func _update_near_miss_pulse(delta: float) -> void:
