@@ -95,7 +95,9 @@ void fragment() {
     cloth *= 1.0 + carbon_fiber * armor_field * 0.047;
     cloth = mix(cloth, vec3(0.018, 0.032, 0.072),
         clamp(stitched_panel * 0.78 + waist_gasket * 0.72, 0.0, 0.92));
-    cloth = mix(cloth, vec3(0.27, 0.38, 0.51), collar_lip * 0.72);
+    // Matte dark binding replaces the bright metallic collar stripe that
+    // read as a thick blue ring in the matched landscape portrait.
+    cloth = mix(cloth, vec3(0.055, 0.092, 0.17), collar_lip * 0.76);
     float zipper = exp(-pow(x * 66.0, 2.0)) * torso;
     float chevron = exp(-pow((y - 0.686 + x * 0.36) * 45.0, 2.0)) * torso;
     float piping = exp(-pow((x - 0.265) * 45.0, 2.0)) * torso;
@@ -108,10 +110,10 @@ void fragment() {
     cloth = mix(cloth, electric_pink,
         clamp(hero_chest_crest * 0.64 + hero_v_band * 0.46, 0.0, 0.82));
     ALBEDO = cloth;
-    METALLIC = clamp(0.13 + armor_field * 0.43 + collar_lip * 0.22, 0.0, 0.76);
+    METALLIC = clamp(0.13 + armor_field * 0.43 - collar_lip * 0.12, 0.0, 0.76);
     ROUGHNESS = clamp(0.56 - armor_field * 0.23 + waist_gasket * 0.18
         + stitched_panel * 0.12 + weave * (1.0 - armor_field) * 0.025
-        - carbon_fiber * armor_field * 0.021, 0.24, 0.82);
+        - carbon_fiber * armor_field * 0.021 + collar_lip * 0.18, 0.24, 0.86);
     EMISSION = cyan * (zipper * 0.70 + chevron * 0.38 + piping * 0.24
         + rear_spine_track * 0.42)
         + electric_pink * shoulder * 0.14;
