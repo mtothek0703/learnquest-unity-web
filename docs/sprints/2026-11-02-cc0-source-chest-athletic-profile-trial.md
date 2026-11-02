@@ -13,4 +13,4 @@ The previous 52/52-CI experiment removed the three opaque chest/back armor overl
 - This is a **DRAFT silhouette trial**, not an aesthetic approval; if chest deformation looks worse or creates clipping, revert. PR #111 stays DRAFT, no merge/version reservation. Real iPhone FPS and full touch round remain unverified.
 
 ## Results
-Pending new CI and actual image review.
+First CI [41388927752](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41388927752) stopped at the **old minimum chest expansion** (+0.015 absolute units), which contradicted the intended slimmer source chest. The new test still requires positive chest relief (+0.007) and the existing tapered waist, plus the new upper limits for both X/Z pectoral inflation. Re-run full CI; no release approval yet.

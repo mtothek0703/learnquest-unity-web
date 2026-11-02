@@ -82,7 +82,7 @@ func _check() -> void:
             chest_after.z - chest.z > bounds.size.z * 0.015:
         _fail("original source chest still has inflated toy-like pectoral volume")
         return
-    if chest_after.x <= chest.x + 0.015 or waist_after.x >= waist.x - 0.008:
+    if chest_after.x <= chest.x + 0.007 or waist_after.x >= waist.x - 0.008:
         _fail("sculpt must create athletic chest-to-waist taper on original triangles")
         return
     # The old extra 24% shoulder expansion inflated the CC0 body's upper
