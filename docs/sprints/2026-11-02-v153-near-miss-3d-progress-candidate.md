@@ -17,3 +17,8 @@ V151's alternating three-barrier challenge rewarded a correct 3/3 streak but its
 - [ ] Real iPhone Safari FPS/clipping and full touch round (manual; do not claim automated).
 
 The independent 65-bone CC0 PR #111 remains DRAFT/VISUAL HOLD. No historical Skyway or Unity archive is modified.
+
+## First real candidate CI and visual review
+- [Godot PR CI 41414063467](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41414063467) SUCCESS on candidate commit `5bbbe853d29f0e2e6de1a63e7b3beae3ded544f0`, including gameplay, webexport, archive-related PR checks and all eight OpenGL images.
+- [Original eight-frame artifact 13126208743](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41414063467/artifacts/13126208743) downloaded and manually inspected: 1280x720 board crop shows first cyan rear arc at 1/3, two arcs at 2/3 and the expanding full 3D shockwave at 3/3. Full-frame pixels changed from the identical baseline (max RGB difference >35): 1,303 (one), 3,791 (two), 13,896 (after). These are *visibility* measurements, not evidence of high-end graphics or real-device FPS.
+- Follow-up cleanup: hide unfinished arc progress upon entering results; added a gameplay regression for the interrupted-run case. **Re-run CI on the follow-up commit before any merge.**

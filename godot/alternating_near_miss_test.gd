@@ -136,5 +136,15 @@ func _check() -> void:
     if bool(game.get("near_miss_mastery")) or int(game.get("near_miss_streak")) != 0 or ring.visible or arcs[0].visible:
         _fail("new full race did not reset the near-miss challenge")
         return
-    print("ALTERNATING NEAR MISS TEST PASSED: three English tasks, real barrier crossings, side alternation, jump/shield exclusions, damage reset, 3D reward, replay")
+    # Leaving a partially completed run must not leave glowing board arcs
+    # visible behind the result panel.
+    _pass(game, hazards[0], -3.1, 0.0)
+    if not arcs[0].visible:
+        _fail("new run's first real dodge did not light its 3D progress arc")
+        return
+    game.call("_finish_run")
+    if str(game.get("phase")) != "results" or arcs[0].visible:
+        _fail("results must hide unfinished near-miss board progress")
+        return
+    print("ALTERNATING NEAR MISS TEST PASSED: three English tasks, real barrier crossings, side alternation, jump/shield exclusions, damage/results reset, 3D reward, replay")
     quit(0)

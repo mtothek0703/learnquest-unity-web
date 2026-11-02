@@ -1642,6 +1642,7 @@ func _finish_run() -> void:
     else:
         reward_label.text = "NOCH %dm BIS ZUM ZIEL\nVERSUCHE ES ERNEUT!" % maxi(0, int(mission_target - distance))
     phase = "results"
+    _sync_near_miss_progress()
     _update_energy_weave_guides()
     clean_flight_pulse = 0.0
     clean_flight_ring.visible = false
