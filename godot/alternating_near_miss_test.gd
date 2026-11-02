@@ -66,6 +66,9 @@ func _check() -> void:
     if int(game.get("near_miss_streak")) != 1:
         _fail("stationary rider must not earn a chain from random alternating barriers")
         return
+    # Restart on the left, then switch the rider to the left lane and
+    # pass a center-lane hazard on the opposite side.
+    _pass(game, hazards[2], -3.1, 0.0)
     _pass(game, hazards[2], 0.0, -3.1)
     if int(game.get("near_miss_streak")) != 2:
         _fail("opposite-side dodge must advance the chain")
