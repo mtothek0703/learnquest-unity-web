@@ -28,6 +28,21 @@ func _check() -> void:
         return
     var panels: Array = armor.get("panels")
     var counts: Array = armor.get("vertex_counts")
+    # DRAFT composition gate: all original four-weight panels stay available
+    # for isolated A/B, but the full fitted jacket + harness should not draw
+    # a second opaque torso over the same skinned surface.
+    var adapter := rider.get_node_or_null("ExternalHeroPose") as Node
+    var harness := outfit.get_node_or_null("IntegratedSkinnedFlightHarness") as Node
+    if adapter == null or harness == null or not bool(adapter.get("armor_layers_retired")):
+        _fail("fitted jacket/harness must retire redundant armor in default rider")
+        return
+    if not jacket.visible:
+        _fail("the genuine weighted jacket must remain visible")
+        return
+    for panel in panels:
+        if (panel as MeshInstance3D).visible:
+            _fail("redundant opaque chest/back armor still overlays fitted jacket")
+            return
     if panels.size() != 3 or counts.size() != 3:
         _fail("expected two chest panels and one continuous back shield")
         return

@@ -28,6 +28,9 @@ var action_charge: float = 0.0
 # A time-based torso follow-through creates readable opposing shoulder/head
 # motion without altering the original 65-bone Skin or gameplay steering.
 var torso_follow: float = 0.0
+# Reversible DRAFT art-direction trial: expose the original weighted jacket
+# instead of stacking three extra armor shells over the same chest/back.
+var armor_layers_retired: bool = false
 
 func configure(owner_rider: Node3D, imported: Node3D) -> bool:
     rider = owner_rider
@@ -207,6 +210,7 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
             push_warning("CC0 skinned anatomical armor unavailable")
     # The four diagonal flight-harness bands are clipped from the SAME
     # weighted jacket, not rigid decals. Both camera sides stay legible.
+    var fitted_harness := false
     if outfit.get("garment") is MeshInstance3D:
         var harness := preload("res://rider_external_skinned_harness.gd").new() as Node
         harness.name = "IntegratedSkinnedFlightHarness"
@@ -216,6 +220,28 @@ func configure(owner_rider: Node3D, imported: Node3D) -> bool:
         if not bool(harness.call("install", outfit.get("garment") as MeshInstance3D, harness_face_sign)):
             harness.queue_free()
             push_warning("CC0 four-weight flight harness unavailable")
+        else:
+            fitted_harness = true
+    # DRAFT silhouette A/B: the genuine weighted jacket and fitted four-band
+    # harness already provide torso shape and readable seams. Three more
+    # opaque armor shells doubled the chest/back silhouette in phone views.
+    # Preserve all original four-weight meshes for isolated QA/fallback, but
+    # retire them from the default full rider only if BOTH layers fitted.
+    if fitted_harness and outfit.get("garment") is MeshInstance3D:
+        var armor_layer := outfit.get_node_or_null("IntegratedSkinnedArmor") as Node
+        if armor_layer != null:
+            var fitted_panels: Array = armor_layer.get("panels")
+            if fitted_panels.size() == 3:
+                var all_weighted := true
+                for panel in fitted_panels:
+                    var part := panel as MeshInstance3D
+                    if part == null or part.skin != (outfit.get("garment") as MeshInstance3D).skin:
+                        all_weighted = false
+                        break
+                if all_weighted:
+                    for panel in fitted_panels:
+                        (panel as MeshInstance3D).visible = false
+                    armor_layers_retired = true
     # The open-front, raised-back neck yoke connects the imported Head to the
     # true four-weight jacket/shoulder silhouette without a rigid collar ring.
     # It shares the CC0 Skin and is cosmetic only (no touch/physics changes).
