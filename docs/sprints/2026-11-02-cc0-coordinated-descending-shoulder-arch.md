@@ -23,3 +23,8 @@ The previous landscape QA showed oversized rounded shoulder/sleeve volumes despi
 **Keep as reversible DRAFT trial only; visual QA HOLD.** The imported 65-bone Skin, old builds and main stay intact. The actual front view still reads as a large rounded shoulder silhouette. Next work should target the complete source-weighted shoulder/upper-arm profile with matched, animation-frozen front/chase/side frames, not claim this modest change is a high-end character.
 
 Manual iPhone Safari landscape FPS, mesh clipping and a full three-question-to-finished-round touch test remain outstanding.
+
+## Final code-head verification and controlled layer QA
+- The strengthened upper-arch regression commit `b6ba23fffe224b61d60a0373b8b06efd8a050953` passed [Godot PR validation 41454688481](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41454688481) on 2026-11-02, **52/52 steps successful**, including all tests, real landscape captures and web export. The final documentation-only commit is not separately covered by that code-head run.
+- Two independently captured original-Skin layer sets (prior successful run `41444650976` versus successful trial `41453765395`) were compared at 1170×540. Using max-channel RGB difference >12: front weighted sleeves **4,396 pixels (0.696%)**; chase weighted sleeves **3,573 (0.566%)**; front tailored jacket **3,868 (0.612%)**; chase tailored jacket **3,283 (0.520%)**. These are isolated diagnostic layers, not the whole production gameplay view.
+- This is a real, testable mesh alteration but remains **visually minor**. No high-end character approval or stable release is justified.
