@@ -109,15 +109,19 @@ func _reshape(point: Vector3, bounds: AABB) -> Vector3:
     # Original CC0 deltoids are already broad. The previous extra 24% swell
     # created a horizontal inflated shoulder bar even with the collar hidden.
     # Keep the chest athletic while letting the original arm bones read clearly.
+    # Cohesive silhouette trial: the original CC0 deltoid, front chest and
+    # jacket source are resculpted together BEFORE the four-weight outfit
+    # extraction. This is deliberately more pronounced than prior micro-edits;
+    # keep it DRAFT until real front/chase/profile renders are reviewed.
     var width_scale := 1.0 + torso * (0.06 * chest + 0.015 * shoulder -
         0.18 * waist - 0.052 * lower_rib + 0.035 * hip) - leg * 0.025 * thigh
     # The original outer shoulder/upper arm now contracts by up to 19% in
     # width and 7.5% in depth, fading before the hands and below the armpit.
     # Existing chest/waist tailoring and all gameplay physics are untouched.
-    width_scale -= 0.19 * shoulder_taper + 0.12 * neckline
+    width_scale -= 0.25 * shoulder_taper + 0.15 * neckline
     var depth_scale := 1.0 + torso * (0.05 * chest + 0.020 * shoulder -
         0.10 * waist - 0.030 * lower_rib + 0.03 * hip) - leg * 0.012 * thigh
-    depth_scale -= 0.075 * shoulder_taper + 0.045 * neckline
+    depth_scale -= 0.095 * shoulder_taper + 0.055 * neckline
     var center := bounds.get_center()
     # Side-profile QA: the ORIGINAL front sternum and pectorals still project
     # as a convex barrel under the weighted jacket. Move only front-facing
@@ -128,9 +132,9 @@ func _reshape(point: Vector3, bounds: AABB) -> Vector3:
         (center.z - point.z) / maxf(bounds.size.z * 0.5, 0.001))
     var sternum := exp(-pow((y - 0.645) / 0.155, 2.0)) * \
         (1.0 - smoothstep(0.27, 0.50, side))
-    var front_recess := bounds.size.z * 0.095 * frontness * sternum
+    var front_recess := bounds.size.z * 0.125 * frontness * sternum
     return Vector3(center.x + (point.x - center.x) * width_scale,
-        point.y - bounds.size.y * 0.028 * shoulder_slope,
+        point.y - bounds.size.y * 0.044 * shoulder_slope,
         center.z + (point.z - center.z) * depth_scale + front_recess)
 
 func _normal(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
