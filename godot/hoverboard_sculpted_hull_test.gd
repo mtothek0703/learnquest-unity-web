@@ -198,6 +198,28 @@ func _check() -> void:
     if old_boxes != 2:
         _fail("expected both original central deck boxes to be retired")
         return
+    # The oversized V12 purple prow and five glowing rectangular overlays
+    # used to obscure the true curved bow and contoured traction deck in
+    # landscape screenshots. Keep every original fallback mesh in the scene,
+    # but require them to be invisible when the sculpted hull is complete.
+    var retired_overlay_names := [
+        "LegacyPointedProw", "LegacyCenterSpine", "LegacyNoseBar",
+        "LegacyFrontBar", "LegacyPortDeckStripe", "LegacyStarboardDeckStripe"]
+    for old_name in retired_overlay_names:
+        var old_overlay := board.get_node_or_null(old_name) as MeshInstance3D
+        if old_overlay == null or old_overlay.mesh == null:
+            _fail("archived fallback board overlay missing: " + old_name)
+            return
+        if old_overlay.visible:
+            _fail("flat board overlay still obscures the sculpted bow: " + old_name)
+            return
+        if old_overlay.mesh is not BoxMesh and old_overlay.mesh is not PrismMesh:
+            _fail("original board fallback mesh was unexpectedly replaced: " + old_name)
+            return
+    # A visible real 3D nose must remain when the flat prism is retired.
+    if not chassis.visible or not sculpt.get_node("ContouredTractionDeck").visible:
+        _fail("retiring the flat prow must not hide the sculpted board")
+        return
     for side in [-1.0, 1.0]:
         var inner: Vector3 = sculpt.call("_wing_point", side, 0.52, PI)
         var outer: Vector3 = sculpt.call("_wing_point", side, 0.52, 0.0)
