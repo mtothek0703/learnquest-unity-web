@@ -234,7 +234,7 @@ jobs:
             --script res://rider_external_skinned_back_hair_visual_capture_test.gd 2>&1 | tee /tmp/skinned-hair-visual.log
           grep -Fq 'SKINNED BACK HAIR VISUAL QA PASSED' /tmp/skinned-hair-visual.log
           test "$(find /tmp/learnquest-skinned-hair-qa -name '*.png' | wc -l)" -eq 22
-      - name: Capture 12 real neutral and bilateral CC0 carve poses in smartphone landscape
+      - name: Capture 24 real bilateral CC0 carve poses including both side profiles
         shell: bash
         run: |
           set -euo pipefail
@@ -244,7 +244,7 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://rider_external_bilateral_pose_visual_capture_test.gd 2>&1 | tee /tmp/bilateral-pose-visual.log
           grep -Fq 'BILATERAL POSE VISUAL QA PASSED' /tmp/bilateral-pose-visual.log
-          test "$(find /tmp/learnquest-bilateral-pose-qa -name '*.png' | wc -l)" -eq 12
+          test "$(find /tmp/learnquest-bilateral-pose-qa -name '*.png' | wc -l)" -eq 24
       - name: Render 32 real V123/V124 neutral and action silhouette frames
         shell: bash
         run: |
