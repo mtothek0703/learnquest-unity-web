@@ -16,3 +16,9 @@
 - [ ] Same-camera front/chase before/after images compared; prove a visible improvement without sleeve/neck clipping.
 - [ ] Revert this trial if the full figure gets worse or changes are negligible. Keep PR #111 DRAFT until visually approved; no release.
 - [ ] Real iPhone Safari FPS/clipping/full touch run remains manual and open.
+
+## Result — tested and reverted
+- [Full Godot PR CI 41414215568](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41414215568) SUCCESS on the exact experimental commit `26aa93ee25b39bea903d2971e780d7133e27fff4`: imported 65-bone Skin, gameplay, Webexport and 132 genuine landscape comparison PNGs passed.
+- [132-frame original Godot artifact 13126149515](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41414215568/artifacts/13126149515) downloaded and compared with [prior 132-frame baseline 13124070221](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41405910011/artifacts/13124070221). Exact 1280x720 `front_detail_after` difference: **1,414 pixels / 0.153%** with max RGB channel difference >30; `chase_detail_after`: **2,396 / 0.260%**. The broad collar and upper-arm outline remain visibly nearly identical; no meaningful quality leap.
+- Because the integrated shoulder trial did not clear the visual quality gate, **revert all four experimental code/test/shader files** to their immediately preceding verified blobs. Keep this record and the previous 132-frame diagnostic. No merge, no V153 release from PR #111, no iPhone acceptance.
+- Next: stop iterating tiny shoulder coefficients. Prioritize an actually different cohesive jacket/face/hoverboard design, ideally a new licensed cohesive asset or substantial re-topology, and require large same-camera front/chase improvement before release.
