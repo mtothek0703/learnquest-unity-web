@@ -237,7 +237,7 @@ func _sculpt_offset(point: Vector3, normal: Vector3, bounds: AABB,
     # bulk while preserving a true rounded GPU-skinned cap and elbow motion.
     # The shoulder stays connected to the arm, with a raised, softly
     # convex top rather than a flat shoulder slab in the chase camera.
-    var side_sweep := 0.004 * shoulder + 0.010 * elbow + 0.008 * forearm_clearance + 0.003 * cap_crest
+    var side_sweep := 0.004 * shoulder + 0.010 * elbow + 0.008 * forearm_clearance + 0.004 * cap_crest
     return normal * shell + Vector3(lateral * side_sweep,
         0.010 * shoulder + 0.014 * cap_crest, 0.0)
 
