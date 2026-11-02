@@ -50,6 +50,21 @@ func _check() -> void:
         if textile_code.contains("texture(") or textile_code.contains("sampler2D"):
             _fail("textile treatment must remain procedural and asset-free: " + path)
             return
+    # The actual 65-bone jacket's raised collar and material highlight must
+    # track the SAME curved V-cut; a horizontal emissive ring was identified
+    # in the 84-frame layer-isolation images and must not regress.
+    var jacket_shader := load("res://rider_external_jacket.gdshader") as Shader
+    if jacket_shader == null:
+        _fail("original-Skin jacket shader missing")
+        return
+    for token in ["collar_front", "collar_v", "collar_edge",
+            "0.78 - 0.068 * collar_front * collar_v"]:
+        if not jacket_shader.code.contains(token):
+            _fail("weighted jacket collar highlight no longer follows its curved front V: " + token)
+            return
+    if jacket_shader.code.contains("(y - 0.766)"):
+        _fail("old flat collar ring returned to the weighted jacket shader")
+        return
     # The art-direction pass must span torso, arms, legs, mantle and real
     # skinned shoulder armor, rather than passing on a single tint edit.
     var crest_checks := {
