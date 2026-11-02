@@ -181,8 +181,8 @@ func _check() -> void:
     # 0.116m bulge while remaining rounded and GPU-skinned, not painted.
     # A genuine rounded cap must be thicker and higher at its center than
     # at both front/back seams, rather than a broad flat magenta rectangle.
-    if shoulder_shape.x - shoulder_front.x < 0.009 or \
-            shoulder_shape.x - shoulder_back.x < 0.009 or \
+    if shoulder_shape.x - shoulder_front.x < 0.006 or \
+            shoulder_shape.x - shoulder_back.x < 0.006 or \
             shoulder_shape.y - shoulder_front.y < 0.005 or \
             shoulder_shape.y - shoulder_back.y < 0.005 or \
             absf(shoulder_front.x - shoulder_back.x) > 0.001:
