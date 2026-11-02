@@ -11,6 +11,9 @@ var travel_speed := 14.0
 var icefalls: Array[Node3D] = []
 var ice_walls: Array[MeshInstance3D] = []
 var icicle_batches: Array[MultiMeshInstance3D] = []
+# Three raised, sculpted streaming channels per icefall. Shared meshes/shader;
+# purely scenic, no touch input, collisions, lights or gameplay state changes.
+var flow_channels: Array[MeshInstance3D] = []
 
 func _point(row: int, column: int, rear: bool) -> Vector3:
     var t := float(row) / 18.0
@@ -64,6 +67,58 @@ func _ice_mesh() -> ArrayMesh:
     tool.generate_normals()
     return tool.commit()
 
+
+# Sculpt a narrow three-dimensional meltwater ridge along the existing
+# fluted ice surface. The central crest projects forward from the ice wall;
+# the two edges blend back into it. No flat billboard or physics geometry.
+func _flow_point(t: float, lane: int, across: float) -> Vector3:
+    var u := 0.24 + float(lane) * 0.26
+    var taper := 0.82 + 0.18 * sin(PI * t) + 0.05 * sin(u * 14.0 + t * 6.0)
+    var x := (u - 0.5) * 5.0 * taper + 0.26 * sin(t * 6.0 + u * 11.0)
+    x += across * (0.18 + 0.045 * sin(t * 12.0 + float(lane)))
+    var crown := 12.4 + 0.88 * sin(u * 8.0) + 0.34 * cos(u * 19.0)
+    var y := lerpf(0.45 + 0.18 * sin(u * 14.0), crown, t)
+    var ice_z := 0.45 * sin(u * 9.0 + t * 4.0) + 0.24 * sin(u * 23.0 - t * 7.0)
+    var crest := 0.14 * (1.0 - absf(across))
+    return Vector3(x, y, ice_z + 0.10 + crest)
+
+func _flow_mesh(lane: int) -> ArrayMesh:
+    var tool := SurfaceTool.new()
+    tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+    for row in range(32):
+        var t0 := float(row) / 32.0
+        var t1 := float(row + 1) / 32.0
+        for half in range(2):
+            var a := -1.0 + float(half)
+            var b := a + 1.0
+            var points := [
+                Vector2(a, t0), Vector2(b, t0), Vector2(b, t1),
+                Vector2(a, t0), Vector2(b, t1), Vector2(a, t1)]
+            for uv in points:
+                tool.set_uv(Vector2((uv.x + 1.0) * 0.5, uv.y))
+                tool.add_vertex(_flow_point(uv.y, lane, uv.x))
+    tool.generate_normals()
+    return tool.commit()
+
+func _flow_material() -> ShaderMaterial:
+    # Animated emission moves through actual raised 3D channels. The shader
+    # is unshaded/opaque to avoid costly mobile transparency and extra lights.
+    var shader := Shader.new()
+    shader.code = """
+shader_type spatial;
+render_mode unshaded, cull_disabled;
+void fragment() {
+    float streak = pow(max(0.0, sin(UV.y * 38.0 - TIME * 4.5)), 3.0);
+    float edge = 1.0 - abs(UV.x * 2.0 - 1.0);
+    float intensity = 0.28 + 0.50 * streak + 0.22 * edge;
+    ALBEDO = vec3(0.10, 0.42, 0.65) * intensity;
+    EMISSION = vec3(0.20, 0.86, 1.0) * intensity * 1.7;
+}
+"""
+    var material := ShaderMaterial.new()
+    material.shader = shader
+    return material
+
 func _ready() -> void:
     var shared_ice := _ice_mesh()
     var ice_material := StandardMaterial3D.new()
@@ -84,6 +139,8 @@ func _ready() -> void:
     glow.emission_energy_multiplier = 1.15
     glow.roughness = 0.32
 
+    var flow_material := _flow_material()
+    var flow_meshes := [_flow_mesh(0), _flow_mesh(1), _flow_mesh(2)]
     for index in range(ICEFALL_COUNT):
         var side := -1.0 if index % 2 == 0 else 1.0
         var fall := Node3D.new()
@@ -118,6 +175,13 @@ func _ready() -> void:
         icicles.material_override = glow
         fall.add_child(icicles)
         icicle_batches.append(icicles)
+        for lane in range(3):
+            var channel := MeshInstance3D.new()
+            channel.name = "Raised animated glacial flow %d" % lane
+            channel.mesh = flow_meshes[lane]
+            channel.material_override = flow_material
+            fall.add_child(channel)
+            flow_channels.append(channel)
 
 func _process(delta: float) -> void:
     if not running:
