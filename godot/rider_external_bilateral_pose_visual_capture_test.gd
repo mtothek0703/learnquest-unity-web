@@ -1,11 +1,11 @@
 extends SceneTree
 ## DRAFT CC0: show the real 65-bone rider in neutral, left and right touch
-## carves from identical front/chase AND both side-profile cameras in both
-## smartphone landscape ratios. Side profiles expose sleeve/hand/torso
-## intersections that frontal images conceal; all original frames remain.
+## carves from identical front/chase, both side-profile and two rear 3/4
+## cameras in both smartphone landscape ratios. Oblique views reveal jacket,
+## sleeve, neck and board depth intersections that axis views can conceal.
 ## These images are diagnostic, not iPhone FPS or aesthetic acceptance.
 const SIZES := [Vector2i(1280, 720), Vector2i(1170, 540)]
-const VIEWS := ["front", "chase", "left_profile", "right_profile"]
+const VIEWS := ["front", "chase", "left_profile", "right_profile", "left_rear_three_quarter", "right_rear_three_quarter"]
 const POSES := ["neutral", "left_carve", "right_carve"]
 
 func _initialize() -> void:
@@ -122,6 +122,10 @@ func _capture() -> void:
                     camera.position = Vector3(-5.6, 2.15, 0.0)
                 "right_profile":
                     camera.position = Vector3(5.6, 2.15, 0.0)
+                "left_rear_three_quarter":
+                    camera.position = Vector3(-3.75, 2.25, 4.15)
+                "right_rear_three_quarter":
+                    camera.position = Vector3(3.75, 2.25, 4.15)
             camera.look_at(Vector3(0.0, 1.8, 0.0), Vector3.UP)
             var left_carve_frame: Image
             var neutral_control_drift := 0
@@ -183,8 +187,8 @@ func _capture() -> void:
                         return
                 count += 1
     Engine.time_scale = 1.0
-    if count != 24:
-        _fail("expected 24 real bilateral front/chase/side-profile landscape pose frames")
+    if count != 36:
+        _fail("expected 36 real bilateral front/chase/profile/oblique landscape pose frames")
         return
-    print("BILATERAL POSE VISUAL QA PASSED: 24 original-65-bone neutral/left/right front/chase/left/right-profile frames at both phone landscape ratios; pose-history reset, identical-neutral noise controls and side-profile signal gates passed; clipping sign-off still pending")
+    print("BILATERAL POSE VISUAL QA PASSED: 36 original-65-bone neutral/left/right front/chase/side-profile/rear-oblique frames at both phone landscape ratios; pose-history reset, identical-neutral noise controls and side-profile signal gates passed; clipping sign-off still pending")
     quit(0)
