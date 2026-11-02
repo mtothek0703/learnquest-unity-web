@@ -58,13 +58,17 @@ func _capture() -> void:
         camera.fov = targets["fov"]
         game.set("near_miss_streak", 0)
         game.set("near_miss_last_side", 0)
+        game.set("near_miss_last_rider_lane", 99)
         game.set("near_miss_mastery", false)
         ring.visible = false
         var baseline: Image
         for variant in ["before", "after"]:
             if variant == "after":
-                for hazard_x in [-3.1, 3.1, -3.1]:
-                    game.call("_register_near_miss", hazard_x)
+                for maneuver in [Vector2(-3.1, 0.0), Vector2(0.0, -3.1), Vector2(-3.1, 0.0)]:
+                    rider.position.x = maneuver.y
+                    game.call("_register_near_miss", maneuver.x)
+                # Restore the exact baseline rider position for the A/B render.
+                rider.position.x = 0.0
                 if not bool(game.get("near_miss_mastery")) or not ring.visible:
                     _fail("three alternating hazards did not reveal the 3D board pulse")
                     return
