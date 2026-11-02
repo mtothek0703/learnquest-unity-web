@@ -120,6 +120,18 @@ func _check() -> void:
     if opposite.x > -0.018 or absf(shoulder.x + opposite.x) > 0.002:
         _fail("weighted shoulder expansion must be balanced on both sides")
         return
+    # Side-profile improvement: flatten the real ventral jacket over the
+    # original source-skin sternum without flattening the dorsal scapular V.
+    var ventral_chest: Vector3 = outfit.call("_tailored_offset",
+        Vector3(0.10, 1.935, -0.30), Vector3.FORWARD, test_bounds)
+    var dorsal_chest: Vector3 = outfit.call("_tailored_offset",
+        Vector3(0.10, 1.935, 0.30), Vector3.BACK, test_bounds)
+    var opposite_ventral: Vector3 = outfit.call("_tailored_offset",
+        Vector3(-0.10, 1.935, -0.30), Vector3.FORWARD, test_bounds)
+    if absf(ventral_chest.z) >= dorsal_chest.z - 0.012 or \
+            absf(ventral_chest.z - opposite_ventral.z) > 0.0001:
+        _fail("ventral weighted jacket must have a slimmer symmetric chest profile")
+        return
     # The rear silhouette must be visibly different in the actual chase
     # camera: sculpted source-skin scapulae and shoulder sweep, not added
     # primitive shoulder boxes. The original CC0 forward direction is -Z.

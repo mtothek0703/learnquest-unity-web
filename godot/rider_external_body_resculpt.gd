@@ -115,9 +115,19 @@ func _reshape(point: Vector3, bounds: AABB) -> Vector3:
         0.07 * waist + 0.03 * hip) - leg * 0.012 * thigh
     depth_scale -= 0.075 * shoulder_taper + 0.045 * neckline
     var center := bounds.get_center()
+    # Side-profile QA: the ORIGINAL front sternum and pectorals still project
+    # as a convex barrel under the weighted jacket. Move only front-facing
+    # torso triangles toward the spine, with a smooth falloff into the waist,
+    # lateral arm seams and back. The same 65-bone Skin remains unchanged.
+    # This is genuine rest-space mesh sculpting, not a camera/shader trick.
+    var frontness := smoothstep(0.08, 0.65,
+        (center.z - point.z) / maxf(bounds.size.z * 0.5, 0.001))
+    var sternum := exp(-pow((y - 0.645) / 0.125, 2.0)) * \
+        (1.0 - smoothstep(0.25, 0.45, side))
+    var front_recess := bounds.size.z * 0.055 * frontness * sternum
     return Vector3(center.x + (point.x - center.x) * width_scale,
         point.y - bounds.size.y * 0.028 * shoulder_slope,
-        center.z + (point.z - center.z) * depth_scale)
+        center.z + (point.z - center.z) * depth_scale + front_recess)
 
 func _normal(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     var step := maxf(bounds.size.y * 0.0005, 0.0001)

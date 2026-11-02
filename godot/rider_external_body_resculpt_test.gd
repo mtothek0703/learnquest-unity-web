@@ -168,6 +168,26 @@ func _check() -> void:
             absf(slope_center.y - centered.y) > bounds.size.y * 0.001:
         _fail("real 65-bone shoulder must slope downward without moving the neck")
         return
+    # Bilateral side-profile correction must actually recede the imported
+    # front pectoral surface while preserving the rear and face/hand/feet.
+    var front_chest := Vector3(center.x + bounds.size.x * 0.09,
+        bounds.position.y + bounds.size.y * 0.645,
+        center.z - bounds.size.z * 0.40)
+    var back_chest := Vector3(front_chest.x, front_chest.y,
+        center.z + bounds.size.z * 0.40)
+    var mirror_front := Vector3(2.0 * center.x - front_chest.x,
+        front_chest.y, front_chest.z)
+    var recessed_front: Vector3 = sculpt.call("_reshape", front_chest, bounds)
+    var sculpted_back: Vector3 = sculpt.call("_reshape", back_chest, bounds)
+    var recessed_mirror: Vector3 = sculpt.call("_reshape", mirror_front, bounds)
+    if recessed_front.z - front_chest.z < bounds.size.z * 0.020 or \
+            absf(sculpted_back.z - back_chest.z) > bounds.size.z * 0.040:
+        _fail("source-skinned pectoral profile must recede in front without flattening the back")
+        return
+    if absf(recessed_front.x + recessed_mirror.x - 2.0 * center.x) > 0.00001 or \
+            absf(recessed_front.z - recessed_mirror.z) > 0.00001:
+        _fail("source-skinned front pectoral sculpt must remain symmetric")
+        return
     # The new athletic thigh is narrower in BOTH axes than the source body,
     # not merely recolored, and remains on the original 65-bone skin.
     var thigh := Vector3(center.x + x, bounds.position.y + bounds.size.y * 0.310, center.z + bounds.size.z * 0.18)
