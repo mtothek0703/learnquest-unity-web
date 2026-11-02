@@ -285,7 +285,7 @@ jobs:
           name: learnquest-v134-neon-precision-before-after
           path: /tmp/learnquest-precision-qa/*.png
           if-no-files-found: error
-      - name: Render V143 glacier icefalls in both smartphone landscape ratios
+      - name: Render V154 icefalls and isolated flowing streams in two landscape ratios
         shell: bash
         run: |
           set -euo pipefail
@@ -295,12 +295,12 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://cinematic_glacier_icefalls_visual_capture_test.gd 2>&1 | tee /tmp/glacier-icefalls-visual.log
           grep -Fq 'GLACIER ICEFALLS VISUAL QA PASSED' /tmp/glacier-icefalls-visual.log
-          test "$(find /tmp/learnquest-icefalls-qa -name '*.png' | wc -l)" -eq 8
-      - name: Upload V143 glacier icefall landscape comparison frames
+          test "$(find /tmp/learnquest-icefalls-qa -name '*.png' | wc -l)" -eq 16
+      - name: Upload V154 original icefalls and sculpted flow comparisons
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: learnquest-v143-glacier-icefalls-before-after
+          name: learnquest-v154-glacier-flow-before-after
           path: /tmp/learnquest-icefalls-qa/*.png
           if-no-files-found: error
       - name: Upload V126 Aurora slipstream comparison frames
