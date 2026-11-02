@@ -91,6 +91,7 @@ func _capture() -> void:
     # Isolate the NEW sculpted flow from the existing V143 ice walls.
     # Whole-icefall before/after alone cannot prove V154 adds visible value.
     var channels: Array = falls.get("flow_channels")
+    var canopies: Array = falls.get("overhead_flows")
     var stream_images := 0
     for size in SIZES:
         viewport.size = size
@@ -107,6 +108,8 @@ func _capture() -> void:
                 var show_streams: bool = state == "streams_on"
                 for channel in channels:
                     (channel as MeshInstance3D).visible = show_streams
+                for canopy in canopies:
+                    (canopy as MeshInstance3D).visible = show_streams
                 for frame in range(5):
                     await process_frame
                 await RenderingServer.frame_post_draw
