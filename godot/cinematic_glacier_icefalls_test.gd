@@ -18,6 +18,37 @@ func _check() -> void:
     var roots: Array = falls.get("icefalls")
     var walls: Array = falls.get("ice_walls")
     var icicles: Array = falls.get("icicle_batches")
+    var channels: Array = falls.get("flow_channels")
+    if channels.size() != 18:
+        _fail("six icefalls require three sculpted flowing channels each")
+        return
+    var shared_material: ShaderMaterial
+    for channel in channels:
+        var flow := channel as MeshInstance3D
+        if flow == null or not flow.mesh is ArrayMesh or not flow.visible:
+            _fail("flow channels must be visible 3D meshes")
+            return
+        var surface: Array = flow.mesh.surface_get_arrays(0)
+        var verts: PackedVector3Array = surface[Mesh.ARRAY_VERTEX]
+        var normals: PackedVector3Array = surface[Mesh.ARRAY_NORMAL]
+        var uv: PackedVector2Array = surface[Mesh.ARRAY_TEX_UV]
+        if verts.size() < 300 or normals.size() != verts.size() or uv.size() != verts.size():
+            _fail("glacial channels need curved 3D triangles, normals and animated UV")
+            return
+        var dimensions := flow.mesh.get_aabb().size
+        if dimensions.y < 10.0 or dimensions.z < 0.20:
+            _fail("glacial flow must span the icefall with actual raised depth")
+            return
+        var material := flow.material_override as ShaderMaterial
+        if material == null or material.shader == null or \
+                not material.shader.code.contains("TIME * 4.5"):
+            _fail("raised ice streams require moving emissive highlights")
+            return
+        if shared_material == null:
+            shared_material = material
+        elif shared_material != material:
+            _fail("glacial flow must reuse one lightweight mobile shader")
+            return
     if roots.size() != 6 or walls.size() != 6 or icicles.size() != 6:
         _fail("expected six continuous cascades and six batched icicle groups")
         return
@@ -67,5 +98,5 @@ func _check() -> void:
     if not is_equal_approx(roots[0].position.z, 22.0 + 3.0 - 162.0):
         _fail("icefall loop must not accumulate geometry")
         return
-    print("GLACIER ICEFALLS TEST PASSED: six volumetric cascades, 72 instanced icicles, no collisions, scroll/pause/wrap")
+    print("GLACIER ICEFALLS TEST PASSED: six volumetric cascades, 72 instanced icicles, 18 sculpted flowing streams, no collisions, scroll/pause/wrap")
     quit(0)
