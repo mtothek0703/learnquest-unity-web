@@ -455,7 +455,7 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     # V neckline and waist to avoid a sharp ledge in left/right side views.
     var ventral := smoothstep(0.18, 0.75, -normal.z)
     var front_chest := ventral * exp(-pow((y - 0.645) / 0.115, 2.0)) * \
-        (1.0 - smoothstep(0.24, 0.43, x))
+        (1.0 - smoothstep(0.15, 0.26, x))
     depth = maxf(0.006, depth - 0.030 * front_chest)
     spread -= 0.014 * upper_arch
     var shoulder_drop := 0.035 * shoulder * smoothstep(0.14, 0.31, x) + \
