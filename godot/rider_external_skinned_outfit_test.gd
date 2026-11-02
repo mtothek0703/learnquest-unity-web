@@ -467,7 +467,11 @@ func _check() -> void:
     if not (garment.material_override as ShaderMaterial).shader.code.contains("pectoral_panel"):
         _fail("chest color panels must follow the sculpted torso")
         return
-    if garment.mesh.get_aabb().size.x < imported_bounds.size.x * 0.28:
+    var garment_width := garment.mesh.get_aabb().size.x
+    var imported_width := imported_bounds.size.x
+    print("OUTFIT COVERAGE QA: garment=", garment_width,
+        " imported=", imported_width, " ratio=", garment_width / maxf(imported_width, 0.001))
+    if garment_width < imported_width * 0.28:
         _fail("tailored jacket silhouette collapsed")
         return
     # The old height-only jacket duplicated the CC0 forearms and hands,
