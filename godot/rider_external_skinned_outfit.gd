@@ -98,11 +98,13 @@ func _extract_jacket(body: MeshInstance3D) -> ArrayMesh:
             # four-weight interpolation looks torso-dominant. Keep the jacket
             # inside the imported torso envelope BEFORE sculpting it. The
             # source arms remain untouched; only this duplicate shell is cut.
-            # The narrower 22%-half-width shell follows the coordinated
-            # original-body and weighted-sleeve shoulder taper.
-            var torso_half_width := bounds.size.x * 0.22
-            polygon = _clip_to_lateral(polygon, bounds.get_center().x - torso_half_width, true)
-            polygon = _clip_to_lateral(polygon, bounds.get_center().x + torso_half_width, false)
+            # Shape the real four-weight jacket edge as ONE anatomical
+            # waist-to-pectoral-to-neckline profile. A constant 22% half-width
+            # made a straight vertical blue wall in front/chase 16:9 renders.
+            # The mid-chest retains breadth while the waist and clavicles
+            # draw inward to meet the actual weighted sleeves.
+            polygon = _clip_to_torso_profile(polygon, bounds, false)
+            polygon = _clip_to_torso_profile(polygon, bounds, true)
             # Keep the torso-dominant skin only: the separate weighted sleeves
             # already cover the shoulder transition. A 48% arm allowance
             # retained inflated forearm/hand duplicates in the chase view.
@@ -222,6 +224,51 @@ func _clip_to_collar(polygon: Array[Dictionary], bounds: AABB,
 # is an AABB-relative jacket-only boundary, NOT a change to the source CC0
 # arm meshes or the player's skeleton. All intersections interpolate the
 # ORIGINAL four-weight Skin exactly like the waist/collar boundaries.
+# Anatomical torso envelope: narrow waist, wider pectorals and a neck that
+# blends into the real skinned sleeves. Symmetric and scale-independent.
+# t=0 is jacket waist (43% source height), t=1 the collar (78%).
+func _torso_profile_edge(bounds: AABB, y: float, right_edge: bool) -> float:
+    var waist_y := bounds.position.y + bounds.size.y * 0.43
+    var collar_y := bounds.position.y + bounds.size.y * 0.78
+    var t := clampf((y - waist_y) / maxf(collar_y - waist_y, 0.0001), 0.0, 1.0)
+    var half_width := 0.180 + 0.060 * sin(PI * t) - 0.035 * smoothstep(0.70, 1.0, t)
+    return bounds.get_center().x + bounds.size.x * half_width * (1.0 if right_edge else -1.0)
+
+# Cut original imported triangles against the CURVED waist/shoulder outline.
+# Bisection solves each intersection on the actual profile, rather than a
+# linear approximation; _interpolate_corner preserves four normalized CC0
+# Skin influences. This is geometry, not a shader-only silhouette trick.
+func _clip_to_torso_profile(polygon: Array[Dictionary], bounds: AABB,
+        right_edge: bool) -> Array[Dictionary]:
+    var clipped: Array[Dictionary] = []
+    if polygon.is_empty():
+        return clipped
+    var previous: Dictionary = polygon[polygon.size() - 1]
+    for current in polygon:
+        var a: Vector3 = previous["position"]
+        var b: Vector3 = current["position"]
+        var a_edge := _torso_profile_edge(bounds, a.y, right_edge)
+        var b_edge := _torso_profile_edge(bounds, b.y, right_edge)
+        var inside_a := a.x <= a_edge if right_edge else a.x >= a_edge
+        var inside_b := b.x <= b_edge if right_edge else b.x >= b_edge
+        if inside_a != inside_b:
+            var low := 0.0
+            var high := 1.0
+            for iteration in range(16):
+                var middle := (low + high) * 0.5
+                var p := a.lerp(b, middle)
+                var edge := _torso_profile_edge(bounds, p.y, right_edge)
+                var inside_middle := p.x <= edge if right_edge else p.x >= edge
+                if inside_middle == inside_a:
+                    low = middle
+                else:
+                    high = middle
+            clipped.append(_interpolate_corner(previous, current, (low + high) * 0.5))
+        if inside_b:
+            clipped.append(current)
+        previous = current
+    return _deduplicate_polygon(clipped)
+
 func _clip_to_lateral(polygon: Array[Dictionary], plane_x: float,
         keep_right: bool) -> Array[Dictionary]:
     var clipped: Array[Dictionary] = []
