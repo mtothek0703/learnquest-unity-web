@@ -22,7 +22,7 @@ void fragment() {
     vec3 cobalt = vec3(0.23, 0.45, 0.79);
     vec3 violet = vec3(0.29, 0.27, 0.47);
     vec3 titanium = vec3(0.23, 0.31, 0.45);
-    vec3 cloth = mix(midnight, cobalt, shoulder * 0.48 + forearm * 0.13);
+    vec3 cloth = mix(midnight, cobalt, shoulder * 0.28 + forearm * 0.13);
     vec3 armor = mix(titanium, violet, forearm * 0.60);
     vec3 color = mix(cloth, armor, panel * 0.68);
     color *= 0.97 + 0.03 * arm_weight;
@@ -34,8 +34,8 @@ void fragment() {
     color = mix(color, vec3(0.39, 0.25, 0.53), hero_arm_panel * 0.30);
     color = mix(color, vec3(0.16, 0.58, 0.82), forearm * panel * 0.32);
     ALBEDO = color;
-    METALLIC = mix(0.14, 0.53, panel);
-    ROUGHNESS = mix(0.64, 0.34, panel);
+    METALLIC = mix(0.11, 0.39, panel);
+    ROUGHNESS = mix(0.72, 0.46, panel);
     // Wide but restrained emissive piping remains legible on phone screens.
     float edge = smoothstep(0.34, 0.52, panel_mask) *
         (1.0 - smoothstep(0.65, 0.84, panel_mask));

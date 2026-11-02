@@ -377,7 +377,7 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     # Mobile chase QA still showed a swollen upper-torso silhouette. Keep
     # the genuine sculpted chest and scapula relief, but pull the four-weight
     # jacket closer to the original athletic body (no rigid substitute).
-    var depth := 0.012 + 0.055 * chest + 0.040 * shoulder + \
+    var depth := 0.012 + 0.055 * chest + 0.034 * shoulder + \
         0.043 * chest_ridge + 0.027 * collar + 0.049 * pectoral + \
         0.025 * deltoid + 0.015 * spine_keel + \
         0.043 * scapula + 0.026 * dorsal_shoulder + 0.016 * spine_channel + \
@@ -389,7 +389,7 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     # original-Skin V taper and genuine dorsal scapula relief. The chest
     # remains full; the jacket's shoulder expansion is ~25% narrower in
     # the same rest-space QA pose (0.0575 -> 0.0416 source units).
-    var spread := 0.043 * shoulder + 0.031 * deltoid - waist_inset + \
+    var spread := 0.038 * shoulder + 0.031 * deltoid - waist_inset + \
         0.036 * dorsal_shoulder
     return normal * depth + Vector3(signf(lateral) * spread, 0.006 * shoulder, 0.0)
 
