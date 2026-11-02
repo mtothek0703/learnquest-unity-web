@@ -23,3 +23,11 @@
 - Flat overlay retirement: `54f796ce6177b3ad5590301346e68ca3b43f9f64`
 - Geometry/fallback regression: `263e8c4e8127efcd1e67b9628b69e072c68e585a`
 - New immutable URL release gate: `450042fe0bea01acbed887479b47a80b02159984`
+
+## Technische PR-Abnahme und echte visuelle QA (02.11.2026)
+- [Godot PR-CI 41382799008](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41382799008): **SUCCESS**, inklusive Headless-Gameplay, Godot-Import, Webexport und Querformat-Renderbilder.
+- [Historischer Pages-Archivschutz 41382799113](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41382799113): **SUCCESS**.
+- Originalbilder aus V151 [CI 41372959002](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41372959002/artifacts/13110496167) gegen den neuen Kandidaten [CI 41382799008](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41382799008/artifacts/13113374531) verglichen: gleiche 1280x720 Front-/Chase-/Profilkamera, Pose `idle`.
+- Frontbild: **11.073 / 921.600 Pixel (1,201%)** unterscheiden sich um mehr als 25 RGB-Werte; Chase: **8.695 / 921.600 (0,943%)**. Diese Rohzahlen enthalten mögliche Kontroll-/Animationsdrift und sind **kein alleiniger Qualitätsbeweis**.
+- Tatsächliche Frontbilder zeigen den zuvor sehr großen violetten flachen Bugkeil durch eine zusammenhängende dunkle, skulptierte 3D-Bugform ersetzt. Das ist eine deutlich sichtbare, zusammenhängende Verbesserung der Frontansicht; die Verfolgeransicht ist nur moderat verbessert. Kein High-End-Gesamtcharakter beansprucht.
+- V152 erst nach grünem Main-CI, erfolgreichem Pages-Deployment und exakter Buildrevision als veröffentlicht kennzeichnen.
