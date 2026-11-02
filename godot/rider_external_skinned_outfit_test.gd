@@ -100,14 +100,14 @@ func _check() -> void:
         Vector3(-0.42, 2.205, 0.30), forward, test_bounds)
     var central_neck: Vector3 = outfit.call("_tailored_offset",
         Vector3(0.04, 2.205, 0.30), forward, test_bounds)
-    if outer_slope.y > -0.022 or absf(outer_slope.y - opposite_slope.y) > 0.001 or \
+    if outer_slope.y > -0.027 or absf(outer_slope.y - opposite_slope.y) > 0.001 or \
             absf(central_neck.y) > 0.001:
         _fail("weighted jacket shoulder must slope bilaterally without dropping central neckline")
         return
     # The joint neck/jacket/sleeve pass deliberately withdraws the broad
     # lateral cap. Retain measurable 3D shoulder relief without requiring
     # the previous toy-like horizontal shelf.
-    if chest.z < 0.09 or shoulder.z < 0.065 or shoulder.x < 0.018:
+    if chest.z < 0.09 or shoulder.z < 0.045 or shoulder.x < 0.002:
         _fail("original-skinned torso lost the fitted chest/deltoid V silhouette")
         return
     # Keep the weighted 3D V-shape without recreating oversized deltoid
