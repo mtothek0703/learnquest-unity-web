@@ -72,7 +72,14 @@ void fragment() {
     // All bands are in the imported rest pose so they follow GPU skinning.
     float armor_field = clamp(center_armor * torso * 0.83
         + pectoral_panel * 0.47 + shoulder * 0.25, 0.0, 1.0);
-    float collar_lip = exp(-pow((y - 0.766) * 95.0, 2.0))
+    // Track the actual sculpted front V neckline in imported rest space.
+    // A former horizontal collar highlight looked like a detached ring
+    // after the geometry was lowered; this is now a continuous textile lip.
+    float neck_front = smoothstep(0.02, 0.18,
+        (rest_center_z - rest_vertex.z) / max(rest_depth, 0.001));
+    float neck_v = 1.0 - smoothstep(0.075, 0.28, x);
+    float neckline_y = 0.78 - 0.095 * neck_front * neck_v;
+    float collar_lip = exp(-pow((y - neckline_y) * 95.0, 2.0))
         * (1.0 - smoothstep(0.25, 0.40, x));
     float chest_panel_seam = exp(-pow((y - 0.604 - 0.085 * x) * 92.0, 2.0))
         * torso * (1.0 - smoothstep(0.32, 0.44, x));
