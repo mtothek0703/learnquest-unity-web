@@ -442,9 +442,16 @@ func _process(delta: float) -> void:
         var spread := -sign_side * (1.57 + 0.09 * carve +
             0.15 * outside - 0.08 * inside -
             last_jump * (0.45 if ascending else 0.32))
+        # Distinct SURF lead/trailing-arm silhouette, not two rigid hands
+        # hidden behind the chest. The original CC0 shoulder joints now
+        # pitch one arm forward to read the route and the other behind for
+        # balance. Carving changes their reach without touching input or
+        # collision; original four-weight sleeves follow both joints.
+        var reach_pitch := (-0.56 if side < 0 else 0.16) - boost * 0.30 - \
+            outside * 0.12 + inside * 0.10 + landing_impact * 0.14
         _pose(["upperarm_l" if side < 0 else "upperarm_r", prefix + "UpperArm", prefix + "Arm"],
             Quaternion(Vector3.FORWARD, spread - torso_follow * 0.13) *
-            Quaternion(Vector3.RIGHT, -0.20 - boost * 0.30 + landing_impact * 0.14), blend)
+            Quaternion(Vector3.RIGHT, reach_pitch), blend)
         _pose(["lowerarm_l" if side < 0 else "lowerarm_r", prefix + "LowerArm", prefix + "ForeArm", prefix + "Forearm"],
             Quaternion(Vector3.RIGHT, -0.28 - last_jump * 0.38 - boost * 0.12 -
                 inside * 0.16 + outside * 0.08) *
