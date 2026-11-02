@@ -21,3 +21,8 @@
 
 ## Next step
 Fix any test regressions; compare true 1280x720 and 1170x540 before/after renders with shader time frozen. Revert or adjust the stronger sculpt if seams or silhouette quality worsen. Keep independent stable track A moving.
+## Actual results (after CI)
+- First CI failed the prior 3.3%-height vertical shoulder displacement limit. The intentionally steeper shoulder slope now uses a 4.7%-height upper bound; separate explicit head/hand/foot, skinning and normals guards remain.
+- Full [Godot PR CI 41518718846](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41518718846) **SUCCESS** for code commit `0e02c57a3075246d1448e28d39e64f7adacea90b` including web export and actual image captures. This later documentation-only commit is not separately tested.
+- Downloaded and inspected the 24 real landscape images in artifact `learnquest-v124-source-body-sculpt-before-after`. At 1280×720, pixels with maximum RGB delta >25: full-rider front **0.129%**, full-rider chase **0.516%**, source-only front **0.513%**, source-only chase **0.965%**.
+- The full-rider still looks bulky at shoulders/chest and is not clearly higher quality. **Visual gate FAILED; PR #111 remains DRAFT. No merge, no release.**
