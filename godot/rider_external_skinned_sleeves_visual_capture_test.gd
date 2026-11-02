@@ -148,8 +148,22 @@ func _capture() -> void:
     if int(group_counts["shoulder_thrusters"]) != 0 or \
             int(group_counts["tailored_jacket"]) != 1 or \
             int(group_counts["weighted_sleeves"]) != 2 or \
-            int(group_counts["skinned_armor"]) != 3:
-        _fail("expected clean shoulder silhouette, one jacket, two weighted sleeves and three original-Skin armor panels")
+            int(group_counts["skinned_armor"]) != 0:
+        _fail("expected one fitted jacket, two weighted sleeves and no duplicate visible armor")
+        return
+    # The three hidden armor meshes remain a dedicated source-weighted A/B
+    # family; do not silently turn the armor-isolation screenshot into an
+    # identical copy of the source-only frame.
+    var retired_armor: Array[MeshInstance3D] = []
+    for item in visibility.keys():
+        var mesh := item as MeshInstance3D
+        if _costume_group(mesh, original) == "skinned_armor":
+            retired_armor.append(mesh)
+            if bool(visibility[item]) or mesh.skin != original.skin:
+                _fail("retired armor must stay hidden but retain original Skin")
+                return
+    if retired_armor.size() != 3:
+        _fail("all three reversible armor A/B control meshes must exist")
         return
     # With fitted jacket and sleeves, both the shoulder bridge and the
     # inflated neck ring are hidden. Preserve both as isolated QA controls,
@@ -206,7 +220,8 @@ func _capture() -> void:
                             # a reference. Add exactly ONE costume family.
                             # Unlike raw costume-only renders, each pair can
                             # be compared pixel-for-pixel to source_only.
-                            enabled = mesh == original or (bool(visibility[item]) and \
+                            enabled = mesh == original or (\
+                                (bool(visibility[item]) or (variant == "skinned_armor" and retired_armor.has(mesh))) and \
                                 _costume_group(mesh, original) == variant)
                         elif variant == "without_sleeves" and sleeves.has(mesh):
                             enabled = false
@@ -289,5 +304,5 @@ func _capture() -> void:
     if count != 52 + 4 * isolated_other.size():
         _fail("expected 108 landscape frames, including twelve visible costume meshes and two retired original-Skin QA controls in four views")
         return
-    print("SKINNED SLEEVE VISUAL QA PASSED: 108 pose-locked front/chase frames, seven visible costume-family overlays, twelve visible other meshes and two retired original-Skin A/B controls; manual visual gate remains open")
+    print("SKINNED SLEEVE VISUAL QA PASSED: 108 pose-locked front/chase frames, seven costume-family overlays (including retired armor A/B), twelve visible other meshes and two retired original-Skin A/B controls; manual visual gate remains open")
     quit(0)

@@ -13,4 +13,4 @@ Recent same-camera 1280×720 comparisons showed that repeated narrow panel and s
 - No merge of PR #111 or Skyway release without demonstrable complete-hero improvement and manual iPhone FPS/clipping/full-touch-round QA. Older Skyway builds and Unity archive must remain untouched.
 
 ## Results
-- Pending CI and same-camera image inspection after code commit. If the visual composition worsens, revert the trial rather than claim a quality improvement.
+- First full CI [41387635292](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41387635292): Godot gameplay/skin tests and Web export succeeded, but the existing 108-frame sleeve visual capture correctly rejected its outdated expectation of three *visible* armor panels. The three meshes are intentionally hidden by this trial; updated the QA gate to require zero visible duplicate panels while explicitly re-enabling those same original-Skin panels in the isolated `skinned_armor` A/B frame. Re-run full CI and compare before/after; no visual approval yet.
