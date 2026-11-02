@@ -120,6 +120,8 @@ jobs:
           grep -Fq "AERIAL ENERGY MASTERY TEST PASSED" /tmp/godot-aerial-energy.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://energy_weave_mastery_test.gd 2>&1 | tee /tmp/energy-weave.log
           grep -Fq 'ENERGY WEAVE MASTERY TEST PASSED' /tmp/energy-weave.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://alternating_near_miss_test.gd 2>&1 | tee /tmp/near-miss.log
+          grep -Fq 'ALTERNATING NEAR MISS TEST PASSED' /tmp/near-miss.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://rider_original_body_skin_test.gd 2>&1 | tee /tmp/godot-original-body-skin.log
           grep -Fq "ORIGINAL BODY SKIN TEST PASSED" /tmp/godot-original-body-skin.log
           echo "Original glTF body skinning regression passed"
@@ -307,28 +309,28 @@ jobs:
           python - <<'PY'
           from urllib.error import HTTPError
           from urllib.request import Request, urlopen
-          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v150/index.html"
+          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v151/index.html"
           try:
               with urlopen(Request(url, headers={"Cache-Control": "no-cache"}), timeout=20):
-                  raise SystemExit("Skyway V150 already exists: refusing to overwrite an immutable release")
+                  raise SystemExit("Skyway V151 already exists: refusing to overwrite an immutable release")
           except HTTPError as error:
               if error.code != 404:
                   raise
-          print("Skyway V150 is not published yet; safe to create")
+          print("Skyway V151 is not published yet; safe to create")
           PY
           # Each release gets a fresh URL; historical folders are never rebuilt from newer exports.
-          mkdir -p _site/skyway-v150
-          cp -a _site/godot/. _site/skyway-v150/
-          echo "$GITHUB_SHA" > _site/skyway-v150/build.txt
+          mkdir -p _site/skyway-v151
+          cp -a _site/godot/. _site/skyway-v151/
+          echo "$GITHUB_SHA" > _site/skyway-v151/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
-          echo "Archived previous versions and prepared immutable Skyway V150"
+          echo "Archived previous versions and prepared immutable Skyway V151"
       - name: Check browser export integrity
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          root = Path("_site/skyway-v150")
+          root = Path("_site/skyway-v151")
           for name in ("index.html", "index.js", "index.wasm", "index.pck"):
               file = root / name
               if not file.is_file() or file.stat().st_size == 0:
@@ -561,7 +563,7 @@ jobs:
               print("::error::GitHub Pages is not set to GitHub Actions. In Settings > Pages, choose Source: GitHub Actions.")
               raise SystemExit(1)
           PY
-      - name: Render V150 Energy Weave pulse and 3D lane beacon at two phone ratios
+      - name: Render V151 Energy Weave pulse and 3D lane beacon at two phone ratios
         shell: bash
         run: |
           set -euo pipefail
@@ -572,11 +574,11 @@ jobs:
             --script res://energy_weave_visual_capture_test.gd 2>&1 | tee /tmp/energy-weave-visual.log
           grep -Fq 'ENERGY WEAVE VISUAL QA PASSED' /tmp/energy-weave-visual.log
           test "$(find /tmp/learnquest-weave-qa -name '*.png' | wc -l)" -eq 8
-      - name: Upload V150 Energy Weave pulse and lane beacon frames
+      - name: Upload V151 Energy Weave pulse and lane beacon frames
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: learnquest-v150-energy-weave-qa
+          name: learnquest-v151-energy-weave-qa
           path: /tmp/learnquest-weave-qa/*.png
           if-no-files-found: error
       - name: Configure Pages
@@ -595,7 +597,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request, urllib.error
-          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v150/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v151/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.js": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
