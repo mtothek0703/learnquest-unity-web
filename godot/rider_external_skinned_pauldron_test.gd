@@ -122,7 +122,7 @@ func _check() -> void:
         return
     var mantle_fraction := float(mantle.get("mantle_span")) / bounds.size.y
     var thruster_fraction := float(thrusters.get("shoulder_span")) / bounds.size.x
-    if mantle_fraction < 0.38 or mantle_fraction > 0.40 or \
+    if mantle_fraction < 0.30 or mantle_fraction > 0.32 or \
             thruster_fraction < 0.44 or thruster_fraction > 0.49:
         _fail("compact mantle and recessed thrusters must fit the skinned shoulders together")
         return
