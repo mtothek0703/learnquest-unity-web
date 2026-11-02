@@ -22,3 +22,10 @@ In den echten 1280x720-Frontaufnahmen war der große flache violette V12-PrismMe
 ## Commits
 - Sichtbarkeit/Legacy-Fallback: `1de2b653caf8d30979f7288d1ea2c355e77652ec`
 - Regression: `bcef92d28c95ee76fa030039b8a2cafc3e2495c0`
+
+## Abschluss: CI und tatsächlicher Vorher/Nachher-Bildvergleich
+- [Vollständige Godot-PR-CI 41382641917](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41382641917) **SUCCESS**, inklusive Gameplay, 65-Bone-Skinning, Godot-Webexport und echten Smartphone-Querformatbildern.
+- Verglichen: [Original-Captures vor Änderung 41376883132](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41376883132/artifacts/13112036564) gegen [neue Captures 41382641917](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41382641917/artifacts/13114650795), jeweils `1280x720_front_after.png` / `1280x720_chase_after.png`, gleiche Pose und Kamera.
+- Differenz mit maximaler RGB-Kanalabweichung >25: **Front 18.212 Pixel (1,976%)**, Änderungsbereich x=487..792/y=394..554; **Chase 2.402 Pixel (0,261%)**, Bereich x=558..721/y=368..442. Keine Unterschiede außerhalb der Board-Zone in diesen Captures; die Änderung ist eindeutig auf die alten Board-Overlays zurückzuführen.
+- Die Frontansicht zeigt statt des flachen violetten Bugkeils jetzt das echte 3D-Chassis mit Bug-Chines; die Chase-Ansicht verliert die breite gelbe Mittelmarkierung. Substanzieller Sichtbarkeitsgewinn, **aber keine vollständige Premium-Figur**.
+- PR #111 bleibt DRAFT / VISUAL HOLD. Keine Version reserviert, kein Merge. Reale iPhone-FPS/Clipping/volle Touch-Spielrunde weiterhin nicht abgenommen.
