@@ -50,7 +50,9 @@ func _check() -> void:
             return
         for i in range(original.size()):
             var delta := reshaped[i] - original[i]
-            if delta.y > 0.000001 or delta.y < -before.get_aabb().size.y * 0.033 or \
+            # The new deliberately sloped shoulder may descend up to 4.4%
+            # of body height; feet, hands and face remain separately guarded.
+            if delta.y > 0.000001 or delta.y < -before.get_aabb().size.y * 0.047 or \
                     not reshaped[i].is_finite() or \
                     not normals[i].is_finite() or absf(normals[i].length() - 1.0) > 0.002:
                 _fail("invalid rest vertex, vertical foot-contact drift or lighting normal")
