@@ -128,6 +128,17 @@ func _half_width(t: float) -> float:
     var tail := smoothstep(0.78, 1.0, t)
     return 0.77 * (0.48 + 0.52 * nose) * (1.0 - 0.16 * tail)
 
+# Twin sculpted bow chines replace the featureless rounded nose. The
+# relief is part of the ORIGINAL closed chassis surface, not a decal/prop:
+# it is symmetric, fades before the traction footbeds and adds no draw calls.
+func _bow_chines(t: float, angle: float) -> float:
+    var nose_fade := 1.0 - smoothstep(0.28, 0.63, t)
+    var upper := smoothstep(0.18, 0.82, sin(angle))
+    var across := absf(cos(angle))
+    var raised_pair := exp(-pow((across - 0.58) / 0.18, 2.0))
+    var center_groove := exp(-pow(across / 0.23, 2.0))
+    return nose_fade * upper * (0.105 * raised_pair - 0.022 * center_groove)
+
 func _shell_point(t: float, angle: float) -> Vector3:
     var z := lerpf(-1.37, 1.33, t)
     var width := _half_width(t)
@@ -135,7 +146,8 @@ func _shell_point(t: float, angle: float) -> Vector3:
     var rear_sweep := 0.025 * smoothstep(0.76, 1.0, t)
     var thickness := 0.105 + 0.025 * sin(PI * t)
     return Vector3(width * cos(angle),
-        0.285 + raised_nose + rear_sweep + thickness * sin(angle), z)
+        0.285 + raised_nose + rear_sweep + thickness * sin(angle) +
+        _bow_chines(t, angle), z)
 
 # Analytic normals follow the actual swept chassis instead of treating every
 # unindexed triangle as a separate flat facet. This preserves highlights along
@@ -154,6 +166,9 @@ func _emit_shell(tool: SurfaceTool, t: float, angle: float) -> void:
     # Keep the underside dark but restore legibility in the chase camera.
     var color := Color("#283956").lerp(Color("#7089a8"), upper * 0.65)
     color = color.lerp(Color("#586c90"), edge * (0.14 + 0.20 * t))
+    # The two physically raised chines also catch a restrained satin highlight.
+    var bow_highlight := clampf(_bow_chines(t, angle) / 0.105, 0.0, 1.0)
+    color = color.lerp(Color("#91adc5"), bow_highlight * 0.34)
     tool.set_color(color)
     tool.set_normal(_shell_normal(t, angle))
     tool.add_vertex(_shell_point(t, angle))
