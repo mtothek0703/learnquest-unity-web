@@ -309,28 +309,28 @@ jobs:
           python - <<'PY'
           from urllib.error import HTTPError
           from urllib.request import Request, urlopen
-          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v153/index.html"
+          url = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v154/index.html"
           try:
               with urlopen(Request(url, headers={"Cache-Control": "no-cache"}), timeout=20):
-                  raise SystemExit("Skyway V153 already exists: refusing to overwrite an immutable release")
+                  raise SystemExit("Skyway V154 already exists: refusing to overwrite an immutable release")
           except HTTPError as error:
               if error.code != 404:
                   raise
-          print("Skyway V153 is not published yet; safe to create")
+          print("Skyway V154 is not published yet; safe to create")
           PY
           # Each release gets a fresh URL; historical folders are never rebuilt from newer exports.
-          mkdir -p _site/skyway-v153
-          cp -a _site/godot/. _site/skyway-v153/
-          echo "$GITHUB_SHA" > _site/skyway-v153/build.txt
+          mkdir -p _site/skyway-v154
+          cp -a _site/godot/. _site/skyway-v154/
+          echo "$GITHUB_SHA" > _site/skyway-v154/build.txt
           echo "$GITHUB_SHA" > _site/godot/build.txt
-          echo "Archived previous versions and prepared immutable Skyway V153"
+          echo "Archived previous versions and prepared immutable Skyway V154"
       - name: Check browser export integrity
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          root = Path("_site/skyway-v153")
+          root = Path("_site/skyway-v154")
           for name in ("index.html", "index.js", "index.wasm", "index.pck"):
               file = root / name
               if not file.is_file() or file.stat().st_size == 0:
@@ -407,7 +407,7 @@ jobs:
           name: learnquest-v134-neon-precision-before-after
           path: /tmp/learnquest-precision-qa/*.png
           if-no-files-found: error
-      - name: Render V143 glacier icefalls in both smartphone landscape ratios
+      - name: Render V154 icefalls and isolated flowing streams in two landscape ratios
         shell: bash
         run: |
           set -euo pipefail
@@ -417,12 +417,12 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://cinematic_glacier_icefalls_visual_capture_test.gd 2>&1 | tee /tmp/godot-glacier-icefalls-visual.log
           grep -Fq 'GLACIER ICEFALLS VISUAL QA PASSED' /tmp/godot-glacier-icefalls-visual.log
-          test "$(find /tmp/learnquest-icefalls-qa -name '*.png' | wc -l)" -eq 8
-      - name: Upload V143 glacier icefall landscape comparison frames
+          test "$(find /tmp/learnquest-icefalls-qa -name '*.png' | wc -l)" -eq 16
+      - name: Upload V154 original icefalls and sculpted flow comparisons
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: learnquest-v143-glacier-icefalls-before-after
+          name: learnquest-v154-glacier-flow-before-after
           path: /tmp/learnquest-icefalls-qa/*.png
           if-no-files-found: error
       - name: Upload V126 Aurora slipstream before-after frames
@@ -615,7 +615,7 @@ jobs:
         run: |
           python - <<'PY'
           import os, time, urllib.request, urllib.error
-          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v153/"
+          root = "https://mtothek0703.github.io/learnquest-unity-web/skyway-v154/"
           checks = {"build.txt": os.environ["EXPECTED_SHA"], "index.html": None, "index.js": None, "index.wasm": None, "index.pck": None}
           for name, expected in checks.items():
               for attempt in range(12):
