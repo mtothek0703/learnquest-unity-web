@@ -104,7 +104,7 @@ func _capture() -> void:
             falls.visible = true
             var without_streams: Image
             for state in ["streams_off", "streams_on"]:
-                var show_streams := state == "streams_on"
+                var show_streams: bool = state == "streams_on"
                 for channel in channels:
                     (channel as MeshInstance3D).visible = show_streams
                 for frame in range(5):
