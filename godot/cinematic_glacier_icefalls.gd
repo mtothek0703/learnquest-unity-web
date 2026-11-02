@@ -14,6 +14,7 @@ var icicle_batches: Array[MultiMeshInstance3D] = []
 # Three raised, sculpted streaming channels per icefall. Shared meshes/shader;
 # purely scenic, no touch input, collisions, lights or gameplay state changes.
 var flow_channels: Array[MeshInstance3D] = []
+var overhead_flows: Array[MeshInstance3D] = []
 
 func _point(row: int, column: int, rear: bool) -> Vector3:
     var t := float(row) / 18.0
@@ -100,6 +101,37 @@ func _flow_mesh(lane: int) -> ArrayMesh:
     tool.generate_normals()
     return tool.commit()
 
+
+# Wide overhead continuation of the raised wall streams. This sculpted
+# ribbon bends in all three axes, reaches above the course (never into the
+# player lanes) and has real thickness, unlike a screen-facing glow sprite.
+func _overhead_point(t: float, side: float, edge: float, depth: float) -> Vector3:
+    return Vector3(
+        -side * 8.0 * t,
+        10.8 + 1.4 * sin(PI * t) - 1.55 * t + edge * 0.52,
+        0.55 * sin(t * TAU * 1.2 + side) + depth * 0.17)
+
+func _overhead_mesh(side: float) -> ArrayMesh:
+    var tool := SurfaceTool.new()
+    tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+    for segment in range(32):
+        var t0 := float(segment) / 32.0
+        var t1 := float(segment + 1) / 32.0
+        for depth in [-1.0, 1.0]:
+            for uv in [
+                Vector2(t0, -1.0), Vector2(t1, -1.0), Vector2(t1, 1.0),
+                Vector2(t0, -1.0), Vector2(t1, 1.0), Vector2(t0, 1.0)]:
+                tool.set_uv(Vector2((uv.y + 1.0) * 0.5, uv.x))
+                tool.add_vertex(_overhead_point(uv.x, side, uv.y, depth))
+        for edge in [-1.0, 1.0]:
+            for uv in [
+                Vector2(t0, -1.0), Vector2(t1, -1.0), Vector2(t1, 1.0),
+                Vector2(t0, -1.0), Vector2(t1, 1.0), Vector2(t0, 1.0)]:
+                tool.set_uv(Vector2((uv.y + 1.0) * 0.5, uv.x))
+                tool.add_vertex(_overhead_point(uv.x, side, edge, uv.y))
+    tool.generate_normals()
+    return tool.commit()
+
 func _flow_material() -> ShaderMaterial:
     # Animated emission moves through actual raised 3D channels. The shader
     # is unshaded/opaque to avoid costly mobile transparency and extra lights.
@@ -141,6 +173,7 @@ func _ready() -> void:
 
     var flow_material := _flow_material()
     var flow_meshes := [_flow_mesh(0), _flow_mesh(1), _flow_mesh(2)]
+    var canopy_meshes := [_overhead_mesh(-1.0), _overhead_mesh(1.0)]
     for index in range(ICEFALL_COUNT):
         var side := -1.0 if index % 2 == 0 else 1.0
         var fall := Node3D.new()
@@ -182,6 +215,12 @@ func _ready() -> void:
             channel.material_override = flow_material
             fall.add_child(channel)
             flow_channels.append(channel)
+        var canopy := MeshInstance3D.new()
+        canopy.name = "Raised three-dimensional overhead glacier flow"
+        canopy.mesh = canopy_meshes[0 if side < 0.0 else 1]
+        canopy.material_override = flow_material
+        fall.add_child(canopy)
+        overhead_flows.append(canopy)
 
 func _process(delta: float) -> void:
     if not running:
