@@ -16,6 +16,37 @@ func _fail(message: String) -> void:
     push_error("BILATERAL POSE VISUAL QA FAILED: " + message)
     quit(1)
 
+# Restore the original imported pose and every inertial input before each
+# screenshot. Merely returning lean to zero for one frame left history-dependent
+# shoulders and breathing in otherwise identical A/B frames.
+func _reset_original_pose(rider: Node3D, adapter: Node, rig: Skeleton3D) -> void:
+    rider.set("lean", 0.0)
+    rider.set("boosting", false)
+    var rests: Dictionary = adapter.get("rest_rotations")
+    for bone_index in rests.keys():
+        rig.set_bone_pose_rotation(int(bone_index), rests[bone_index])
+    for field in ["elapsed", "torso_follow", "landing_impact", "vertical_speed",
+            "last_jump", "action_charge", "previous_height"]:
+        adapter.set(field, 0.0)
+    adapter.call("_process", 0.8)
+
+# Fixed normalized screen-space sampling avoids counting full-frame shader
+# noise as a changed shoulder silhouette. Used for same-pose controls AND
+# opposite-carve comparison at both actual landscape resolutions.
+func _changed_samples(a: Image, b: Image, size: Vector2i) -> int:
+    var changed := 0
+    for sample_y in range(90):
+        for sample_x in range(160):
+            var px := int(float(size.x - 1) * float(sample_x) / 159.0)
+            var py := int(float(size.y - 1) * float(sample_y) / 89.0)
+            var ca := a.get_pixel(px, py)
+            var cb := b.get_pixel(px, py)
+            var delta := maxf(absf(ca.r - cb.r),
+                maxf(absf(ca.g - cb.g), absf(ca.b - cb.b)))
+            if delta > 0.12:
+                changed += 1
+    return changed
+
 func _capture() -> void:
     var folder := OS.get_environment("LEARNQUEST_BILATERAL_POSE_OUTPUT")
     if folder.is_empty():
@@ -93,12 +124,11 @@ func _capture() -> void:
                     camera.position = Vector3(5.6, 2.15, 0.0)
             camera.look_at(Vector3(0.0, 1.8, 0.0), Vector3.UP)
             var left_carve_frame: Image
+            var neutral_control_drift := 0
             for pose_name in POSES:
-                # Reestablish neutral before each turn, rather than carrying
-                # the previous turn's inertial shoulder offset into the next.
-                rider.set("lean", 0.0)
-                rider.set("boosting", false)
-                adapter.call("_process", 0.8)
+                # Reset the actual imported bone poses AND animation history.
+                # Each camera/turn starts at the same deterministic baseline.
+                _reset_original_pose(rider, adapter, rig)
                 var steer := 0.0
                 if pose_name == "left_carve":
                     steer = -0.9
@@ -117,32 +147,38 @@ func _capture() -> void:
                 if frame_image.save_png(filename) != OK:
                     _fail("could not save original-skin pose image")
                     return
-                # A real pixel-level gate on the two side cameras: a mirrored
-                # touch carve must visibly move the actual GPU-skinned rider,
-                # not just update bone angles offscreen. Shader TIME, game
-                # animation and camera are locked across these two frames.
+                # Repeat an identical neutral pose at each camera/size.
+                # If this control drifts, left/right pixel differences are
+                # not reliable evidence of improved geometry or animation.
+                if pose_name == "neutral":
+                    _reset_original_pose(rider, adapter, rig)
+                    adapter.call("_process", 0.8)
+                    for control_frame in range(6):
+                        await process_frame
+                    await RenderingServer.frame_post_draw
+                    var control_image := viewport.get_texture().get_image()
+                    if control_image.is_empty():
+                        _fail("neutral control framebuffer missing")
+                        return
+                    neutral_control_drift = _changed_samples(frame_image, control_image, size)
+                    print("BILATERAL NEUTRAL CONTROL %s %s: %d/14400 drift samples" %
+                        [str(size), view, neutral_control_drift])
+                    if neutral_control_drift > 180:
+                        _fail("identical 65-bone pose renders drift too far for credible visual QA")
+                        return
+                # A genuine mirrored touch carve must change the actual
+                # GPU-skinned silhouette MORE than the unchanged-pose noise.
                 if pose_name == "left_carve":
                     left_carve_frame = frame_image
                 elif pose_name == "right_carve" and view.ends_with("_profile"):
                     if left_carve_frame == null:
                         _fail("side-profile comparison lost left-carve baseline")
                         return
-                    var changed_samples := 0
-                    for sample_y in range(90):
-                        for sample_x in range(160):
-                            var px := int(float(size.x - 1) * float(sample_x) / 159.0)
-                            var py := int(float(size.y - 1) * float(sample_y) / 89.0)
-                            var left_pixel := left_carve_frame.get_pixel(px, py)
-                            var right_pixel := frame_image.get_pixel(px, py)
-                            var channel_delta := maxf(absf(left_pixel.r - right_pixel.r),
-                                maxf(absf(left_pixel.g - right_pixel.g),
-                                    absf(left_pixel.b - right_pixel.b)))
-                            if channel_delta > 0.12:
-                                changed_samples += 1
-                    print("BILATERAL PROFILE PIXEL QA %s %s: %d/14400 changed samples" %
-                        [str(size), view, changed_samples])
-                    if changed_samples < 8:
-                        _fail("left/right 65-bone surf poses are not visibly different in %s %s" %
+                    var changed_samples := _changed_samples(left_carve_frame, frame_image, size)
+                    print("BILATERAL PROFILE PIXEL QA %s %s: %d/14400 changed vs %d control" %
+                        [str(size), view, changed_samples, neutral_control_drift])
+                    if changed_samples < maxi(8, int(ceil(float(neutral_control_drift) * 1.5))):
+                        _fail("left/right original-skin pose signal is not above render drift in %s %s" %
                             [str(size), view])
                         return
                 count += 1
@@ -150,5 +186,5 @@ func _capture() -> void:
     if count != 24:
         _fail("expected 24 real bilateral front/chase/side-profile landscape pose frames")
         return
-    print("BILATERAL POSE VISUAL QA PASSED: 24 original-65-bone neutral/left/right front/chase/left/right-profile frames at both phone landscape ratios; side-profile pixel gates passed; clipping sign-off still pending")
+    print("BILATERAL POSE VISUAL QA PASSED: 24 original-65-bone neutral/left/right front/chase/left/right-profile frames at both phone landscape ratios; pose-history reset, identical-neutral noise controls and side-profile signal gates passed; clipping sign-off still pending")
     quit(0)
