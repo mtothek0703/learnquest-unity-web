@@ -200,17 +200,19 @@ func _check() -> void:
             absf(mirrored_v - other_v) > 0.001:
         _fail("source-Skin jacket must have a symmetric low front V, not a flat collar")
         return
-    # Intersect a real four-weight test triangle with the new V curve.
+    # Intersect a real four-weight test triangle with the deeper V curve.
+    # Lower endpoints must be BELOW the new neckline so the test actually
+    # exercises clipping instead of feeding three entirely excluded points.
     # No dropped crossing triangle, unweighted seam or collar vertex above
     # the sculpted opening may survive the extraction.
     var neckline: Array[Dictionary] = [
-        {"position": Vector3(-0.12, 2.10, -0.30), "normal": Vector3.FORWARD,
+        {"position": Vector3(-0.12, 1.95, -0.30), "normal": Vector3.FORWARD,
             "bones": PackedInt32Array([0, 1, 2, 3]),
             "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
         {"position": Vector3(0.0, 2.40, -0.30), "normal": Vector3.FORWARD,
             "bones": PackedInt32Array([4, 5, 6, 7]),
             "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
-        {"position": Vector3(0.12, 2.10, -0.30), "normal": Vector3.FORWARD,
+        {"position": Vector3(0.12, 1.95, -0.30), "normal": Vector3.FORWARD,
             "bones": PackedInt32Array([0, 1, 2, 3]),
             "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])}
     ]
@@ -244,13 +246,13 @@ func _check() -> void:
     # V boundary, not the straight line between endpoint signed distances.
     # Both intersections must be accurate to <1 mm in this 3m sample mesh.
     var diagonal_triangle: Array[Dictionary] = [
-        {"position": Vector3(-0.20, 2.05, -0.32), "normal": Vector3.FORWARD,
+        {"position": Vector3(-0.20, 1.90, -0.32), "normal": Vector3.FORWARD,
             "bones": PackedInt32Array([0, 1, 2, 3]),
             "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
         {"position": Vector3(0.0, 2.39, -0.25), "normal": Vector3.FORWARD,
             "bones": PackedInt32Array([4, 5, 6, 7]),
             "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
-        {"position": Vector3(0.20, 2.05, -0.32), "normal": Vector3.FORWARD,
+        {"position": Vector3(0.20, 1.90, -0.32), "normal": Vector3.FORWARD,
             "bones": PackedInt32Array([8, 9, 10, 11]),
             "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])}
     ]
