@@ -441,7 +441,17 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     # newly sloped 65-bone source trapezius. Continue the REAL weighted
     # shoulder descent through the jacket, fading to zero at the central
     # neckline and below the deltoid (no separate mesh or new collision).
-    var shoulder_drop := 0.035 * shoulder * smoothstep(0.14, 0.31, x)
+    # The previous jacket's upper deltoid ridge sat above the newly sloped
+    # imported CC0 shoulder and its weighted sleeve. Shape one continuous
+    # downward shoulder arch across BOTH sides, with a soft falloff before
+    # the neck and the lower pectorals. This subtracts real 3D volume, not
+    # just hiding the blue collar in the material shader.
+    var upper_arch := exp(-pow((y - 0.738) / 0.052, 2.0)) * \
+        smoothstep(0.16, 0.29, x) * (1.0 - smoothstep(0.34, 0.43, x))
+    depth = maxf(0.006, depth - 0.020 * upper_arch)
+    spread -= 0.014 * upper_arch
+    var shoulder_drop := 0.035 * shoulder * smoothstep(0.14, 0.31, x) + \
+        0.018 * upper_arch
     return normal * depth + Vector3(signf(lateral) * spread, -shoulder_drop, 0.0)
 
 func _jacket_material(bounds: AABB) -> ShaderMaterial:
