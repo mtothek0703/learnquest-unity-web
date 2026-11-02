@@ -130,15 +130,15 @@ func _check() -> void:
     var starboard_chine: Vector3 = sculpt.call("_shell_point", 0.25, 7.0 * PI / 10.0)
     var bow_trough: Vector3 = sculpt.call("_shell_point", 0.25, PI * 0.5)
     var aft_chine: Vector3 = sculpt.call("_shell_point", 0.75, 3.0 * PI / 10.0)
-    if port_chine.y - bow_trough.y < 0.065 or \\
-            absf(port_chine.x + starboard_chine.x) > 0.0001 or \\
-            absf(port_chine.y - starboard_chine.y) > 0.0001 or \\
+    if port_chine.y - bow_trough.y < 0.065 or \
+            absf(port_chine.x + starboard_chine.x) > 0.0001 or \
+            absf(port_chine.y - starboard_chine.y) > 0.0001 or \
             port_chine.y - aft_chine.y < 0.065:
         _fail("closed board bow lost its paired 3D chines or central V-channel")
         return
     var actual_chines := 0
     for vertex in points:
-        if vertex.distance_to(port_chine) < 0.0001 or \\
+        if vertex.distance_to(port_chine) < 0.0001 or \
                 vertex.distance_to(starboard_chine) < 0.0001:
             actual_chines += 1
     if actual_chines < 6:
