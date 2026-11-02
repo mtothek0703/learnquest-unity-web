@@ -36,6 +36,13 @@ void fragment() {
     vec3 cloth = mix(midnight, cobalt, 0.28 + torso * 0.52 + thigh * 0.30);
     cloth = mix(cloth, violet, torso * center * 0.68 + thigh * outer * 0.38);
     cloth = mix(cloth, magenta, shoulder * 0.60);
+    // The original four-weight CC0 upper chest was still a saturated violet
+    // inflated-looking collar after the duplicate neck ring was retired.
+    // A matte dark neck-to-clavicle fabric panel now continues beneath the
+    // open V of the real weighted jacket, without hiding the original mesh.
+    float neck_panel = smoothstep(0.705, 0.748, y) *
+        (1.0 - smoothstep(0.810, 0.848, y));
+    cloth = mix(cloth, midnight * 0.82, neck_panel * 0.82);
     cloth = mix(cloth, titanium, boots * 0.70);
     // Real source hands/neck remain visible; the weighted jacket, sleeves and
     // lower suit retain their own modeled surfaces and matching palette.
@@ -62,7 +69,7 @@ void fragment() {
     METALLIC = mix(0.21 + boots * 0.13, 0.02, uncovered);
     ROUGHNESS = mix(0.52 - boots * 0.13 + weave * 0.016 * (1.0 - under_armor)
         - carbon_fiber * 0.018 * under_armor, 0.72, uncovered);
-    EMISSION = vec3(0.04, 0.51, 0.80) * (seams * 0.38 + collar * 0.36)
+    EMISSION = vec3(0.04, 0.51, 0.80) * (seams * 0.38 + collar * 0.12)
         + magenta * knee * 0.12;
     float silhouette_rim = pow(1.0 - abs(dot(normalize(NORMAL), normalize(VIEW))), 2.6);
     ALBEDO = min(ALBEDO * (1.0 + silhouette_rim * 0.18), vec3(1.0));
