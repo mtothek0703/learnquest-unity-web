@@ -155,7 +155,11 @@ func _assemble() -> void:
         if bool(sculpted_board.get("built")):
             old_wing_light.visible = false
         ball(board, Vector3(side * 1.05, 0.38, -0.40), Vector3(0.15, 0.12, 0.22), bright, true)
-    box(board, Vector3(0, 0.46, -0.30), Vector3(0.12, 0.07, 1.6), yellow, true)
+    # Retire the old box-shaped centre marker when the continuous contoured
+    # traction deck exists. Keep the actual node for legacy-board fallback.
+    var old_spine := box(board, Vector3(0, 0.46, -0.30), Vector3(0.12, 0.07, 1.6), yellow, true)
+    old_spine.name = "LegacyCenterSpine"
+    old_spine.visible = not bool(sculpted_board.get("built"))
 
     # A single expanding neon ring celebrates a successful landing.
     # Kept hidden outside the brief landing animation to save mobile GPU work.
@@ -167,13 +171,22 @@ func _assemble() -> void:
     landing_ring = piece(self, shock_mesh, Vector3(0, 0.10, 0), Vector3.ONE, cyan, true)
     landing_ring.name = "Landing shockwave"
     landing_ring.visible = false
-    box(board, Vector3(0, 0.38, -1.24), Vector3(0.82, 0.05, 0.13), yellow, true)
-    box(board, Vector3(0, 0.39, -0.8), Vector3(0.6, 0.06, 0.22), cyan, true)
+    var old_nose_bar := box(board, Vector3(0, 0.38, -1.24), Vector3(0.82, 0.05, 0.13), yellow, true)
+    old_nose_bar.name = "LegacyNoseBar"
+    old_nose_bar.visible = not bool(sculpted_board.get("built"))
+    var old_front_bar := box(board, Vector3(0, 0.39, -0.8), Vector3(0.6, 0.06, 0.22), cyan, true)
+    old_front_bar.name = "LegacyFrontBar"
+    old_front_bar.visible = not bool(sculpted_board.get("built"))
     # Streamlined pointed nose, asymmetric colored panels, two solid rear jet nacelles.
     var nose := PrismMesh.new()
     nose.size = Vector3(1.32, 0.17, 0.73)
     var prow := piece(board, nose, Vector3(0, 0.30, -1.37), Vector3.ONE, suit)
+    prow.name = "LegacyPointedProw"
     prow.rotation_degrees.y = 180
+    # This flat purple prism was larger than the sculpted nose and hid its
+    # genuine paired 3D bow chines in the front camera. The procedural hull
+    # now provides the full closed bow, so draw only one nose at a time.
+    prow.visible = not bool(sculpted_board.get("built"))
     for side in [-1.0, 1.0]:
         var legacy_turbine := thruster(board, Vector3(side * 0.48, 0.17, 1.18), 0.27, navy)
         legacy_turbine.name = "LegacyPortTurbine" if side < 0.0 else "LegacyStarboardTurbine"
@@ -193,7 +206,10 @@ func _assemble() -> void:
         # Preserve them only for the original-board fallback.
         if bool(sculpted_board.get("built")) and sculpted_board.get_node_or_null("BoostWake") != null:
             old_rear_flare.visible = false
-        box(board, Vector3(side * 0.37, 0.43, -0.28), Vector3(0.21, 0.06, 1.32), yellow, true)
+        var old_deck_stripe := box(board, Vector3(side * 0.37, 0.43, -0.28),
+            Vector3(0.21, 0.06, 1.32), yellow, true)
+        old_deck_stripe.name = "LegacyPortDeckStripe" if side < 0.0 else "LegacyStarboardDeckStripe"
+        old_deck_stripe.visible = not bool(sculpted_board.get("built"))
 
     var body := Node3D.new()
     body.name = "Animated racer rig"
