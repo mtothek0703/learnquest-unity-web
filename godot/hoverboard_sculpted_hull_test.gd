@@ -39,6 +39,26 @@ func _check() -> void:
     if points.size() < 3000 or colors.size() != points.size():
         _fail("chassis needs substantial shaded custom geometry")
         return
+    # Paired physical chines must exist in the real GPU chassis triangles,
+    # not merely as a color stripe or an unrendered helper calculation.
+    var left_chine: Vector3 = sculpt.call("_shell_point", 0.25, 3.0 * PI / 10.0)
+    var right_chine: Vector3 = sculpt.call("_shell_point", 0.25, 7.0 * PI / 10.0)
+    var center_trough: Vector3 = sculpt.call("_shell_point", 0.25, PI * 0.5)
+    var aft_chine: Vector3 = sculpt.call("_shell_point", 0.75, 3.0 * PI / 10.0)
+    if left_chine.y - center_trough.y < 0.065 or \
+            absf(left_chine.x + right_chine.x) > 0.0001 or \
+            absf(left_chine.y - right_chine.y) > 0.0001 or \
+            left_chine.y - aft_chine.y < 0.065:
+        _fail("paired raised 3D bow chines or center groove missing")
+        return
+    var actual_chines := 0
+    for vertex in points:
+        if vertex.distance_to(left_chine) < 0.0001 or \
+                vertex.distance_to(right_chine) < 0.0001:
+            actual_chines += 1
+    if actual_chines < 6:
+        _fail("bow chines absent from real render triangles")
+        return
     var nose: float = sculpt.call("_half_width", 0.0)
     var middle: float = sculpt.call("_half_width", 0.52)
     var tail: float = sculpt.call("_half_width", 1.0)
@@ -63,6 +83,21 @@ func _check() -> void:
                     return
     if old_boxes != 2:
         _fail("expected both original central deck boxes to be retired")
+        return
+    # Preserve all original fallback meshes while hiding the six V12 flat
+    # overlays which previously covered the sculpted bow and traction deck.
+    for old_name in ["LegacyPointedProw", "LegacyCenterSpine",
+            "LegacyNoseBar", "LegacyFrontBar", "LegacyPortDeckStripe",
+            "LegacyStarboardDeckStripe"]:
+        var overlay := board.get_node_or_null(old_name) as MeshInstance3D
+        if overlay == null or overlay.mesh == null or overlay.visible:
+            _fail("old flat board overlay must be archived and hidden: " + old_name)
+            return
+        if not (overlay.mesh is BoxMesh or overlay.mesh is PrismMesh):
+            _fail("archived original board fallback was replaced: " + old_name)
+            return
+    if not chassis.visible or not sculpt.get_node("ContouredTractionDeck").visible:
+        _fail("the real 3D chassis and deck must remain visible")
         return
     for side in [-1.0, 1.0]:
         var inner: Vector3 = sculpt.call("_wing_point", side, 0.52, PI)
