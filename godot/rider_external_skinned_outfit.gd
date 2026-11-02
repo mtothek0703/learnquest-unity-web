@@ -431,7 +431,7 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
         0.024 * rear_v - 0.009 * rear_recess
     # Shoulder breadth and pectoral depth follow the actual imported Skin;
     # no rigid shoulder boxes or unweighted cosmetic torso are introduced.
-    var waist_inset := 0.073 * waist * smoothstep(0.12, 0.35, x)
+    var waist_inset := 0.058 * waist * smoothstep(0.12, 0.35, x)
     # Coordinate the fitted jacket edge with the now-tapered source neck
     # and real weighted sleeves. Retain scapular relief while withdrawing
     # the broad lateral jacket shelf; no new mesh or Skin bind is introduced.
