@@ -166,6 +166,18 @@ func _check() -> void:
         Vector3(0.45, 1.5, 0.43), Vector3.RIGHT, sample_bounds, Vector2(1.0, 0.96))
     var shoulder_back: Vector3 = controller.call("_sculpt_offset",
         Vector3(0.45, 1.5, -0.43), Vector3.RIGHT, sample_bounds, Vector2(1.0, 0.96))
+    # The real source-skinned shoulder cap must slope down from the neck
+    # toward the outer arm, not merely shrink its horizontal silhouette.
+    var inner_shoulder: Vector3 = controller.call("_sculpt_offset",
+        Vector3(0.16, 1.5, 0.0), Vector3.RIGHT, sample_bounds, Vector2(1.0, 0.96))
+    var outer_shoulder: Vector3 = controller.call("_sculpt_offset",
+        Vector3(0.45, 1.5, 0.0), Vector3.RIGHT, sample_bounds, Vector2(1.0, 0.96))
+    var mirrored_outer: Vector3 = controller.call("_sculpt_offset",
+        Vector3(-0.45, 1.5, 0.0), Vector3.LEFT, sample_bounds, Vector2(1.0, 0.96))
+    if inner_shoulder.y - outer_shoulder.y < 0.015 or \
+            absf(outer_shoulder.y - mirrored_outer.y) > 0.001:
+        _fail("weighted deltoid must descend toward the outer arm on both sides")
+        return
     # Old 0.09-m weighted cap still masked the improved original CC0
     # deltoid in real front/chase QA. Require a visibly slimmer rounded cap.
     if shoulder_shape.x < 0.033 or shoulder_shape.x > 0.048 or \
