@@ -100,7 +100,7 @@ func _check() -> void:
         Vector3(-0.42, 2.205, 0.30), forward, test_bounds)
     var central_neck: Vector3 = outfit.call("_tailored_offset",
         Vector3(0.04, 2.205, 0.30), forward, test_bounds)
-    if outer_slope.y > -0.022 or absf(outer_slope.y - opposite_slope.y) > 0.001 or \\
+    if outer_slope.y > -0.022 or absf(outer_slope.y - opposite_slope.y) > 0.001 or \
             absf(central_neck.y) > 0.001:
         _fail("weighted jacket shoulder must slope bilaterally without dropping central neckline")
         return
