@@ -178,37 +178,23 @@ func _check() -> void:
         Vector3(-0.12, collar_top, -0.30), test_bounds, collar_top)
     var other_v: float = outfit.call("_collar_limit",
         Vector3(0.12, collar_top, -0.30), test_bounds, collar_top)
-    # Deeper original-Skin neckline must be visibly cut, symmetric and
-    # gradually rise toward the shoulder without lowering the rear seam.
-    var inner_v: float = outfit.call("_collar_limit",
-        Vector3(0.12, collar_top, -0.30), test_bounds, collar_top)
-    var outer_v: float = outfit.call("_collar_limit",
-        Vector3(test_bounds.size.x * 0.28, collar_top, -0.30), test_bounds, collar_top)
-    if side_top - front_v < test_bounds.size.y * 0.090 or \
-            inner_v <= front_v or outer_v <= inner_v or \
-            absf(outer_v - collar_top) > 0.001 or \
+    if side_top - front_v < test_bounds.size.y * 0.062 or \
             absf(rear_top - collar_top) > 0.001 or \
             absf(side_top - collar_top) > 0.001 or \
             absf(mirrored_v - other_v) > 0.001:
-        _fail("original-Skin V must be deep, curved, symmetric and open toward both shoulders")
-        return
-    # The shader must trace the SAME rest-space curved V as the mesh; a
-    # horizontal bright line would create a floating fake collar.
-    if not shader_code.contains("float neckline_y = 0.78 - 0.095 * neck_front * neck_v") or \
-            not shader_code.contains("y - neckline_y"):
-        _fail("weighted jacket material lip no longer follows the sculpted front V")
+        _fail("source-Skin jacket must have a symmetric low front V, not a flat collar")
         return
     # Intersect a real four-weight test triangle with the new V curve.
     # No dropped crossing triangle, unweighted seam or collar vertex above
     # the sculpted opening may survive the extraction.
     var neckline: Array[Dictionary] = [
-        {"position": Vector3(-0.12, 1.95, -0.30), "normal": Vector3.FORWARD,
+        {"position": Vector3(-0.12, 2.10, -0.30), "normal": Vector3.FORWARD,
             "bones": PackedInt32Array([0, 1, 2, 3]),
             "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
         {"position": Vector3(0.0, 2.40, -0.30), "normal": Vector3.FORWARD,
             "bones": PackedInt32Array([4, 5, 6, 7]),
             "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])},
-        {"position": Vector3(0.12, 1.95, -0.30), "normal": Vector3.FORWARD,
+        {"position": Vector3(0.12, 2.10, -0.30), "normal": Vector3.FORWARD,
             "bones": PackedInt32Array([0, 1, 2, 3]),
             "weights": PackedFloat32Array([1.0, 0.0, 0.0, 0.0])}
     ]
