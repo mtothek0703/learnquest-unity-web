@@ -92,17 +92,20 @@ func _check() -> void:
     # At actual mobile camera distance the previous thin CC0 jacket lost
     # its pectoral/deltoid silhouette. Check the new three-dimensional
     # athletic V-shape, not just a cosmetic color change.
-    if chest.z < 0.09 or shoulder.z < 0.065 or shoulder.x < 0.035:
-        _fail("original-skinned torso lost the fuller chest/deltoid V silhouette")
+    # The joint neck/jacket/sleeve pass deliberately withdraws the broad
+    # lateral cap. Retain measurable 3D shoulder relief without requiring
+    # the previous toy-like horizontal shelf.
+    if chest.z < 0.09 or shoulder.z < 0.065 or shoulder.x < 0.018:
+        _fail("original-skinned torso lost the fitted chest/deltoid V silhouette")
         return
     # Keep the weighted 3D V-shape without recreating oversized deltoid
     # wings in the 1280x720 and 1170x540 chase camera.
     # The previous sculpt measured ~0.0575 in this fixed CC0 rest pose.
     # Reject that broad toy-like shoulder while retaining the genuine V.
-    if shoulder.x > 0.052:
+    if shoulder.x > 0.033:
         _fail("weighted jacket shoulder has regressed to the wide pre-tailoring silhouette")
         return
-    if opposite.x > -0.035 or absf(shoulder.x + opposite.x) > 0.002:
+    if opposite.x > -0.018 or absf(shoulder.x + opposite.x) > 0.002:
         _fail("weighted shoulder expansion must be balanced on both sides")
         return
     # The rear silhouette must be visibly different in the actual chase
@@ -122,11 +125,11 @@ func _check() -> void:
         _fail("rear skinned jacket relief produced nonfinite vertices")
         return
     if dorsal_offset.z < absf(ventral_offset.z) + 0.045 or \
-            dorsal_offset.x < ventral_offset.x + 0.018:
+            dorsal_offset.x < ventral_offset.x + 0.009:
         _fail("rear scapular relief and broad shoulder contour are not geometric")
         return
     # Rearward shoulder spread was ~0.0837 before this tapered trial.
-    if dorsal_offset.x > 0.072:
+    if dorsal_offset.x > 0.060:
         _fail("rear weighted scapula silhouette regressed to the broad profile")
         return
     if absf(dorsal_offset.x + opposite_dorsal.x) > 0.001 or \
