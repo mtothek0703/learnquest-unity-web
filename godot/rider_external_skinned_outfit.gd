@@ -181,7 +181,7 @@ func _collar_limit(point: Vector3, bounds: AABB, top_y: float) -> float:
         (center.z - point.z) / maxf(bounds.size.z, 0.001))
     var lateral := absf(point.x - center.x) / maxf(bounds.size.x, 0.001)
     var center_v := 1.0 - smoothstep(0.055, 0.23, lateral)
-    return top_y - bounds.size.y * 0.068 * front * center_v
+    return top_y - bounds.size.y * 0.105 * front * center_v
 
 # Clip source triangles against the curved front-V collar boundary while
 # interpolating their ORIGINAL four Skin influences, as at the waist seams.
@@ -425,7 +425,7 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     # the genuine sculpted chest and scapula relief, but pull the four-weight
     # jacket closer to the original athletic body (no rigid substitute).
     var depth := 0.012 + 0.055 * chest + 0.032 * shoulder + \
-        0.043 * chest_ridge + 0.027 * collar + 0.049 * pectoral + \
+        0.043 * chest_ridge + 0.012 * collar + 0.049 * pectoral + \
         0.025 * deltoid + 0.015 * spine_keel + \
         0.043 * scapula + 0.018 * dorsal_shoulder + 0.016 * spine_channel + \
         0.024 * rear_v - 0.009 * rear_recess
