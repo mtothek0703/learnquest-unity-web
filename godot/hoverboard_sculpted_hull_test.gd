@@ -123,6 +123,27 @@ func _check() -> void:
     if upper_luminance < 0.10:
         _fail("smooth chassis top lost its readable vertex color")
         return
+    # The actual closed chassis now carries two mirrored, raised 3D bow
+    # chines with a recessed center trough. A simple color change or a
+    # separate decorative mesh cannot satisfy this geometry regression.
+    var port_chine: Vector3 = sculpt.call("_shell_point", 0.25, 3.0 * PI / 10.0)
+    var starboard_chine: Vector3 = sculpt.call("_shell_point", 0.25, 7.0 * PI / 10.0)
+    var bow_trough: Vector3 = sculpt.call("_shell_point", 0.25, PI * 0.5)
+    var aft_chine: Vector3 = sculpt.call("_shell_point", 0.75, 3.0 * PI / 10.0)
+    if port_chine.y - bow_trough.y < 0.065 or \\
+            absf(port_chine.x + starboard_chine.x) > 0.0001 or \\
+            absf(port_chine.y - starboard_chine.y) > 0.0001 or \\
+            port_chine.y - aft_chine.y < 0.065:
+        _fail("closed board bow lost its paired 3D chines or central V-channel")
+        return
+    var actual_chines := 0
+    for vertex in points:
+        if vertex.distance_to(port_chine) < 0.0001 or \\
+                vertex.distance_to(starboard_chine) < 0.0001:
+            actual_chines += 1
+    if actual_chines < 6:
+        _fail("bow chines are not present in the actual GPU chassis triangles")
+        return
     var nose: float = sculpt.call("_half_width", 0.0)
     var middle: float = sculpt.call("_half_width", 0.52)
     var tail: float = sculpt.call("_half_width", 1.0)
