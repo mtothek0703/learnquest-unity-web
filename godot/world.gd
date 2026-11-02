@@ -1409,6 +1409,9 @@ func _register_near_miss(hazard_x: float) -> void:
     elif near_miss_streak == 2:
         info_label.text = "HAARSCHARF 2/3! NAECHSTE BARRIERE ANDERE SEITE"
         feedback_time = 1.5
+    else:
+        info_label.text = "HAARSCHARF 1/3! WECHSLE DIE AUSWEICHSEITE"
+        feedback_time = 1.2
 
 func _update_near_miss_pulse(delta: float) -> void:
     near_miss_pulse = maxf(0.0, near_miss_pulse - maxf(delta, 0.0))
