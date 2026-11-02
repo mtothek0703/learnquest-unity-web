@@ -107,6 +107,11 @@ func _capture() -> void:
             source_body.skin == null or fitted_jacket.skin != source_body.skin:
         _fail("collar isolation requires original CC0 Skin and fitted jacket")
         return
+    var jacket_shader := fitted_jacket.material_override as ShaderMaterial
+    if jacket_shader == null or jacket_shader.shader == null or \
+            not jacket_shader.shader.code.contains("qa_upper_jacket_mode"):
+        _fail("upper-jacket diagnostic requires the original four-weight jacket shader")
+        return
     var count := 0
     for size in SIZES:
         viewport.size = size
@@ -134,11 +139,20 @@ func _capture() -> void:
             # are responsible for the toy-like rear silhouette.
             var compact_board_frame: Image
             for variant in ["before", "after", "after_no_mantle", "after_with_thrusters",
-                    "after_no_source", "after_no_jacket", "after_original_board"]:
+                    "after_no_source", "after_no_jacket", "after_upper_jacket_only",
+                    "after_without_upper_jacket", "after_original_board"]:
                 old.visible = variant == "before"
                 hero.visible = variant != "before"
                 source_body.visible = variant != "after_no_source"
                 fitted_jacket.visible = variant != "after_no_jacket"
+                # Both modes use the SAME original Skin, pose and camera. Only
+                # fragment visibility changes; this is not a game costume edit.
+                var isolation_mode := 0
+                if variant == "after_upper_jacket_only":
+                    isolation_mode = 1
+                elif variant == "after_without_upper_jacket":
+                    isolation_mode = 2
+                jacket_shader.set_shader_parameter("qa_upper_jacket_mode", isolation_mode)
                 board.scale = Vector3.ONE if variant in ["before", "after_original_board"] else Vector3(0.80, 1.0, 0.90)
                 for mesh in mantle_meshes:
                     mesh.visible = variant != "after_no_mantle"
@@ -185,8 +199,9 @@ func _capture() -> void:
                 count += 1
     source_body.visible = true
     fitted_jacket.visible = true
-    if count != 84:
-        _fail("expected 84 actual paired, source/jacket-isolated and board-footprint landscape images")
+    jacket_shader.set_shader_parameter("qa_upper_jacket_mode", 0)
+    if count != 108:
+        _fail("expected 108 actual paired, upper-jacket-isolated and board-footprint landscape images")
         return
-    print("QUATERNIUS VISUAL QA PASSED: 84 pose-locked V123/V124, source/jacket-isolated, compact-board and costume PNGs (manual quality review still required)")
+    print("QUATERNIUS VISUAL QA PASSED: 108 pose-locked V123/V124, source/jacket/upper-collar-isolated, compact-board and costume PNGs (manual quality review still required)")
     quit(0)

@@ -4,6 +4,9 @@ render_mode cull_back, diffuse_burley, specular_schlick_ggx;
 uniform float action_boost : hint_range(0.0, 1.0) = 0.0;
 uniform float action_carve : hint_range(-1.0, 1.0) = 0.0;
 uniform float action_jump : hint_range(0.0, 1.0) = 0.0;
+// QA-only fragment isolation: default 0 leaves the actual suit unchanged.
+// 1 renders the upper collar region; 2 removes it in matched camera frames.
+uniform int qa_upper_jacket_mode = 0;
 
 
 // V124: readable, anatomically aligned chest/shoulder panels on the actual
@@ -25,6 +28,12 @@ void fragment() {
     // cobalt side panels, defined V-yoke and luminous cyan spine. This avoids
     // the previous undifferentiated violet chest in mobile chase/front views.
     float y = clamp((rest_vertex.y - rest_bottom) / max(rest_height, 0.001), 0.0, 1.0);
+    if (qa_upper_jacket_mode == 1 && y < 0.735) {
+        discard;
+    }
+    if (qa_upper_jacket_mode == 2 && y >= 0.735) {
+        discard;
+    }
     float x = abs(rest_vertex.x - rest_center_x) / max(rest_width, 0.001);
     float torso = smoothstep(0.45, 0.53, y) * (1.0 - smoothstep(0.75, 0.79, y));
     float center_armor = 1.0 - smoothstep(0.11, 0.23, x);
