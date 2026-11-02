@@ -10,8 +10,8 @@ The previous two experiments showed that narrowing the source deltoid alone and 
 - Tighten source/sleeve geometry regression thresholds; no release metadata or immutable archive paths touched.
 
 ## Acceptance / hold
-- [ ] Godot PR CI (full headless gameplay, source/sleeve/jacket regression, Web export) successful for this exact commit.
-- [ ] Inspect same-pose 1280×720 and 1170×540 chase/front frames, including the source-only control; a pixel difference alone does not prove better quality.
+- [x] Full Godot PR CI [41366169243](https://github.com/mtothek0703/learnquest-unity-web/actions/runs/41366169243) completed/success for code commit b9a682f7, including headless gameplay, 65-bone regressions, Web export and 108 original-skin layer frames.
+- [x] Compared 108 previous and 108 new original Godot PNGs in both phone landscape ratios. At max RGB difference >25: complete 1280×720 chase 6,677 pixels (0.725%), front 2,368 (0.257%); source-only chase 968 (0.105%); weighted-sleeve-only chase 1,551 (0.168%). Overall change remains modest; **no visual approval**. The awkward high hand position and broad neck silhouette persist.
 - [ ] Manually check all-pose clipping, iPhone Safari FPS and three English questions followed by a full touch-controlled round.
 - [ ] Only merge if the **complete** character/hoverboard is demonstrably better; otherwise retain PR #111 as DRAFT/VISUAL HOLD. No V151 or other release number is reserved.
 
