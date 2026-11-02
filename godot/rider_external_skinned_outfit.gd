@@ -179,7 +179,7 @@ func _collar_limit(point: Vector3, bounds: AABB, top_y: float) -> float:
         (center.z - point.z) / maxf(bounds.size.z, 0.001))
     var lateral := absf(point.x - center.x) / maxf(bounds.size.x, 0.001)
     var center_v := 1.0 - smoothstep(0.055, 0.23, lateral)
-    return top_y - bounds.size.y * 0.052 * front * center_v
+    return top_y - bounds.size.y * 0.068 * front * center_v
 
 # Clip source triangles against the curved front-V collar boundary while
 # interpolating their ORIGINAL four Skin influences, as at the waist seams.
@@ -198,10 +198,21 @@ func _clip_to_collar(polygon: Array[Dictionary], bounds: AABB,
         var previous_inside := previous_distance <= 0.0
         var current_inside := current_distance <= 0.0
         if previous_inside != current_inside:
-            var difference := previous_distance - current_distance
-            if absf(difference) > 0.0000001:
-                clipped.append(_interpolate_corner(previous, current,
-                    clampf(previous_distance / difference, 0.0, 1.0)))
+            # The V boundary curves across both X and Z. Linear interpolation
+            # of endpoint distances can leave jagged edges above the neckline.
+            # Solve the actual curved crossing in rest space, retaining the
+            # original four Skin weights at the interpolated vertex.
+            var low := 0.0
+            var high := 1.0
+            for iteration in range(16):
+                var middle := (low + high) * 0.5
+                var midpoint := previous_point.lerp(current_point, middle)
+                var middle_inside := midpoint.y <= _collar_limit(midpoint, bounds, top_y)
+                if middle_inside == previous_inside:
+                    low = middle
+                else:
+                    high = middle
+            clipped.append(_interpolate_corner(previous, current, (low + high) * 0.5))
         if current_inside:
             clipped.append(current)
         previous = current
