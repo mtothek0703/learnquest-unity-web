@@ -138,7 +138,10 @@ func _assemble() -> void:
         if bool(sculpted_board.get("built")):
             old_wing_light.visible = false
         ball(board, Vector3(side * 1.05, 0.38, -0.40), Vector3(0.15, 0.12, 0.22), bright, true)
-    box(board, Vector3(0, 0.46, -0.30), Vector3(0.12, 0.07, 1.6), yellow, true)
+    # Keep the original box marker as fallback, but expose the sculpted deck.
+    var old_spine := box(board, Vector3(0, 0.46, -0.30), Vector3(0.12, 0.07, 1.6), yellow, true)
+    old_spine.name = "LegacyCenterSpine"
+    old_spine.visible = not bool(sculpted_board.get("built"))
 
     # A single expanding neon ring celebrates a successful landing.
     # Kept hidden outside the brief landing animation to save mobile GPU work.
@@ -150,20 +153,31 @@ func _assemble() -> void:
     landing_ring = piece(self, shock_mesh, Vector3(0, 0.10, 0), Vector3.ONE, cyan, true)
     landing_ring.name = "Landing shockwave"
     landing_ring.visible = false
-    box(board, Vector3(0, 0.38, -1.24), Vector3(0.82, 0.05, 0.13), yellow, true)
-    box(board, Vector3(0, 0.39, -0.8), Vector3(0.6, 0.06, 0.22), cyan, true)
+    var old_nose_bar := box(board, Vector3(0, 0.38, -1.24), Vector3(0.82, 0.05, 0.13), yellow, true)
+    old_nose_bar.name = "LegacyNoseBar"
+    old_nose_bar.visible = not bool(sculpted_board.get("built"))
+    var old_front_bar := box(board, Vector3(0, 0.39, -0.8), Vector3(0.6, 0.06, 0.22), cyan, true)
+    old_front_bar.name = "LegacyFrontBar"
+    old_front_bar.visible = not bool(sculpted_board.get("built"))
     # Streamlined pointed nose, asymmetric colored panels, two solid rear jet nacelles.
     var nose := PrismMesh.new()
     nose.size = Vector3(1.32, 0.17, 0.73)
     var prow := piece(board, nose, Vector3(0, 0.30, -1.37), Vector3.ONE, suit)
+    prow.name = "LegacyPointedProw"
     prow.rotation_degrees.y = 180
+    # The flat V12 prism used to hide the real 3D bow from the front camera.
+    # Keep it for fallback only when the continuous hull failed to build.
+    prow.visible = not bool(sculpted_board.get("built"))
     for side in [-1.0, 1.0]:
         thruster(board, Vector3(side * 0.48, 0.17, 1.18), 0.27, navy)
         var old_outer_panel := box(board, Vector3(side * 0.92, 0.37, -0.35), Vector3(0.35, 0.08, 1.30), bright, true)
         if bool(sculpted_board.get("built")):
             old_outer_panel.visible = false
         ball(board, Vector3(side * 0.48, 0.17, 1.62), Vector3(0.20, 0.22, 0.34), cyan, true)
-        box(board, Vector3(side * 0.37, 0.43, -0.28), Vector3(0.21, 0.06, 1.32), yellow, true)
+        var old_deck_stripe := box(board, Vector3(side * 0.37, 0.43, -0.28),
+            Vector3(0.21, 0.06, 1.32), yellow, true)
+        old_deck_stripe.name = "LegacyPortDeckStripe" if side < 0.0 else "LegacyStarboardDeckStripe"
+        old_deck_stripe.visible = not bool(sculpted_board.get("built"))
 
     var body := Node3D.new()
     body.name = "Animated racer rig"
