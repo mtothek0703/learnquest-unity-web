@@ -75,6 +75,13 @@ func _check() -> void:
     var foot := Vector3(center.x + x, bounds.position.y + bounds.size.y * 0.10, center.z)
     var chest_after: Vector3 = sculpt.call("_reshape", chest, bounds)
     var waist_after: Vector3 = sculpt.call("_reshape", waist, bounds)
+    # The new athletic source chest must be materially closer to the CC0
+    # imported rest mesh in both axes, not merely recolored or covered up.
+    # Former 15%/12% pectoral inflation exceeds these conservative bounds.
+    if chest_after.x - chest.x > bounds.size.x * 0.012 or \
+            chest_after.z - chest.z > bounds.size.z * 0.015:
+        _fail("original source chest still has inflated toy-like pectoral volume")
+        return
     if chest_after.x <= chest.x + 0.015 or waist_after.x >= waist.x - 0.008:
         _fail("sculpt must create athletic chest-to-waist taper on original triangles")
         return

@@ -86,16 +86,20 @@ func _reshape(point: Vector3, bounds: AABB) -> Vector3:
     var outer_deltoid := smoothstep(0.24, 0.42, side) * (
         1.0 - smoothstep(0.80, 0.98, side))
     var shoulder_taper := upper_shoulder * outer_deltoid
-    # Athletic silhouette pass: remove inflated hips/thighs and reduce the\n    # broad upper chest, while preserving the continuous imported skin.\n    # Original CC0 deltoids are already broad. The previous extra 24% swell
+    # Athletic silhouette pass: remove inflated hips/thighs and reduce the\n    # broad upper chest, while preserving the continuous imported skin.\n    # The actual 1280x720 source-only images showed an inflated pectoral
+    # volume even after all redundant armor shells were retired. Reduce the
+    # imported Skin's central chest expansion in X (15% -> 7%) and depth
+    # (12% -> 6%), leaving arm/hand/head/foot vertices and Skin binds intact.
+    # Original CC0 deltoids are already broad. The previous extra 24% swell
     # created a horizontal inflated shoulder bar even with the collar hidden.
     # Keep the chest athletic while letting the original arm bones read clearly.
-    var width_scale := 1.0 + torso * (0.15 * chest + 0.015 * shoulder -
+    var width_scale := 1.0 + torso * (0.07 * chest + 0.015 * shoulder -
         0.12 * waist + 0.035 * hip) - leg * 0.025 * thigh
     # The original outer shoulder/upper arm now contracts by up to 19% in
     # width and 7.5% in depth, fading before the hands and below the armpit.
     # Existing chest/waist tailoring and all gameplay physics are untouched.
     width_scale -= 0.19 * shoulder_taper
-    var depth_scale := 1.0 + torso * (0.12 * chest + 0.020 * shoulder -
+    var depth_scale := 1.0 + torso * (0.06 * chest + 0.020 * shoulder -
         0.07 * waist + 0.03 * hip) - leg * 0.012 * thigh
     depth_scale -= 0.075 * shoulder_taper
     var center := bounds.get_center()
