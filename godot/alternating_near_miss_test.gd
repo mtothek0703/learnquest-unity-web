@@ -136,6 +136,12 @@ func _check() -> void:
     if bool(game.get("near_miss_mastery")) or int(game.get("near_miss_streak")) != 0 or ring.visible or arcs[0].visible:
         _fail("new full race did not reset the near-miss challenge")
         return
+    # The three flawless English answers grant a legitimate launch Turbo.
+    # Let that ability expire before measuring a ground-level near miss.
+    game.set("turbo_left", 0.0)
+    game.set("shield_left", 0.0)
+    game.set("attack_left", 0.0)
+    game.set("hit_cooldown", 0.0)
     # Leaving a partially completed run must not leave glowing board arcs
     # visible behind the result panel.
     _pass(game, hazards[0], -3.1, 0.0)
