@@ -160,6 +160,25 @@ func _check() -> void:
             absf(dorsal_offset.z - opposite_dorsal.z) > 0.001:
         _fail("rear jacket sculpt must remain mirrored on the same original Skin")
         return
+    # Rear chase silhouette: the same original four-weight jacket now has
+    # a real descending V-tail, not a horizontal shader stripe. Verify
+    # measurable spine-to-hip geometry, bilateral symmetry, and an unchanged
+    # front waist at the identical rest-space sample height.
+    var hem_y := test_bounds.position.y + test_bounds.size.y * 0.445
+    var hem_center_back: Vector3 = outfit.call("_tailored_offset",
+        Vector3(0.0, hem_y, 0.30), Vector3.BACK, test_bounds)
+    var hem_hip_back: Vector3 = outfit.call("_tailored_offset",
+        Vector3(0.36, hem_y, 0.30), Vector3.BACK, test_bounds)
+    var hem_center_front: Vector3 = outfit.call("_tailored_offset",
+        Vector3(0.0, hem_y, -0.30), Vector3.FORWARD, test_bounds)
+    var hem_mirror_back: Vector3 = outfit.call("_tailored_offset",
+        Vector3(-0.36, hem_y, 0.30), Vector3.BACK, test_bounds)
+    if hem_center_back.y > -test_bounds.size.y * 0.030 or \
+            hem_hip_back.y - hem_center_back.y < test_bounds.size.y * 0.025 or \
+            absf(hem_hip_back.y - hem_mirror_back.y) > 0.0001 or \
+            absf(hem_center_front.y) > 0.0001:
+        _fail("original-skinned rear V-tail must descend at spine, taper to mirrored hips and spare front")
+        return
     var waist_point := Vector3(0.34, 1.44, -0.30)
     var rear_waist: Vector3 = outfit.call("_tailored_offset",
         waist_point, rear_normal, test_bounds)
