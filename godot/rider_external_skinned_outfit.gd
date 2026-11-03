@@ -463,7 +463,17 @@ func _tailored_offset(point: Vector3, normal: Vector3, bounds: AABB) -> Vector3:
     spread -= 0.014 * upper_arch
     var shoulder_drop := 0.035 * shoulder * smoothstep(0.14, 0.31, x) + \
         0.018 * upper_arch
-    return normal * depth + Vector3(signf(lateral) * spread, -shoulder_drop, 0.0)
+    # Sculpt a continuous, rear-facing V-tail into the EXISTING weighted
+    # jacket surface. The hem descends at the spine and rises smoothly to
+    # both hips; front panels and the original 65-bone source remain intact.
+    # This replaces the flat toy-like rear waistline without adding meshes,
+    # materials, draw calls, collision shapes or mobile touch inputs.
+    var hem_band := exp(-pow((y - 0.445) / 0.045, 2.0))
+    var hem_center := exp(-pow(lateral / 0.14, 2.0))
+    var rear_facing := smoothstep(0.25, 0.78, normal.z)
+    var hem_drop := bounds.size.y * 0.035 * hem_band * hem_center * rear_facing
+    return normal * depth + Vector3(signf(lateral) * spread,
+        -shoulder_drop - hem_drop, 0.0)
 
 func _jacket_material(bounds: AABB) -> ShaderMaterial:
     var material := ShaderMaterial.new()
