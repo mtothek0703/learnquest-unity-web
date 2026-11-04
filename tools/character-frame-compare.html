@@ -13,13 +13,14 @@ label{display:grid;gap:.35rem}input{max-width:240px}button,select{background:#26
 small{color:#bac5e1}.labels{display:flex;justify-content:space-between;margin:.5rem 0}
 </style></head><body>
 <header><h1>LearnQuest – A/B-Rendervergleich</h1><small>Nur lokale Dateien · kein Upload</small></header>
-<p>Vergleiche dieselbe Kamera, Pose und Szene bei 16:9 oder 19,5:9. Links der Trennlinie erscheint Alt, rechts Neu. Mit „Nur Alt anzeigen“ lässt sich die Referenz ohne Überblendung kontrollieren (Escape beendet die Einzelansicht). Dies ist ein Sichtprüfwerkzeug, keine automatische Qualitätsfreigabe.</p>
+<p>Vergleiche dieselbe Kamera, Pose und Szene bei 16:9 oder 19,5:9. Links der Trennlinie erscheint Alt, rechts Neu. Mit „Nur Alt anzeigen“ und „Nur Neu anzeigen“ lassen sich beide Aufnahmen ohne Überblendung kontrollieren (Escape beendet die Einzelansicht). Dies ist ein Sichtprüfwerkzeug, keine automatische Qualitätsfreigabe.</p>
 <div class="controls">
 <label>Referenzbild (alt)<input id="oldFile" type="file" accept="image/png,image/jpeg,image/webp"></label>
 <label>Prüfbild (neu)<input id="newFile" type="file" accept="image/png,image/jpeg,image/webp"></label>
 <label>Bildformat<select id="ratio"><option value="16/9">16:9</option><option value="19.5/9">19,5:9</option></select></label>
 <button id="reset" type="button">Mitte</button>
 <button id="toggle" type="button" aria-pressed="false">Nur Alt anzeigen</button>
+<button id="toggleNew" type="button" aria-pressed="false">Nur Neu anzeigen</button>
 </div>
 <div class="labels"><span>Alt</span><span>Neu</span></div>
 <div class="viewport" id="viewport"><img id="old" alt="Alte Referenzaufnahme"><img id="new" alt="Neue Vergleichsaufnahme"><div class="divider" id="divider"></div></div>
@@ -45,16 +46,27 @@ for(const which of ['old','new']){
  $(which).addEventListener('load',()=>{dimensions[which]=[$(which).naturalWidth,$(which).naturalHeight];checkDimensions();});
  $(which).addEventListener('error',()=>{dimensions[which]=null;checkDimensions();$('status').textContent='Bild konnte nicht geladen werden.';});
 }
-let showingOldOnly=false;
-function setOldOnly(enabled){showingOldOnly=enabled;$('new').style.visibility=enabled?'hidden':'visible';$('divider').style.visibility=enabled?'hidden':'visible';$('toggle').setAttribute('aria-pressed',String(enabled));$('toggle').textContent=enabled?'Vergleich anzeigen':'Nur Alt anzeigen';}
-function setPosition(value){const n=Math.max(0,Math.min(100,Number(value)));$('new').style.clipPath='inset(0 0 0 '+n+'%)';$('divider').style.left=n+'%';$('percent').textContent=n+' %';}
+let singleView='compare';
+function setSingleView(view){
+ singleView=view;
+ $('old').style.visibility=view==='new'?'hidden':'visible';
+ $('new').style.visibility=view==='old'?'hidden':'visible';
+ $('new').style.clipPath=view==='new'?'none':'inset(0 0 0 '+$('range').value+'%)';
+ $('divider').style.visibility=view==='compare'?'visible':'hidden';
+ $('toggle').setAttribute('aria-pressed',String(view==='old'));
+ $('toggleNew').setAttribute('aria-pressed',String(view==='new'));
+ $('toggle').textContent=view==='old'?'Vergleich anzeigen':'Nur Alt anzeigen';
+ $('toggleNew').textContent=view==='new'?'Vergleich anzeigen':'Nur Neu anzeigen';
+}
+function setPosition(value){const n=Math.max(0,Math.min(100,Number(value)));if(singleView==='compare')$('new').style.clipPath='inset(0 0 0 '+n+'%)';$('divider').style.left=n+'%';$('percent').textContent=n+' %';}
 function moveDivider(event){const bounds=$('viewport').getBoundingClientRect();if(!bounds.width)return;const percent=Math.max(0,Math.min(100,100*(event.clientX-bounds.left)/bounds.width));$('range').value=String(Math.round(percent));setPosition(percent);}
 $('viewport').addEventListener('pointerdown',event=>{if(event.button!==0&&event.pointerType==='mouse')return;$('viewport').setPointerCapture(event.pointerId);moveDivider(event);});
 $('viewport').addEventListener('pointermove',event=>{if($('viewport').hasPointerCapture(event.pointerId))moveDivider(event);});
 $('range').addEventListener('input',e=>setPosition(e.target.value));
 $('reset').addEventListener('click',()=>{$('range').value=50;setPosition(50);});
-$('toggle').addEventListener('click',()=>setOldOnly(!showingOldOnly));
-document.addEventListener('keydown',event=>{if(event.key==='Escape'&&showingOldOnly)setOldOnly(false);});
+$('toggle').addEventListener('click',()=>setSingleView(singleView==='old'?'compare':'old'));
+$('toggleNew').addEventListener('click',()=>setSingleView(singleView==='new'?'compare':'new'));
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&singleView!=='compare')setSingleView('compare');});
 $('ratio').addEventListener('change',e=>{$('viewport').style.aspectRatio=e.target.value;checkDimensions();});
 function load(which,file){if(urls[which])URL.revokeObjectURL(urls[which]);urls[which]=null;dimensions[which]=null;$(which).removeAttribute('src');checkDimensions();
 if(!file)return;if(!file.type.startsWith('image/')){$('status').textContent='Bitte eine Bilddatei auswählen.';return;}
