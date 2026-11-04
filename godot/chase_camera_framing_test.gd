@@ -49,7 +49,7 @@ func _run() -> void:
             if center.x < float(size.x) * 0.16 or center.x > float(size.x) * 0.84:
                 _fail("rider lane %d falls outside landscape safe area %s" % [lane, str(size)])
                 return
-            if camera.is_position_behind(rider.global_position):
+            # Project both ends of the rider into the real viewport, not just its center.\n            # This catches off-screen clipping that a camera-distance assertion misses.\n            var head_screen := camera.unproject_position(rider.global_position + Vector3(0.0, 3.5, 0.0))\n            var deck_screen := camera.unproject_position(rider.global_position + Vector3(0.0, 0.0, 0.0))\n            if head_screen.y < 0.0 or deck_screen.y > float(size.y):\n                _fail("rider/board vertical framing clipped in lane %d at %s" % [lane, str(size)])\n                return\n            if camera.is_position_behind(rider.global_position):
                 _fail("rider is behind chase camera")
                 return
             game.set("turbo_left", 4.0)
