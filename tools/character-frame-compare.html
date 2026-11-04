@@ -24,18 +24,33 @@ small{color:#bac5e1}.labels{display:flex;justify-content:space-between;margin:.5
 <div class="viewport" id="viewport"><img id="old" alt="Alte Referenzaufnahme"><img id="new" alt="Neue Vergleichsaufnahme"><div class="divider" id="divider"></div></div>
 <label for="range">Überblendungsgrenze: <output id="percent">50 %</output></label>
 <input id="range" type="range" min="0" max="100" value="50" aria-label="Vergleichsgrenze verschieben">
+<p id="dimensions" aria-live="polite">Bildabmessungen: noch nicht geladen.</p>
 <p id="status" role="status">Bitte zwei Bilder auswählen. Für gültige Aussagen müssen Perspektive, Auflösung, Pose und Beleuchtung vergleichbar sein.</p>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
 const urls={old:null,new:null};
+const dimensions={old:null,new:null};
+function checkDimensions(){
+ const a=dimensions.old,b=dimensions.new;
+ $('dimensions').textContent='Abmessungen: alt '+(a?a.join(' × '):'–')+' | neu '+(b?b.join(' × '):'–');
+ if(!a||!b){$('status').textContent='Beide Bilder laden, bevor eine visuelle Bewertung möglich ist.';return;}
+ if(a[0]!==b[0]||a[1]!==b[1]){$('status').textContent='WARNUNG: Unterschiedliche Bildabmessungen. Gleiche Kamera, Auflösung und Bildausschnitte herstellen; Vergleich nicht freigeben.';return;}
+ const aspect=a[0]/a[1],selected=$('ratio').value==='16/9'?16/9:19.5/9;
+ if(Math.abs(aspect-selected)>0.03){$('status').textContent='WARNUNG: Bildformat weicht vom gewählten Querformat ab. Bitte Format prüfen.';return;}
+ $('status').textContent='Abmessungen stimmen überein. Jetzt Clipping, Silhouette, Hoverboard und HUD-Freiraum manuell prüfen; keine automatische Freigabe.';
+}
+for(const which of ['old','new']){
+ $(which).addEventListener('load',()=>{dimensions[which]=[$(which).naturalWidth,$(which).naturalHeight];checkDimensions();});
+ $(which).addEventListener('error',()=>{dimensions[which]=null;checkDimensions();$('status').textContent='Bild konnte nicht geladen werden.';});
+}
 function setPosition(value){const n=Number(value);$('new').style.clipPath='inset(0 '+(100-n)+'% 0 0)';$('divider').style.left=n+'%';$('percent').textContent=n+' %';}
 $('range').addEventListener('input',e=>setPosition(e.target.value));
 $('reset').addEventListener('click',()=>{$('range').value=50;setPosition(50);});
-$('ratio').addEventListener('change',e=>$('viewport').style.aspectRatio=e.target.value);
-function load(which,file){if(urls[which])URL.revokeObjectURL(urls[which]);urls[which]=null;$(which).removeAttribute('src');
+$('ratio').addEventListener('change',e=>{$('viewport').style.aspectRatio=e.target.value;checkDimensions();});
+function load(which,file){if(urls[which])URL.revokeObjectURL(urls[which]);urls[which]=null;dimensions[which]=null;$(which).removeAttribute('src');checkDimensions();
 if(!file)return;if(!file.type.startsWith('image/')){$('status').textContent='Bitte eine Bilddatei auswählen.';return;}
-urls[which]=URL.createObjectURL(file);$(which).src=urls[which];$('status').textContent='Bilder visuell auf Clipping, Silhouette, Hoverboard und HUD-Freiraum prüfen.';}
+urls[which]=URL.createObjectURL(file);$(which).src=urls[which];}
 $('oldFile').addEventListener('change',e=>load('old',e.target.files[0]));
 $('newFile').addEventListener('change',e=>load('new',e.target.files[0]));
 window.addEventListener('pagehide',()=>Object.values(urls).forEach(url=>{if(url)URL.revokeObjectURL(url);}));
