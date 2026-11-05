@@ -105,8 +105,27 @@ func _capture() -> void:
                         _fail("new race framing not visible in %s lane %d: %d samples" % [str(size), lane, changed])
                         return
                 captures += 1
-    if captures != 12:
-        _fail("expected twelve real before/after images")
+        # Synthetic action camera frames supplement, but do not replace, real animation QA.
+        rider.position = Vector3(0.0, 0.0, 0.2)
+        for action in ["turbo", "jump_apex", "landing"]:
+            game.set("turbo_left", 4.0 if action == "turbo" else 0.0)
+            rider.position.y = 1.25 if action == "jump_apex" else 0.0
+            game.call("_update_camera", 100.0)
+            for frame in range(5):
+                await process_frame
+            await RenderingServer.frame_post_draw
+            var action_shot := viewport.get_texture().get_image()
+            if action_shot.is_empty() or action_shot.get_width() != size.x or action_shot.get_height() != size.y:
+                _fail("invalid action frame " + action)
+                return
+            if action_shot.save_png("%s/%dx%d_%s.png" % [output, size.x, size.y, action]) != OK:
+                _fail("cannot save action frame " + action)
+                return
+            captures += 1
+        rider.position.y = 0.0
+        game.set("turbo_left", 0.0)
+    if captures != 18:
+        _fail("expected twelve A/B plus six synthetic action images")
         return
-    print("CHASE CAMERA VISUAL QA PASSED: twelve actual 16:9/19.5:9 race frames across all three lanes")
+    print("CHASE CAMERA VISUAL QA PASSED: eighteen landscape frames: twelve A/B and six synthetic action frames")
     quit(0)
