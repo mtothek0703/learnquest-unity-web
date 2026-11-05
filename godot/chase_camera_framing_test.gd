@@ -64,10 +64,25 @@ func _run() -> void:
             if absf(camera.position.z - 9.1) > 0.01 or absf(camera.fov - 71.0) > 0.01:
                 _fail("Turbo does not widen the chase view")
                 return
+            # Turbo changes both camera distance and FOV: verify the actual
+            # projected rider/board remains on screen in every lane and ratio.
+            for point in [
+                rider.global_position + Vector3(0.0, 3.5, 0.0),
+                rider.global_position + Vector3(0.0, 0.0, 0.0),
+                rider.global_position + Vector3(-0.8, 0.0, 0.0),
+                rider.global_position + Vector3(0.8, 0.0, 0.0)
+            ]:
+                if camera.is_position_behind(point):
+                    _fail("Turbo rider/board behind camera in lane %d at %s" % [lane, str(size)])
+                    return
+                var projected := camera.unproject_position(point)
+                if projected.x < 0.0 or projected.x > float(size.x) or projected.y < 0.0 or projected.y > float(size.y):
+                    _fail("Turbo rider/board clipped in lane %d at %s" % [lane, str(size)])
+                    return
     game.set("phase", "menu")
     game.call("_update_camera", 100.0)
     if camera.position.z >= -6.0 or absf(camera.fov - 58.0) > 0.01:
         _fail("front-facing menu presentation changed")
         return
-    print("CHASE FRAMING TEST PASSED: 3 lanes, 2 landscape ratios, Turbo and menu")
+    print("CHASE FRAMING TEST PASSED: 3 lanes, 2 landscape ratios, Turbo projection and menu")
     quit(0)
