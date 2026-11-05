@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://adventure/on_foot_controller.gd" id="1"]
 [ext_resource type="Script" path="res://adventure/adventure_touch.gd" id="2"]
@@ -17,6 +17,12 @@ size = Vector3(24, 1, 24)
 radius = 0.4
 height = 1.8
 
+[sub_resource type="BoxShape3D" id="platform_shape"]
+size = Vector3(5, 0.6, 4)
+
+[sub_resource type="BoxMesh" id="platform_mesh"]
+size = Vector3(5, 0.6, 4)
+
 [node name="NeonCityWalkPrototype" type="Node3D"]
 
 [node name="Ground" type="StaticBody3D" parent="."]
@@ -28,6 +34,15 @@ shape = SubResource("ground_shape")
 [node name="GroundMesh" type="MeshInstance3D" parent="Ground"]
 mesh = SubResource("ground_mesh")
 
+[node name="JumpPlatform" type="StaticBody3D" parent="."]
+position = Vector3(4, 1.15, -4)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="JumpPlatform"]
+shape = SubResource("platform_shape")
+
+[node name="PlatformMesh" type="MeshInstance3D" parent="JumpPlatform"]
+mesh = SubResource("platform_mesh")
+
 [node name="Walker" type="CharacterBody3D" parent="."]
 position = Vector3(0, 1.2, 0)
 script = ExtResource("1")
@@ -38,9 +53,15 @@ shape = SubResource("player_shape")
 [node name="PlayerMesh" type="MeshInstance3D" parent="Walker"]
 mesh = SubResource("player_mesh")
 
-[node name="Camera3D" type="Camera3D" parent="Walker"]
-position = Vector3(0, 3.4, 7.5)
-rotation = Vector3(-0.35, 0, 0)
+[node name="CameraPivot" type="Node3D" parent="Walker"]
+position = Vector3(0, 1.6, 0)
+rotation = Vector3(-0.25, 0, 0)
+
+[node name="CameraBoom" type="SpringArm3D" parent="Walker/CameraPivot"]
+spring_length = 6.5
+margin = 0.15
+
+[node name="Camera3D" type="Camera3D" parent="Walker/CameraPivot/CameraBoom"]
 current = true
 
 [node name="TouchUI" type="CanvasLayer" parent="."]
