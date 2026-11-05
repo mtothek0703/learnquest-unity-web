@@ -7,6 +7,14 @@ Entwickle in **aufeinander aufbauenden Sprints**, nicht in isolierten Kleinstkor
 
 **Priorität:** ein kommerziell anmutendes, erkennbar hochwertiges **3D-Abenteuerspiel** im **Smartphone-Querformat**. Die vom Nutzer auf einem echten Telefon bestätigte Touch-Steuerung bleibt funktional. Die drei Vokabelaufgaben vor jeder ganzen Runde für Klasse 1–10, die vier Welten, Missionen, Bosskämpfe und Power-ups bleiben erhalten.
 
+## Verbindliche neue Spielrichtung ab 05.11.2026 – Action-Adventure + Hoverboard
+
+**Produktentscheidung:** LearnQuest ist künftig ein gemischtes 3D-Action-Adventure: schnelle Hoverboard-Rennen **und frei begehbare 3D-Bereiche** mit Springen, Erkunden, kindgerechten Kämpfen und Missionen in denselben vier Welten. Die bestehende Hoverboard-Version und alle historischen Releases bleiben erhalten. Der neue Abenteuer-Modus ist bisher **nur geplant, nicht spielbar oder veröffentlicht**.
+
+**Priorisierter Umsetzungsplan:** [`docs/plans/LEARNQUEST_ADVENTURE_MODE_ROADMAP.md`](docs/plans/LEARNQUEST_ADVENTURE_MODE_ROADMAP.md). Diese Datei bei jedem automatischen Sprint zusätzlich zu den Release-Policies lesen. Der erste Vertical Slice ist **Neon City: 3 Englischfragen -> Hoverboard -> Absteigen -> freies Laufen/Springen -> 3 Kristalle + 2 Schalter -> Roboterkampf -> Aufsteigen -> Resultat**. Zuerst Architektur/Tests (A0), dann reale Steuerung und Kollisionen (A1), danach integrierte Mission/Übergänge (A2) und Kampf (A3). Erst nach der funktionierenden Neon-City-Spielrunde weitere Welten erweitern. Eine große offene Welt ist **kein** erstes Sprintziel.
+
+**Arbeitspriorität:** Jetzt echte spielbare, kleine Vertical-Slice-Funktionen mit automatisierten Tests auf frischen Branches vom aktuellen main umsetzen; nicht ausschließlich Grafikdiagnosen oder neue Kamerafacetten dokumentieren. PR #111 (65-Bone-Figur) bleibt unabhängig DRAFT und blockiert die neue Gameplay-Spur nicht. PR #133 (alte Kamera) nicht blind gegen main mergen. V154/andere vorhandene Versionen und der Runner-Touch-Modus müssen unverändert funktionieren; keine neuen fremden Assets ohne Lizenzprüfung. Keine neue Versionsnummer allein für die Dokumentationsänderung.
+
 ## Sprint-Backlog (Reihenfolge)
 
 ### Sprint 1 — Figur: deutlicher Qualitäts- und Animationssprung
