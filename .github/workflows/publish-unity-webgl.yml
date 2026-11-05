@@ -509,7 +509,7 @@ jobs:
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
             --script res://chase_camera_visual_capture_test.gd 2>&1 | tee /tmp/godot-chase-visual.log
           grep -Fq 'CHASE CAMERA VISUAL QA PASSED' /tmp/godot-chase-visual.log
-          test "$(find /tmp/learnquest-chase-qa -name '*.png' | wc -l)" -eq 8
+          test "$(find /tmp/learnquest-chase-qa -name '*.png' | wc -l)" -eq 12
       - name: Upload V145 chase camera comparison frames
         if: always()
         uses: actions/upload-artifact@v4
