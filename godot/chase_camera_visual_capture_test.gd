@@ -3,7 +3,7 @@ extends SceneTree
 ## identical world/pose and 1280x720 + 1170x540. Run under Xvfb/OpenGL,
 ## not headless. Images are visual evidence, NOT physical iPhone FPS proof.
 const SIZES := [Vector2i(1280, 720), Vector2i(1170, 540)]
-const LANES := [0, 1]
+const LANES := [-1, 0, 1]
 
 func _initialize() -> void:
     call_deferred("_capture")
@@ -90,8 +90,8 @@ func _capture() -> void:
                         _fail("new race framing not visible in %s lane %d: %d samples" % [str(size), lane, changed])
                         return
                 captures += 1
-    if captures != 8:
-        _fail("expected eight real before/after images")
+    if captures != 12:
+        _fail("expected twelve real before/after images")
         return
-    print("CHASE CAMERA VISUAL QA PASSED: eight actual 16:9/19.5:9 race frames")
+    print("CHASE CAMERA VISUAL QA PASSED: twelve actual 16:9/19.5:9 race frames across all three lanes")
     quit(0)
