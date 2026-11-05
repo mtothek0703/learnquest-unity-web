@@ -1,7 +1,8 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://adventure/on_foot_controller.gd" id="1"]
 [ext_resource type="Script" path="res://adventure/adventure_touch.gd" id="2"]
+[ext_resource type="Script" path="res://adventure/adventure_checkpoint.gd" id="3"]
 
 [sub_resource type="BoxShape3D" id="ground_shape"]
 size = Vector3(24, 1, 24)
@@ -23,6 +24,9 @@ size = Vector3(5, 0.6, 4)
 [sub_resource type="BoxMesh" id="platform_mesh"]
 size = Vector3(5, 0.6, 4)
 
+[sub_resource type="SphereShape3D" id="checkpoint_shape"]
+radius = 1.25
+
 [node name="NeonCityWalkPrototype" type="Node3D"]
 
 [node name="Ground" type="StaticBody3D" parent="."]
@@ -42,6 +46,13 @@ shape = SubResource("platform_shape")
 
 [node name="PlatformMesh" type="MeshInstance3D" parent="JumpPlatform"]
 mesh = SubResource("platform_mesh")
+
+[node name="Checkpoint" type="Area3D" parent="."]
+position = Vector3(-4, 0.15, -4)
+script = ExtResource("3")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Checkpoint"]
+shape = SubResource("checkpoint_shape")
 
 [node name="Walker" type="CharacterBody3D" parent="."]
 position = Vector3(0, 1.2, 0)
