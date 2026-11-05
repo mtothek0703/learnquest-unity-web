@@ -9,6 +9,15 @@ extends CharacterBody3D
 var touch_vector: Vector2 = Vector2.ZERO
 var jump_requested: bool = false
 
+func set_checkpoint(location: Vector3) -> void:
+	checkpoint = location
+
+func respawn_at_checkpoint() -> void:
+	global_position = checkpoint
+	velocity = Vector3.ZERO
+	jump_requested = false
+	touch_vector = Vector2.ZERO
+
 func set_touch_move(value: Vector2) -> void:
 	touch_vector = value.limit_length(1.0)
 
@@ -17,8 +26,7 @@ func request_jump() -> void:
 
 func _physics_process(delta: float) -> void:
 	if global_position.y < respawn_height:
-		global_position = checkpoint
-		velocity = Vector3.ZERO
+		respawn_at_checkpoint()
 	var keyboard := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	var direction_2d := touch_vector if touch_vector.length_squared() > 0.001 else keyboard
 	var desired := Vector3(direction_2d.x, 0.0, direction_2d.y).limit_length(1.0) * walk_speed
