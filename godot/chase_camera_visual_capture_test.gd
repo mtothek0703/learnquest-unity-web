@@ -118,6 +118,21 @@ func _capture() -> void:
             if action_shot.is_empty() or action_shot.get_width() != size.x or action_shot.get_height() != size.y:
                 _fail("invalid action frame " + action)
                 return
+            # Apply the same blank-frame guard to synthetic action captures.
+            # Previously these six PNGs only needed the correct dimensions.
+            var action_darkest := 1.0
+            var action_brightest := 0.0
+            for sample_y in range(9):
+                for sample_x in range(16):
+                    var sx := int(float(size.x - 1) * float(sample_x) / 15.0)
+                    var sy := int(float(size.y - 1) * float(sample_y) / 8.0)
+                    var pixel := action_shot.get_pixel(sx, sy)
+                    var luminance := (pixel.r + pixel.g + pixel.b) / 3.0
+                    action_darkest = minf(action_darkest, luminance)
+                    action_brightest = maxf(action_brightest, luminance)
+            if action_brightest - action_darkest < 0.025:
+                _fail("uniform or blank action frame %s at %s" % [action, str(size)])
+                return
             if action_shot.save_png("%s/%dx%d_%s.png" % [output, size.x, size.y, action]) != OK:
                 _fail("cannot save action frame " + action)
                 return
