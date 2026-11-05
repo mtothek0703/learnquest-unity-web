@@ -61,6 +61,19 @@ static func shield_mesh() -> ArrayMesh:
                 _shield_point(theta - 0.012, b) * 1.016,
                 _shield_point(theta + 0.012, b) * 1.016,
                 _shield_point(theta + 0.012, a) * 1.016, bright, dim)
+    # Narrow meridian ribs reinforce the shield silhouette during fast turns.
+    # Geometry shares the existing ArrayMesh, avoiding additional draw calls.
+    for meridian in range(8):
+        var angle: float = TAU * float(meridian) / 8.0
+        for segment in range(24):
+            var t0: float = PI * float(segment) / 24.0
+            var t1: float = PI * float(segment + 1) / 24.0
+            var bright := Color(0.36, 1.0, 1.0, 0.78)
+            var dim := Color(0.18, 0.52, 1.0, 0.36)
+            _quad(tool, _shield_point(t0, angle - 0.009) * 1.022,
+                _shield_point(t1, angle - 0.009) * 1.022,
+                _shield_point(t1, angle + 0.009) * 1.022,
+                _shield_point(t0, angle + 0.009) * 1.022, bright, dim)
     tool.generate_normals()
     return tool.commit()
 
