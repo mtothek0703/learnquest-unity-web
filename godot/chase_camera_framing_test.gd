@@ -62,11 +62,11 @@ func _run() -> void:
             # Synthetic vertical positions test projected clearance during the
             # rise, apex, descent and landing. This is a camera geometry
             # regression, not a substitute for real animated jump screenshots.
-            for jump_height in [0.45, 1.25, 0.65, 0.0]:
+            for jump_height: float in [0.45, 1.25, 0.65, 0.0]:
                 rider.position.y = jump_height
                 game.call("_update_camera", 100.0)
-                for local_point in [Vector3(0.0, 3.5, 0.0), Vector3(-0.8, 0.0, 0.0), Vector3(0.8, 0.0, 0.0)]:
-                    var world_point := rider.global_position + local_point
+                for local_point: Vector3 in [Vector3(0.0, 3.5, 0.0), Vector3(-0.8, 0.0, 0.0), Vector3(0.8, 0.0, 0.0)]:
+                    var world_point: Vector3 = rider.global_position + local_point
                     if camera.is_position_behind(world_point):
                         _fail("jump rider/board behind camera in lane %d at %s" % [lane, str(size)])
                         return
