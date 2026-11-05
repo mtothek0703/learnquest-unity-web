@@ -2222,6 +2222,14 @@ func _race_camera_targets(boost: bool, viewport_size: Vector2) -> Dictionary:
         "fov": camera_fov
     }
 
+# Subtle horizon bank makes actual three-lane steering feel more dynamic on
+# phones, without touching player physics, touch hit areas or desktop framing.
+# The rider already eases between lanes, so the visual bank eases with it.
+func _landscape_steering_bank(viewport_size: Vector2) -> float:
+    if viewport_size.x <= viewport_size.y or viewport_size.y > 720.0:
+        return 0.0
+    return deg_to_rad(1.4) * clampf(rider.position.x / 3.1, -1.0, 1.0)
+
 # The menu showcases the actual modeled face, hair and outfit from the front.
 # Training/results keep the gallery; races transition to the chase camera
 # without interrupting controls, physics or the timed boss warnings.
@@ -2249,6 +2257,8 @@ func _update_camera(delta: float) -> void:
     chase_camera.position = chase_camera.position.lerp(target_position, blend)
     camera_focus = camera_focus.lerp(target_focus, blend)
     chase_camera.look_at(camera_focus, Vector3.UP)
+    if racing:
+        chase_camera.rotate_object_local(Vector3.BACK, _landscape_steering_bank(get_viewport().get_visible_rect().size))
     chase_camera.fov = lerpf(chase_camera.fov, target_fov, blend)
 
 func _process(delta: float) -> void:
