@@ -42,3 +42,10 @@ Review real CI logs and screenshot artifact; adjust composition if necessary. If
 - [x] At 1280x720, the adaptive center/right-lane views differ from the old chase camera by 55.61% / 45.27% of pixels (>25 RGB-channel difference); at 1170x540 by 54.72% / 44.61%. The rider and road are clearly larger; all three steering lanes remain available.
 - [ ] The **outer-lane wake ribbons still nearly touch the bottom frame edge**. Preserve the more readable zoom but lower the edge-lane focus by 0.25 world units (1.5 -> 1.25), shifting the board upward without moving menu, controls or physics.
 - [ ] Run the updated headless focus assertion and all visual/export/archive checks, inspect the new final frames, and only then decide on immutable V145 release.
+
+
+## 05.11.2026 08:14 CET – visuelle QA für alle drei Fahrspuren
+- Änderung: Der reale OpenGL-Bildvergleich umfasst nun `[-1, 0, 1]` statt `[0, 1]`. Pro Querformat (1280×720, 1170×540) werden Vorher/Nachher-PNGs für jede Spur erstellt: **12 statt 8 Bilder**. Der bisher ungetestete linke Außenstreifen ist damit erfasst.
+- Akzeptanzkriterien: 12 gültige PNG-Dateien in erwarteter Auflösung; in jeder Spur mindestens 15 % größere projizierte Fahrerhöhe und mindestens 180 veränderte Bildsamples. Dies ist ein automatischer Geometrie-/Pixeltest, **keine** manuelle visuelle Freigabe.
+- Code-Commit: `6fbd8eb40233f01dea88274b5c8a8973b802b953`. Statische Prüfung: exakt drei Spurwerte, zwei Größen, zwei Zustände, erwartete Bildzahl 12. Godot/OpenGL-CI, Export, Archivschutz, Pages und iPhone-FPS **noch nicht erneut ausgeführt oder bestätigt**.
+- Status: PR #133 bleibt DRAFT; 33 Commits Rückstand gegenüber main zum Prüfzeitpunkt. Kein Merge, keine Versionsreservierung, kein Release. Nächste Schritte: Push-Workflow-Ergebnis kontrollieren, 12 PNGs visuell bewerten, dynamische Sprung-/Turbo-/Landeframes ergänzen und Kandidaten mit main synchronisieren. PR #111 bleibt unabhängig DRAFT.
