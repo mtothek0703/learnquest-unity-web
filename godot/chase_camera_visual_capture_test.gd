@@ -64,6 +64,21 @@ func _capture() -> void:
                 if shot.is_empty() or shot.get_width() != size.x or shot.get_height() != size.y:
                     _fail("invalid actual landscape frame")
                     return
+                # A valid PNG size alone is not evidence that the 3D scene rendered.
+                # Sample a coarse grid and reject fully blank or uniform captures.
+                var darkest := 1.0
+                var brightest := 0.0
+                for sample_y in range(9):
+                    for sample_x in range(16):
+                        var sx := int(float(size.x - 1) * float(sample_x) / 15.0)
+                        var sy := int(float(size.y - 1) * float(sample_y) / 8.0)
+                        var pixel := shot.get_pixel(sx, sy)
+                        var luminance := (pixel.r + pixel.g + pixel.b) / 3.0
+                        darkest = minf(darkest, luminance)
+                        brightest = maxf(brightest, luminance)
+                if brightest - darkest < 0.025:
+                    _fail("uniform or blank 3D frame in lane %d at %s (%s)" % [lane, str(size), state])
+                    return
                 if shot.save_png("%s/%dx%d_lane%d_%s.png" % [output, size.x, size.y, lane, state]) != OK:
                     _fail("could not save actual frame")
                     return
