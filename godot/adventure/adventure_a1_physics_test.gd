@@ -27,5 +27,14 @@ func _run() -> void:
 		await physics_frame
 	assert(walker.velocity.x > 0.1, "Separate touch input must move walker")
 	walker.set_touch_move(Vector2.ZERO)
+	var checkpoint := arena.get_node("Checkpoint") as Area3D
+	assert(checkpoint != null and checkpoint.get_node("CollisionShape3D").shape != null)
+	walker.global_position = checkpoint.global_position + Vector3(0, 1.0, 0)
+	for i in range(8):
+		await physics_frame
+	assert(walker.checkpoint.distance_to(checkpoint.global_position + Vector3(0, 1.2, 0)) < 0.01, "Checkpoint trigger must save safe position")
+	walker.global_position = Vector3(0, -20, 0)
+	await physics_frame
+	assert(walker.global_position.distance_to(walker.checkpoint) < 1.0, "Fall must respawn at latest checkpoint")
 	print("PASS: A1 arena floor, platform collision, camera boom, jump and movement")
 	quit(0)
