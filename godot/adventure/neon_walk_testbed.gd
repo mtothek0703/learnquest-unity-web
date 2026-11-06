@@ -12,6 +12,8 @@ var mission_complete := false
 var mission_targets: Array[Node3D] = []
 var mission_label: Label
 const INTERACT_RADIUS := 2.0
+const EXIT_PORTAL_POSITION := Vector3(0.0, 1.0, 6.0)
+const EXIT_PORTAL_RADIUS := 2.0
 
 func _ready() -> void:
     _platform(Vector3(0, -0.5, 0), Vector3(18, 1, 18), Color("#263456"))
@@ -42,6 +44,7 @@ func _ready() -> void:
     add_child(light)
     _make_touch_controls()
     _create_mission()
+    _create_exit_portal()
 
 func _physics_process(_delta: float) -> void:
     if not is_instance_valid(player):
@@ -133,8 +136,25 @@ func _make_touch_controls() -> void:
     root.add_child(mission_label)
 
 func _request_return() -> void:
-    if mission_complete:
+    if mission_complete and is_instance_valid(player) and player.global_position.distance_to(EXIT_PORTAL_POSITION) <= EXIT_PORTAL_RADIUS:
         return_requested.emit()
+
+func _create_exit_portal() -> void:
+    var portal := MeshInstance3D.new()
+    portal.name = "ExitPortal"
+    portal.position = EXIT_PORTAL_POSITION
+    var mesh := CylinderMesh.new()
+    mesh.top_radius = 1.1
+    mesh.bottom_radius = 1.1
+    mesh.height = 2.0
+    portal.mesh = mesh
+    var material := StandardMaterial3D.new()
+    material.albedo_color = Color("#35f0ba")
+    material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    material.albedo_color.a = 0.35
+    material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    portal.material_override = material
+    add_child(portal)
 
 func _create_mission() -> void:
     for i in range(3):
