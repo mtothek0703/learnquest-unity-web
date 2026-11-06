@@ -180,6 +180,8 @@ var style_dark: StyleBoxFlat
 # Opt-in Neon City bridge: old runner behavior remains the default.
 var adventure_opt_in := false
 var adventure_used := false
+var adventure_reward_claimed := false
+const ADVENTURE_MISSION_XP := 75
 var adventure_area: Node3D
 var runner_ui_layer: CanvasLayer
 var adventure_toggle_button: Button
@@ -1119,6 +1121,7 @@ func _reset_run() -> void:
         adventure_area.queue_free()
         adventure_area = null
     adventure_used = false
+    adventure_reward_claimed = false
     rider.visible = true
     if runner_ui_layer != null:
         runner_ui_layer.visible = true
@@ -1788,7 +1791,13 @@ func _enter_adventure() -> bool:
 func _exit_adventure() -> bool:
     if phase != "adventure" or not is_instance_valid(adventure_area):
         return false
-    # Return to the paused race – no extra XP and no second quiz.
+    # One reward per completed mission, credited to the original runner session.
+    # The exit gate cannot be used for incomplete missions.
+    if not bool(adventure_area.get("mission_complete")):
+        return false
+    if not adventure_reward_claimed:
+        xp += ADVENTURE_MISSION_XP
+        adventure_reward_claimed = true
     adventure_area.queue_free()
     adventure_area = null
     phase = "race"
