@@ -41,4 +41,4 @@ func reset_mission() -> void:
 	switches_changed.emit(0, required_switches)
 
 func is_complete() -> bool:
-	return collected_ids.size() == required_crystals
+	return can_open_portal()
