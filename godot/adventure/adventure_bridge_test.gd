@@ -78,6 +78,28 @@ func _check() -> void:
     if player.global_position.x <= start_x + 0.3:
         _fail("mobile walking control did not move CharacterBody3D")
         return
+    # A3: robot only accepts nearby attacks; two hits stun it; reset restores it.
+    if bool(area.call("attack_robot")):
+        _fail("remote robot attack must be rejected")
+        return
+    var robot := area.get("robot") as Node3D
+    if robot == null:
+        _fail("training robot missing")
+        return
+    player.global_position = robot.global_position + Vector3(1.0, 0.0, 0.0)
+    if not bool(area.call("attack_robot")) or not bool(area.call("attack_robot")):
+        _fail("nearby robot must accept two attacks")
+        return
+    if not bool(area.get("robot_stunned")) or robot.visible:
+        _fail("robot must be stunned and hidden after two hits")
+        return
+    if bool(area.call("attack_robot")):
+        _fail("stunned robot cannot be attacked repeatedly")
+        return
+    area.call("reset_mission")
+    if bool(area.get("robot_stunned")) or not robot.visible or int(area.get("robot_hits")) != 0:
+        _fail("retry must reset robot encounter")
+        return
     var preserved_distance := float(game.get("distance"))
     # Portal cannot return until all five interactions have happened.
     area.call("_request_return")
