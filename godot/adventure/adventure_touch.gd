@@ -45,8 +45,20 @@ func _gui_input(event: InputEvent) -> void:
 		_set_direction((event.position - origin) / maxf(pad_radius, 1.0))
 		accept_event()
 
-func _exit_tree() -> void:
+func cancel_touch() -> void:
+	# Focus loss, scene hide and browser interruption must not leave walking active.
+	active_pointer = -1
+	origin = Vector2.ZERO
 	_set_direction(Vector2.ZERO)
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		cancel_touch()
+	elif what == NOTIFICATION_VISIBILITY_CHANGED and not is_visible_in_tree():
+		cancel_touch()
+
+func _exit_tree() -> void:
+	cancel_touch()
 
 func _on_jump_pressed() -> void:
 	var walker := _walker()
