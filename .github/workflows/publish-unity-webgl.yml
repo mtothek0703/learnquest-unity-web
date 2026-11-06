@@ -341,7 +341,7 @@ jobs:
           # The reliable contract is that all exported engine files exist.
           PY
       - name: Upload Godot build and test diagnostics
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: godot-build-diagnostics
@@ -395,13 +395,14 @@ jobs:
           if-no-files-found: ignore
 
       - name: Upload raised Neon warning landscape QA
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: neon-warning-landscape-qa
           path: /tmp/learnquest-warning-qa/*.png
           if-no-files-found: error
       - name: Upload V134 Neon precision before-after frames
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v134-neon-precision-before-after
@@ -419,21 +420,21 @@ jobs:
           grep -Fq 'GLACIER ICEFALLS VISUAL QA PASSED' /tmp/godot-glacier-icefalls-visual.log
           test "$(find /tmp/learnquest-icefalls-qa -name '*.png' | wc -l)" -eq 16
       - name: Upload V154 original icefalls and sculpted flow comparisons
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v154-glacier-flow-before-after
           path: /tmp/learnquest-icefalls-qa/*.png
           if-no-files-found: error
       - name: Upload V126 Aurora slipstream before-after frames
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v126-aurora-slipstream-before-after
           path: /tmp/learnquest-slipstream-qa/*.png
           if-no-files-found: error
       - name: Upload V125 Neon Conductor before-after frames
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v125-neon-conductor-before-after
@@ -441,7 +442,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload actual rendered landscape QA images
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v117-landscape-character-frames
@@ -449,49 +450,49 @@ jobs:
           if-no-files-found: ignore
 
       - name: Upload V119 lightfield before-after frames
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v119-lightfields-before-after
           path: /tmp/learnquest-lightfields-qa/*.png
           if-no-files-found: error
       - name: Upload V122 Star Harbor drydock before-after frames
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v122-harbor-drydocks-before-after
           path: /tmp/learnquest-harbor-qa/*.png
           if-no-files-found: error
       - name: Upload V121 Canyon route-choice before-after frames
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v121-canyon-routes-before-after
           path: /tmp/learnquest-routes-qa/*.png
           if-no-files-found: error
       - name: Upload V120 Canyon geode comparison frames
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v120-canyon-geodes-before-after
           path: /tmp/learnquest-canyon-qa/*.png
           if-no-files-found: error
       - name: Upload Neon City V118 before-after frames
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v118-neon-city-before-after
           path: /tmp/learnquest-city-qa/*.png
           if-no-files-found: error
       - name: Upload V141 sky terrace visual QA images
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v141-sky-terraces-release-qa
           path: /tmp/learnquest-terraces-qa/*.png
           if-no-files-found: error
       - name: Upload power-up V117 visual QA images
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v117-powerup-frames
@@ -510,7 +511,7 @@ jobs:
           grep -Fq 'HARBOR SKYCRANES VISUAL QA PASSED' /tmp/godot-harbor-skycranes-visual.log
           test "$(find /tmp/learnquest-skycranes-qa -name '*.png' | wc -l)" -eq 8
       - name: Upload V144 orbital crane comparison frames
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v144-harbor-skycranes-release-qa
@@ -528,7 +529,7 @@ jobs:
           grep -Fq 'LANDSCAPE CHASE VISUAL QA PASSED' /tmp/godot-landscape-chase-visual.log
           test "$(find /tmp/learnquest-chase-qa -name '*.png' | wc -l)" -eq 12
       - name: Upload V146 actual chase camera landscape QA
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v146-chase-camera-release-qa
@@ -575,7 +576,7 @@ jobs:
           grep -Fq 'ENERGY WEAVE VISUAL QA PASSED' /tmp/energy-weave-visual.log
           test "$(find /tmp/learnquest-weave-qa -name '*.png' | wc -l)" -eq 8
       - name: Upload V151 Energy Weave pulse and lane beacon frames
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v151-energy-weave-qa
@@ -593,7 +594,7 @@ jobs:
           grep -Fq 'NEAR MISS VISUAL QA PASSED' /tmp/near-miss-visual.log
           test "$(find /tmp/learnquest-near-miss-qa -name '*.png' | wc -l)" -eq 8
       - name: Upload V153 near-miss progress and shockwave landscape frames
-        if: always()
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v153-near-miss-qa
