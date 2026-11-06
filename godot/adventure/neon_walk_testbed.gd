@@ -136,7 +136,7 @@ func _make_touch_controls() -> void:
     root.add_child(mission_label)
 
 func _request_return() -> void:
-    if mission_complete and is_instance_valid(player) and player.global_position.distance_to(EXIT_PORTAL_POSITION) <= EXIT_PORTAL_RADIUS:
+    if mission_complete and is_instance_valid(player) and player.global_position.distance_to(to_global(EXIT_PORTAL_POSITION)) <= EXIT_PORTAL_RADIUS:
         return_requested.emit()
 
 func _create_exit_portal() -> void:
