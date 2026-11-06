@@ -79,8 +79,21 @@ func _check() -> void:
         _fail("mobile walking control did not move CharacterBody3D")
         return
     var preserved_distance := float(game.get("distance"))
-    # Returning through the same signal as the actual AUFSTEIGEN button.
-    area.emit_signal("return_requested")
+    # Portal cannot return until all five interactions have happened.
+    area.call("_request_return")
+    if str(game.get("phase")) != "adventure":
+        _fail("portal returned before mission completion")
+        return
+    var targets: Array = area.get("mission_targets")
+    for target in targets:
+        player.global_position = target.global_position + Vector3.UP * 0.4
+        if not bool(area.call("interact")):
+            _fail("nearby mission target was not interactable")
+            return
+    if not bool(area.get("mission_complete")) or int(area.get("crystals_collected")) != 3 or int(area.get("switches_activated")) != 2:
+        _fail("all three crystals and two switches must unlock portal")
+        return
+    area.call("_request_return")
     if str(game.get("phase")) != "race" or game.get("adventure_area") != null:
         _fail("on-foot signal did not return to active race")
         return
@@ -101,5 +114,5 @@ func _check() -> void:
     if bool(game.get("adventure_used")):
         _fail("new race failed to reset one-time adventure gate")
         return
-    print("ADVENTURE BRIDGE TEST PASSED: default-off, three questions, 100m entry, 3D collision/walking, signal return, score preserved and one-visit gate")
+    print("ADVENTURE BRIDGE TEST PASSED: default-off, three questions, 100m entry, 3D collision/walking, five proximity interactions, gated portal return, score preserved and one-visit gate")
     quit(0)
