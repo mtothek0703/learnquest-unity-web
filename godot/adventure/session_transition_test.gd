@@ -1,0 +1,30 @@
+extends SceneTree
+
+const Transition = preload("res://adventure/session_transition.gd")
+
+func _initialize() -> void:
+    var flow = Transition.new()
+    flow.begin_session(7)
+    assert(not flow.request_dismount(true, false, true), "Feature-off must preserve runner")
+    flow.enabled = true
+    assert(not flow.request_dismount(true, true, true), "No transition during quiz")
+    assert(not flow.request_dismount(false, false, true), "No transition outside race")
+    assert(not flow.request_dismount(true, false, false), "Neon City only")
+    assert(flow.request_dismount(true, false, true), "Dismount should start")
+    assert(flow.mode == flow.TRANSITION)
+    assert(not flow.request_dismount(true, false, true), "No duplicate transition")
+    assert(flow.complete_transition() and flow.mode == flow.ON_FOOT)
+    assert(not flow.request_mount(false), "Exit must be unlocked")
+    assert(flow.request_mount(true), "Mount should start")
+    assert(flow.cancel_transition() and flow.mode == flow.ON_FOOT, "Cancellation restores foot mode")
+    assert(flow.request_mount(true))
+    assert(flow.complete_transition() and flow.mode == flow.RACE)
+    assert(flow.completed_session_ids.has(7), "Only completed return marks session")
+    flow.begin_session(8)
+    assert(flow.request_dismount(true, false, true), "Next session can start")
+    assert(flow.complete_transition())
+    flow.reset()
+    assert(flow.mode == flow.RACE and flow.session_id == -1)
+    assert(flow.completed_session_ids.is_empty(), "Reset clears reward/session ledger")
+    print("ADVENTURE SESSION TRANSITION TEST PASSED")
+    quit(0)
