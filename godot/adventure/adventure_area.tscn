@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://adventure/on_foot_controller.gd" id="1"]
 [ext_resource type="Script" path="res://adventure/adventure_touch.gd" id="2"]
@@ -7,6 +7,8 @@
 [ext_resource type="Script" path="res://adventure/adventure_crystal.gd" id="5"]
 [ext_resource type="Script" path="res://adventure/adventure_switch.gd" id="6"]
 [ext_resource type="Script" path="res://adventure/adventure_exit_portal.gd" id="7"]
+[ext_resource type="Script" path="res://adventure/adventure_mission_hud.gd" id="8"]
+[ext_resource type="Script" path="res://adventure/adventure_area_controller.gd" id="9"]
 
 [sub_resource type="BoxShape3D" id="ground_shape"]
 size = Vector3(24, 1, 24)
@@ -45,6 +47,7 @@ size = Vector3(1.2, 1.5, 1.2)
 size = Vector3(1.2, 1.5, 1.2)
 
 [node name="NeonCityWalkPrototype" type="Node3D"]
+script = ExtResource("9")
 
 [node name="Mission" type="Node" parent="."]
 script = ExtResource("4")
@@ -96,6 +99,16 @@ margin = 0.15
 current = true
 
 [node name="TouchUI" type="CanvasLayer" parent="."]
+
+[node name="MissionHUD" type="Control" parent="TouchUI"]
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 336.0
+offset_bottom = 92.0
+mouse_filter = 2
+script = ExtResource("8")
 
 [node name="MovePad" type="Control" parent="TouchUI"]
 anchors_preset = 3
