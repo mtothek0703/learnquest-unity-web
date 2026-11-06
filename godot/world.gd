@@ -199,6 +199,11 @@ func _enter_neon_adventure() -> void:
         neon_adventure = null
         return
     portal.exit_requested.connect(_leave_neon_adventure)
+    # _process returns early on foot: stop the active scenery immediately.
+    # Otherwise the last race-running flag keeps scrolling behind the arena.
+    for zone in [skyway_zone, canyon_zone, harbor_zone, glacier_zone]:
+        if zone != null:
+            zone.set("running", false)
     phase = "on_foot"
     rider.visible = false
     chase_camera.current = false
