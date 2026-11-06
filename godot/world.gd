@@ -178,9 +178,61 @@ var info_label: Label
 var feedback_time := 0.0
 var style_dark: StyleBoxFlat
 
+# Opt-in prototype: keeps existing runner behavior unchanged until enabled.
+const NEON_ADVENTURE_ENABLED := false
+const NEON_ADVENTURE_SCENE = preload("res://adventure/adventure_area.tscn")
+var neon_adventure: Node3D
+var neon_adventure_entry: Button
+
+func can_enter_neon_adventure() -> bool:
+    return NEON_ADVENTURE_ENABLED and phase == "race" and started and not quiz_active and world_choice == 0 and neon_adventure == null
+
+func _enter_neon_adventure() -> void:
+    if not can_enter_neon_adventure():
+        return
+    neon_adventure = NEON_ADVENTURE_SCENE.instantiate()
+    add_child(neon_adventure)
+    var portal := neon_adventure.get_node_or_null("ExitPortal")
+    if portal == null:
+        neon_adventure.queue_free()
+        neon_adventure = null
+        return
+    portal.exit_requested.connect(_leave_neon_adventure)
+    phase = "on_foot"
+    rider.visible = false
+    chase_camera.current = false
+    neon_adventure.get_node("Walker/CameraPivot/CameraBoom/Camera3D").current = true
+    touch_steering.reset()
+    _update_touch_ui()
+    neon_adventure_entry.hide()
+
+func _leave_neon_adventure() -> void:
+    if phase != "on_foot" or neon_adventure == null:
+        return
+    phase = "race"
+    rider.visible = true
+    chase_camera.current = true
+    neon_adventure.queue_free()
+    neon_adventure = null
+    touch_steering.reset()
+    _update_touch_ui()
+    _refresh_hud()
+
+func _update_adventure_entry() -> void:
+    if neon_adventure_entry != null:
+        neon_adventure_entry.visible = can_enter_neon_adventure()
+
 func _ready() -> void:
     _create_world()
     _create_ui()
+    neon_adventure_entry = Button.new()
+    neon_adventure_entry.text = "ABSTEIGEN"
+    neon_adventure_entry.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+    neon_adventure_entry.position = Vector2(-80, -100)
+    neon_adventure_entry.custom_minimum_size = Vector2(160, 60)
+    neon_adventure_entry.pressed.connect(_enter_neon_adventure)
+    add_child(neon_adventure_entry)
+    neon_adventure_entry.hide()
     _refresh_hud()
     # Start directly with a front-facing hero portrait, not the old rear view.
     _update_camera(100.0)
@@ -2252,6 +2304,9 @@ func _update_camera(delta: float) -> void:
     chase_camera.fov = lerpf(chase_camera.fov, target_fov, blend)
 
 func _process(delta: float) -> void:
+    _update_adventure_entry()
+    if phase == "on_foot":
+        return
     if hero_gallery != null:
         hero_gallery.visible = phase != "race"
     if feedback_time > 0:
