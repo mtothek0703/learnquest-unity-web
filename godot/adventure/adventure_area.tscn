@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=18 format=3]
 
 [ext_resource type="Script" path="res://adventure/on_foot_controller.gd" id="1"]
 [ext_resource type="Script" path="res://adventure/adventure_touch.gd" id="2"]
@@ -38,6 +38,9 @@ height = 0.7
 radius = 0.65
 
 [sub_resource type="BoxShape3D" id="switch_shape"]
+size = Vector3(1.2, 1.5, 1.2)
+
+[sub_resource type="BoxMesh" id="switch_mesh"]
 size = Vector3(1.2, 1.5, 1.2)
 
 [node name="NeonCityWalkPrototype" type="Node3D"]
@@ -161,6 +164,9 @@ switch_id = "neon_left"
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Switch1"]
 shape = SubResource("switch_shape")
 
+[node name="SwitchMesh" type="MeshInstance3D" parent="Switch1"]
+mesh = SubResource("switch_mesh")
+
 [node name="Switch2" type="Area3D" parent="."]
 position = Vector3(4, 2.2, -4)
 script = ExtResource("6")
@@ -168,6 +174,9 @@ switch_id = "neon_platform"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Switch2"]
 shape = SubResource("switch_shape")
+
+[node name="SwitchMesh" type="MeshInstance3D" parent="Switch2"]
+mesh = SubResource("switch_mesh")
 
 [node name="InteractButton" type="Button" parent="TouchUI"]
 anchor_left = 1.0
