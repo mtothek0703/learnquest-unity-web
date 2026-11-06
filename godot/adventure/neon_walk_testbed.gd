@@ -14,6 +14,12 @@ var mission_label: Label
 const INTERACT_RADIUS := 2.0
 const EXIT_PORTAL_POSITION := Vector3(0.0, 1.0, 6.0)
 const EXIT_PORTAL_RADIUS := 2.0
+const ROBOT_RANGE := 3.0
+var robot: Node3D
+var robot_hits := 0
+var robot_warning := 0.0
+var robot_stunned := false
+var robot_label: Label
 
 func _ready() -> void:
     _platform(Vector3(0, -0.5, 0), Vector3(18, 1, 18), Color("#263456"))
@@ -45,11 +51,20 @@ func _ready() -> void:
     _make_touch_controls()
     _create_mission()
     _create_exit_portal()
+    _create_robot()
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
     if not is_instance_valid(player):
         return
     player.set_mobile_move(mobile_axis)
+    if is_instance_valid(robot) and not robot_stunned:
+        if robot_warning > 0.0:
+            robot_warning = maxf(0.0, robot_warning - delta)
+            if robot_warning == 0.0:
+                _update_robot_label()
+        elif player.global_position.distance_to(robot.global_position) <= ROBOT_RANGE:
+            robot_warning = 1.2
+            _update_robot_label()
     if is_instance_valid(follow_camera) and follow_camera.current:
         follow_camera.global_position = player.global_position + Vector3(0, 4.5, 8)
         follow_camera.look_at(player.global_position + Vector3.UP * 0.6)
@@ -128,12 +143,62 @@ func _make_touch_controls() -> void:
     interact_button.custom_minimum_size = Vector2(160, 60)
     root.add_child(interact_button)
     interact_button.pressed.connect(interact)
+    var attack := Button.new()
+    attack.text = "ANGRIFF"
+    attack.anchor_left = 0.77
+    attack.anchor_right = 0.77
+    attack.anchor_top = 0.68
+    attack.anchor_bottom = 0.68
+    attack.custom_minimum_size = Vector2(160, 55)
+    root.add_child(attack)
+    attack.pressed.connect(attack_robot)
+    robot_label = Label.new()
+    robot_label.anchor_left = 0.27
+    robot_label.anchor_right = 0.75
+    robot_label.offset_top = 60.0
+    robot_label.offset_bottom = 92.0
+    root.add_child(robot_label)
     mission_label = Label.new()
     mission_label.anchor_left = 0.27
     mission_label.anchor_right = 0.75
     mission_label.offset_top = 18.0
     mission_label.offset_bottom = 56.0
     root.add_child(mission_label)
+
+func _create_robot() -> void:
+    robot = Node3D.new()
+    robot.name = "TrainingRobot"
+    robot.position = Vector3(-2.0, 1.0, -5.0)
+    var visual := MeshInstance3D.new()
+    var shape := BoxMesh.new()
+    shape.size = Vector3(1.0, 1.6, 0.8)
+    visual.mesh = shape
+    robot.add_child(visual)
+    add_child(robot)
+    _update_robot_label()
+
+func attack_robot() -> bool:
+    if not is_instance_valid(player) or not is_instance_valid(robot) or robot_stunned:
+        return false
+    if player.global_position.distance_to(robot.global_position) > ROBOT_RANGE:
+        return false
+    robot_hits += 1
+    robot_warning = 0.0
+    if robot_hits >= 2:
+        robot_stunned = true
+        robot.visible = false
+    _update_robot_label()
+    return true
+
+func _update_robot_label() -> void:
+    if robot_label == null:
+        return
+    if robot_stunned:
+        robot_label.text = "Roboter deaktiviert"
+    elif robot_warning > 0.0:
+        robot_label.text = "ACHTUNG: Roboter lädt Angriff!"
+    else:
+        robot_label.text = "Roboter: %d/2 Treffer" % robot_hits
 
 func _request_return() -> void:
     if mission_complete and is_instance_valid(player) and player.global_position.distance_to(to_global(EXIT_PORTAL_POSITION)) <= EXIT_PORTAL_RADIUS:
@@ -210,6 +275,8 @@ func reset_mission() -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E:
         interact()
+    elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F:
+        attack_robot()
 
 func _sync_axis() -> void:
     mobile_axis = Vector2.ZERO
