@@ -97,6 +97,11 @@ func _check() -> void:
         _fail("all three crystals and two switches must unlock portal")
         return
     area.call("_request_return")
+    if str(game.get("phase")) != "adventure":
+        _fail("completed mission must not allow remote remount away from exit portal")
+        return
+    player.global_position = area.global_position + Vector3(0.0, 1.0, 6.0)
+    area.call("_request_return")
     if str(game.get("phase")) != "race" or game.get("adventure_area") != null:
         _fail("on-foot signal did not return to active race")
         return
