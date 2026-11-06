@@ -6,6 +6,12 @@ var player: CharacterBody3D
 var follow_camera: Camera3D
 var mobile_axis := Vector2.ZERO
 var pressed := {}
+var crystals_collected := 0
+var switches_activated := 0
+var mission_complete := false
+var mission_targets: Array[Node3D] = []
+var mission_label: Label
+const INTERACT_RADIUS := 2.0
 
 func _ready() -> void:
     _platform(Vector3(0, -0.5, 0), Vector3(18, 1, 18), Color("#263456"))
@@ -35,6 +41,7 @@ func _ready() -> void:
     light.rotation_degrees = Vector3(-45, -25, 0)
     add_child(light)
     _make_touch_controls()
+    _create_mission()
 
 func _physics_process(_delta: float) -> void:
     if not is_instance_valid(player):
@@ -108,7 +115,81 @@ func _make_touch_controls() -> void:
     return_button.offset_top = 16.0
     return_button.offset_bottom = 64.0
     root.add_child(return_button)
-    return_button.pressed.connect(func(): return_requested.emit())
+    return_button.pressed.connect(_request_return)
+    var interact_button := Button.new()
+    interact_button.text = "INTERAKTION"
+    interact_button.anchor_left = 0.77
+    interact_button.anchor_right = 0.77
+    interact_button.anchor_top = 0.56
+    interact_button.anchor_bottom = 0.56
+    interact_button.custom_minimum_size = Vector2(160, 60)
+    root.add_child(interact_button)
+    interact_button.pressed.connect(interact)
+    mission_label = Label.new()
+    mission_label.anchor_left = 0.27
+    mission_label.anchor_right = 0.75
+    mission_label.offset_top = 18.0
+    mission_label.offset_bottom = 56.0
+    root.add_child(mission_label)
+
+func _request_return() -> void:
+    if mission_complete:
+        return_requested.emit()
+
+func _create_mission() -> void:
+    for i in range(3):
+        _mission_object("Crystal%d" % i, Vector3(-5.0 + i * 4.0, 0.9, -2.0), Color.CYAN)
+    for i in range(2):
+        _mission_object("Switch%d" % i, Vector3(4.0, 1.5 + i * 1.2, -4.0 - i * 4.0), Color.ORANGE)
+    _update_mission_label()
+
+func _mission_object(id: String, at: Vector3, tint: Color) -> void:
+    var node := Node3D.new()
+    node.name = id
+    node.position = at
+    var visual := MeshInstance3D.new()
+    var mesh := SphereMesh.new()
+    mesh.radius = 0.42
+    mesh.height = 0.84
+    visual.mesh = mesh
+    var mat := StandardMaterial3D.new()
+    mat.albedo_color = tint
+    visual.material_override = mat
+    node.add_child(visual)
+    add_child(node)
+    mission_targets.append(node)
+
+func interact() -> bool:
+    if not is_instance_valid(player):
+        return false
+    for target in mission_targets:
+        if not target.visible or player.global_position.distance_to(target.global_position) > INTERACT_RADIUS:
+            continue
+        target.visible = false
+        if target.name.begins_with("Crystal"):
+            crystals_collected += 1
+        else:
+            switches_activated += 1
+        mission_complete = crystals_collected == 3 and switches_activated == 2
+        _update_mission_label()
+        return true
+    return false
+
+func _update_mission_label() -> void:
+    if mission_label != null:
+        mission_label.text = "Kristalle %d/3 | Schalter %d/2 | %s" % [crystals_collected, switches_activated, "PORTAL BEREIT" if mission_complete else "Portal gesperrt"]
+
+func reset_mission() -> void:
+    crystals_collected = 0
+    switches_activated = 0
+    mission_complete = false
+    for target in mission_targets:
+        target.visible = true
+    _update_mission_label()
+
+func _unhandled_key_input(event: InputEvent) -> void:
+    if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E:
+        interact()
 
 func _sync_axis() -> void:
     mobile_axis = Vector2.ZERO
