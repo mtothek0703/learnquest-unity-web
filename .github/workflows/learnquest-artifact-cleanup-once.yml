@@ -1,0 +1,88 @@
+name: One-time LearnQuest test artifact cleanup
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/learnquest-artifact-cleanup-once.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/learnquest-artifact-cleanup-once.yml'
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  cleanup-old-test-artifacts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Review or clean old test artifacts only
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const expectedRepo = 'mtothek0703/learnquest-unity-web';
+            if (`${owner}/${repo}` !== expectedRepo) {
+              throw new Error('Repository verification failed; refusing cleanup');
+            }
+            const metadata = await github.rest.repos.get({ owner, repo });
+            if (metadata.data.id !== 1427565370) {
+              throw new Error('Repository ID verification failed; refusing cleanup');
+            }
+            const dryRun = context.eventName !== 'push' || context.ref !== 'refs/heads/main';
+            const cutoffMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+            const allowed = /^(godot-pr-logs|learnquest-healthcheck-logs|neon-warning-landscape-qa|learnquest-.*(?:-qa|-frames|-before-after))$/;
+            const limit = 120; // Bound irreversible deletions in this one-off run.
+            let deleted = 0;
+            let bytes = 0;
+            let inspected = 0;
+            let runsInspected = 0;
+            // Query runs by creation date instead of paginating thousands of
+            // old artifacts. Very deep artifact pages intermittently return HTTP 500.
+            const cutoffDay = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+              .toISOString().slice(0, 10);
+            const runResponse = await github.rest.actions.listWorkflowRunsForRepo({
+              owner, repo, created: `<${cutoffDay}`, per_page: 100, page: 1
+            });
+            const historicalRuns = runResponse.data.workflow_runs
+              .filter(run => run.name === 'Godot PR validation' && run.head_repository?.id === 1427565370)
+              .slice(0, 8);
+            const isEligible = a => (
+              !a.expired &&
+              allowed.test(a.name) &&
+              Date.parse(a.created_at) < cutoffMs &&
+              a.workflow_run?.head_repository_id === 1427565370
+            );
+            for (const run of historicalRuns) {
+              if (deleted >= limit) break;
+              const response = await github.rest.actions.listWorkflowRunArtifacts({
+                owner, repo, run_id: run.id, per_page: 100, page: 1
+              });
+              runsInspected++;
+              inspected += response.data.artifacts.length;
+              for (const artifact of response.data.artifacts.filter(isEligible).slice(0, limit - deleted)) {
+                if (dryRun) {
+                  core.info(`DRY RUN: Would delete ${artifact.name} (#${artifact.id}, ${artifact.size_in_bytes} bytes)`);
+                } else {
+                  await github.rest.actions.deleteArtifact({
+                    owner, repo, artifact_id: artifact.id
+                  });
+                  core.info(`Deleted ${artifact.name} (#${artifact.id}, ${artifact.size_in_bytes} bytes)`);
+                }
+                deleted++;
+                bytes += artifact.size_in_bytes;
+              }
+            }
+            core.info(`${dryRun ? 'DRY RUN' : 'CLEANUP'}: ${deleted} old test artifacts; ${bytes} bytes; scanned ${inspected} artifacts in ${runsInspected} runs.`);
+            await core.summary
+              .addHeading('LearnQuest artifact cleanup')
+              .addTable([
+                [{data:'Mode',header:true},{data:dryRun ? 'Preview only' : 'Deleted',header:false}],
+                [{data:'Old test artifacts',header:true},{data:String(deleted),header:false}],
+                [{data:'Artifact bytes',header:true},{data:String(bytes),header:false}],
+                [{data:'Safety limit',header:true},{data:String(limit),header:false}]
+              ])
+              .write();
