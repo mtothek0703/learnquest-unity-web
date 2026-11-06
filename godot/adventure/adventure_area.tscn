@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://adventure/on_foot_controller.gd" id="1"]
 [ext_resource type="Script" path="res://adventure/adventure_touch.gd" id="2"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://adventure/adventure_mission.gd" id="4"]
 [ext_resource type="Script" path="res://adventure/adventure_crystal.gd" id="5"]
 [ext_resource type="Script" path="res://adventure/adventure_switch.gd" id="6"]
+[ext_resource type="Script" path="res://adventure/adventure_exit_portal.gd" id="7"]
 
 [sub_resource type="BoxShape3D" id="ground_shape"]
 size = Vector3(24, 1, 24)
@@ -191,3 +192,28 @@ text = "AKTION"
 
 [connection signal="pressed" from="TouchUI/InteractButton" to="Switch1" method="try_activate"]
 [connection signal="pressed" from="TouchUI/InteractButton" to="Switch2" method="try_activate"]
+
+[sub_resource type="CylinderMesh" id="exit_portal_mesh"]
+top_radius = 1.1
+bottom_radius = 1.1
+height = 0.18
+
+[node name="ExitPortal" type="Area3D" parent="."]
+position = Vector3(0, 0.3, -9)
+script = ExtResource("7")
+
+[node name="PortalMesh" type="MeshInstance3D" parent="ExitPortal"]
+mesh = SubResource("exit_portal_mesh")
+
+[node name="ExitButton" type="Button" parent="TouchUI"]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -220.0
+offset_right = -170.0
+offset_bottom = -132.0
+text = "PORTAL"
+
+[connection signal="pressed" from="TouchUI/ExitButton" to="ExitPortal" method="try_exit"]
