@@ -1,0 +1,40 @@
+extends SceneTree
+const Actor = preload("res://adventure/neon_robot_actor.gd")
+
+func _initialize() -> void:
+    call_deferred("_run")
+
+func _run() -> void:
+    var arena := Node3D.new()
+    root.add_child(arena)
+    var walker := Node3D.new()
+    walker.name = "Walker"
+    walker.position = Vector3(1.0, 0.0, 0.0)
+    arena.add_child(walker)
+    var robot := Actor.new()
+    robot.player_path = NodePath("../Walker")
+    arena.add_child(robot)
+    await process_frame
+    assert(robot.warning_ring != null and robot.body_mesh != null, "Robot meshes exist")
+    robot.set_encounter_enabled(true)
+    robot._physics_process(0.016)
+    assert(robot.combat.state == "warning", "Close player triggers warning")
+    assert(robot.warning_ring.visible, "Warning ring must be visible")
+    robot.set_player_guard(true)
+    robot._physics_process(1.2)
+    assert(robot.combat.hits_taken == 0, "Guard blocks attack")
+    robot.set_encounter_enabled(false)
+    assert(not robot.warning_ring.visible, "Disabled encounter hides warning")
+    assert(not robot.player_attack(), "Cannot attack disabled encounter")
+    robot.reset_encounter()
+    robot.set_encounter_enabled(true)
+    assert(robot.player_attack(), "Player can attack at close range")
+    assert(robot.player_attack())
+    assert(robot.player_attack())
+    assert(robot.combat.state == "defeated" and not robot.body_mesh.visible, "Defeated robot disappears")
+    assert(not robot.player_attack(), "Cannot defeat twice")
+    robot.reset_encounter()
+    assert(robot.body_mesh.visible and robot.combat.health == 3, "Retry restores robot")
+    robot.set_encounter_enabled(false)
+    print("ADVENTURE NEON ROBOT ACTOR TEST PASSED")
+    quit(0)
