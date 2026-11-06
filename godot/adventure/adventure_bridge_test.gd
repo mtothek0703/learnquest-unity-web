@@ -106,14 +106,14 @@ func _check() -> void:
     if not (game.get("chase_camera") as Camera3D).current:
         _fail("return did not restore race chase camera")
         return
-    if int(game.get("xp")) != initial_xp + int(game.get("ADVENTURE_MISSION_XP")) or int(game.get("power")) != initial_power or \
+    if int(game.get("xp")) != initial_xp + 75 or int(game.get("power")) != initial_power or \
             int(game.get("lives")) != initial_lives or absf(float(game.get("distance")) - preserved_distance) > 0.001:
         _fail("transition changed stored race rewards or progress")
         return
     if not bool(game.get("adventure_reward_claimed")):
         _fail("completed mission must mark reward as claimed")
         return
-    if bool(game.call("_exit_adventure")) or int(game.get("xp")) != initial_xp + int(game.get("ADVENTURE_MISSION_XP")):
+    if bool(game.call("_exit_adventure")) or int(game.get("xp")) != initial_xp + 75:
         _fail("duplicate exit must not grant extra XP")
         return
     if bool(game.call("_enter_adventure")):
