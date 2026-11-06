@@ -2,6 +2,7 @@ extends SceneTree
 ## Run: godot --headless --path godot --script res://adventure/adventure_mission_hud_test.gd
 const Mission = preload("res://adventure/adventure_mission.gd")
 const Hud = preload("res://adventure/adventure_mission_hud.gd")
+var failures := 0
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -26,9 +27,9 @@ func _run() -> void:
 	_check(hud.portal_label.text == "Portal gesperrt", "reset")
 	hud.bind_mission(null)
 	_check(hud.portal_label.text == "Portal gesperrt", "unbind")
-	quit(0)
+	quit(1 if failures > 0 else 0)
 
 func _check(ok: bool, description: String) -> void:
 	if not ok:
 		push_error("Adventure HUD failed: " + description)
-		quit(1)
+		failures += 1
