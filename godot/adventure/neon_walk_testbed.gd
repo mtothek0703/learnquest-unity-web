@@ -1,7 +1,9 @@
 extends Node3D
 ## Standalone walkable A1 testbed. Run neon_walk_testbed.tscn directly.
+signal return_requested
 const PlayerScript = preload("res://adventure/neon_walk_player.gd")
 var player: CharacterBody3D
+var follow_camera: Camera3D
 var mobile_axis := Vector2.ZERO
 var pressed := {}
 
@@ -24,10 +26,11 @@ func _ready() -> void:
     mesh.position.y = 0
     player.add_child(mesh)
     add_child(player)
-    var camera := Camera3D.new()
-    camera.position = Vector3(0, 4.5, 8)
-    camera.current = true
-    add_child(camera)
+    follow_camera = Camera3D.new()
+    follow_camera.name = "Walk follow camera"
+    follow_camera.position = Vector3(0, 4.5, 8)
+    follow_camera.current = true
+    add_child(follow_camera)
     var light := DirectionalLight3D.new()
     light.rotation_degrees = Vector3(-45, -25, 0)
     add_child(light)
@@ -37,10 +40,9 @@ func _physics_process(_delta: float) -> void:
     if not is_instance_valid(player):
         return
     player.set_mobile_move(mobile_axis)
-    var camera := get_viewport().get_camera_3d()
-    if camera:
-        camera.global_position = player.global_position + Vector3(0, 4.5, 8)
-        camera.look_at(player.global_position + Vector3.UP * 0.6)
+    if is_instance_valid(follow_camera) and follow_camera.current:
+        follow_camera.global_position = player.global_position + Vector3(0, 4.5, 8)
+        follow_camera.look_at(player.global_position + Vector3.UP * 0.6)
 
 func _platform(at: Vector3, size: Vector3, tint: Color) -> void:
     var body := StaticBody3D.new()
@@ -94,6 +96,19 @@ func _make_touch_controls() -> void:
     jump.custom_minimum_size = Vector2(130, 70)
     root.add_child(jump)
     jump.pressed.connect(func(): player.mobile_jump())
+
+    # Only the parent runner handles the actual return transition. The same
+    # scene remains independently launchable for Godot movement testing.
+    var return_button := Button.new()
+    return_button.name = "Return to Hoverboard"
+    return_button.text = "AUFSTEIGEN"
+    return_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+    return_button.offset_left = -185.0
+    return_button.offset_right = -15.0
+    return_button.offset_top = 16.0
+    return_button.offset_bottom = 64.0
+    root.add_child(return_button)
+    return_button.pressed.connect(func(): return_requested.emit())
 
 func _sync_axis() -> void:
     mobile_axis = Vector2.ZERO
