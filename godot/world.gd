@@ -183,6 +183,7 @@ const NEON_ADVENTURE_ENABLED := false
 const NEON_ADVENTURE_SCENE = preload("res://adventure/adventure_area.tscn")
 var neon_adventure: Node3D
 var neon_adventure_entry: Button
+var neon_adventure_layer: CanvasLayer
 
 func can_enter_neon_adventure() -> bool:
     return NEON_ADVENTURE_ENABLED and phase == "race" and started and not quiz_active and world_choice == 0 and neon_adventure == null
@@ -225,13 +226,15 @@ func _update_adventure_entry() -> void:
 func _ready() -> void:
     _create_world()
     _create_ui()
+    neon_adventure_layer = CanvasLayer.new()
+    add_child(neon_adventure_layer)
     neon_adventure_entry = Button.new()
     neon_adventure_entry.text = "ABSTEIGEN"
     neon_adventure_entry.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
     neon_adventure_entry.position = Vector2(-80, -100)
     neon_adventure_entry.custom_minimum_size = Vector2(160, 60)
     neon_adventure_entry.pressed.connect(_enter_neon_adventure)
-    add_child(neon_adventure_entry)
+    neon_adventure_layer.add_child(neon_adventure_entry)
     neon_adventure_entry.hide()
     _refresh_hud()
     # Start directly with a front-facing hero portrait, not the old rear view.
