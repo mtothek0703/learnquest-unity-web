@@ -81,6 +81,9 @@ func _check() -> void:
     var preserved_distance := float(game.get("distance"))
     # Portal cannot return until all five interactions have happened.
     area.call("_request_return")
+    if int(game.get("xp")) != initial_xp:
+        _fail("locked portal must not award mission XP")
+        return
     if str(game.get("phase")) != "adventure":
         _fail("portal returned before mission completion")
         return
@@ -103,16 +106,22 @@ func _check() -> void:
     if not (game.get("chase_camera") as Camera3D).current:
         _fail("return did not restore race chase camera")
         return
-    if int(game.get("xp")) != initial_xp or int(game.get("power")) != initial_power or \
+    if int(game.get("xp")) != initial_xp + int(game.get("ADVENTURE_MISSION_XP")) or int(game.get("power")) != initial_power or \
             int(game.get("lives")) != initial_lives or absf(float(game.get("distance")) - preserved_distance) > 0.001:
         _fail("transition changed stored race rewards or progress")
+        return
+    if not bool(game.get("adventure_reward_claimed")):
+        _fail("completed mission must mark reward as claimed")
+        return
+    if bool(game.call("_exit_adventure")) or int(game.get("xp")) != initial_xp + int(game.get("ADVENTURE_MISSION_XP")):
+        _fail("duplicate exit must not grant extra XP")
         return
     if bool(game.call("_enter_adventure")):
         _fail("same race can farm adventure repeatedly")
         return
     game.call("_reset_run")
-    if bool(game.get("adventure_used")):
-        _fail("new race failed to reset one-time adventure gate")
+    if bool(game.get("adventure_used")) or bool(game.get("adventure_reward_claimed")):
+        _fail("new race failed to reset adventure visit and reward gates")
         return
-    print("ADVENTURE BRIDGE TEST PASSED: default-off, three questions, 100m entry, 3D collision/walking, five proximity interactions, gated portal return, score preserved and one-visit gate")
+    print("ADVENTURE BRIDGE TEST PASSED: default-off, three questions, 100m entry, 3D collision/walking, five proximity interactions, gated portal return, one-time mission XP and preserved power/lives/distance")
     quit(0)
