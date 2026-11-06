@@ -1,6 +1,7 @@
 name: Godot PR validation
 on:
   push:
+    branches: [main]
     paths:
       - 'godot/**'
       - '.github/workflows/godot-pr-check.yml'
@@ -10,6 +11,12 @@ on:
       - '.github/workflows/godot-pr-check.yml'
 permissions:
   contents: read
+
+# Cancel superseded validations for the same pull request/branch.
+concurrency:
+  group: godot-pr-validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   godot-test:
     runs-on: ubuntu-latest
@@ -251,6 +258,7 @@ jobs:
           grep -Fq 'NEON WARNING VISUAL QA PASSED' /tmp/neon-warning-visual.log
           test "$(find /tmp/learnquest-warning-qa -name '*.png' | wc -l)" -eq 8
       - name: Upload raised Neon warning phone QA
+        if: ${{ github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: neon-warning-landscape-qa
@@ -279,7 +287,7 @@ jobs:
           grep -Fq 'AURORA SLIPSTREAM VISUAL QA PASSED' /tmp/aurora-slipstream-visual.log
           test "$(find /tmp/learnquest-slipstream-qa -name '*.png' | wc -l)" -eq 8
       - name: Upload V134 Neon precision comparison frames
-        if: always()
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v134-neon-precision-before-after
@@ -297,28 +305,28 @@ jobs:
           grep -Fq 'GLACIER ICEFALLS VISUAL QA PASSED' /tmp/glacier-icefalls-visual.log
           test "$(find /tmp/learnquest-icefalls-qa -name '*.png' | wc -l)" -eq 16
       - name: Upload V154 original icefalls and sculpted flow comparisons
-        if: always()
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v154-glacier-flow-before-after
           path: /tmp/learnquest-icefalls-qa/*.png
           if-no-files-found: error
       - name: Upload V126 Aurora slipstream comparison frames
-        if: always()
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v126-aurora-slipstream-before-after
           path: /tmp/learnquest-slipstream-qa/*.png
           if-no-files-found: error
       - name: Upload V125 Neon Conductor comparison frames
-        if: always()
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v125-neon-conductor-before-after
           path: /tmp/learnquest-conductor-qa/*.png
           if-no-files-found: error
       - name: Upload V123 Star Harbor cargo relay comparison frames
-        if: always()
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v123-harbor-cargo-relay-before-after
@@ -358,7 +366,7 @@ jobs:
           grep -Fq 'ENERGY WEAVE VISUAL QA PASSED' /tmp/energy-weave-visual.log
           test "$(find /tmp/learnquest-weave-qa -name '*.png' | wc -l)" -eq 8
       - name: Upload V150 Energy Weave pulse and lane beacon frames
-        if: always()
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v150-energy-weave-qa
@@ -376,84 +384,84 @@ jobs:
           grep -Fq 'NEAR MISS VISUAL QA PASSED' /tmp/near-miss-visual.log
           test "$(find /tmp/learnquest-near-miss-qa -name '*.png' | wc -l)" -eq 8
       - name: Upload V153 near-miss progress and shockwave landscape frames
-        if: always()
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v153-near-miss-qa
           path: /tmp/learnquest-near-miss-qa/*.png
           if-no-files-found: error
       - name: Upload V145 candidate actual chase camera before-after
-        if: always()
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v145-chase-camera-before-after
           path: /tmp/learnquest-chase-qa/*.png
           if-no-files-found: ignore
       - name: Upload V144 orbital crane landscape frames
-        if: always()
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v144-harbor-skycranes-before-after
           path: /tmp/learnquest-skycranes-qa/*.png
           if-no-files-found: error
       - name: Upload V122 Star Harbor drydock comparison frames
-        if: always()
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v122-harbor-drydocks-before-after
           path: /tmp/learnquest-harbor-qa/*.png
           if-no-files-found: error
       - name: Upload V121 playable route comparison frames
-        if: always()
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v121-canyon-routes-before-after
           path: /tmp/learnquest-routes-qa/*.png
           if-no-files-found: error
       - name: Upload V120 Canyon geode comparison frames
-        if: always()
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v120-canyon-geodes-before-after
           path: /tmp/learnquest-canyon-qa/*.png
           if-no-files-found: error
       - name: Upload V119 lightfield comparison frames
-        if: always()
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v119-lightfields-before-after
           path: /tmp/learnquest-lightfields-qa/*.png
           if-no-files-found: error
       - name: Upload Neon City comparison frames
-        if: always()
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v118-neon-city-before-after
           path: /tmp/learnquest-city-qa/*.png
           if-no-files-found: error
       - name: Upload V141 sky terrace before-after frames
-        if: always()
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-v141-sky-terraces-before-after
           path: /tmp/learnquest-terraces-qa/*.png
           if-no-files-found: error
       - name: Upload power-up comparison frames
-        if: always()
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-powerup-frames
           path: /tmp/learnquest-powerup-qa/*.png
           if-no-files-found: ignore
       - name: Upload rendered visual QA frames
-        if: always()
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v4
         with:
           name: learnquest-landscape-character-frames
           path: /tmp/learnquest-visual-qa/*.png
           if-no-files-found: ignore
       - name: Save test logs
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: godot-pr-logs
