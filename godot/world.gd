@@ -1121,7 +1121,7 @@ func _reset_run() -> void:
     adventure_used = false
     rider.visible = true
     if runner_ui_layer != null:
-        runner_ui_layer.show()
+        runner_ui_layer.visible = true
     chase_camera.current = true
     touch_steering.reset()
     _apply_world_theme()
@@ -1776,7 +1776,7 @@ func _enter_adventure() -> bool:
     phase = "adventure"
     adventure_used = true
     rider.visible = false
-    runner_ui_layer.hide()
+    runner_ui_layer.visible = false
     var walking_scene: PackedScene = preload("res://adventure/neon_walk_testbed.tscn")
     adventure_area = walking_scene.instantiate() as Node3D
     # Keep the walkable physical rooftop clear of the existing race road.
@@ -1793,7 +1793,7 @@ func _exit_adventure() -> bool:
     adventure_area = null
     phase = "race"
     rider.visible = true
-    runner_ui_layer.show()
+    runner_ui_layer.visible = true
     chase_camera.current = true
     touch_steering.reset()
     _update_camera(100.0)
