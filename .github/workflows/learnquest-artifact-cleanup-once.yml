@@ -1,0 +1,90 @@
+name: One-time LearnQuest test artifact cleanup
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/learnquest-artifact-cleanup-once.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/learnquest-artifact-cleanup-once.yml'
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  cleanup-old-test-artifacts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Review or clean old test artifacts only
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const expectedRepo = 'mtothek0703/learnquest-unity-web';
+            if (`${owner}/${repo}` !== expectedRepo) {
+              throw new Error('Repository verification failed; refusing cleanup');
+            }
+            const metadata = await github.rest.repos.get({ owner, repo });
+            if (metadata.data.id !== 1427565370) {
+              throw new Error('Repository ID verification failed; refusing cleanup');
+            }
+            const dryRun = context.eventName !== 'push' || context.ref !== 'refs/heads/main';
+            const cutoffMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+            const allowed = /^(godot-pr-logs|learnquest-healthcheck-logs|neon-warning-landscape-qa|learnquest-.*(?:-qa|-frames|-before-after))$/;
+            const limit = 200; // Bound irreversible deletions in this one-off run.
+            let deleted = 0;
+            let bytes = 0;
+            let passes = 0;
+            let inspected = 0;
+            const isEligible = a => (
+              !a.expired &&
+              allowed.test(a.name) &&
+              Date.parse(a.created_at) < cutoffMs &&
+              a.workflow_run?.head_repository_id === 1427565370
+            );
+            while (deleted < limit && passes < 15) {
+              passes++;
+              const first = await github.rest.actions.listArtifactsForRepo({
+                owner, repo, per_page: 1, page: 1
+              });
+              const lastPage = Math.ceil(first.data.total_count / 100);
+              if (!lastPage) break;
+              let matches = [];
+              for (let offset = 0; offset < 6 && lastPage - offset > 0; offset++) {
+                const response = await github.rest.actions.listArtifactsForRepo({
+                  owner, repo, per_page: 100, page: lastPage - offset
+                });
+                inspected += response.data.artifacts.length;
+                matches = response.data.artifacts.filter(isEligible);
+                if (matches.length) break;
+              }
+              if (!matches.length) break;
+              for (const artifact of matches.slice(0, limit - deleted)) {
+                if (dryRun) {
+                  core.info(`DRY RUN: Would delete ${artifact.name} (#${artifact.id}, ${artifact.size_in_bytes} bytes)`);
+                } else {
+                  await github.rest.actions.deleteArtifact({
+                    owner, repo, artifact_id: artifact.id
+                  });
+                  core.info(`Deleted ${artifact.name} (#${artifact.id}, ${artifact.size_in_bytes} bytes)`);
+                  await new Promise(resolve => setTimeout(resolve, 900));
+                }
+                deleted++;
+                bytes += artifact.size_in_bytes;
+              }
+              if (dryRun) break;
+            }
+            core.info(`${dryRun ? 'DRY RUN' : 'CLEANUP'}: ${deleted} old test artifacts; ${bytes} bytes; scanned ${inspected} entries.`);
+            await core.summary
+              .addHeading('LearnQuest artifact cleanup')
+              .addTable([
+                [{data:'Mode',header:true},{data:dryRun ? 'Preview only' : 'Deleted',header:false}],
+                [{data:'Old test artifacts',header:true},{data:String(deleted),header:false}],
+                [{data:'Artifact bytes',header:true},{data:String(bytes),header:false}],
+                [{data:'Safety limit',header:true},{data:String(limit),header:false}]
+              ])
+              .write();
