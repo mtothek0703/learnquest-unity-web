@@ -1,8 +1,10 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://adventure/on_foot_controller.gd" id="1"]
 [ext_resource type="Script" path="res://adventure/adventure_touch.gd" id="2"]
 [ext_resource type="Script" path="res://adventure/adventure_checkpoint.gd" id="3"]
+[ext_resource type="Script" path="res://adventure/adventure_mission.gd" id="4"]
+[ext_resource type="Script" path="res://adventure/adventure_crystal.gd" id="5"]
 
 [sub_resource type="BoxShape3D" id="ground_shape"]
 size = Vector3(24, 1, 24)
@@ -28,6 +30,16 @@ size = Vector3(5, 0.6, 4)
 radius = 1.25
 
 [node name="NeonCityWalkPrototype" type="Node3D"]
+
+[sub_resource type="SphereMesh" id="crystal_mesh"]
+radius = 0.35
+height = 0.7
+
+[sub_resource type="SphereShape3D" id="crystal_shape"]
+radius = 0.65
+
+[node name="Mission" type="Node" parent="."]
+script = ExtResource("4")
 
 [node name="Ground" type="StaticBody3D" parent="."]
 position = Vector3(0, -0.5, 0)
@@ -103,3 +115,36 @@ offset_bottom = -28.0
 text = "SPRUNG"
 
 [connection signal="pressed" from="TouchUI/JumpButton" to="TouchUI/MovePad" method="_on_jump_pressed"]
+
+[node name="Crystal1" type="Area3D" parent="."]
+position = Vector3(-5, 0.7, 3)
+script = ExtResource("5")
+crystal_id = "neon_1"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Crystal1"]
+shape = SubResource("crystal_shape")
+
+[node name="CrystalMesh" type="MeshInstance3D" parent="Crystal1"]
+mesh = SubResource("crystal_mesh")
+
+[node name="Crystal2" type="Area3D" parent="."]
+position = Vector3(3, 0.7, 4)
+script = ExtResource("5")
+crystal_id = "neon_2"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Crystal2"]
+shape = SubResource("crystal_shape")
+
+[node name="CrystalMesh" type="MeshInstance3D" parent="Crystal2"]
+mesh = SubResource("crystal_mesh")
+
+[node name="Crystal3" type="Area3D" parent="."]
+position = Vector3(4, 2.2, -4)
+script = ExtResource("5")
+crystal_id = "neon_3"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Crystal3"]
+shape = SubResource("crystal_shape")
+
+[node name="CrystalMesh" type="MeshInstance3D" parent="Crystal3"]
+mesh = SubResource("crystal_mesh")
