@@ -18,6 +18,7 @@ const ROBOT_RANGE := 3.0
 var robot: Node3D
 var robot_hits := 0
 var robot_warning := 0.0
+var robot_cooldown := 0.0
 var robot_stunned := false
 var robot_label: Label
 
@@ -58,11 +59,13 @@ func _physics_process(delta: float) -> void:
         return
     player.set_mobile_move(mobile_axis)
     if is_instance_valid(robot) and not robot_stunned:
+        robot_cooldown = maxf(0.0, robot_cooldown - delta)
         if robot_warning > 0.0:
             robot_warning = maxf(0.0, robot_warning - delta)
             if robot_warning == 0.0:
+                robot_cooldown = 2.0
                 _update_robot_label()
-        elif player.global_position.distance_to(robot.global_position) <= ROBOT_RANGE:
+        elif robot_cooldown <= 0.0 and player.global_position.distance_to(robot.global_position) <= ROBOT_RANGE:
             robot_warning = 1.2
             _update_robot_label()
     if is_instance_valid(follow_camera) and follow_camera.current:
@@ -184,6 +187,7 @@ func attack_robot() -> bool:
         return false
     robot_hits += 1
     robot_warning = 0.0
+    robot_cooldown = 2.0
     if robot_hits >= 2:
         robot_stunned = true
         robot.visible = false
@@ -270,6 +274,13 @@ func reset_mission() -> void:
     mission_complete = false
     for target in mission_targets:
         target.visible = true
+    robot_hits = 0
+    robot_warning = 0.0
+    robot_cooldown = 0.0
+    robot_stunned = false
+    if is_instance_valid(robot):
+        robot.visible = true
+    _update_robot_label()
     _update_mission_label()
 
 func _unhandled_key_input(event: InputEvent) -> void:
