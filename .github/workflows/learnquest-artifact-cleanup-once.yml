@@ -35,35 +35,35 @@ jobs:
             const dryRun = context.eventName !== 'push' || context.ref !== 'refs/heads/main';
             const cutoffMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
             const allowed = /^(godot-pr-logs|learnquest-healthcheck-logs|neon-warning-landscape-qa|learnquest-.*(?:-qa|-frames|-before-after))$/;
-            const limit = 200; // Bound irreversible deletions in this one-off run.
+            const limit = 120; // Bound irreversible deletions in this one-off run.
             let deleted = 0;
             let bytes = 0;
-            let passes = 0;
             let inspected = 0;
+            let runsInspected = 0;
+            // Query runs by creation date instead of paginating thousands of
+            // old artifacts. Very deep artifact pages intermittently return HTTP 500.
+            const cutoffDay = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+              .toISOString().slice(0, 10);
+            const runResponse = await github.rest.actions.listWorkflowRunsForRepo({
+              owner, repo, created: `<${cutoffDay}`, per_page: 100, page: 1
+            });
+            const historicalRuns = runResponse.data.workflow_runs
+              .filter(run => run.name === 'Godot PR validation' && run.head_repository?.id === 1427565370)
+              .slice(0, 8);
             const isEligible = a => (
               !a.expired &&
               allowed.test(a.name) &&
               Date.parse(a.created_at) < cutoffMs &&
               a.workflow_run?.head_repository_id === 1427565370
             );
-            while (deleted < limit && passes < 15) {
-              passes++;
-              const first = await github.rest.actions.listArtifactsForRepo({
-                owner, repo, per_page: 1, page: 1
+            for (const run of historicalRuns) {
+              if (deleted >= limit) break;
+              const response = await github.rest.actions.listWorkflowRunArtifacts({
+                owner, repo, run_id: run.id, per_page: 100, page: 1
               });
-              const lastPage = Math.ceil(first.data.total_count / 100);
-              if (!lastPage) break;
-              let matches = [];
-              for (let offset = 0; offset < 6 && lastPage - offset > 0; offset++) {
-                const response = await github.rest.actions.listArtifactsForRepo({
-                  owner, repo, per_page: 100, page: lastPage - offset
-                });
-                inspected += response.data.artifacts.length;
-                matches = response.data.artifacts.filter(isEligible);
-                if (matches.length) break;
-              }
-              if (!matches.length) break;
-              for (const artifact of matches.slice(0, limit - deleted)) {
+              runsInspected++;
+              inspected += response.data.artifacts.length;
+              for (const artifact of response.data.artifacts.filter(isEligible).slice(0, limit - deleted)) {
                 if (dryRun) {
                   core.info(`DRY RUN: Would delete ${artifact.name} (#${artifact.id}, ${artifact.size_in_bytes} bytes)`);
                 } else {
@@ -71,14 +71,12 @@ jobs:
                     owner, repo, artifact_id: artifact.id
                   });
                   core.info(`Deleted ${artifact.name} (#${artifact.id}, ${artifact.size_in_bytes} bytes)`);
-                  await new Promise(resolve => setTimeout(resolve, 900));
                 }
                 deleted++;
                 bytes += artifact.size_in_bytes;
               }
-              if (dryRun) break;
             }
-            core.info(`${dryRun ? 'DRY RUN' : 'CLEANUP'}: ${deleted} old test artifacts; ${bytes} bytes; scanned ${inspected} entries.`);
+            core.info(`${dryRun ? 'DRY RUN' : 'CLEANUP'}: ${deleted} old test artifacts; ${bytes} bytes; scanned ${inspected} artifacts in ${runsInspected} runs.`);
             await core.summary
               .addHeading('LearnQuest artifact cleanup')
               .addTable([
