@@ -149,7 +149,7 @@ func _make_touch_controls() -> void:
     jump.offset_right = -12.0
     jump.custom_minimum_size = Vector2(94, 52)
     root.add_child(jump)
-    jump.pressed.connect(func(): player.mobile_jump())
+    jump.pressed.connect(_mobile_jump)
 
     # Only the parent runner handles the actual return transition. The same
     # scene remains independently launchable for Godot movement testing.
@@ -416,7 +416,17 @@ func _unhandled_key_input(event: InputEvent) -> void:
     elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G:
         guard_robot()
 
+func _mobile_jump() -> void:
+    # Safari can deliver a queued touch after focus loss; never replay it on resume.
+    if adventure_focus_paused or not is_instance_valid(player):
+        return
+    player.mobile_jump()
+
 func _sync_axis() -> void:
+    if adventure_focus_paused:
+        pressed.clear()
+        mobile_axis = Vector2.ZERO
+        return
     mobile_axis = Vector2.ZERO
     for direction in pressed:
         mobile_axis += direction
