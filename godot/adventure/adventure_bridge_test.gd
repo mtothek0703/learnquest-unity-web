@@ -85,6 +85,27 @@ func _check() -> void:
     if not player.is_on_floor():
         _fail("walking hero never landed on real 3D collision floor")
         return
+    # A4: an obstacle behind the walking hero must pull the third-person
+    # camera forward, without modifying the runner chase camera.
+    var camera_wall := StaticBody3D.new()
+    var camera_collision := CollisionShape3D.new()
+    var camera_box := BoxShape3D.new()
+    camera_box.size = Vector3(6.0, 8.0, 0.5)
+    camera_collision.shape = camera_box
+    camera_wall.add_child(camera_collision)
+    area.add_child(camera_wall)
+    camera_wall.global_position = player.global_position + Vector3(0.0, 2.0, 4.0)
+    await physics_frame
+    area.call("_update_follow_camera")
+    if walk_camera.global_position.z >= player.global_position.z + 6.0:
+        _fail("walking camera clipped through an obstacle behind the hero")
+        return
+    camera_wall.queue_free()
+    await physics_frame
+    area.call("_update_follow_camera")
+    if walk_camera.global_position.z <= player.global_position.z + 7.5:
+        _fail("walking camera failed to recover its normal distance")
+        return
     var start_x := player.global_position.x
     area.set("mobile_axis", Vector2(1.0, 0.0))
     for step in range(12):
