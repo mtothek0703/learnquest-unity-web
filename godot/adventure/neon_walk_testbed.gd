@@ -262,7 +262,9 @@ func _resolve_robot_strike() -> void:
         if robot_energy == 0:
             # Training encounter resets locally; never silently drains runner lives.
             robot_energy = 3
-            player.global_position = to_global(Vector3(0.0, 1.5, 0.0))
+            player.respawn()
+            pressed.clear()
+            mobile_axis = Vector2.ZERO
             robot_feedback = "ENERGIE LEER – CHECKPOINT"
     _update_robot_label()
 
