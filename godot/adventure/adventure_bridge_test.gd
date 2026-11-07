@@ -187,6 +187,11 @@ func _check() -> void:
         _fail("retry must reset robot encounter")
         return
     var preserved_distance := float(game.get("distance"))
+    # Locked exit must be red until mission and robot are both complete.
+    var portal_material := area.get("portal_material") as StandardMaterial3D
+    if portal_material == null or portal_material.albedo_color != Color("#ff6655", 0.35):
+        _fail("locked portal must show a red 3D material")
+        return
     # Portal cannot return until all five interactions have happened.
     area.call("_request_return")
     if int(game.get("xp")) != initial_xp:
@@ -204,6 +209,9 @@ func _check() -> void:
     if not bool(area.get("mission_complete")) or int(area.get("crystals_collected")) != 3 or int(area.get("switches_activated")) != 2:
         _fail("all three crystals and two switches must unlock portal")
         return
+    if portal_material.albedo_color != Color("#ff6655", 0.35):
+        _fail("robot must still gate green exit after collecting mission targets")
+        return
     area.call("_request_return")
     if str(game.get("phase")) != "adventure":
         _fail("completed mission must not allow remote remount away from exit portal")
@@ -220,6 +228,9 @@ func _check() -> void:
     area.set("player_attack_cooldown", 0.0)
     if not bool(area.call("attack_robot")):
         _fail("robot defeat required for exit portal")
+        return
+    if portal_material.albedo_color != Color("#35f0ba", 0.35):
+        _fail("completed mission and robot defeat must turn exit portal green")
         return
     player.global_position = area.global_position + Vector3(0.0, 1.0, 6.0)
     area.call("_request_return")
