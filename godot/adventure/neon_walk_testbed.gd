@@ -23,6 +23,7 @@ var robot_stunned := false
 var robot_label: Label
 var robot_energy := 3
 var robot_guard := 0.0
+var robot_guard_cooldown := 0.0
 var robot_last_hit := false
 var robot_feedback := ""
 
@@ -63,6 +64,7 @@ func _physics_process(delta: float) -> void:
         return
     player.set_mobile_move(mobile_axis)
     robot_guard = maxf(0.0, robot_guard - delta)
+    robot_guard_cooldown = maxf(0.0, robot_guard_cooldown - delta)
     if is_instance_valid(robot) and not robot_stunned:
         robot_cooldown = maxf(0.0, robot_cooldown - delta)
         if robot_warning > 0.0:
@@ -212,8 +214,11 @@ func attack_robot() -> bool:
     return true
 
 func guard_robot() -> void:
-    # A short, deliberate defensive window; independent of runner power-ups.
+    # Prevent holding/repeatedly tapping guard from granting permanent invulnerability.
+    if robot_guard_cooldown > 0.0 or robot_stunned:
+        return
     robot_guard = 0.8
+    robot_guard_cooldown = 2.0
     robot_feedback = "SCHILD AKTIV"
     _update_robot_label()
 
@@ -318,6 +323,7 @@ func reset_mission() -> void:
     robot_stunned = false
     robot_energy = 3
     robot_guard = 0.0
+    robot_guard_cooldown = 0.0
     robot_last_hit = false
     robot_feedback = ""
     if is_instance_valid(robot):
