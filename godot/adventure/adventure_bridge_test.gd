@@ -106,18 +106,25 @@ func _check() -> void:
         return
     # A4: switching Safari tabs must freeze a pending robot strike and release touch.
     area.set("robot_warning", 0.75)
+    player.velocity = Vector3(3.0, -2.0, 0.0)
+    var focus_position := player.global_position
     area.set("mobile_axis", Vector2(1.0, 0.0))
     area.call("_notification", Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
     if not bool(area.get("adventure_focus_paused")) or (area.get("mobile_axis") as Vector2) != Vector2.ZERO:
         _fail("focus loss must pause adventure and clear walking touch movement")
         return
     area.call("_physics_process", 0.5)
+    for focus_step in range(3):
+        await physics_frame
+    if player.is_physics_processing() or player.global_position.distance_to(focus_position) > 0.001:
+        _fail("backgrounded walking hero must not continue gravity or movement")
+        return
     if absf(float(area.get("robot_warning")) - 0.75) > 0.001:
         _fail("background tab must not consume robot warning or cause a hidden hit")
         return
     area.call("_notification", Node.NOTIFICATION_APPLICATION_FOCUS_IN)
-    if bool(area.get("adventure_focus_paused")):
-        _fail("focus regain must resume adventure")
+    if bool(area.get("adventure_focus_paused")) or not player.is_physics_processing():
+        _fail("focus regain must resume arena and walking physics")
         return
     area.set("robot_warning", 0.0)
     player.global_position = robot.global_position + Vector3(1.0, 0.0, 0.0)
