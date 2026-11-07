@@ -29,6 +29,7 @@ var robot_guard := 0.0
 var robot_guard_cooldown := 0.0
 var robot_last_hit := false
 var robot_feedback := ""
+var hero_material: StandardMaterial3D
 
 func _ready() -> void:
     _platform(Vector3(0, -0.5, 0), Vector3(18, 1, 18), Color("#263456"))
@@ -46,6 +47,9 @@ func _ready() -> void:
     player.add_child(shape)
     var mesh := MeshInstance3D.new()
     mesh.mesh = CapsuleMesh.new()
+    hero_material = StandardMaterial3D.new()
+    hero_material.albedo_color = Color("#d7e9ff")
+    mesh.material_override = hero_material
     mesh.position.y = 0
     player.add_child(mesh)
     add_child(player)
@@ -69,6 +73,7 @@ func _physics_process(delta: float) -> void:
     player_attack_cooldown = maxf(0.0, player_attack_cooldown - delta)
     robot_guard = maxf(0.0, robot_guard - delta)
     robot_guard_cooldown = maxf(0.0, robot_guard_cooldown - delta)
+    _update_hero_guard_visual()
     if is_instance_valid(robot) and not robot_stunned:
         robot_cooldown = maxf(0.0, robot_cooldown - delta)
         if robot_warning > 0.0:
@@ -240,6 +245,7 @@ func guard_robot() -> void:
     robot_guard = 0.8
     robot_guard_cooldown = 2.0
     robot_feedback = "SCHILD AKTIV"
+    _update_hero_guard_visual()
     _update_robot_label()
 
 func _resolve_robot_strike() -> void:
@@ -254,6 +260,12 @@ func _resolve_robot_strike() -> void:
             player.global_position = to_global(Vector3(0.0, 1.5, 0.0))
             robot_feedback = "ENERGIE LEER – CHECKPOINT"
     _update_robot_label()
+
+func _update_hero_guard_visual() -> void:
+    if hero_material == null:
+        return
+    # The walking hero shows an in-world shield cue, not just HUD text.
+    hero_material.albedo_color = Color("#65f5c7") if robot_guard > 0.0 else Color("#d7e9ff")
 
 func _update_robot_visual() -> void:
     if robot_material == null:
@@ -357,6 +369,7 @@ func reset_mission() -> void:
         robot.visible = true
     _update_robot_label()
     _update_robot_visual()
+    _update_hero_guard_visual()
     _update_mission_label()
 
 func _unhandled_key_input(event: InputEvent) -> void:
