@@ -118,18 +118,20 @@ func _make_touch_controls() -> void:
         button.anchor_right = entry[1].x
         button.anchor_top = entry[1].y
         button.anchor_bottom = entry[1].y
-        button.custom_minimum_size = Vector2(110, 52)
+        button.custom_minimum_size = Vector2(84, 44)
         root.add_child(button)
         var direction: Vector2 = entry[2]
         button.button_down.connect(func(): pressed[direction] = true; _sync_axis())
         button.button_up.connect(func(): pressed.erase(direction); _sync_axis())
     var jump := Button.new()
     jump.text = "SPRUNG"
-    jump.anchor_left = 0.80
-    jump.anchor_right = 0.80
-    jump.anchor_top = 0.77
-    jump.anchor_bottom = 0.77
-    jump.custom_minimum_size = Vector2(130, 70)
+    jump.anchor_left = 1.0
+    jump.anchor_right = 1.0
+    jump.anchor_top = 0.80
+    jump.anchor_bottom = 0.80
+    jump.offset_left = -106.0
+    jump.offset_right = -12.0
+    jump.custom_minimum_size = Vector2(94, 52)
     root.add_child(jump)
     jump.pressed.connect(func(): player.mobile_jump())
 
@@ -147,29 +149,35 @@ func _make_touch_controls() -> void:
     return_button.pressed.connect(_request_return)
     var interact_button := Button.new()
     interact_button.text = "INTERAKTION"
-    interact_button.anchor_left = 0.77
-    interact_button.anchor_right = 0.77
+    interact_button.anchor_left = 1.0
+    interact_button.anchor_right = 1.0
+    interact_button.offset_left = -150.0
+    interact_button.offset_right = -12.0
     interact_button.anchor_top = 0.56
     interact_button.anchor_bottom = 0.56
-    interact_button.custom_minimum_size = Vector2(160, 60)
+    interact_button.custom_minimum_size = Vector2(138, 48)
     root.add_child(interact_button)
     interact_button.pressed.connect(interact)
     var attack := Button.new()
     attack.text = "ANGRIFF"
-    attack.anchor_left = 0.77
-    attack.anchor_right = 0.77
+    attack.anchor_left = 1.0
+    attack.anchor_right = 1.0
+    attack.offset_left = -150.0
+    attack.offset_right = -12.0
     attack.anchor_top = 0.68
     attack.anchor_bottom = 0.68
-    attack.custom_minimum_size = Vector2(160, 55)
+    attack.custom_minimum_size = Vector2(138, 48)
     root.add_child(attack)
     attack.pressed.connect(attack_robot)
     var guard := Button.new()
     guard.text = "ABWEHR"
-    guard.anchor_left = 0.61
-    guard.anchor_right = 0.61
+    guard.anchor_left = 1.0
+    guard.anchor_right = 1.0
+    guard.offset_left = -242.0
+    guard.offset_right = -116.0
     guard.anchor_top = 0.77
     guard.anchor_bottom = 0.77
-    guard.custom_minimum_size = Vector2(120, 55)
+    guard.custom_minimum_size = Vector2(126, 48)
     root.add_child(guard)
     guard.pressed.connect(guard_robot)
     robot_label = Label.new()
