@@ -31,6 +31,7 @@ var robot_last_hit := false
 var robot_feedback := ""
 var hero_material: StandardMaterial3D
 var portal_material: StandardMaterial3D
+var adventure_focus_paused := false
 
 func _ready() -> void:
     _platform(Vector3(0, -0.5, 0), Vector3(18, 1, 18), Color("#263456"))
@@ -69,6 +70,9 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
     if not is_instance_valid(player):
+        return
+    # Safari tab/app switches must not consume the robot's telegraph while hidden.
+    if adventure_focus_paused:
         return
     player.set_mobile_move(mobile_axis)
     player_attack_cooldown = maxf(0.0, player_attack_cooldown - delta)
@@ -402,5 +406,10 @@ func _sync_axis() -> void:
 
 func _notification(what: int) -> void:
     if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+        adventure_focus_paused = true
         pressed.clear()
         mobile_axis = Vector2.ZERO
+        if is_instance_valid(player):
+            player.set_mobile_move(Vector2.ZERO)
+    elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_WM_WINDOW_FOCUS_IN:
+        adventure_focus_paused = false
