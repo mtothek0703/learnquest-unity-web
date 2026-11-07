@@ -370,9 +370,19 @@ func interact() -> bool:
         return false
     if not is_instance_valid(player):
         return false
+    # When two objectives overlap the interaction radius, select the closest
+    # visible one rather than the first item created in the scene.
+    var nearest: Node3D = null
+    var nearest_distance := INTERACT_RADIUS
     for target in mission_targets:
-        if not target.visible or player.global_position.distance_to(target.global_position) > INTERACT_RADIUS:
+        if not target.visible:
             continue
+        var distance := player.global_position.distance_to(target.global_position)
+        if distance <= nearest_distance:
+            nearest = target
+            nearest_distance = distance
+    if nearest != null:
+        var target := nearest
         target.visible = false
         if target.name.begins_with("Crystal"):
             crystals_collected += 1
