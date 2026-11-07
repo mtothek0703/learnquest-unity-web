@@ -30,6 +30,7 @@ var robot_guard_cooldown := 0.0
 var robot_last_hit := false
 var robot_feedback := ""
 var hero_material: StandardMaterial3D
+var portal_material: StandardMaterial3D
 
 func _ready() -> void:
     _platform(Vector3(0, -0.5, 0), Vector3(18, 1, 18), Color("#263456"))
@@ -299,10 +300,11 @@ func _create_exit_portal() -> void:
     mesh.height = 2.0
     portal.mesh = mesh
     var material := StandardMaterial3D.new()
-    material.albedo_color = Color("#35f0ba")
+    material.albedo_color = Color("#ff6655")
     material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
     material.albedo_color.a = 0.35
     material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    portal_material = material
     portal.material_override = material
     add_child(portal)
 
@@ -346,6 +348,11 @@ func interact() -> bool:
     return false
 
 func _update_mission_label() -> void:
+    # Portal stays visibly locked until the complete mission AND robot encounter.
+    if portal_material != null:
+        var tint := Color("#35f0ba") if mission_complete and robot_stunned else Color("#ff6655")
+        tint.a = 0.35
+        portal_material.albedo_color = tint
     if mission_label != null:
         mission_label.text = "Kristalle %d/3 | Schalter %d/2 | %s" % [crystals_collected, switches_activated, "PORTAL BEREIT" if mission_complete and robot_stunned else "Roboter besiegen" if mission_complete else "Portal gesperrt"]
 
