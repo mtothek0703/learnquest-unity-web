@@ -24,6 +24,7 @@ var robot_label: Label
 var robot_energy := 3
 var robot_guard := 0.0
 var robot_last_hit := false
+var robot_feedback := ""
 
 func _ready() -> void:
     _platform(Vector3(0, -0.5, 0), Vector3(18, 1, 18), Color("#263456"))
@@ -200,6 +201,7 @@ func attack_robot() -> bool:
     if player.global_position.distance_to(robot.global_position) > ROBOT_RANGE:
         return false
     robot_hits += 1
+    robot_feedback = "TREFFER! Roboter %d/2" % robot_hits
     robot_warning = 0.0
     robot_cooldown = 2.0
     if robot_hits >= 2:
@@ -212,17 +214,21 @@ func attack_robot() -> bool:
 func guard_robot() -> void:
     # A short, deliberate defensive window; independent of runner power-ups.
     robot_guard = 0.8
+    robot_feedback = "SCHILD AKTIV"
     _update_robot_label()
 
 func _resolve_robot_strike() -> void:
     # Distance is checked when the telegraph ends: stepping away is a dodge.
     robot_last_hit = player.global_position.distance_to(robot.global_position) <= ROBOT_RANGE and robot_guard <= 0.0
+    robot_feedback = "TREFFER ERHALTEN" if robot_last_hit else "ABGEWEHRT" if robot_guard > 0.0 and player.global_position.distance_to(robot.global_position) <= ROBOT_RANGE else "AUSGEWICHEN"
     if robot_last_hit:
         robot_energy = maxi(0, robot_energy - 1)
         if robot_energy == 0:
             # Training encounter resets locally; never silently drains runner lives.
             robot_energy = 3
             player.global_position = to_global(Vector3(0.0, 1.5, 0.0))
+            robot_feedback = "ENERGIE LEER – CHECKPOINT"
+    _update_robot_label()
 
 func _update_robot_label() -> void:
     if robot_label == null:
@@ -233,6 +239,8 @@ func _update_robot_label() -> void:
         robot_label.text = "ACHTUNG: Ausweichen oder ABWEHR! Energie %d/3" % robot_energy
     else:
         robot_label.text = "Roboter: %d/2 Treffer | Energie %d/3" % [robot_hits, robot_energy]
+    if robot_feedback != "" and not robot_stunned:
+        robot_label.text += " | " + robot_feedback
 
 func _request_return() -> void:
     if mission_complete and robot_stunned and is_instance_valid(player) and player.global_position.distance_to(to_global(EXIT_PORTAL_POSITION)) <= EXIT_PORTAL_RADIUS:
@@ -311,6 +319,7 @@ func reset_mission() -> void:
     robot_energy = 3
     robot_guard = 0.0
     robot_last_hit = false
+    robot_feedback = ""
     if is_instance_valid(robot):
         robot.visible = true
     _update_robot_label()
