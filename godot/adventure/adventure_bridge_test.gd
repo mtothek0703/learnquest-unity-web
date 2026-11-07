@@ -104,6 +104,22 @@ func _check() -> void:
     if robot == null:
         _fail("training robot missing")
         return
+    # A4: switching Safari tabs must freeze a pending robot strike and release touch.
+    area.set("robot_warning", 0.75)
+    area.set("mobile_axis", Vector2(1.0, 0.0))
+    area.call("_notification", Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+    if not bool(area.get("adventure_focus_paused")) or (area.get("mobile_axis") as Vector2) != Vector2.ZERO:
+        _fail("focus loss must pause adventure and clear walking touch movement")
+        return
+    area.call("_physics_process", 0.5)
+    if absf(float(area.get("robot_warning")) - 0.75) > 0.001:
+        _fail("background tab must not consume robot warning or cause a hidden hit")
+        return
+    area.call("_notification", Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+    if bool(area.get("adventure_focus_paused")):
+        _fail("focus regain must resume adventure")
+        return
+    area.set("robot_warning", 0.0)
     player.global_position = robot.global_position + Vector3(1.0, 0.0, 0.0)
     area.set("robot_warning", 0.01)
     area.call("_update_robot_visual")
