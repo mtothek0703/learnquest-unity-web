@@ -154,6 +154,22 @@ func _check() -> void:
     if (area.get("mobile_axis") as Vector2) != Vector2.ZERO or bool(player.get("jump_requested")):
         _fail("backgrounded touch must not queue movement or jump for focus regain")
         return
+    # The CharacterBody also receives keyboard events independently of the HUD.
+    # Delayed SPACE and direct mobile calls must not queue a jump on focus regain.
+    var late_space := InputEventKey.new()
+    late_space.keycode = KEY_SPACE
+    late_space.pressed = true
+    player.call("_notification", Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+    player.call("_unhandled_key_input", late_space)
+    player.call("mobile_jump")
+    player.call("set_mobile_move", Vector2(1.0, 0.0))
+    if bool(player.get("jump_requested")) or (player.get("move_axis") as Vector2) != Vector2.ZERO:
+        _fail("backgrounded CharacterBody must reject late keyboard/mobile inputs")
+        return
+    player.call("_notification", Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+    if bool(player.get("jump_requested")) or (player.get("move_axis") as Vector2) != Vector2.ZERO:
+        _fail("focus regain must not replay walking input")
+        return
     # Background input must not collect items, attack, guard or return to the runner.
     var paused_crystals := int(area.get("crystals_collected"))
     var paused_hits := int(area.get("robot_hits"))
