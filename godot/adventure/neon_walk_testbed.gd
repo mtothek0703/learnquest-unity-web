@@ -174,6 +174,17 @@ func _make_touch_controls() -> void:
     return_button.offset_bottom = 64.0
     root.add_child(return_button)
     return_button.pressed.connect(_request_return)
+    # Explicit on-foot retry; never restarts the runner or reopens the quiz.
+    var retry_button := Button.new()
+    retry_button.name = "Retry Adventure Mission"
+    retry_button.text = "NEUSTART"
+    retry_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+    retry_button.offset_left = 16.0
+    retry_button.offset_right = 156.0
+    retry_button.offset_top = 16.0
+    retry_button.offset_bottom = 64.0
+    root.add_child(retry_button)
+    retry_button.pressed.connect(_retry_from_ui)
     var interact_button := Button.new()
     interact_button.text = "INTERAKTION"
     interact_button.anchor_left = 1.0
@@ -380,6 +391,11 @@ func _update_mission_label() -> void:
         portal_material.albedo_color = tint
     if mission_label != null:
         mission_label.text = "Kristalle %d/3 | Schalter %d/2 | %s" % [crystals_collected, switches_activated, "PORTAL BEREIT" if mission_complete and robot_stunned else "Roboter besiegen" if mission_complete else "Portal gesperrt"]
+
+func _retry_from_ui() -> void:
+    if adventure_focus_paused:
+        return
+    reset_mission()
 
 func reset_mission() -> void:
     # Retry is a fresh on-foot attempt: restore the checkpoint and clear
