@@ -233,7 +233,12 @@ func _check() -> void:
         _fail("completed mission and robot defeat must turn exit portal green")
         return
     player.global_position = area.global_position + Vector3(0.0, 1.0, 6.0)
-    area.call("_request_return")
+    # Desktop E is the same contextual interaction used for crystals/switches;
+    # at the completed portal it must remount without requiring a touch button.
+    var remount_key := InputEventKey.new()
+    remount_key.keycode = KEY_E
+    remount_key.pressed = true
+    area.call("_unhandled_key_input", remount_key)
     if str(game.get("phase")) != "race" or game.get("adventure_area") != null:
         _fail("on-foot signal did not return to active race")
         return
