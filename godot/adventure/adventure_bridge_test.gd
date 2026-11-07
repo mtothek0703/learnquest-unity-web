@@ -170,6 +170,17 @@ func _check() -> void:
     if str(area.get("robot_feedback")) != "AUSGEWICHEN":
         _fail("robot dodge feedback missing")
         return
+    # Exhausting local robot energy must use a real checkpoint respawn, not
+    # teleport while retaining momentum or stale mobile movement.
+    player.global_position = robot.global_position + Vector3(1.0, 0.0, 0.0)
+    player.velocity = Vector3(7.0, -9.0, 4.0)
+    area.set("mobile_axis", Vector2(1.0, 0.0))
+    area.set("robot_energy", 1)
+    area.set("robot_guard", 0.0)
+    area.call("_resolve_robot_strike")
+    if player.global_position.distance_to(area.to_global(Vector3(0.0, 1.5, 0.0))) > 0.01 or player.velocity != Vector3.ZERO or (area.get("mobile_axis") as Vector2) != Vector2.ZERO or int(area.get("robot_energy")) != 3:
+        _fail("robot checkpoint must clear velocity, mobile input and restore energy")
+        return
     area.call("reset_mission")
     if hero_material.albedo_color != Color("#d7e9ff"):
         _fail("mission retry must clear the guard visual")
