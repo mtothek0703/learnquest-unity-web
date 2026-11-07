@@ -21,6 +21,9 @@ var robot_warning := 0.0
 var robot_cooldown := 0.0
 var robot_stunned := false
 var robot_label: Label
+var robot_energy := 3
+var robot_guard := 0.0
+var robot_last_hit := false
 
 func _ready() -> void:
     _platform(Vector3(0, -0.5, 0), Vector3(18, 1, 18), Color("#263456"))
@@ -58,11 +61,13 @@ func _physics_process(delta: float) -> void:
     if not is_instance_valid(player):
         return
     player.set_mobile_move(mobile_axis)
+    robot_guard = maxf(0.0, robot_guard - delta)
     if is_instance_valid(robot) and not robot_stunned:
         robot_cooldown = maxf(0.0, robot_cooldown - delta)
         if robot_warning > 0.0:
             robot_warning = maxf(0.0, robot_warning - delta)
             if robot_warning == 0.0:
+                _resolve_robot_strike()
                 robot_cooldown = 2.0
                 _update_robot_label()
         elif robot_cooldown <= 0.0 and player.global_position.distance_to(robot.global_position) <= ROBOT_RANGE:
@@ -155,6 +160,15 @@ func _make_touch_controls() -> void:
     attack.custom_minimum_size = Vector2(160, 55)
     root.add_child(attack)
     attack.pressed.connect(attack_robot)
+    var guard := Button.new()
+    guard.text = "ABWEHR"
+    guard.anchor_left = 0.61
+    guard.anchor_right = 0.61
+    guard.anchor_top = 0.77
+    guard.anchor_bottom = 0.77
+    guard.custom_minimum_size = Vector2(120, 55)
+    root.add_child(guard)
+    guard.pressed.connect(guard_robot)
     robot_label = Label.new()
     robot_label.anchor_left = 0.27
     robot_label.anchor_right = 0.75
@@ -194,15 +208,30 @@ func attack_robot() -> bool:
     _update_robot_label()
     return true
 
+func guard_robot() -> void:
+    # A short, deliberate defensive window; independent of runner power-ups.
+    robot_guard = 0.8
+    _update_robot_label()
+
+func _resolve_robot_strike() -> void:
+    # Distance is checked when the telegraph ends: stepping away is a dodge.
+    robot_last_hit = player.global_position.distance_to(robot.global_position) <= ROBOT_RANGE and robot_guard <= 0.0
+    if robot_last_hit:
+        robot_energy = maxi(0, robot_energy - 1)
+        if robot_energy == 0:
+            # Training encounter resets locally; never silently drains runner lives.
+            robot_energy = 3
+            player.global_position = to_global(Vector3(0.0, 1.5, 0.0))
+
 func _update_robot_label() -> void:
     if robot_label == null:
         return
     if robot_stunned:
         robot_label.text = "Roboter deaktiviert"
     elif robot_warning > 0.0:
-        robot_label.text = "ACHTUNG: Roboter lädt Angriff!"
+        robot_label.text = "ACHTUNG: Ausweichen oder ABWEHR! Energie %d/3" % robot_energy
     else:
-        robot_label.text = "Roboter: %d/2 Treffer" % robot_hits
+        robot_label.text = "Roboter: %d/2 Treffer | Energie %d/3" % [robot_hits, robot_energy]
 
 func _request_return() -> void:
     if mission_complete and is_instance_valid(player) and player.global_position.distance_to(to_global(EXIT_PORTAL_POSITION)) <= EXIT_PORTAL_RADIUS:
@@ -278,6 +307,9 @@ func reset_mission() -> void:
     robot_warning = 0.0
     robot_cooldown = 0.0
     robot_stunned = false
+    robot_energy = 3
+    robot_guard = 0.0
+    robot_last_hit = false
     if is_instance_valid(robot):
         robot.visible = true
     _update_robot_label()
@@ -288,6 +320,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
         interact()
     elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F:
         attack_robot()
+    elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G:
+        guard_robot()
 
 func _sync_axis() -> void:
     mobile_axis = Vector2.ZERO
