@@ -101,6 +101,12 @@ func _check() -> void:
     if str(area.get("robot_feedback")) != "ABGEWEHRT":
         _fail("robot guard feedback missing")
         return
+    # Repeated guard input cannot extend the active window or bypass cooldown.
+    var guard_remaining := float(area.get("robot_guard"))
+    area.call("guard_robot")
+    if absf(float(area.get("robot_guard")) - guard_remaining) > 0.001:
+        _fail("guard spam must not refresh the protection window")
+        return
     area.set("robot_guard", 0.0)
     player.global_position = robot.global_position + Vector3(6.0, 0.0, 0.0)
     area.set("robot_warning", 0.01)
