@@ -371,6 +371,12 @@ func _update_mission_label() -> void:
         mission_label.text = "Kristalle %d/3 | Schalter %d/2 | %s" % [crystals_collected, switches_activated, "PORTAL BEREIT" if mission_complete and robot_stunned else "Roboter besiegen" if mission_complete else "Portal gesperrt"]
 
 func reset_mission() -> void:
+    # Retry is a fresh on-foot attempt: restore the checkpoint and clear
+    # any held touch direction so the hero cannot drift into another hazard.
+    pressed.clear()
+    mobile_axis = Vector2.ZERO
+    if is_instance_valid(player):
+        player.respawn()
     crystals_collected = 0
     switches_activated = 0
     mission_complete = false
