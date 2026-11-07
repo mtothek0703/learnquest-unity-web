@@ -78,13 +78,34 @@ func _check() -> void:
     if player.global_position.x <= start_x + 0.3:
         _fail("mobile walking control did not move CharacterBody3D")
         return
-    # A3: robot only accepts nearby attacks; two hits stun it; reset restores it.
-    if bool(area.call("attack_robot")):
-        _fail("remote robot attack must be rejected")
-        return
+    # A3: telegraphed strike hits in range, guard blocks, leaving range dodges.
     var robot := area.get("robot") as Node3D
     if robot == null:
         _fail("training robot missing")
+        return
+    player.global_position = robot.global_position + Vector3(1.0, 0.0, 0.0)
+    area.set("robot_warning", 0.01)
+    await physics_frame
+    if int(area.get("robot_energy")) != 2 or not bool(area.get("robot_last_hit")):
+        _fail("unguarded robot strike must cost one local energy")
+        return
+    area.call("guard_robot")
+    area.set("robot_warning", 0.01)
+    await physics_frame
+    if int(area.get("robot_energy")) != 2 or bool(area.get("robot_last_hit")):
+        _fail("guard window must block robot strike")
+        return
+    area.set("robot_guard", 0.0)
+    player.global_position = robot.global_position + Vector3(6.0, 0.0, 0.0)
+    area.set("robot_warning", 0.01)
+    await physics_frame
+    if int(area.get("robot_energy")) != 2 or bool(area.get("robot_last_hit")):
+        _fail("leaving robot range must dodge telegraphed strike")
+        return
+    area.call("reset_mission")
+    # A3: robot only accepts nearby attacks; two hits stun it; reset restores it.
+    if bool(area.call("attack_robot")):
+        _fail("remote robot attack must be rejected")
         return
     player.global_position = robot.global_position + Vector3(1.0, 0.0, 0.0)
     if not bool(area.call("attack_robot")) or not bool(area.call("attack_robot")):
