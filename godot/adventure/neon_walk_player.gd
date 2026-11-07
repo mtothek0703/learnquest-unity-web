@@ -36,7 +36,8 @@ func mobile_jump() -> void:
     jump_requested = true
 
 func respawn() -> void:
-    global_position = spawn_point
+    # Spawn is arena-local; the runner mounts this arena far from world origin.
+    global_position = get_parent().to_global(spawn_point)
     velocity = Vector3.ZERO
     move_axis = Vector2.ZERO
     jump_requested = false
