@@ -442,6 +442,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
         attack_robot()
     elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G:
         guard_robot()
+    elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R:
+        # Desktop retry matches the mobile button without restarting the quiz/race.
+        _retry_from_ui()
 
 func _mobile_jump() -> void:
     # Safari can deliver a queued touch after focus loss; never replay it on resume.
