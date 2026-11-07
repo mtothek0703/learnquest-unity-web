@@ -226,6 +226,8 @@ func _create_robot() -> void:
     _update_robot_label()
 
 func attack_robot() -> bool:
+    if adventure_focus_paused:
+        return false
     if not is_instance_valid(player) or not is_instance_valid(robot) or robot_stunned or player_attack_cooldown > 0.0:
         return false
     if player.global_position.distance_to(robot.global_position) > ROBOT_RANGE:
@@ -244,6 +246,8 @@ func attack_robot() -> bool:
     return true
 
 func guard_robot() -> void:
+    if adventure_focus_paused:
+        return
     # Prevent holding/repeatedly tapping guard from granting permanent invulnerability.
     if robot_guard_cooldown > 0.0 or robot_stunned:
         return
@@ -293,6 +297,8 @@ func _update_robot_label() -> void:
         robot_label.text += " | " + robot_feedback
 
 func _request_return() -> void:
+    if adventure_focus_paused:
+        return
     if mission_complete and robot_stunned and is_instance_valid(player) and player.global_position.distance_to(to_global(EXIT_PORTAL_POSITION)) <= EXIT_PORTAL_RADIUS:
         return_requested.emit()
 
@@ -338,6 +344,8 @@ func _mission_object(id: String, at: Vector3, tint: Color) -> void:
     mission_targets.append(node)
 
 func interact() -> bool:
+    if adventure_focus_paused:
+        return false
     if not is_instance_valid(player):
         return false
     for target in mission_targets:
@@ -391,6 +399,8 @@ func _contextual_interact() -> void:
         _request_return()
 
 func _unhandled_key_input(event: InputEvent) -> void:
+    if adventure_focus_paused:
+        return
     if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E:
         # One contextual key for the full adventure: collect/activate nearby
         # objectives, then remount only at the unlocked exit portal.
