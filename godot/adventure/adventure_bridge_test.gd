@@ -141,8 +141,15 @@ func _check() -> void:
         _fail("remote robot attack must be rejected")
         return
     player.global_position = robot.global_position + Vector3(1.0, 0.0, 0.0)
-    if not bool(area.call("attack_robot")) or not bool(area.call("attack_robot")):
-        _fail("nearby robot must accept two attacks")
+    if not bool(area.call("attack_robot")):
+        _fail("nearby robot must accept first attack")
+        return
+    if bool(area.call("attack_robot")) or int(area.get("robot_hits")) != 1:
+        _fail("attack spam must not bypass the 0.65s cooldown")
+        return
+    area.set("player_attack_cooldown", 0.0)
+    if not bool(area.call("attack_robot")):
+        _fail("nearby robot must accept second attack after cooldown")
         return
     if not bool(area.get("robot_stunned")) or robot.visible:
         _fail("robot must be stunned and hidden after two hits")
@@ -151,7 +158,7 @@ func _check() -> void:
         _fail("stunned robot cannot be attacked repeatedly")
         return
     area.call("reset_mission")
-    if bool(area.get("robot_stunned")) or not robot.visible or int(area.get("robot_hits")) != 0:
+    if bool(area.get("robot_stunned")) or not robot.visible or int(area.get("robot_hits")) != 0 or float(area.get("player_attack_cooldown")) != 0.0:
         _fail("retry must reset robot encounter")
         return
     var preserved_distance := float(game.get("distance"))
@@ -182,7 +189,11 @@ func _check() -> void:
         _fail("completed collection mission must still require robot defeat")
         return
     player.global_position = robot.global_position + Vector3(1.0, 0.0, 0.0)
-    if not bool(area.call("attack_robot")) or not bool(area.call("attack_robot")):
+    if not bool(area.call("attack_robot")):
+        _fail("first robot hit required for exit portal")
+        return
+    area.set("player_attack_cooldown", 0.0)
+    if not bool(area.call("attack_robot")):
         _fail("robot defeat required for exit portal")
         return
     player.global_position = area.global_position + Vector3(0.0, 1.0, 6.0)
