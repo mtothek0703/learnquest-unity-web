@@ -113,6 +113,26 @@ func _check() -> void:
     if not bool(area.get("adventure_focus_paused")) or (area.get("mobile_axis") as Vector2) != Vector2.ZERO:
         _fail("focus loss must pause adventure and clear walking touch movement")
         return
+    # Touch events may arrive after Safari has already lost focus. Neither
+    # movement nor a queued jump may be replayed when the player returns.
+    var walking_jump: Button = null
+    var walking_right: Button = null
+    for touch_layer in area.get_children():
+        if touch_layer is CanvasLayer:
+            for touch_root in touch_layer.get_children():
+                for touch_control in touch_root.get_children():
+                    if touch_control is Button and touch_control.text == "SPRUNG":
+                        walking_jump = touch_control
+                    elif touch_control is Button and touch_control.text == "RECHTS":
+                        walking_right = touch_control
+    if walking_jump == null or walking_right == null:
+        _fail("walking jump or direction button missing")
+        return
+    walking_right.button_down.emit()
+    walking_jump.pressed.emit()
+    if (area.get("mobile_axis") as Vector2) != Vector2.ZERO or bool(player.get("jump_requested")):
+        _fail("backgrounded touch must not queue movement or jump for focus regain")
+        return
     # Background input must not collect items, attack, guard or return to the runner.
     var paused_crystals := int(area.get("crystals_collected"))
     var paused_hits := int(area.get("robot_hits"))
