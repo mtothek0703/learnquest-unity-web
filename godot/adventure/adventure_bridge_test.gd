@@ -122,6 +122,10 @@ func _check() -> void:
         _fail("robot hit feedback missing")
         return
     area.call("guard_robot")
+    var hero_material := area.get("hero_material") as StandardMaterial3D
+    if hero_material == null or hero_material.albedo_color != Color("#65f5c7"):
+        _fail("active guard must have a visible in-world hero cue")
+        return
     area.set("robot_warning", 0.01)
     await physics_frame
     if int(area.get("robot_energy")) != 2 or bool(area.get("robot_last_hit")):
@@ -137,6 +141,10 @@ func _check() -> void:
         _fail("guard spam must not refresh the protection window")
         return
     area.set("robot_guard", 0.0)
+    area.call("_update_hero_guard_visual")
+    if hero_material.albedo_color != Color("#d7e9ff"):
+        _fail("expired guard must restore the original hero appearance")
+        return
     player.global_position = robot.global_position + Vector3(6.0, 0.0, 0.0)
     area.set("robot_warning", 0.01)
     await physics_frame
@@ -147,6 +155,9 @@ func _check() -> void:
         _fail("robot dodge feedback missing")
         return
     area.call("reset_mission")
+    if hero_material.albedo_color != Color("#d7e9ff"):
+        _fail("mission retry must clear the guard visual")
+        return
     if str(area.get("robot_feedback")) != "":
         _fail("robot feedback must clear on retry")
         return
