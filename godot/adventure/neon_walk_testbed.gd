@@ -16,6 +16,8 @@ const EXIT_PORTAL_POSITION := Vector3(0.0, 1.0, 6.0)
 const EXIT_PORTAL_RADIUS := 2.0
 const ROBOT_RANGE := 3.0
 var robot: Node3D
+var robot_visual: MeshInstance3D
+var robot_material: StandardMaterial3D
 var robot_hits := 0
 var player_attack_cooldown := 0.0
 var robot_warning := 0.0
@@ -75,9 +77,11 @@ func _physics_process(delta: float) -> void:
                 _resolve_robot_strike()
                 robot_cooldown = 2.0
                 _update_robot_label()
+                _update_robot_visual()
         elif robot_cooldown <= 0.0 and player.global_position.distance_to(robot.global_position) <= ROBOT_RANGE:
             robot_warning = 1.2
             _update_robot_label()
+            _update_robot_visual()
     if is_instance_valid(follow_camera) and follow_camera.current:
         follow_camera.global_position = player.global_position + Vector3(0, 4.5, 8)
         follow_camera.look_at(player.global_position + Vector3.UP * 0.6)
@@ -203,6 +207,10 @@ func _create_robot() -> void:
     var shape := BoxMesh.new()
     shape.size = Vector3(1.0, 1.6, 0.8)
     visual.mesh = shape
+    robot_material = StandardMaterial3D.new()
+    robot_material.albedo_color = Color("#54c7ed")
+    visual.material_override = robot_material
+    robot_visual = visual
     robot.add_child(visual)
     add_child(robot)
     _update_robot_label()
@@ -222,6 +230,7 @@ func attack_robot() -> bool:
         robot.visible = false
         _update_mission_label()
     _update_robot_label()
+    _update_robot_visual()
     return true
 
 func guard_robot() -> void:
@@ -245,6 +254,12 @@ func _resolve_robot_strike() -> void:
             player.global_position = to_global(Vector3(0.0, 1.5, 0.0))
             robot_feedback = "ENERGIE LEER – CHECKPOINT"
     _update_robot_label()
+
+func _update_robot_visual() -> void:
+    if robot_material == null:
+        return
+    # Visible telegraph, independent of the HUD text and mobile screen size.
+    robot_material.albedo_color = Color("#ff6655") if robot_warning > 0.0 and not robot_stunned else Color("#54c7ed")
 
 func _update_robot_label() -> void:
     if robot_label == null:
@@ -341,6 +356,7 @@ func reset_mission() -> void:
     if is_instance_valid(robot):
         robot.visible = true
     _update_robot_label()
+    _update_robot_visual()
     _update_mission_label()
 
 func _unhandled_key_input(event: InputEvent) -> void:
