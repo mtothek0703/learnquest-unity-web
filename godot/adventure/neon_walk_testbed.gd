@@ -413,5 +413,10 @@ func _notification(what: int) -> void:
         mobile_axis = Vector2.ZERO
         if is_instance_valid(player):
             player.set_mobile_move(Vector2.ZERO)
+            # The walking CharacterBody owns its own physics callback; pausing
+            # only the arena would still advance gravity and keyboard movement.
+            player.set_physics_process(false)
     elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_WM_WINDOW_FOCUS_IN:
         adventure_focus_paused = false
+        if is_instance_valid(player):
+            player.set_physics_process(true)
