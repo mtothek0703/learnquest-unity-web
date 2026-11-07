@@ -205,6 +205,7 @@ func attack_robot() -> bool:
     if robot_hits >= 2:
         robot_stunned = true
         robot.visible = false
+        _update_mission_label()
     _update_robot_label()
     return true
 
@@ -234,7 +235,7 @@ func _update_robot_label() -> void:
         robot_label.text = "Roboter: %d/2 Treffer | Energie %d/3" % [robot_hits, robot_energy]
 
 func _request_return() -> void:
-    if mission_complete and is_instance_valid(player) and player.global_position.distance_to(to_global(EXIT_PORTAL_POSITION)) <= EXIT_PORTAL_RADIUS:
+    if mission_complete and robot_stunned and is_instance_valid(player) and player.global_position.distance_to(to_global(EXIT_PORTAL_POSITION)) <= EXIT_PORTAL_RADIUS:
         return_requested.emit()
 
 func _create_exit_portal() -> void:
@@ -295,7 +296,7 @@ func interact() -> bool:
 
 func _update_mission_label() -> void:
     if mission_label != null:
-        mission_label.text = "Kristalle %d/3 | Schalter %d/2 | %s" % [crystals_collected, switches_activated, "PORTAL BEREIT" if mission_complete else "Portal gesperrt"]
+        mission_label.text = "Kristalle %d/3 | Schalter %d/2 | %s" % [crystals_collected, switches_activated, "PORTAL BEREIT" if mission_complete and robot_stunned else "Roboter besiegen" if mission_complete else "Portal gesperrt"]
 
 func reset_mission() -> void:
     crystals_collected = 0
