@@ -93,6 +93,12 @@ func _check() -> void:
     if player.global_position.x <= start_x + 0.3:
         _fail("mobile walking control did not move CharacterBody3D")
         return
+    # Falling in the translated arena must respawn locally, not at world origin.
+    player.global_position = area.to_global(Vector3(0.0, -14.0, 0.0))
+    await physics_frame
+    if player.global_position.distance_to(area.to_global(Vector3(0.0, 1.5, 0.0))) > 1.0:
+        _fail("fall respawn must preserve translated arena origin")
+        return
     # A3: telegraphed strike hits in range, guard blocks, leaving range dodges.
     var robot := area.get("robot") as Node3D
     if robot == null:
