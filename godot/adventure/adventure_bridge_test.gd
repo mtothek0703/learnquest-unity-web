@@ -282,6 +282,20 @@ func _check() -> void:
     if str(game.get("phase")) != "adventure" or int(game.get("xp")) != initial_xp:
         _fail("HUD retry must not restart race or grant XP")
         return
+    # Desktop R must perform the same local retry as the mobile button.
+    player.global_position = area.to_global(Vector3(4.0, 2.0, -3.0))
+    player.velocity = Vector3(2.0, -1.0, 2.0)
+    area.set("robot_energy", 1)
+    var retry_key := InputEventKey.new()
+    retry_key.keycode = KEY_R
+    retry_key.pressed = true
+    area.call("_unhandled_key_input", retry_key)
+    if player.global_position.distance_to(area.to_global(Vector3(0.0, 1.5, 0.0))) > 0.01 or player.velocity != Vector3.ZERO or int(area.get("robot_energy")) != 3:
+        _fail("desktop R retry must restore checkpoint, momentum and energy")
+        return
+    if str(game.get("phase")) != "adventure" or int(game.get("xp")) != initial_xp:
+        _fail("desktop R retry must not restart runner or award XP")
+        return
     # A3: robot only accepts nearby attacks; two hits stun it; reset restores it.
     if bool(area.call("attack_robot")):
         _fail("remote robot attack must be rejected")
