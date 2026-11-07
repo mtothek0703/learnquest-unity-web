@@ -113,6 +113,22 @@ func _check() -> void:
     if not bool(area.get("adventure_focus_paused")) or (area.get("mobile_axis") as Vector2) != Vector2.ZERO:
         _fail("focus loss must pause adventure and clear walking touch movement")
         return
+    # Background input must not collect items, attack, guard or return to the runner.
+    var paused_crystals := int(area.get("crystals_collected"))
+    var paused_hits := int(area.get("robot_hits"))
+    var paused_guard := float(area.get("robot_guard"))
+    if bool(area.call("interact")) or bool(area.call("attack_robot")):
+        _fail("backgrounded adventure must reject mission and combat actions")
+        return
+    area.call("guard_robot")
+    area.call("_request_return")
+    var paused_key := InputEventKey.new()
+    paused_key.keycode = KEY_E
+    paused_key.pressed = true
+    area.call("_unhandled_key_input", paused_key)
+    if int(area.get("crystals_collected")) != paused_crystals or int(area.get("robot_hits")) != paused_hits or absf(float(area.get("robot_guard")) - paused_guard) > 0.001 or str(game.get("phase")) != "adventure":
+        _fail("background input mutated mission, combat or runner state")
+        return
     area.call("_physics_process", 0.5)
     for focus_step in range(3):
         await physics_frame
