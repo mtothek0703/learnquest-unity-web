@@ -339,6 +339,20 @@ func _check() -> void:
         _fail("portal returned before mission completion")
         return
     var targets: Array = area.get("mission_targets")
+    # Nearby objectives must be chosen by distance, not creation order.
+    var first_target := targets[0] as Node3D
+    var second_target := targets[1] as Node3D
+    var first_position := first_target.position
+    var second_position := second_target.position
+    first_target.position = Vector3(0.0, 0.9, 0.0)
+    second_target.position = Vector3(0.8, 0.9, 0.0)
+    player.global_position = area.to_global(Vector3(0.8, 0.9, 0.0))
+    if not bool(area.call("interact")) or second_target.visible or not first_target.visible:
+        _fail("nearby interaction must choose the closest visible objective")
+        return
+    area.call("reset_mission")
+    first_target.position = first_position
+    second_target.position = second_position
     for target in targets:
         player.global_position = target.global_position + Vector3.UP * 0.4
         if not bool(area.call("interact")):
