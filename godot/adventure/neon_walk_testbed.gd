@@ -17,6 +17,7 @@ const EXIT_PORTAL_RADIUS := 2.0
 const ROBOT_RANGE := 3.0
 var robot: Node3D
 var robot_hits := 0
+var player_attack_cooldown := 0.0
 var robot_warning := 0.0
 var robot_cooldown := 0.0
 var robot_stunned := false
@@ -63,6 +64,7 @@ func _physics_process(delta: float) -> void:
     if not is_instance_valid(player):
         return
     player.set_mobile_move(mobile_axis)
+    player_attack_cooldown = maxf(0.0, player_attack_cooldown - delta)
     robot_guard = maxf(0.0, robot_guard - delta)
     robot_guard_cooldown = maxf(0.0, robot_guard_cooldown - delta)
     if is_instance_valid(robot) and not robot_stunned:
@@ -206,10 +208,11 @@ func _create_robot() -> void:
     _update_robot_label()
 
 func attack_robot() -> bool:
-    if not is_instance_valid(player) or not is_instance_valid(robot) or robot_stunned:
+    if not is_instance_valid(player) or not is_instance_valid(robot) or robot_stunned or player_attack_cooldown > 0.0:
         return false
     if player.global_position.distance_to(robot.global_position) > ROBOT_RANGE:
         return false
+    player_attack_cooldown = 0.65
     robot_hits += 1
     robot_feedback = "TREFFER! Roboter %d/2" % robot_hits
     robot_warning = 0.0
@@ -326,6 +329,7 @@ func reset_mission() -> void:
     for target in mission_targets:
         target.visible = true
     robot_hits = 0
+    player_attack_cooldown = 0.0
     robot_warning = 0.0
     robot_cooldown = 0.0
     robot_stunned = false
