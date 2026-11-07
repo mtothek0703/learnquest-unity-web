@@ -7,6 +7,7 @@ const FALL_LIMIT := -12.0
 var spawn_point := Vector3(0, 1.5, 0)
 var move_axis := Vector2.ZERO
 var jump_requested := false
+var input_paused := false
 
 func _physics_process(delta: float) -> void:
     if global_position.y < FALL_LIMIT:
@@ -26,13 +27,19 @@ func _physics_process(delta: float) -> void:
     move_and_slide()
 
 func _unhandled_key_input(event: InputEvent) -> void:
+    if input_paused:
+        return
     if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SPACE:
         jump_requested = true
 
 func set_mobile_move(axis: Vector2) -> void:
+    if input_paused:
+        return
     move_axis = axis.limit_length(1.0)
 
 func mobile_jump() -> void:
+    if input_paused:
+        return
     jump_requested = true
 
 func respawn() -> void:
@@ -44,5 +51,10 @@ func respawn() -> void:
 
 func _notification(what: int) -> void:
     if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+        input_paused = true
+        move_axis = Vector2.ZERO
+        jump_requested = false
+    elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_WM_WINDOW_FOCUS_IN:
+        input_paused = false
         move_axis = Vector2.ZERO
         jump_requested = false
