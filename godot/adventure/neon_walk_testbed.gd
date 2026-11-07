@@ -169,7 +169,7 @@ func _make_touch_controls() -> void:
     interact_button.anchor_bottom = 0.56
     interact_button.custom_minimum_size = Vector2(138, 48)
     root.add_child(interact_button)
-    interact_button.pressed.connect(interact)
+    interact_button.pressed.connect(_contextual_interact)
     var attack := Button.new()
     attack.text = "ANGRIFF"
     attack.anchor_left = 1.0
@@ -379,12 +379,16 @@ func reset_mission() -> void:
     _update_hero_guard_visual()
     _update_mission_label()
 
+func _contextual_interact() -> void:
+    # Mobile and keyboard share one contextual action at the exit portal.
+    if not interact():
+        _request_return()
+
 func _unhandled_key_input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E:
         # One contextual key for the full adventure: collect/activate nearby
         # objectives, then remount only at the unlocked exit portal.
-        if not interact():
-            _request_return()
+        _contextual_interact()
     elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F:
         attack_robot()
     elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G:
