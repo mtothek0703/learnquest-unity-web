@@ -193,7 +193,10 @@ func _check() -> void:
         _fail("locked portal must show a red 3D material")
         return
     # Portal cannot return until all five interactions have happened.
-    area.call("_request_return")
+    var locked_key := InputEventKey.new()
+    locked_key.keycode = KEY_E
+    locked_key.pressed = true
+    area.call("_unhandled_key_input", locked_key)
     if int(game.get("xp")) != initial_xp:
         _fail("locked portal must not award mission XP")
         return
@@ -233,12 +236,9 @@ func _check() -> void:
         _fail("completed mission and robot defeat must turn exit portal green")
         return
     player.global_position = area.global_position + Vector3(0.0, 1.0, 6.0)
-    # Desktop E is the same contextual interaction used for crystals/switches;
-    # at the completed portal it must remount without requiring a touch button.
-    var remount_key := InputEventKey.new()
-    remount_key.keycode = KEY_E
-    remount_key.pressed = true
-    area.call("_unhandled_key_input", remount_key)
+    # Both desktop E and the mobile INTERAKTION button must be contextual.
+    # Check the mobile path here; keyboard E remains checked while locked below.
+    area.call("_contextual_interact")
     if str(game.get("phase")) != "race" or game.get("adventure_area") != null:
         _fail("on-foot signal did not return to active race")
         return
