@@ -381,7 +381,10 @@ func reset_mission() -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E:
-        interact()
+        # One contextual key for the full adventure: collect/activate nearby
+        # objectives, then remount only at the unlocked exit portal.
+        if not interact():
+            _request_return()
     elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F:
         attack_robot()
     elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G:
