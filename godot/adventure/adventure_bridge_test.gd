@@ -145,6 +145,15 @@ func _check() -> void:
         return
     player.global_position = area.global_position + Vector3(0.0, 1.0, 6.0)
     area.call("_request_return")
+    if str(game.get("phase")) != "adventure":
+        _fail("completed collection mission must still require robot defeat")
+        return
+    player.global_position = robot.global_position + Vector3(1.0, 0.0, 0.0)
+    if not bool(area.call("attack_robot")) or not bool(area.call("attack_robot")):
+        _fail("robot defeat required for exit portal")
+        return
+    player.global_position = area.global_position + Vector3(0.0, 1.0, 6.0)
+    area.call("_request_return")
     if str(game.get("phase")) != "race" or game.get("adventure_area") != null:
         _fail("on-foot signal did not return to active race")
         return
