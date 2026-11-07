@@ -259,6 +259,29 @@ func _check() -> void:
     if str(area.get("robot_feedback")) != "":
         _fail("robot feedback must clear on retry")
         return
+    # A4: retry must be reachable by the actual mobile HUD button, not only
+    # through a test-only reset_mission() call.
+    var retry_button: Button = null
+    for retry_layer in area.get_children():
+        if retry_layer is CanvasLayer:
+            for retry_root in retry_layer.get_children():
+                for retry_control in retry_root.get_children():
+                    if retry_control is Button and retry_control.text == "NEUSTART":
+                        retry_button = retry_control
+    if retry_button == null:
+        _fail("walking HUD must expose a mission retry button")
+        return
+    player.global_position = area.to_global(Vector3(3.0, 2.0, -2.0))
+    player.velocity = Vector3(3.0, 0.0, 2.0)
+    area.set("robot_energy", 1)
+    area.set("mobile_axis", Vector2(1.0, 0.0))
+    retry_button.pressed.emit()
+    if player.global_position.distance_to(area.to_global(Vector3(0.0, 1.5, 0.0))) > 0.01 or player.velocity != Vector3.ZERO or int(area.get("robot_energy")) != 3 or (area.get("mobile_axis") as Vector2) != Vector2.ZERO:
+        _fail("HUD retry must restore checkpoint, energy and movement state")
+        return
+    if str(game.get("phase")) != "adventure" or int(game.get("xp")) != initial_xp:
+        _fail("HUD retry must not restart race or grant XP")
+        return
     # A3: robot only accepts nearby attacks; two hits stun it; reset restores it.
     if bool(area.call("attack_robot")):
         _fail("remote robot attack must be rejected")
