@@ -65,6 +65,21 @@ func _check() -> void:
     if player == null or walk_camera == null or not walk_camera.current:
         _fail("separate foot player or third-person camera not active")
         return
+    # Right-side walking actions must stay anchored inside compact landscape widths.
+    var action_count := 0
+    for layer in area.get_children():
+        if not layer is CanvasLayer:
+            continue
+        for ui_root in layer.get_children():
+            for control in ui_root.get_children():
+                if control is Button and control.text in ["SPRUNG", "ANGRIFF", "ABWEHR", "INTERAKTION"]:
+                    action_count += 1
+                    if control.anchor_left != 1.0 or control.anchor_right != 1.0 or control.offset_right > -10.0:
+                        _fail("walking action button must be right-edge anchored with safe inset: " + control.text)
+                        return
+    if action_count != 4:
+        _fail("four independent walking action buttons required")
+        return
     for step in range(35):
         await physics_frame
     if not player.is_on_floor():
