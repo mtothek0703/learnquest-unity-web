@@ -238,7 +238,17 @@ func _check() -> void:
     player.global_position = area.global_position + Vector3(0.0, 1.0, 6.0)
     # Both desktop E and the mobile INTERAKTION button must be contextual.
     # Check the mobile path here; keyboard E remains checked while locked below.
-    area.call("_contextual_interact")
+    var mobile_interact: Button = null
+    for layer in area.get_children():
+        if layer is CanvasLayer:
+            for ui_root in layer.get_children():
+                for control in ui_root.get_children():
+                    if control is Button and control.text == "INTERAKTION":
+                        mobile_interact = control
+    if mobile_interact == null:
+        _fail("mobile interaction button missing")
+        return
+    mobile_interact.pressed.emit()
     if str(game.get("phase")) != "race" or game.get("adventure_area") != null:
         _fail("on-foot signal did not return to active race")
         return
