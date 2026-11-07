@@ -164,8 +164,8 @@ func _make_touch_controls() -> void:
     attack.anchor_right = 1.0
     attack.offset_left = -150.0
     attack.offset_right = -12.0
-    attack.anchor_top = 0.68
-    attack.anchor_bottom = 0.68
+    attack.anchor_top = 0.70
+    attack.anchor_bottom = 0.70
     attack.custom_minimum_size = Vector2(138, 48)
     root.add_child(attack)
     attack.pressed.connect(attack_robot)
