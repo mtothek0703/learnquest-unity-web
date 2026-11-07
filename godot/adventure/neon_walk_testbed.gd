@@ -93,8 +93,19 @@ func _physics_process(delta: float) -> void:
             _update_robot_label()
             _update_robot_visual()
     if is_instance_valid(follow_camera) and follow_camera.current:
-        follow_camera.global_position = player.global_position + Vector3(0, 4.5, 8)
-        follow_camera.look_at(player.global_position + Vector3.UP * 0.6)
+        _update_follow_camera()
+
+func _update_follow_camera() -> void:
+    # Keep the walking camera out of rooftop geometry. The runner camera is untouched.
+    var focus := player.global_position + Vector3.UP * 0.6
+    var desired := player.global_position + Vector3(0, 4.5, 8)
+    var query := PhysicsRayQueryParameters3D.create(focus, desired)
+    query.exclude = [player.get_rid()]
+    var hit := get_world_3d().direct_space_state.intersect_ray(query)
+    if not hit.is_empty():
+        desired = (hit["position"] as Vector3) + (hit["normal"] as Vector3) * 0.25
+    follow_camera.global_position = desired
+    follow_camera.look_at(focus)
 
 func _platform(at: Vector3, size: Vector3, tint: Color) -> void:
     var body := StaticBody3D.new()
