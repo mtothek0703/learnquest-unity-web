@@ -106,7 +106,15 @@ func _check() -> void:
         return
     player.global_position = robot.global_position + Vector3(1.0, 0.0, 0.0)
     area.set("robot_warning", 0.01)
+    area.call("_update_robot_visual")
+    var warning_material := area.get("robot_material") as StandardMaterial3D
+    if warning_material == null or warning_material.albedo_color != Color("#ff6655"):
+        _fail("robot warning must be visible on the 3D mesh, not just HUD text")
+        return
     await physics_frame
+    if warning_material.albedo_color != Color("#54c7ed"):
+        _fail("robot warning tint must reset after the attack resolves")
+        return
     if int(area.get("robot_energy")) != 2 or not bool(area.get("robot_last_hit")):
         _fail("unguarded robot strike must cost one local energy")
         return
