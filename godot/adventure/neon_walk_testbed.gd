@@ -428,6 +428,11 @@ func _update_objective_guidance() -> void:
     if closest_distance <= INTERACT_RADIUS:
         mission_label.tooltip_text = guidance
         mission_label.text = mission_label.text.get_slice("\n", 0) + "\n" + guidance
+    elif closest_distance < INF:
+        # Give an actionable distance cue instead of leaving players to guess
+        # where the next crystal or switch is in the 3D rooftop arena.
+        mission_label.tooltip_text = guidance + " in %d m" % ceili(closest_distance)
+        mission_label.text = mission_label.text.get_slice("\n", 0) + "\n" + mission_label.tooltip_text
     elif mission_complete and robot_stunned:
         mission_label.tooltip_text = "Zum grünen Ausgangsportal gehen und AUFSTEIGEN wählen"
         mission_label.text = mission_label.text.get_slice("\n", 0) + "\n" + mission_label.tooltip_text
