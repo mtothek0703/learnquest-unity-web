@@ -247,7 +247,7 @@ func _make_touch_controls() -> void:
     mission_label.anchor_left = 0.27
     mission_label.anchor_right = 0.75
     mission_label.offset_top = 18.0
-    mission_label.offset_bottom = 56.0
+    mission_label.offset_bottom = 80.0
     root.add_child(mission_label)
 
 func _create_robot() -> void:
@@ -427,12 +427,16 @@ func _update_objective_guidance() -> void:
             guidance = "INTERAKTION: " + ("Kristall" if target.name.begins_with("Crystal") else "Schalter")
     if closest_distance <= INTERACT_RADIUS:
         mission_label.tooltip_text = guidance
+        mission_label.text = mission_label.text.get_slice("\n", 0) + "\n" + guidance
     elif mission_complete and robot_stunned:
         mission_label.tooltip_text = "Zum grünen Ausgangsportal gehen und AUFSTEIGEN wählen"
+        mission_label.text = mission_label.text.get_slice("\n", 0) + "\n" + mission_label.tooltip_text
     elif mission_complete:
         mission_label.tooltip_text = "Roboter mit ANGRIFF besiegen"
+        mission_label.text = mission_label.text.get_slice("\n", 0) + "\n" + mission_label.tooltip_text
     else:
         mission_label.tooltip_text = "Kristalle sammeln und Schalter aktivieren"
+        mission_label.text = mission_label.text.get_slice("\n", 0) + "\n" + mission_label.tooltip_text
 
 func _update_mission_label() -> void:
     # Portal stays visibly locked until the complete mission AND robot encounter.
