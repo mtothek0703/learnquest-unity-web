@@ -219,8 +219,10 @@ func _make_touch_controls() -> void:
     attack.text = "ANGRIFF"
     attack.anchor_left = 1.0
     attack.anchor_right = 1.0
-    attack.offset_left = -150.0
-    attack.offset_right = -12.0
+    # Keep attack in the left action column: on short landscape screens it
+    # must not overlap the jump button in the right column.
+    attack.offset_left = -255.0
+    attack.offset_right = -117.0
     attack.anchor_top = 0.70
     attack.anchor_bottom = 0.70
     attack.custom_minimum_size = Vector2(138, 48)
@@ -232,8 +234,9 @@ func _make_touch_controls() -> void:
     guard.anchor_right = 1.0
     guard.offset_left = -242.0
     guard.offset_right = -116.0
-    guard.anchor_top = 0.77
-    guard.anchor_bottom = 0.77
+    # Separate attack and guard vertically even at 390px landscape height.
+    guard.anchor_top = 0.86
+    guard.anchor_bottom = 0.86
     guard.custom_minimum_size = Vector2(126, 48)
     root.add_child(guard)
     guard.pressed.connect(guard_robot)
