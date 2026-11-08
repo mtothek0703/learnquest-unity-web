@@ -437,7 +437,7 @@ func _update_objective_guidance() -> void:
         mission_label.tooltip_text = "Ausgangsportal in %d m – AUFSTEIGEN" % ceili(player.global_position.distance_to(to_global(EXIT_PORTAL_POSITION)))
         mission_label.text = mission_label.text.get_slice("\n", 0) + "\n" + mission_label.tooltip_text
     elif mission_complete:
-        mission_label.tooltip_text = "Roboter mit ANGRIFF besiegen"
+        mission_label.tooltip_text = "Roboter in %d m – ANGRIFF / ABWEHR" % ceili(player.global_position.distance_to(robot.global_position)) if is_instance_valid(robot) else "Roboter suchen"
         mission_label.text = mission_label.text.get_slice("\n", 0) + "\n" + mission_label.tooltip_text
     else:
         mission_label.tooltip_text = "Kristalle sammeln und Schalter aktivieren"
