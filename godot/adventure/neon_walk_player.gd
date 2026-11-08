@@ -86,9 +86,9 @@ func _notification(what: int) -> void:
         mobile_sprint_held = false
         jump_requested = false
         jump_buffer_remaining = 0.0
-        jump_buffer_remaining = 0.0
     elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_WM_WINDOW_FOCUS_IN:
         input_paused = false
         move_axis = Vector2.ZERO
         mobile_sprint_held = false
         jump_requested = false
+        jump_buffer_remaining = 0.0
