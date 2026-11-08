@@ -114,6 +114,14 @@ func _check() -> void:
     if player.global_position.x <= start_x + 0.3:
         _fail("mobile walking control did not move CharacterBody3D")
         return
+    # Direction changes must turn only the walking appearance, not collision.
+    var walking_visual := player.get_node_or_null("WalkingVisual") as Node3D
+    if walking_visual == null or walking_visual.rotation.y > -0.6:
+        _fail("on-foot hero visual must face its mobile movement direction")
+        return
+    if absf(player.rotation.y) > 0.001:
+        _fail("on-foot visual turning must not rotate the collision body")
+        return
     # A4: on-foot sprint has a separate mobile hold control and must not
     # change the runner's gesture routing or survive a checkpoint reset.
     var sprint_button: Button = null
