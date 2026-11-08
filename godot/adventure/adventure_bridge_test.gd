@@ -447,6 +447,10 @@ func _check() -> void:
     if portal_material.albedo_color != Color("#ff6655", 0.35):
         _fail("robot must still gate green exit after collecting mission targets")
         return
+    area.call("_update_objective_guidance")
+    if not (area.get("mission_label") as Label).text.contains("Roboter in ") or not (area.get("mission_label") as Label).text.contains("ANGRIFF / ABWEHR"):
+        _fail("completed collection mission must show robot distance and combat controls")
+        return
     area.call("_request_return")
     if str(game.get("phase")) != "adventure":
         _fail("completed mission must not allow remote remount away from exit portal")
