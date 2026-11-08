@@ -149,6 +149,9 @@ func _check() -> void:
         _fail("walking sprint must stop on touch release")
         return
     player.respawn()
+    if absf(walking_visual.rotation.y) > 0.001 or absf(player.rotation.y) > 0.001:
+        _fail("checkpoint respawn must reset facing without rotating the collision body")
+        return
     if bool(player.get("mobile_sprint_held")):
         _fail("checkpoint respawn must clear held sprint")
         return
