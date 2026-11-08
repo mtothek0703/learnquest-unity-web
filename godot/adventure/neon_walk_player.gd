@@ -12,6 +12,9 @@ var input_paused := false
 var mobile_sprint_held := false
 
 func _physics_process(delta: float) -> void:
+    # Ignore even a directly invoked physics tick while Safari is backgrounded.
+    if input_paused:
+        return
     if global_position.y < FALL_LIMIT:
         # Do not apply gravity or stale movement on the same tick as respawn.
         respawn()
