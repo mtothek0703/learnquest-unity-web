@@ -95,6 +95,7 @@ func _physics_process(delta: float) -> void:
             _update_robot_visual()
     if is_instance_valid(follow_camera) and follow_camera.current:
         _update_follow_camera()
+    _update_objective_guidance()
 
 func _update_follow_camera() -> void:
     # Keep the walking camera out of rooftop geometry. The runner camera is untouched.
@@ -410,6 +411,28 @@ func interact() -> bool:
         _update_mission_label()
         return true
     return false
+
+func _update_objective_guidance() -> void:
+    # A4: Tell mobile players what is actually reachable without pop-up quizzes.
+    if mission_label == null or not is_instance_valid(player):
+        return
+    var guidance := ""
+    var closest_distance := INF
+    for target in mission_targets:
+        if not target.visible:
+            continue
+        var distance := player.global_position.distance_to(target.global_position)
+        if distance < closest_distance:
+            closest_distance = distance
+            guidance = "INTERAKTION: " + ("Kristall" if target.name.begins_with("Crystal") else "Schalter")
+    if closest_distance <= INTERACT_RADIUS:
+        mission_label.tooltip_text = guidance
+    elif mission_complete and robot_stunned:
+        mission_label.tooltip_text = "Zum grünen Ausgangsportal gehen und AUFSTEIGEN wählen"
+    elif mission_complete:
+        mission_label.tooltip_text = "Roboter mit ANGRIFF besiegen"
+    else:
+        mission_label.tooltip_text = "Kristalle sammeln und Schalter aktivieren"
 
 func _update_mission_label() -> void:
     # Portal stays visibly locked until the complete mission AND robot encounter.
