@@ -13,7 +13,9 @@ var mobile_sprint_held := false
 
 func _physics_process(delta: float) -> void:
     if global_position.y < FALL_LIMIT:
+        # Do not apply gravity or stale movement on the same tick as respawn.
         respawn()
+        return
     if not is_on_floor():
         velocity.y -= GRAVITY * delta
     elif jump_requested:
