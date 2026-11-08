@@ -96,10 +96,10 @@ func _check() -> void:
         for ui_root in layer.get_children():
             for control in ui_root.get_children():
                 if control is Button and control.text in ["SPRUNG", "ANGRIFF", "ABWEHR", "INTERAKTION"]:
-                    var top := control.anchor_top * 390.0 + control.offset_top
-                    var bottom := control.anchor_bottom * 390.0 + control.offset_bottom
-                    var left := control.offset_left
-                    var right := control.offset_right
+                    var top: float = control.anchor_top * 390.0 + control.offset_top
+                    var bottom: float = control.anchor_bottom * 390.0 + control.offset_bottom
+                    var left: float = control.offset_left
+                    var right: float = control.offset_right
                     var rect := Rect2(Vector2(left, top), Vector2(right - left, maxf(bottom - top, control.custom_minimum_size.y)))
                     if rect.position.y < 0.0 or rect.end.y > 390.0:
                         _fail("walking action button outside compact landscape height: " + control.text)
