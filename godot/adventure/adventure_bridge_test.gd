@@ -147,7 +147,14 @@ func _check() -> void:
     # A4: a slightly early mobile jump should survive an airborne frame,
     # but not remain queued indefinitely or across a checkpoint reset.
     player.global_position += Vector3.UP * 3.0
-    await physics_frame
+    # Force a collision refresh after teleport: is_on_floor() otherwise
+    # still reports the prior grounded tick and consumes the jump buffer.
+    player.velocity = Vector3.ZERO
+    player.move_and_slide()
+    player.set("coyote_remaining", 0.0)
+    if player.is_on_floor():
+        _fail("jump-buffer fixture must begin airborne")
+        return
     player.mobile_jump()
     player.call("_physics_process", 0.016)
     if float(player.get("jump_buffer_remaining")) <= 0.0:
