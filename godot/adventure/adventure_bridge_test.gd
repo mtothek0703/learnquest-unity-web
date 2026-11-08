@@ -303,7 +303,14 @@ func _check() -> void:
     if warning_material == null or warning_material.albedo_color != Color("#ff6655"):
         _fail("robot warning must be visible on the 3D mesh, not just HUD text")
         return
+    var warning_mesh := area.get("robot_visual") as MeshInstance3D
+    if warning_mesh == null or not is_equal_approx(warning_mesh.scale.x, 1.14):
+        _fail("robot attack warning must pulse the actual 3D mesh")
+        return
     await physics_frame
+    if warning_mesh == null or not is_equal_approx(warning_mesh.scale.x, 1.0):
+        _fail("robot mesh must return to normal size after its warning")
+        return
     if warning_material.albedo_color != Color("#54c7ed"):
         _fail("robot warning tint must reset after the attack resolves")
         return
