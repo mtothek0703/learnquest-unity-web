@@ -48,6 +48,7 @@ func _ready() -> void:
     shape.shape = capsule
     player.add_child(shape)
     var mesh := MeshInstance3D.new()
+    mesh.name = "WalkingVisual"
     mesh.mesh = CapsuleMesh.new()
     hero_material = StandardMaterial3D.new()
     hero_material.albedo_color = Color("#d7e9ff")
