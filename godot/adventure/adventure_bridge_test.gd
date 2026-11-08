@@ -69,7 +69,7 @@ func _check() -> void:
     # not a desktop-only hover tooltip.
     area.call("_update_objective_guidance")
     var guidance_label := area.get("mission_label") as Label
-    if guidance_label == null or not guidance_label.text.contains("Kristalle sammeln"):
+    if guidance_label == null or not guidance_label.text.contains("INTERAKTION: Kristall"):
         _fail("walking mission needs a visible mobile objective hint")
         return
     # Right-side walking actions must stay anchored inside compact landscape widths.
