@@ -65,6 +65,13 @@ func _check() -> void:
     if player == null or walk_camera == null or not walk_camera.current:
         _fail("separate foot player or third-person camera not active")
         return
+    # The on-foot HUD must provide actual mission guidance on touch screens,
+    # not a desktop-only hover tooltip.
+    area.call("_update_objective_guidance")
+    var guidance_label := area.get("mission_label") as Label
+    if guidance_label == null or not guidance_label.text.contains("Kristalle sammeln"):
+        _fail("walking mission needs a visible mobile objective hint")
+        return
     # Right-side walking actions must stay anchored inside compact landscape widths.
     var action_count := 0
     for layer in area.get_children():
