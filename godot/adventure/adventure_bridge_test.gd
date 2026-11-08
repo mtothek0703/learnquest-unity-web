@@ -146,6 +146,8 @@ func _check() -> void:
         return
     # A4: a slightly early mobile jump should survive an airborne frame,
     # but not remain queued indefinitely or across a checkpoint reset.
+    player.global_position += Vector3.UP * 3.0
+    await physics_frame
     player.mobile_jump()
     player.call("_physics_process", 0.016)
     if float(player.get("jump_buffer_remaining")) <= 0.0:
