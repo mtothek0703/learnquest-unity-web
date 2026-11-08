@@ -467,6 +467,10 @@ func _check() -> void:
     if portal_material.albedo_color != Color("#35f0ba", 0.35):
         _fail("completed mission and robot defeat must turn exit portal green")
         return
+    area.call("_update_objective_guidance")
+    if not (area.get("mission_label") as Label).text.contains("Ausgangsportal in ") or not (area.get("mission_label") as Label).text.contains("AUFSTEIGEN"):
+        _fail("completed Neon mission must guide mobile players to the exit with distance")
+        return
     player.global_position = area.global_position + Vector3(0.0, 1.0, 6.0)
     # Both desktop E and the mobile INTERAKTION button must be contextual.
     # Check the mobile path here; keyboard E remains checked while locked below.
