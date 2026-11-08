@@ -208,6 +208,12 @@ func _check() -> void:
     late_space.keycode = KEY_SPACE
     late_space.pressed = true
     player.call("_notification", Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+    var paused_velocity := player.velocity
+    var paused_position := player.global_position
+    player.call("_physics_process", 0.25)
+    if player.velocity != paused_velocity or player.global_position.distance_to(paused_position) > 0.001:
+        _fail("backgrounded walking CharacterBody must ignore even direct physics ticks")
+        return
     player.call("_unhandled_key_input", late_space)
     player.call("mobile_jump")
     player.call("set_mobile_move", Vector2(1.0, 0.0))
