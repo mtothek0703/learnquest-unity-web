@@ -28,6 +28,11 @@ func _physics_process(delta: float) -> void:
     velocity.x = axis.x * speed
     velocity.z = axis.y * speed
     move_and_slide()
+    # Face the actual travel direction, independently of the runner rig/camera.
+    # Rotate visuals only: CharacterBody collision stays axis-independent.
+    var visual := get_node_or_null("WalkingVisual") as Node3D
+    if visual != null and axis.length_squared() > 0.001:
+        visual.rotation.y = lerp_angle(visual.rotation.y, atan2(-axis.x, -axis.y), minf(1.0, delta * 12.0))
 
 func _unhandled_key_input(event: InputEvent) -> void:
     if input_paused:
