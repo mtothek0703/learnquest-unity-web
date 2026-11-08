@@ -157,6 +157,23 @@ func _check() -> void:
     if float(player.get("jump_buffer_remaining")) != 0.0:
         _fail("checkpoint must clear buffered mobile jump")
         return
+    # A4: walking off a ledge grants a brief jump grace period, not a double jump.
+    player.global_position += Vector3.UP * 3.0
+    player.set("coyote_remaining", 0.08)
+    player.mobile_jump()
+    player.call("_physics_process", 0.016)
+    if player.velocity.y <= 0.0 or float(player.get("coyote_remaining")) != 0.0:
+        _fail("ledge grace jump must fire once and consume its allowance")
+        return
+    player.mobile_jump()
+    player.call("_physics_process", 0.016)
+    if player.velocity.y >= 6.5:
+        _fail("ledge grace must not permit an airborne double jump")
+        return
+    player.respawn()
+    if float(player.get("coyote_remaining")) != 0.0:
+        _fail("checkpoint must clear ledge grace")
+        return
     var start_x := player.global_position.x
     area.set("mobile_axis", Vector2(1.0, 0.0))
     for step in range(12):
