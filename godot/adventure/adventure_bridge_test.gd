@@ -161,6 +161,13 @@ func _check() -> void:
     if player.global_position.distance_to(area.to_global(Vector3(0.0, 1.5, 0.0))) > 1.0:
         _fail("fall respawn must preserve translated arena origin")
         return
+    # Falling must not replay gravity or movement in the respawn physics tick.
+    player.global_position = area.to_global(Vector3(0.0, -14.0, 0.0))
+    player.velocity = Vector3(4.0, -8.0, 2.0)
+    player.call("_physics_process", 0.016)
+    if player.velocity != Vector3.ZERO or player.global_position.distance_to(area.to_global(Vector3(0.0, 1.5, 0.0))) > 0.001:
+        _fail("fall respawn must not apply gravity or stale movement in the same tick")
+        return
     # A3: telegraphed strike hits in range, guard blocks, leaving range dodges.
     var robot := area.get("robot") as Node3D
     if robot == null:
