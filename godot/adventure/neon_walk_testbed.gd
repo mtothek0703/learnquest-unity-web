@@ -532,6 +532,9 @@ func _notification(what: int) -> void:
         mobile_axis = Vector2.ZERO
         if is_instance_valid(player):
             player.set_mobile_move(Vector2.ZERO)
+            # A held sprint touch may never receive button_up after Safari loses focus.
+            # Clear it explicitly so returning to the tab cannot resume sprinting.
+            player.set_mobile_sprint(false)
             # The walking CharacterBody owns its own physics callback; pausing
             # only the arena would still advance gravity and keyboard movement.
             player.set_physics_process(false)
