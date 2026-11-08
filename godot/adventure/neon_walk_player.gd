@@ -5,9 +5,11 @@ const SPRINT_SPEED := 7.5
 const JUMP_VELOCITY := 6.5
 const GRAVITY := 19.6
 const FALL_LIMIT := -12.0
+const JUMP_BUFFER_SECONDS := 0.14
 var spawn_point := Vector3(0, 1.5, 0)
 var move_axis := Vector2.ZERO
 var jump_requested := false
+var jump_buffer_remaining := 0.0
 var input_paused := false
 var mobile_sprint_held := false
 
@@ -19,11 +21,15 @@ func _physics_process(delta: float) -> void:
         # Do not apply gravity or stale movement on the same tick as respawn.
         respawn()
         return
+    if jump_requested:
+        jump_buffer_remaining = JUMP_BUFFER_SECONDS
+        jump_requested = false
     if not is_on_floor():
         velocity.y -= GRAVITY * delta
-    elif jump_requested:
+    elif jump_buffer_remaining > 0.0:
         velocity.y = JUMP_VELOCITY
-    jump_requested = false
+        jump_buffer_remaining = 0.0
+    jump_buffer_remaining = maxf(0.0, jump_buffer_remaining - delta)
     var keyboard := Vector2(
         float(Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT)) - float(Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT)),
         float(Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN)) - float(Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP))
@@ -67,6 +73,7 @@ func respawn() -> void:
     move_axis = Vector2.ZERO
     mobile_sprint_held = false
     jump_requested = false
+    jump_buffer_remaining = 0.0
     # A local retry also restores facing without rotating the collision body.
     var visual := get_node_or_null("WalkingVisual") as Node3D
     if visual != null:
@@ -78,6 +85,8 @@ func _notification(what: int) -> void:
         move_axis = Vector2.ZERO
         mobile_sprint_held = false
         jump_requested = false
+        jump_buffer_remaining = 0.0
+        jump_buffer_remaining = 0.0
     elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_WM_WINDOW_FOCUS_IN:
         input_paused = false
         move_axis = Vector2.ZERO
