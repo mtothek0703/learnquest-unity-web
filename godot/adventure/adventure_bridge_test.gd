@@ -87,6 +87,31 @@ func _check() -> void:
     if action_count != 4:
         _fail("four independent walking action buttons required")
         return
+    # A4: check real HUD anchor/offset rectangles at compact 390px landscape
+    # height; right-side buttons must not intercept each other's touch zones.
+    var action_rects: Array[Rect2] = []
+    for layer in area.get_children():
+        if not layer is CanvasLayer:
+            continue
+        for ui_root in layer.get_children():
+            for control in ui_root.get_children():
+                if control is Button and control.text in ["SPRUNG", "ANGRIFF", "ABWEHR", "INTERAKTION"]:
+                    var top := control.anchor_top * 390.0 + control.offset_top
+                    var bottom := control.anchor_bottom * 390.0 + control.offset_bottom
+                    var left := control.offset_left
+                    var right := control.offset_right
+                    var rect := Rect2(Vector2(left, top), Vector2(right - left, maxf(bottom - top, control.custom_minimum_size.y)))
+                    if rect.position.y < 0.0 or rect.end.y > 390.0:
+                        _fail("walking action button outside compact landscape height: " + control.text)
+                        return
+                    for previous in action_rects:
+                        if rect.intersects(previous):
+                            _fail("walking action touch zones overlap at 390px height: " + control.text)
+                            return
+                    action_rects.append(rect)
+    if action_rects.size() != 4:
+        _fail("compact landscape touch zone check missed an action")
+        return
     for step in range(35):
         await physics_frame
     if not player.is_on_floor():
