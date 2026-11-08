@@ -161,6 +161,23 @@ func _make_touch_controls() -> void:
     jump.custom_minimum_size = Vector2(94, 52)
     root.add_child(jump)
     jump.pressed.connect(_mobile_jump)
+    # Independent walking sprint; no changes to the runner swipe controls.
+    var sprint := Button.new()
+    sprint.text = "SPRINT"
+    sprint.anchor_left = 0.03
+    sprint.anchor_right = 0.03
+    sprint.anchor_top = 0.43
+    sprint.anchor_bottom = 0.43
+    sprint.custom_minimum_size = Vector2(100, 48)
+    root.add_child(sprint)
+    sprint.button_down.connect(func():
+        if not adventure_focus_paused and is_instance_valid(player):
+            player.set_mobile_sprint(true)
+    )
+    sprint.button_up.connect(func():
+        if is_instance_valid(player):
+            player.set_mobile_sprint(false)
+    )
 
     # Only the parent runner handles the actual return transition. The same
     # scene remains independently launchable for Godot movement testing.
