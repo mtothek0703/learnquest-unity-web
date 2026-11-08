@@ -92,6 +92,12 @@ func _check() -> void:
     if not player.is_on_floor():
         _fail("walking hero never landed on real 3D collision floor")
         return
+    # Guidance must direct players toward a distant objective without a popup.
+    area.call("_update_objective_guidance")
+    var objective_label := area.get("mission_label") as Label
+    if objective_label == null or not objective_label.text.contains(" m"):
+        _fail("distant adventure objectives must display an approximate distance")
+        return
     # A4: an obstacle behind the walking hero must pull the third-person
     # camera forward, without modifying the runner chase camera.
     var camera_wall := StaticBody3D.new()
