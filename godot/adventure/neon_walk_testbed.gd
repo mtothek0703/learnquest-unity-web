@@ -327,6 +327,10 @@ func _update_robot_visual() -> void:
         return
     # Visible telegraph, independent of the HUD text and mobile screen size.
     robot_material.albedo_color = Color("#ff6655") if robot_warning > 0.0 and not robot_stunned else Color("#54c7ed")
+    # Make the incoming strike legible in the 3D scene even on a small phone.
+    # Scale only the robot mesh, never its node/range or the runner character.
+    if is_instance_valid(robot_visual):
+        robot_visual.scale = Vector3.ONE * (1.14 if robot_warning > 0.0 and not robot_stunned else 1.0)
 
 func _update_robot_label() -> void:
     if robot_label == null:
