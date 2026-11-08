@@ -144,6 +144,17 @@ func _check() -> void:
     if walk_camera.global_position.z <= player.global_position.z + 7.5:
         _fail("walking camera failed to recover its normal distance")
         return
+    # A4: a slightly early mobile jump should survive an airborne frame,
+    # but not remain queued indefinitely or across a checkpoint reset.
+    player.mobile_jump()
+    player.call("_physics_process", 0.016)
+    if float(player.get("jump_buffer_remaining")) <= 0.0:
+        _fail("on-foot early jump must be buffered briefly")
+        return
+    player.respawn()
+    if float(player.get("jump_buffer_remaining")) != 0.0:
+        _fail("checkpoint must clear buffered mobile jump")
+        return
     var start_x := player.global_position.x
     area.set("mobile_axis", Vector2(1.0, 0.0))
     for step in range(12):
