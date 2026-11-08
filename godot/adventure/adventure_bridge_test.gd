@@ -216,7 +216,11 @@ func _check() -> void:
     player.velocity = Vector3(3.0, -2.0, 0.0)
     var focus_position := player.global_position
     area.set("mobile_axis", Vector2(1.0, 0.0))
+    player.set_mobile_sprint(true)
     area.call("_notification", Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+    if bool(player.get("mobile_sprint_held")):
+        _fail("focus loss must release a held mobile sprint without waiting for button_up")
+        return
     if not bool(area.get("adventure_focus_paused")) or (area.get("mobile_axis") as Vector2) != Vector2.ZERO:
         _fail("focus loss must pause adventure and clear walking touch movement")
         return
