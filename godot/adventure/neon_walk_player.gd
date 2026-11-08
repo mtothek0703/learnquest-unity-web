@@ -62,8 +62,7 @@ func respawn() -> void:
     move_axis = Vector2.ZERO
     mobile_sprint_held = false
     jump_requested = false
-
-func _notification(what: int) -> void:
+    # A local retry must also restore the facing direction. The physics body\n    # stays unrotated; only the independent walking appearance is reset.\n    var visual := get_node_or_null("WalkingVisual") as Node3D\n    if visual != null:\n        visual.rotation.y = 0.0\n\nfunc _notification(what: int) -> void:
     if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
         input_paused = true
         move_axis = Vector2.ZERO
