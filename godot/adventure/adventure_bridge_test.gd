@@ -114,6 +114,36 @@ func _check() -> void:
     if player.global_position.x <= start_x + 0.3:
         _fail("mobile walking control did not move CharacterBody3D")
         return
+    # A4: on-foot sprint has a separate mobile hold control and must not
+    # change the runner's gesture routing or survive a checkpoint reset.
+    var sprint_button: Button = null
+    for sprint_layer in area.get_children():
+        if sprint_layer is CanvasLayer:
+            for sprint_root in sprint_layer.get_children():
+                for sprint_control in sprint_root.get_children():
+                    if sprint_control is Button and sprint_control.text == "SPRINT":
+                        sprint_button = sprint_control
+    if sprint_button == null:
+        _fail("on-foot mobile sprint button missing")
+        return
+    sprint_button.button_down.emit()
+    if not bool(player.get("mobile_sprint_held")):
+        _fail("walking sprint must activate while mobile button is held")
+        return
+    area.set("mobile_axis", Vector2(1.0, 0.0))
+    await physics_frame
+    if player.velocity.x < 7.0:
+        _fail("walking sprint must increase actual CharacterBody speed")
+        return
+    sprint_button.button_up.emit()
+    area.set("mobile_axis", Vector2.ZERO)
+    if bool(player.get("mobile_sprint_held")):
+        _fail("walking sprint must stop on touch release")
+        return
+    player.respawn()
+    if bool(player.get("mobile_sprint_held")):
+        _fail("checkpoint respawn must clear held sprint")
+        return
     # Falling in the translated arena must respawn locally, not at world origin.
     player.global_position = area.to_global(Vector3(0.0, -14.0, 0.0))
     await physics_frame
