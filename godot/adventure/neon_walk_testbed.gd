@@ -240,8 +240,8 @@ func _make_touch_controls() -> void:
     robot_label = Label.new()
     robot_label.anchor_left = 0.27
     robot_label.anchor_right = 0.75
-    robot_label.offset_top = 60.0
-    robot_label.offset_bottom = 92.0
+    robot_label.offset_top = 92.0
+    robot_label.offset_bottom = 124.0
     root.add_child(robot_label)
     mission_label = Label.new()
     mission_label.anchor_left = 0.27
