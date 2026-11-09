@@ -92,6 +92,25 @@ func _check() -> void:
     if player == null or walk_camera == null or not walk_camera.current:
         _fail("separate foot player or third-person camera not active")
         return
+    # A4: uncollected crystals animate in the real arena, without animating
+    # hidden/collected pickups or changing the runner simulation.
+    var pickup := area.get_node_or_null("Crystal0") as Node3D
+    var pickup_visual := pickup.get_node_or_null("PickupVisual") as MeshInstance3D if pickup != null else null
+    if pickup_visual == null:
+        _fail("crystal needs an independently animated 3D pickup visual")
+        return
+    var before_spin := pickup_visual.rotation.y
+    area.call("_physics_process", 0.1)
+    if pickup_visual.rotation.y <= before_spin + 0.1:
+        _fail("visible crystal did not rotate during walking gameplay")
+        return
+    pickup.visible = false
+    var hidden_spin := pickup_visual.rotation.y
+    area.call("_physics_process", 0.1)
+    if not is_equal_approx(pickup_visual.rotation.y, hidden_spin):
+        _fail("collected crystal must stop its animation")
+        return
+    pickup.visible = true
     # The on-foot HUD must provide actual mission guidance on touch screens,
     # not a desktop-only hover tooltip.
     area.call("_update_objective_guidance")
