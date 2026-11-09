@@ -228,10 +228,13 @@ func _check() -> void:
         _fail("walking camera clipped through an obstacle behind the hero")
         return
     camera_wall.queue_free()
-    await physics_frame
+    # The camera intentionally eases back instead of teleporting to its full
+    # follow distance. Allow several real physics frames for convergence.
+    for recovery_frame in range(30):
+        await physics_frame
     area.call("_update_follow_camera")
     if walk_camera.global_position.z <= player.global_position.z + 7.5:
-        _fail("walking camera failed to recover its normal distance")
+        _fail("walking camera failed to recover its normal distance after smoothing")
         return
     # A4: a slightly early mobile jump should survive an airborne frame,
     # but not remain queued indefinitely or across a checkpoint reset.
