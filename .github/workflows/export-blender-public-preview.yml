@@ -1,0 +1,78 @@
+name: Export isolated Blender playable Web preview
+
+on:
+  push:
+    branches: [preview/blender-web-assets]
+    paths: [.github/workflows/export-blender-public-preview.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: isolated-blender-web-build
+  cancel-in-progress: false
+
+jobs:
+  build-preview:
+    if: github.repository == 'mtothek0703/learnquest-unity-web' && github.ref == 'refs/heads/preview/blender-web-assets'
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    steps:
+      - name: Check out tested Blender integration
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Install pinned Godot 4.4.1 and export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=https://github.com/godotengine/godot/releases/download/4.4.1-stable
+          curl --retry 3 -fLsS "$BASE/Godot_v4.4.1-stable_linux.x86_64.zip" -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+          curl --retry 3 -fLsS "$BASE/Godot_v4.4.1-stable_export_templates.tpz" -o /tmp/templates.tpz
+          unzip -q /tmp/templates.tpz -d /tmp/godot-templates
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.4.1.stable"
+          cp /tmp/godot-templates/templates/* "$HOME/.local/share/godot/export_templates/4.4.1.stable/"
+
+      - name: Validate Blender GLB and bonus gameplay before exporting
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/Godot_v4.4.1-stable_linux.x86_64
+          test -s godot/assets/3d/learnquest_portal.glb
+          "$GODOT" --headless --editor --path godot --quit 2>&1 | tee /tmp/godot-import.log
+          "$GODOT" --headless --path godot --script res://blender_portal_test.gd 2>&1 | tee /tmp/blender-import.log
+          grep -Fq 'LEARNQUEST BLENDER PORTAL TEST PASSED' /tmp/blender-import.log
+          "$GODOT" --headless --path godot --script res://blender_race_integration_test.gd 2>&1 | tee /tmp/blender-gameplay.log
+          grep -Fq 'BLENDER RACE INTEGRATION TEST PASSED' /tmp/blender-gameplay.log
+
+      - name: Export fully playable self-contained WebAssembly bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p blender-web-preview
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --export-release Web "$GITHUB_WORKSPACE/blender-web-preview/index.html"
+          for file in index.html index.js index.wasm index.pck; do
+            test -s "blender-web-preview/$file"
+          done
+          printf '%s\n' "$(git rev-parse HEAD)" > blender-web-preview/build.txt
+          printf 'User-agent: *\nDisallow: /\n' > blender-web-preview/robots.txt
+          printf 'LearnQuest Blender-Portal – nur Testversion, keine echten Käufe\n' > blender-web-preview/testversion.txt
+
+      - name: Store Web build on isolated preview branch (never main)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git branch --show-current)" = "preview/blender-web-assets"
+          git add -f blender-web-preview/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git diff --cached --quiet; then
+            echo 'Build artifacts already identical'
+          else
+            git commit -m "build: generated Blender portal test only (no main changes)"
+            git push origin HEAD:preview/blender-web-assets
+          fi
