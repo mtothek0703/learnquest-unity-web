@@ -34,6 +34,7 @@ var robot_feedback := ""
 var hero_material: StandardMaterial3D
 var portal_material: StandardMaterial3D
 var adventure_focus_paused := false
+var crystal_float_phase := 0.0
 
 func _ready() -> void:
     _platform(Vector3(0, -0.5, 0), Vector3(18, 1, 18), Color("#263456"))
@@ -151,6 +152,7 @@ func _physics_process(delta: float) -> void:
             _update_robot_visual()
     if is_instance_valid(follow_camera) and follow_camera.current:
         _update_follow_camera()
+    crystal_float_phase += delta * 3.0
     # Animate only remaining mission pickups in the active walking scene.
     # This makes collectible crystals easier to distinguish from static scenery.
     for target in mission_targets:
@@ -159,7 +161,7 @@ func _physics_process(delta: float) -> void:
             if pickup_visual != null:
                 pickup_visual.rotate_y(delta * 1.8)
                 # Time-based floating makes crystals stand out without accumulating drift.
-                pickup_visual.position.y = sin(Time.get_ticks_msec() * 0.003 + float(target.get_index())) * 0.12
+                pickup_visual.position.y = sin(crystal_float_phase + float(target.get_index())) * 0.12
     _update_objective_guidance()
     _update_return_button()
 
@@ -573,6 +575,7 @@ func reset_mission() -> void:
     crystals_collected = 0
     switches_activated = 0
     mission_complete = false
+    crystal_float_phase = 0.0
     for target in mission_targets:
         target.visible = true
         # A retry must restore collectible presentation as well as mission state.
