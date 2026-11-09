@@ -265,6 +265,15 @@ func _check() -> void:
     if absf(player.rotation.y) > 0.001:
         _fail("on-foot visual turning must not rotate the collision body")
         return
+    # The first playable 3D motion layer must visibly respond to walking
+    # without dragging the CharacterBody collision capsule up and down.
+    if str(player.get("motion_state")) != "walk" or not bool(player.get("motion_visual_initialized")):
+        _fail("walking hero did not transition into the animated stride state")
+        return
+    var original_visual_y: float = (player.get("motion_visual_home") as Vector3).y
+    if absf(walking_visual.position.y - original_visual_y) < 0.004:
+        _fail("walking imported 3D model did not receive a visible stride bob")
+        return
     # A4: on-foot sprint has a separate mobile hold control and must not
     # change the runner's gesture routing or survive a checkpoint reset.
     var sprint_button: Button = null
@@ -286,6 +295,9 @@ func _check() -> void:
     if player.velocity.x < 7.0:
         _fail("walking sprint must increase actual CharacterBody speed")
         return
+    if str(player.get("motion_state")) != "sprint":
+        _fail("walking hero animation did not switch to sprint")
+        return
     sprint_button.button_up.emit()
     area.set("mobile_axis", Vector2.ZERO)
     if bool(player.get("mobile_sprint_held")):
@@ -297,6 +309,9 @@ func _check() -> void:
         return
     if bool(player.get("mobile_sprint_held")):
         _fail("checkpoint respawn must clear held sprint")
+        return
+    if str(player.get("motion_state")) != "idle" or not walking_visual.position.is_equal_approx(player.get("motion_visual_home") as Vector3):
+        _fail("checkpoint must reset animated character pose and baseline")
         return
     # Falling in the translated arena must respawn locally, not at world origin.
     player.global_position = area.to_global(Vector3(0.0, -14.0, 0.0))
