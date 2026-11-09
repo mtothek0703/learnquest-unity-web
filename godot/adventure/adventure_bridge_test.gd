@@ -538,6 +538,10 @@ func _check() -> void:
     if not warning_zone.visible:
         _fail("robot danger zone must appear during telegraph")
         return
+    area.call("_physics_process", 0.1)
+    if is_equal_approx(warning_zone.scale.x, 1.0) or not is_equal_approx(warning_zone.scale.x, warning_zone.scale.z):
+        _fail("robot danger ring must pulse symmetrically during its warning")
+        return
     area.set("robot_warning", 0.0)
     area.call("_update_robot_visual")
     if warning_zone.visible:
