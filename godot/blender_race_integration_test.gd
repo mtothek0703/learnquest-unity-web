@@ -38,9 +38,12 @@ func _run() -> void:
     if float(world.get("turbo_left")) < 2.0 or not bool(portal.get("passed")):
         _fail("portal boost or one-time guard failed")
         return
-    portal.call("advance", 0.15)
+    portal.call("advance", 0.6)
     if int(world.get("xp")) != score_before + 25:
         _fail("same portal granted XP twice")
+        return
+    if portal.visible:
+        _fail("collected portal did not clear the camera after passing")
         return
 
     world.call("_reset_run")
