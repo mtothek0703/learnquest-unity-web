@@ -151,6 +151,13 @@ func _physics_process(delta: float) -> void:
             _update_robot_visual()
     if is_instance_valid(follow_camera) and follow_camera.current:
         _update_follow_camera()
+    # Animate only remaining mission pickups in the active walking scene.
+    # This makes collectible crystals easier to distinguish from static scenery.
+    for target in mission_targets:
+        if target.visible and target.name.begins_with("Crystal"):
+            var pickup_visual := target.get_node_or_null("PickupVisual") as MeshInstance3D
+            if pickup_visual != null:
+                pickup_visual.rotate_y(delta * 1.8)
     _update_objective_guidance()
     _update_return_button()
 
@@ -473,6 +480,7 @@ func _mission_object(id: String, at: Vector3, tint: Color) -> void:
     mesh.radius = 0.42
     mesh.height = 0.84
     visual.mesh = mesh
+    visual.name = "PickupVisual"
     var mat := StandardMaterial3D.new()
     mat.albedo_color = tint
     visual.material_override = mat
