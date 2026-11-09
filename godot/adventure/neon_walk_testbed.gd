@@ -438,6 +438,8 @@ func _update_robot_visual() -> void:
         robot_visual.scale = Vector3.ONE * (1.14 if robot_warning > 0.0 and not robot_stunned else 1.0)
     if is_instance_valid(robot_warning_zone):
         robot_warning_zone.visible = robot_warning > 0.0 and not robot_stunned
+        if not robot_warning_zone.visible:
+            robot_warning_zone.scale = Vector3.ONE
 
 func _update_robot_label() -> void:
     if robot_label == null:
