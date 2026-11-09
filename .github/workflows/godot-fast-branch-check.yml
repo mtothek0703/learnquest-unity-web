@@ -1,0 +1,51 @@
+# Isolated diagnostic check for feature-branch startup failures.
+# Keep the full Godot PR workflow unchanged; this job checks whether
+# GitHub can start a runner and validates the affected gameplay paths.
+name: LearnQuest fast branch regression
+on:
+  push:
+    branches:
+      - feature/adventure-a1-walkable-neon-testbed-20261106-19
+      - feature/blender-learnquest-integration
+    paths:
+      - '.github/workflows/godot-fast-branch-check.yml'
+      - 'godot/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: learnquest-fast-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  godot-quick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate commit
+        uses: actions/checkout@v4
+      - name: Install pinned Godot 4.4.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+      - name: Import and focused gameplay checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/Godot_v4.4.1-stable_linux.x86_64
+          "$GODOT" --headless --editor --path godot --quit > /tmp/import.log 2>&1 || { cat /tmp/import.log; exit 1; }
+          timeout 75s "$GODOT" --headless --path godot --script res://smoke_test.gd > /tmp/gameplay.log 2>&1 || { cat /tmp/gameplay.log; exit 1; }
+          grep -Fq 'LEARNQUEST SMOKE TEST PASSED' /tmp/gameplay.log || { cat /tmp/gameplay.log; exit 1; }
+          if [[ -f godot/adventure/adventure_bridge_test.gd ]]; then
+            timeout 75s "$GODOT" --headless --path godot --script res://adventure/adventure_bridge_test.gd > /tmp/adventure.log 2>&1 || { cat /tmp/adventure.log; exit 1; }
+            grep -Fq 'ADVENTURE BRIDGE TEST PASSED' /tmp/adventure.log || { cat /tmp/adventure.log; exit 1; }
+          fi
+          if [[ -f godot/blender_race_integration_test.gd ]]; then
+            timeout 75s "$GODOT" --headless --path godot --script res://blender_portal_test.gd > /tmp/blender-import.log 2>&1 || { cat /tmp/blender-import.log; exit 1; }
+            grep -Fq 'LEARNQUEST BLENDER PORTAL TEST PASSED' /tmp/blender-import.log || { cat /tmp/blender-import.log; exit 1; }
+            timeout 75s "$GODOT" --headless --path godot --script res://blender_race_integration_test.gd > /tmp/blender-race.log 2>&1 || { cat /tmp/blender-race.log; exit 1; }
+            grep -Fq 'BLENDER RACE INTEGRATION TEST PASSED' /tmp/blender-race.log || { cat /tmp/blender-race.log; exit 1; }
+          fi
+          echo "LEARNQUEST FAST BRANCH TEST PASSED"
