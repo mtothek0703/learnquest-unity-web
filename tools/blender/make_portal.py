@@ -108,6 +108,40 @@ torus("Portal | glowing inner ring", (0, -0.19, 2.20), 1.08, 0.055, core)
 disc = cylinder("Portal | energy field", (0, 0.16, 2.20), 1.06, 0.035, core, vertices=64)
 disc.rotation_euler = (math.pi / 2, 0.0, 0.0)
 
+# A real authored 3D animation rather than a Godot-only shader effect:
+# six asymmetrical light shards orbit inside the ring in a seamless 4s cycle.
+# Their locations are animated in Blender and exported as GLB AnimationTracks.
+# Keep the orbit inside the original physical portal so its collision bonus
+# and the distant center-lane visibility remain unchanged.
+bpy.context.scene.render.fps = 24
+bpy.context.scene.frame_start = 1
+bpy.context.scene.frame_end = 97
+for shard_index in range(6):
+    gem = cube(
+        "Animated orbit shard %02d" % (shard_index + 1),
+        (0.0, -0.25, 2.20),
+        (0.16, 0.12, 0.34),
+        gold if shard_index % 2 == 0 else core,
+        0.025,
+    )
+    # 12 intermediate positions per loop -> stable smooth circle at 24 FPS.
+    for key in range(13):
+        theta = 2.0 * math.pi * (
+            float(shard_index) / 6.0 + float(key) / 12.0
+        )
+        gem.location = (0.90 * math.cos(theta), -0.28,
+                        2.20 + 0.90 * math.sin(theta))
+        gem.rotation_euler = (0.0, theta, 0.20)
+        frame = 1 + key * 8
+        gem.keyframe_insert(data_path="location", frame=frame)
+        gem.keyframe_insert(data_path="rotation_euler", frame=frame)
+    # glTF may split actions, so force each imported channel to loop.
+    if gem.animation_data and gem.animation_data.action:
+        gem.animation_data.action.name = "PortalEnergyLoop"
+        for curve in gem.animation_data.action.fcurves:
+            for point in curve.keyframe_points:
+                point.interpolation = 'LINEAR'
+
 # Stylized keystones along the circular ring.
 for index in range(12):
     angle = (2 * math.pi * index / 12) + (math.pi / 12)
@@ -134,7 +168,7 @@ bpy.context.view_layer.objects.active = asset[0]
 glb_path = out / "learnquest_portal.glb"
 bpy.ops.export_scene.gltf(filepath=str(glb_path), export_format="GLB",
                           use_selection=True, export_yup=True, export_cameras=False,
-                          export_lights=False, export_animations=False)
+                          export_lights=False, export_animations=True)
 
 # Keep a fully editable native Blender document for future iterations.
 blend_path = out / "learnquest_portal.blend"
@@ -178,7 +212,7 @@ manifest = {
     "asset_objects": len(asset),
     "vertices": sum(len(obj.data.vertices) for obj in asset if obj.type == "MESH"),
     "exports": ["learnquest_portal.glb", "learnquest_portal.blend", "portal_preview.png"],
-    "notes": "Static prototype; visual/rigging/gameplay QA required before use in release"
+    "notes": "Keyframed orbit-shard animation exported from Blender; Godot and iPhone visual QA required before release"
 }
 (out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 print("BLENDER ASSET GENERATION PASSED:", manifest)
