@@ -108,39 +108,35 @@ torus("Portal | glowing inner ring", (0, -0.19, 2.20), 1.08, 0.055, core)
 disc = cylinder("Portal | energy field", (0, 0.16, 2.20), 1.06, 0.035, core, vertices=64)
 disc.rotation_euler = (math.pi / 2, 0.0, 0.0)
 
-# A real authored 3D animation rather than a Godot-only shader effect:
-# six asymmetrical light shards orbit inside the ring in a seamless 4s cycle.
-# Their locations are animated in Blender and exported as GLB AnimationTracks.
-# Keep the orbit inside the original physical portal so its collision bonus
-# and the distant center-lane visibility remain unchanged.
+# A genuine Blender-authored 4-second animation. One orbit pivot controls
+# all six asymmetric shards: far fewer GLB animation tracks than six separate
+# actions, and the same editable Animation remains in the .blend file.
 bpy.context.scene.render.fps = 24
 bpy.context.scene.frame_start = 1
 bpy.context.scene.frame_end = 97
+orbit = bpy.data.objects.new("Portal energy orbit rig", None)
+bpy.context.collection.objects.link(orbit)
+orbit.location = (0.0, -0.28, 2.20)
+asset.append(orbit)
 for shard_index in range(6):
+    angle = 2.0 * math.pi * shard_index / 6.0
     gem = cube(
         "Animated orbit shard %02d" % (shard_index + 1),
-        (0.0, -0.25, 2.20),
+        (0.0, 0.0, 0.0),
         (0.16, 0.12, 0.34),
         gold if shard_index % 2 == 0 else core,
         0.025,
     )
-    # 12 intermediate positions per loop -> stable smooth circle at 24 FPS.
-    for key in range(13):
-        theta = 2.0 * math.pi * (
-            float(shard_index) / 6.0 + float(key) / 12.0
-        )
-        gem.location = (0.90 * math.cos(theta), -0.28,
-                        2.20 + 0.90 * math.sin(theta))
-        gem.rotation_euler = (0.0, theta, 0.20)
-        frame = 1 + key * 8
-        gem.keyframe_insert(data_path="location", frame=frame)
-        gem.keyframe_insert(data_path="rotation_euler", frame=frame)
-    # glTF may split actions, so force each imported channel to loop.
-    if gem.animation_data and gem.animation_data.action:
-        gem.animation_data.action.name = "PortalEnergyLoop"
-        for curve in gem.animation_data.action.fcurves:
-            for point in curve.keyframe_points:
-                point.interpolation = 'LINEAR'
+    gem.parent = orbit
+    gem.location = (0.90 * math.cos(angle), 0.0, 0.90 * math.sin(angle))
+    gem.rotation_euler = (0.0, angle, 0.20)
+orbit.rotation_euler = (0.0, 0.0, 0.0)
+orbit.keyframe_insert(data_path="rotation_euler", frame=1)
+orbit.rotation_euler = (0.0, 2.0 * math.pi, 0.0)
+orbit.keyframe_insert(data_path="rotation_euler", frame=97)
+orbit.animation_data.action.name = "PortalEnergyLoop"
+# Blender 5 stores F-curves in layered channel bags; avoid depending on the
+# removed Action.fcurves API. The exporter reads the orbit Action directly.
 
 # Stylized keystones along the circular ring.
 for index in range(12):
