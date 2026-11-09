@@ -542,6 +542,10 @@ func _check() -> void:
     if is_equal_approx(warning_zone.scale.x, 1.0) or not is_equal_approx(warning_zone.scale.x, warning_zone.scale.z):
         _fail("robot danger ring must pulse symmetrically during its warning")
         return
+    # Visual warning must never exceed the actual ROBOT_RANGE strike radius.
+    if warning_zone.scale.x > 1.0001 or warning_zone.scale.x < 0.9199:
+        _fail("robot telegraph must pulse inward within the actual strike radius")
+        return
     area.set("robot_warning", 0.0)
     area.call("_update_robot_visual")
     if warning_zone.visible or warning_zone.scale != Vector3.ONE:
