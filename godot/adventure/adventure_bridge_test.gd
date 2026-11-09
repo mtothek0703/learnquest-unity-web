@@ -308,6 +308,18 @@ func _check() -> void:
     if robot == null:
         _fail("training robot missing")
         return
+    # The warning decal is a horizontal circle. A player on a higher platform
+    # must have the same reach as one at ground level at the same X/Z.
+    var before_ground_check := player.global_position
+    player.global_position = robot.global_position + Vector3(1.0, 5.0, 0.0)
+    if absf(float(area.call("_robot_ground_distance")) - 1.0) > 0.001:
+        _fail("robot reach must match the horizontal warning circle across platform heights")
+        return
+    player.global_position = robot.global_position + Vector3(4.0, 0.0, 0.0)
+    if float(area.call("_robot_ground_distance")) <= 3.0:
+        _fail("robot warning circle must exclude players outside horizontal range")
+        return
+    player.global_position = before_ground_check
     # A4: switching Safari tabs must freeze a pending robot strike and release touch.
     area.set("robot_warning", 0.75)
     player.velocity = Vector3(3.0, -2.0, 0.0)
