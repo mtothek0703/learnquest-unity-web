@@ -60,6 +60,19 @@ func _check() -> void:
         _fail("race HUD and touch buttons overlap walking UI")
         return
     await process_frame
+    # Visual vertical slice: actual neon architecture is present in the
+    # playable arena, but remains collision-free outside the rooftop route.
+    var skyline := area.get_node_or_null("NeonCitySkyline") as Node3D
+    if skyline == null or skyline.get_child_count() != 6:
+        _fail("playable Neon City must include six skyline landmarks")
+        return
+    for tower in skyline.get_children():
+        if tower.get_node_or_null("Facade") == null or tower.get_node_or_null("LightBand0") == null or tower.get_node_or_null("Beacon") == null:
+            _fail("Neon City skyline landmark is missing facade, light or beacon")
+            return
+        if tower.find_children("*", "CollisionShape3D", true, false).size() > 0:
+            _fail("decorative skyline must not obstruct the walking collision route")
+            return
     var player := area.get("player") as CharacterBody3D
     var walk_camera := area.get("follow_camera") as Camera3D
     # The on-foot visual must be the existing glTF character, not the
