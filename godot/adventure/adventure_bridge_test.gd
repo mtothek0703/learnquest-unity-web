@@ -106,6 +106,17 @@ func _check() -> void:
     if pickup_visual.rotation.y <= before_spin + 0.1:
         _fail("visible crystal did not rotate during walking gameplay")
         return
+    # Floating is driven by gameplay delta, not wall-clock time. This keeps
+    # a paused Safari tab from advancing the pickup animation unexpectedly.
+    var phase_after_tick := float(area.get("crystal_float_phase"))
+    if not is_equal_approx(phase_after_tick, 0.3):
+        _fail("crystal floating must advance by the actual simulation delta")
+        return
+    var float_height := pickup_visual.position.y
+    area.call("_physics_process", 0.0)
+    if not is_equal_approx(pickup_visual.position.y, float_height):
+        _fail("zero simulation delta must not move a crystal")
+        return
     pickup.visible = false
     var hidden_spin := pickup_visual.rotation.y
     area.call("_physics_process", 0.1)
@@ -448,6 +459,11 @@ func _check() -> void:
     area.call("_resolve_robot_strike")
     if player.global_position.distance_to(area.to_global(Vector3(0.0, 1.5, 0.0))) > 0.01 or player.velocity != Vector3.ZERO or (area.get("mobile_axis") as Vector2) != Vector2.ZERO or int(area.get("robot_energy")) != 3:
         _fail("robot checkpoint must clear velocity, mobile input and restore energy")
+        return
+    # The float phase is part of retry state, not a global wall clock.
+    area.reset_mission()
+    if not is_zero_approx(float(area.get("crystal_float_phase"))):
+        _fail("mission retry must reset the crystal float phase")
         return
     # Crystal presentation must return to its initial orientation on retry.
     var retry_crystal := (area.get("mission_targets") as Array)[0] as Node3D
