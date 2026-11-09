@@ -72,3 +72,14 @@ jobs:
             git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'assets: Blender portal prototype [skip ci]'
             git push origin HEAD:feature/blender-learnquest-integration
           fi
+
+      - name: Test imported GLB with headless Godot 4.4.1
+        if: github.ref == 'refs/heads/feature/blender-learnquest-integration'
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path godot --quit
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://blender_portal_test.gd
