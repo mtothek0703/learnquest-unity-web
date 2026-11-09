@@ -11,11 +11,14 @@ var running := false
 var travel_speed := 14.0
 var passed := false
 var portal_model: Node3D
+# Blender GLB's imported AnimationPlayer drives actual keyframed orbit shards.
+var energy_animator: AnimationPlayer
 
 func _ready() -> void:
     portal_model = PORTAL_SCENE.instantiate() as Node3D
     portal_model.name = "Actual Blender 3D Portal"
     add_child(portal_model)
+    _init_blender_animation()
     # The player fills the center of the phone chase camera. Mark the lane
     # ABOVE the imported Blender artwork so its destination remains visible.
     # Purely visual: no extra collision shape, reward or save-state change.
@@ -50,12 +53,33 @@ func _ready() -> void:
     add_child(core_marker)
     reset_for_world(0)
 
+# Play animation tracks exported by Blender; never substitute a fake rotating
+# ring when the imported model is static. Old saved runs stay unaffected.
+func _init_blender_animation() -> void:
+    for node in portal_model.find_children("*", "AnimationPlayer", true, false):
+        if node is AnimationPlayer:
+            var animator := node as AnimationPlayer
+            for name in animator.get_animation_list():
+                if name == "RESET":
+                    continue
+                var clip := animator.get_animation(name)
+                if clip == null:
+                    continue
+                clip.loop_mode = Animation.LOOP_LINEAR
+                energy_animator = animator
+                energy_animator.play(name)
+                energy_animator.speed_scale = 0.0
+                return
+
 func reset_for_world(world_index: int) -> void:
     position = Vector3(0.0, 0.0, START_Z)
     rotation = Vector3.ZERO
     passed = false
     running = false
     visible = world_index == 0
+    if energy_animator != null:
+        energy_animator.speed_scale = 0.0
+        energy_animator.seek(0.0, true)
 
 func advance(delta: float) -> void:
     if not running or not visible or runner == null:
@@ -72,4 +96,8 @@ func advance(delta: float) -> void:
         visible = false
 
 func _process(delta: float) -> void:
+    # Both race travel and the Blender-authored animation freeze during
+    # mandatory vocabulary, menus, pause and hidden Safari tabs.
+    if energy_animator != null:
+        energy_animator.speed_scale = 1.0 if running and visible else 0.0
     advance(delta)
