@@ -57,6 +57,8 @@ func _ready() -> void:
     mesh.material_override = hero_material
     mesh.position.y = 0
     player.add_child(mesh)
+    # Load the existing licensed body without creating the hoverboard adapter.
+    _install_walking_character(mesh)
     add_child(player)
     follow_camera = Camera3D.new()
     follow_camera.name = "Walk follow camera"
@@ -70,6 +72,44 @@ func _ready() -> void:
     _create_mission()
     _create_exit_portal()
     _create_robot()
+
+func _install_walking_character(fallback: MeshInstance3D) -> void:
+    const CHARACTER_PATH := "res://models/rider.gltf"
+    if not ResourceLoader.exists(CHARACTER_PATH):
+        return
+    var resource := load(CHARACTER_PATH) as PackedScene
+    if resource == null:
+        return
+    var model := resource.instantiate() as Node3D
+    if model == null:
+        return
+    # Visual-only: the original CharacterBody3D still owns all collision.
+    var bounds := _visual_bounds(model, Transform3D.IDENTITY)
+    if bounds.size.y <= 0.01:
+        model.free()
+        return
+    var scale_factor := minf(1.65 / bounds.size.y, 2.0)
+    model.scale = Vector3.ONE * scale_factor
+    model.position.y = -(bounds.position.y + bounds.size.y * 0.5) * scale_factor
+    model.name = "WalkingVisual"
+    fallback.name = "WalkingCapsuleFallback"
+    fallback.visible = false
+    player.add_child(model)
+
+func _visual_bounds(node: Node3D, parent_transform: Transform3D) -> AABB:
+    var local_transform := parent_transform * node.transform
+    var result := AABB()
+    var found := false
+    if node is MeshInstance3D and node.mesh != null:
+        result = node.mesh.get_aabb() * local_transform
+        found = true
+    for child in node.get_children():
+        if child is Node3D:
+            var child_bounds := _visual_bounds(child, local_transform)
+            if child_bounds.size.length_squared() > 0.0001:
+                result = result.merge(child_bounds) if found else child_bounds
+                found = true
+    return result if found else AABB()
 
 func _physics_process(delta: float) -> void:
     if not is_instance_valid(player):
