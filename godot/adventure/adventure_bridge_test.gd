@@ -449,11 +449,18 @@ func _check() -> void:
     if player.global_position.distance_to(area.to_global(Vector3(0.0, 1.5, 0.0))) > 0.01 or player.velocity != Vector3.ZERO or (area.get("mobile_axis") as Vector2) != Vector2.ZERO or int(area.get("robot_energy")) != 3:
         _fail("robot checkpoint must clear velocity, mobile input and restore energy")
         return
+    # Crystal presentation must return to its initial orientation on retry.
+    var retry_crystal := (area.get("mission_targets") as Array)[0] as Node3D
+    var retry_crystal_visual := retry_crystal.get_node("PickupVisual") as MeshInstance3D
+    retry_crystal_visual.rotation.y = 1.1
     # A retry must restore the arena checkpoint, not just counters and robot.
     player.global_position = area.to_global(Vector3(5.0, 2.0, -5.0))
     player.velocity = Vector3(4.0, -3.0, 2.0)
     area.set("mobile_axis", Vector2(1.0, 0.0))
     area.call("reset_mission")
+    if retry_crystal_visual.rotation != Vector3.ZERO:
+        _fail("mission retry must reset crystal visual orientation")
+        return
     if player.global_position.distance_to(area.to_global(Vector3(0.0, 1.5, 0.0))) > 0.01 or player.velocity != Vector3.ZERO or (area.get("mobile_axis") as Vector2) != Vector2.ZERO:
         _fail("mission retry must restore local checkpoint and clear walking momentum/input")
         return
