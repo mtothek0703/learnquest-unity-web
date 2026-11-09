@@ -42,6 +42,7 @@ func _ready() -> void:
     _platform(Vector3(0, -0.5, 0), Vector3(18, 1, 18), Color("#263456"))
     _platform(Vector3(4, 0.5, -4), Vector3(4, 1, 4), Color("#395c87"))
     _platform(Vector3(4, 1.7, -8), Vector3(4, 1, 4), Color("#317b99"))
+    _build_neon_skyline()
     player = CharacterBody3D.new()
     player.name = "WalkingHero"
     player.set_script(PlayerScript)
@@ -89,6 +90,70 @@ func _ready() -> void:
     _create_mission()
     _create_exit_portal()
     _create_robot()
+
+# Visual-only, low-draw-call rooftop skyline. Buildings stay outside the
+# playable collision arena; no new physics bodies or runner changes.
+# Emissive trims remain readable in the mobile Compatibility renderer.
+func _build_neon_skyline() -> void:
+    var skyline := Node3D.new()
+    skyline.name = "NeonCitySkyline"
+    add_child(skyline)
+    var facade := StandardMaterial3D.new()
+    facade.albedo_color = Color("#15233d")
+    facade.roughness = 0.75
+    var trim_cyan := StandardMaterial3D.new()
+    trim_cyan.albedo_color = Color("#48cde9")
+    trim_cyan.emission_enabled = true
+    trim_cyan.emission = Color("#48cde9")
+    trim_cyan.emission_energy_multiplier = 1.6
+    var trim_pink := StandardMaterial3D.new()
+    trim_pink.albedo_color = Color("#ed65b8")
+    trim_pink.emission_enabled = true
+    trim_pink.emission = Color("#ed65b8")
+    trim_pink.emission_energy_multiplier = 1.4
+    var locations := [
+        Vector3(-15.0, 0.0, -14.0), Vector3(-8.0, 0.0, -19.0),
+        Vector3(1.0, 0.0, -20.0), Vector3(12.0, 0.0, -17.0),
+        Vector3(17.0, 0.0, -8.0), Vector3(-18.0, 0.0, 3.0)
+    ]
+    var heights := [9.0, 14.0, 11.0, 16.0, 10.0, 12.0]
+    for i in range(locations.size()):
+        var tower := Node3D.new()
+        tower.name = "Tower%d" % i
+        tower.position = locations[i]
+        skyline.add_child(tower)
+        var height: float = heights[i]
+        var width := 3.2 if i % 2 == 0 else 4.2
+        var body := MeshInstance3D.new()
+        body.name = "Facade"
+        var body_mesh := BoxMesh.new()
+        body_mesh.size = Vector3(width, height, width * 0.82)
+        body.mesh = body_mesh
+        body.material_override = facade
+        body.position.y = height * 0.5 - 0.5
+        tower.add_child(body)
+        # Horizontal light bands communicate scale without dozens of windows.
+        var neon: StandardMaterial3D = trim_cyan if i % 2 == 0 else trim_pink
+        for band in range(3):
+            var strip := MeshInstance3D.new()
+            strip.name = "LightBand%d" % band
+            var strip_mesh := BoxMesh.new()
+            strip_mesh.size = Vector3(width + 0.08, 0.10, width * 0.82 + 0.08)
+            strip.mesh = strip_mesh
+            strip.material_override = neon
+            strip.position.y = height * (0.30 + float(band) * 0.25) - 0.5
+            tower.add_child(strip)
+        # A small antenna gives each silhouette a readable rooftop landmark.
+        var antenna := MeshInstance3D.new()
+        antenna.name = "Beacon"
+        var antenna_mesh := CylinderMesh.new()
+        antenna_mesh.top_radius = 0.06
+        antenna_mesh.bottom_radius = 0.14
+        antenna_mesh.height = 1.5
+        antenna.mesh = antenna_mesh
+        antenna.material_override = neon
+        antenna.position.y = height + 0.25
+        tower.add_child(antenna)
 
 func _install_walking_character(fallback: MeshInstance3D) -> void:
     # The original, animated Blender GLB takes precedence in the Adventure
