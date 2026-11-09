@@ -478,6 +478,11 @@ func _check() -> void:
         _fail("retry must reset robot encounter")
         return
     var preserved_distance := float(game.get("distance"))
+    var remount_button := area.get("return_button") as Button
+    area.call("_update_return_button")
+    if remount_button == null or not remount_button.disabled:
+        _fail("mobile remount must be disabled before mission and robot completion")
+        return
     # Locked exit must be red until mission and robot are both complete.
     var portal_material := area.get("portal_material") as StandardMaterial3D
     if portal_material == null or portal_material.albedo_color != Color("#ff6655", 0.35):
@@ -548,7 +553,15 @@ func _check() -> void:
     if not (area.get("mission_label") as Label).text.contains("Ausgangsportal in ") or not (area.get("mission_label") as Label).text.contains("AUFSTEIGEN"):
         _fail("completed Neon mission must guide mobile players to the exit with distance")
         return
+    area.call("_update_return_button")
+    if not remount_button.disabled:
+        _fail("mobile remount must remain disabled when outside the exit portal")
+        return
     player.global_position = area.global_position + Vector3(0.0, 1.0, 6.0)
+    area.call("_update_return_button")
+    if remount_button.disabled:
+        _fail("mobile remount must enable at the unlocked portal")
+        return
     # Both desktop E and the mobile INTERAKTION button must be contextual.
     # Check the mobile path here; keyboard E remains checked while locked below.
     var mobile_interact: Button = null
