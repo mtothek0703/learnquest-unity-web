@@ -573,6 +573,10 @@ func reset_mission() -> void:
     mission_complete = false
     for target in mission_targets:
         target.visible = true
+        # A retry must restore collectible presentation as well as mission state.
+        var pickup_visual := target.get_node_or_null("PickupVisual") as MeshInstance3D
+        if pickup_visual != null:
+            pickup_visual.rotation = Vector3.ZERO
     robot_hits = 0
     player_attack_cooldown = 0.0
     robot_warning = 0.0
