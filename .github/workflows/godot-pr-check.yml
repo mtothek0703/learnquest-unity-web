@@ -39,6 +39,8 @@ jobs:
           grep -Fq 'LEARNQUEST SMOKE TEST PASSED' /tmp/gameplay.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://adventure/adventure_bridge_test.gd 2>&1 | tee /tmp/adventure-bridge.log
           grep -Fq 'ADVENTURE BRIDGE TEST PASSED' /tmp/adventure-bridge.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://adventure/rigged_hero_asset_test.gd 2>&1 | tee /tmp/rigged-hero-asset.log
+          grep -Fq 'LEARNQUEST RIGGED HERO IMPORT TEST PASSED' /tmp/rigged-hero-asset.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://landscape_chase_camera_test.gd 2>&1 | tee /tmp/landscape-chase-camera.log
           grep -Fq 'LANDSCAPE CHASE CAMERA TEST PASSED' /tmp/landscape-chase-camera.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://flawless_vocabulary_launch_test.gd 2>&1 | tee /tmp/flawless-vocabulary.log
