@@ -1,0 +1,35 @@
+{
+  "name": "LearnQuest 3D original 16-bone stylized prototype",
+  "license": "Original Blender geometry; no third-party models, textures or secrets",
+  "source": "tools/blender/make_walk_hero.py",
+  "bones": 16,
+  "mesh_parts": 24,
+  "fps": 24,
+  "segments": {
+    "idle": [
+      1,
+      49
+    ],
+    "walk": [
+      49,
+      97
+    ],
+    "sprint": [
+      97,
+      145
+    ],
+    "jump": [
+      145,
+      169
+    ],
+    "fall": [
+      169,
+      193
+    ],
+    "land": [
+      193,
+      217
+    ]
+  },
+  "notes": "True skinned GLB. DRAFT until Godot in-game visual and iPhone QA."
+}
