@@ -452,6 +452,21 @@ func _check() -> void:
     if str(game.get("phase")) != "adventure" or int(game.get("xp")) != initial_xp:
         _fail("desktop R retry must not restart runner or award XP")
         return
+    # A3: the real attack radius must be visible only during the warning.
+    var warning_zone := area.get("robot_warning_zone") as MeshInstance3D
+    if warning_zone == null or warning_zone.visible:
+        _fail("robot danger zone must exist and start hidden")
+        return
+    area.set("robot_warning", 1.2)
+    area.call("_update_robot_visual")
+    if not warning_zone.visible:
+        _fail("robot danger zone must appear during telegraph")
+        return
+    area.set("robot_warning", 0.0)
+    area.call("_update_robot_visual")
+    if warning_zone.visible:
+        _fail("robot danger zone must disappear after telegraph")
+        return
     # A3: robot only accepts nearby attacks; two hits stun it; reset restores it.
     if bool(area.call("attack_robot")):
         _fail("remote robot attack must be rejected")
