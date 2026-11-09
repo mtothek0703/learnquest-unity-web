@@ -102,6 +102,7 @@ func _check() -> void:
         _fail("crystal needs an independently animated 3D pickup visual")
         return
     var before_spin := pickup_visual.rotation.y
+    var phase_before_tick := float(area.get("crystal_float_phase"))
     area.call("_physics_process", 0.1)
     if pickup_visual.rotation.y <= before_spin + 0.1:
         _fail("visible crystal did not rotate during walking gameplay")
@@ -109,7 +110,7 @@ func _check() -> void:
     # Floating is driven by gameplay delta, not wall-clock time. This keeps
     # a paused Safari tab from advancing the pickup animation unexpectedly.
     var phase_after_tick := float(area.get("crystal_float_phase"))
-    if not is_equal_approx(phase_after_tick, 0.3):
+    if not is_equal_approx(phase_after_tick - phase_before_tick, 0.3):
         _fail("crystal floating must advance by the actual simulation delta")
         return
     var float_height := pickup_visual.position.y
