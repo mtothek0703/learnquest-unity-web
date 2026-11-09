@@ -26,13 +26,13 @@ func reset_for_world(world_index: int) -> void:
     visible = world_index == 0
 
 func advance(delta: float) -> void:
-    if not running or passed or not visible or runner == null:
+    if not running or not visible or runner == null:
         return
     if not is_finite(delta) or delta <= 0.0 or not is_finite(travel_speed) or travel_speed <= 0.0:
         return
     var old_z := position.z
     position.z += travel_speed * delta
-    if old_z < runner.position.z and position.z >= runner.position.z:
+    if not passed and old_z < runner.position.z and position.z >= runner.position.z:
         passed = true
         if absf(runner.position.x - position.x) <= PICKUP_HALF_WIDTH:
             entered.emit()
