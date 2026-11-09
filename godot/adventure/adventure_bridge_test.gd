@@ -62,6 +62,17 @@ func _check() -> void:
     await process_frame
     var player := area.get("player") as CharacterBody3D
     var walk_camera := area.get("follow_camera") as Camera3D
+    # The on-foot visual must be the existing glTF character, not the
+    # temporary capsule or the LegacyRider hoverboard scene.
+    if player != null:
+        var foot_visual := player.get_node_or_null("WalkingVisual") as Node3D
+        var capsule_fallback := player.get_node_or_null("WalkingCapsuleFallback") as MeshInstance3D
+        if foot_visual == null or capsule_fallback == null or capsule_fallback.visible:
+            _fail("existing glTF walking body not installed or capsule fallback still visible")
+            return
+        if foot_visual.get_node_or_null("Floating hoverboard") != null or foot_visual.get_node_or_null("LegacyRider") != null:
+            _fail("walking visual must not instantiate the runner board")
+            return
     if player == null or walk_camera == null or not walk_camera.current:
         _fail("separate foot player or third-person camera not active")
         return
