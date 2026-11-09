@@ -201,7 +201,12 @@ func _update_follow_camera() -> void:
     var hit := get_world_3d().direct_space_state.intersect_ray(query)
     if not hit.is_empty():
         desired = (hit["position"] as Vector3) + (hit["normal"] as Vector3) * 0.25
-    follow_camera.global_position = desired
+    # Smooth free-space pursuit to reduce abrupt framing changes on mobile.
+    # On obstruction, snap to the safe raycast point immediately so smoothing
+    # cannot carry the camera through rooftop geometry.
+    var blocked := not hit.is_empty()
+    var camera_blend := clampf(get_physics_process_delta_time() * 9.0, 0.0, 1.0)
+    follow_camera.global_position = desired if blocked else follow_camera.global_position.lerp(desired, camera_blend)
     follow_camera.look_at(focus)
 
 func _platform(at: Vector3, size: Vector3, tint: Color) -> void:
