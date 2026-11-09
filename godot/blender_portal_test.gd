@@ -10,6 +10,9 @@ func _initialize() -> void:
         push_error("BLENDER PORTAL TEST FAILED: imported model empty")
         quit(1)
         return
+    # Transforms are only valid after the imported scene enters SceneTree.
+    # Otherwise get_global_position() returns IDENTITY and falsely fails QA.
+    root.add_child(portal)
     # Confirm that Blender exported real moving GLB keyframes, not just a
     # static mesh or a Godot-only shader. One shard must orbit in 3D.
     var animation_players := portal.find_children("*", "AnimationPlayer", true, false)
@@ -40,5 +43,5 @@ func _initialize() -> void:
         quit(1)
         return
     print("LEARNQUEST BLENDER PORTAL TEST PASSED")
-    portal.free()
+    portal.queue_free()
     quit(0)
