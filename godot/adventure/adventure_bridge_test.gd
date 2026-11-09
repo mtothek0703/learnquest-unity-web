@@ -78,7 +78,9 @@ func _check() -> void:
     var hero_visual := player.get_node_or_null("WalkingVisual") as Node3D
     var hero_rig: Skeleton3D = null
     if hero_visual != null:
-        hero_rig = hero_visual.find_child("*", "Skeleton3D", true, false) as Skeleton3D
+        var imported_skeletons := hero_visual.find_children("*", "Skeleton3D", true, false)
+        if not imported_skeletons.is_empty():
+            hero_rig = imported_skeletons[0] as Skeleton3D
     if hero_rig == null or hero_rig.get_bone_count() < 14:
         _fail("Adventure failed to load the actual Blender skinned hero")
         return
