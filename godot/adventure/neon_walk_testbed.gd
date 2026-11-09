@@ -57,6 +57,20 @@ func _ready() -> void:
     mesh.material_override = hero_material
     mesh.position.y = 0
     player.add_child(mesh)
+    # Visible shield independent of the hidden capsule and imported glTF material.
+    var shield := MeshInstance3D.new()
+    shield.name = "WalkingShield"
+    var shield_mesh := SphereMesh.new()
+    shield_mesh.radius = 1.08
+    shield_mesh.height = 2.16
+    shield.mesh = shield_mesh
+    var shield_material := StandardMaterial3D.new()
+    shield_material.albedo_color = Color(0.25, 1.0, 0.78, 0.20)
+    shield_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    shield_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    shield.material_override = shield_material
+    shield.visible = false
+    player.add_child(shield)
     # Load the existing licensed body without creating the hoverboard adapter.
     _install_walking_character(mesh)
     add_child(player)
@@ -382,6 +396,9 @@ func _update_hero_guard_visual() -> void:
         return
     # The walking hero shows an in-world shield cue, not just HUD text.
     hero_material.albedo_color = Color("#65f5c7") if robot_guard > 0.0 else Color("#d7e9ff")
+    var shield := player.get_node_or_null("WalkingShield") as MeshInstance3D if is_instance_valid(player) else null
+    if shield != null:
+        shield.visible = robot_guard > 0.0
 
 func _update_robot_visual() -> void:
     if robot_material == null:
