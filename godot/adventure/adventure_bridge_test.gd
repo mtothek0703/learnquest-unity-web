@@ -73,6 +73,22 @@ func _check() -> void:
         if foot_visual.get_node_or_null("Floating hoverboard") != null or foot_visual.get_node_or_null("LegacyRider") != null:
             _fail("walking visual must not instantiate the runner board")
             return
+    # The imported body hides the fallback capsule; guard must still be visible.
+    if player != null:
+        var shield := player.get_node_or_null("WalkingShield") as MeshInstance3D
+        if shield == null or shield.visible:
+            _fail("walking hero shield must exist and start hidden")
+            return
+        area.set("robot_guard", 0.8)
+        area.call("_update_hero_guard_visual")
+        if not shield.visible:
+            _fail("active guard must be visible around the imported walking body")
+            return
+        area.set("robot_guard", 0.0)
+        area.call("_update_hero_guard_visual")
+        if shield.visible:
+            _fail("expired guard must hide the walking shield")
+            return
     if player == null or walk_camera == null or not walk_camera.current:
         _fail("separate foot player or third-person camera not active")
         return
