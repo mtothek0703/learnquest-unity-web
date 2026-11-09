@@ -101,7 +101,7 @@ func _visual_bounds(node: Node3D, parent_transform: Transform3D) -> AABB:
     var result := AABB()
     var found := false
     if node is MeshInstance3D and node.mesh != null:
-        result = node.mesh.get_aabb() * local_transform
+        result = local_transform * node.mesh.get_aabb()
         found = true
     for child in node.get_children():
         if child is Node3D:
