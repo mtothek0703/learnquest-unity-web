@@ -1,5 +1,9 @@
 extends SceneTree
 func _initialize() -> void:
+    # SceneTree._initialize happens before root enters the rendering tree.
+    call_deferred("_run")
+
+func _run() -> void:
     var asset = ResourceLoader.load("res://assets/3d/learnquest_portal.glb")
     if asset == null or not (asset is PackedScene):
         push_error("BLENDER PORTAL TEST FAILED: Godot could not import GLB")
