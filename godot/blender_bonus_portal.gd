@@ -35,7 +35,7 @@ func _ready() -> void:
     marker.mesh = cue_ring
     marker.material_override = cue_material
     marker.rotation.x = PI / 2.0
-    marker.position = Vector3(0.0, 7.4, 0.0)
+    marker.position = Vector3(0.0, 6.8, 0.0)
     marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
     add_child(marker)
     var cue_core := SphereMesh.new()
@@ -45,7 +45,7 @@ func _ready() -> void:
     core_marker.name = "Portal beacon core"
     core_marker.mesh = cue_core
     core_marker.material_override = cue_material
-    core_marker.position = Vector3(0.0, 7.4, 0.0)
+    core_marker.position = Vector3(0.0, 6.8, 0.0)
     core_marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
     add_child(core_marker)
     reset_for_world(0)
