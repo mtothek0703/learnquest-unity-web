@@ -396,9 +396,10 @@ func _update_hero_guard_visual() -> void:
         return
     # The walking hero shows an in-world shield cue, not just HUD text.
     hero_material.albedo_color = Color("#65f5c7") if robot_guard > 0.0 else Color("#d7e9ff")
-    var shield := player.get_node_or_null("WalkingShield") as MeshInstance3D if is_instance_valid(player) else null
-    if shield != null:
-        shield.visible = robot_guard > 0.0
+    if is_instance_valid(player):
+        var shield := player.get_node_or_null("WalkingShield") as MeshInstance3D
+        if shield != null:
+            shield.visible = robot_guard > 0.0
 
 func _update_robot_visual() -> void:
     if robot_material == null:
