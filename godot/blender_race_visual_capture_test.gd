@@ -83,15 +83,17 @@ func _capture() -> void:
                     baseline = shot
                 else:
                     var different := 0
-                    for y in range(36):
-                        for x in range(64):
-                            var px := int(float(size.x - 1) * float(x) / 63.0)
-                            var py := int(float(size.y - 1) * float(y) / 35.0)
+                    # 96x54 samples detect a thin 3D cue on compact 19.5:9 phones
+                    # without weakening the comparison to a non-rendered portal.
+                    for y in range(54):
+                        for x in range(96):
+                            var px := int(float(size.x - 1) * float(x) / 95.0)
+                            var py := int(float(size.y - 1) * float(y) / 53.0)
                             var a := baseline.get_pixel(px, py)
                             var b := shot.get_pixel(px, py)
                             if absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b) > 0.14:
                                 different += 1
-                    var minimum := 4 if view == "center" else 8
+                    var minimum := 6 if view == "center" else 12
                     if different < minimum:
                         _fail("Blender portal is not signposted visibly at " + str(size) + " " + view)
                         return
