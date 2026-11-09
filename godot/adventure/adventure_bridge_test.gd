@@ -101,6 +101,12 @@ func _check() -> void:
     if pickup_visual == null:
         _fail("crystal needs an independently animated 3D pickup visual")
         return
+    # Mission targets must be visually distinguishable on small phone screens.
+    var switch_target := area.get_node_or_null("Switch0") as Node3D
+    var switch_visual := switch_target.get_node_or_null("PickupVisual") as MeshInstance3D if switch_target != null else null
+    if not (pickup_visual.mesh is SphereMesh) or switch_visual == null or not (switch_visual.mesh is BoxMesh):
+        _fail("crystals must remain spheres and switches must be distinct flat consoles")
+        return
     var before_spin := pickup_visual.rotation.y
     var phase_before_tick := float(area.get("crystal_float_phase"))
     area.call("_physics_process", 0.1)
