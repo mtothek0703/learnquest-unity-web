@@ -41,6 +41,8 @@ jobs:
           if [[ -f godot/adventure/adventure_bridge_test.gd ]]; then
             timeout 75s "$GODOT" --headless --path godot --script res://adventure/adventure_bridge_test.gd > /tmp/adventure.log 2>&1 || { cat /tmp/adventure.log; exit 1; }
             grep -Fq 'ADVENTURE BRIDGE TEST PASSED' /tmp/adventure.log || { cat /tmp/adventure.log; exit 1; }
+            timeout 75s "$GODOT" --headless --path godot --script res://adventure/rigged_hero_asset_test.gd > /tmp/rigged-hero.log 2>&1 || { cat /tmp/rigged-hero.log; exit 1; }
+            grep -Fq 'LEARNQUEST RIGGED HERO IMPORT TEST PASSED' /tmp/rigged-hero.log || { cat /tmp/rigged-hero.log; exit 1; }
           fi
           if [[ -f godot/blender_race_integration_test.gd ]]; then
             timeout 75s "$GODOT" --headless --path godot --script res://blender_portal_test.gd > /tmp/blender-import.log 2>&1 || { cat /tmp/blender-import.log; exit 1; }
