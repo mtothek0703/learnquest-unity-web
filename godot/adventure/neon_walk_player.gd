@@ -23,6 +23,14 @@ var motion_was_airborne := false
 var motion_visual_home := Vector3.ZERO
 var motion_visual_scale := Vector3.ONE
 var motion_visual_initialized := false
+# Authored Blender AnimationPlayer: actual arms, legs, head and torso move
+# with a 16-bone Skin. Controlled by the existing CharacterBody movement
+# state; animations are visual-only and never steer collision or score.
+var rigged_animation_player: AnimationPlayer
+var rigged_animation_name := ""
+var rigged_pose_clock := 0.0
+var rigged_pose_state := ""
+
 
 func _physics_process(delta: float) -> void:
     # Ignore even a directly invoked physics tick while Safari is backgrounded.
@@ -102,6 +110,65 @@ func _animate_walking_visual(delta: float, axis: Vector2, speed: float) -> void:
     visual.rotation.z = lerpf(visual.rotation.z, tilt, blend)
     visual.rotation.x = lerpf(visual.rotation.x, -0.07 if sprinting else 0.0, blend)
     visual.scale = visual.scale.lerp(target_scale, blend)
+    _animate_rigged_hero(visual, delta)
+
+func _animate_rigged_hero(visual: Node3D, delta: float) -> void:
+    if rigged_animation_player == null:
+        # Older GLTFs have no animation; keep compatible with the existing
+        # original character while using real bones when Blender GLB exists.
+        for node in visual.find_children("*", "AnimationPlayer", true, false):
+            if node is AnimationPlayer:
+                var candidate := node as AnimationPlayer
+                for clip_name in candidate.get_animation_list():
+                    if clip_name == "RESET":
+                        continue
+                    var clip := candidate.get_animation(clip_name)
+                    if clip != null and clip.length >= 8.0:
+                        rigged_animation_player = candidate
+                        rigged_animation_name = clip_name
+                        rigged_animation_player.play(clip_name)
+                        rigged_animation_player.speed_scale = 0.0
+                        break
+            if rigged_animation_player != null:
+                break
+    if rigged_animation_player == null:
+        return
+    var target_state := "land" if motion_landing > 0.25 else motion_state
+    if target_state != rigged_pose_state:
+        rigged_pose_state = target_state
+        rigged_pose_clock = 0.0
+    rigged_pose_clock += delta
+    # Exactly the frame segments exported in make_walk_hero.py (24 FPS):
+    # idle 1-49, walk 49-97, sprint 97-145, jump 145-169,
+    # fall 169-193, landing 193-217. One GLB Action drives the one Skin.
+    var segment_start := 0.0
+    var segment_span := 2.0
+    var playback_rate := 1.0
+    var loop_segment := true
+    match target_state:
+        "walk":
+            segment_start = 2.0
+            playback_rate = 1.12
+        "sprint":
+            segment_start = 4.0
+            playback_rate = 1.45
+        "jump":
+            segment_start = 6.0
+            segment_span = 1.0
+            loop_segment = false
+        "fall":
+            segment_start = 7.0
+            segment_span = 1.0
+            loop_segment = false
+        "land":
+            segment_start = 8.0
+            segment_span = 1.0
+            playback_rate = 2.4
+            loop_segment = false
+    var elapsed := rigged_pose_clock * playback_rate
+    var pose_time := fposmod(elapsed, segment_span) if loop_segment else minf(elapsed, segment_span - 0.04)
+    var clip := rigged_animation_player.get_animation(rigged_animation_name)
+    rigged_animation_player.seek(minf(segment_start + pose_time, clip.length - 0.01), true)
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -145,6 +212,10 @@ func respawn() -> void:
     motion_clock = 0.0
     motion_landing = 0.0
     motion_was_airborne = false
+    rigged_pose_clock = 0.0
+    rigged_pose_state = "idle"
+    if rigged_animation_player != null:
+        rigged_animation_player.seek(0.0, true)
 
 func _notification(what: int) -> void:
     if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
