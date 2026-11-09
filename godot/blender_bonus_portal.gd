@@ -26,8 +26,8 @@ func _ready() -> void:
     cue_material.emission_energy_multiplier = 2.1
     cue_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
     var cue_ring := TorusMesh.new()
-    cue_ring.inner_radius = 0.55
-    cue_ring.outer_radius = 0.78
+    cue_ring.inner_radius = 0.76
+    cue_ring.outer_radius = 1.08
     cue_ring.rings = 24
     cue_ring.ring_segments = 8
     var marker := MeshInstance3D.new()
