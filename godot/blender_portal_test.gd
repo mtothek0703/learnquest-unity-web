@@ -36,9 +36,19 @@ func _initialize() -> void:
         quit(1)
         return
     var before := shard.global_position
+    # Sampling only at 1.0s can land exactly on a looping clip boundary.
+    # Evaluate several interior keyframe times to verify actual displacement.
+    var clip := animator.get_animation(clip_name)
+    if clip == null or clip.length <= 0.0:
+        push_error("BLENDER PORTAL TEST FAILED: invalid imported animation duration")
+        quit(1)
+        return
     animator.play(clip_name)
-    animator.advance(1.0)
-    if shard.global_position.distance_to(before) < 0.15:
+    var max_displacement := 0.0
+    for fraction in [0.20, 0.40, 0.60, 0.80]:
+        animator.seek(clip.length * fraction, true)
+        max_displacement = maxf(max_displacement, shard.global_position.distance_to(before))
+    if max_displacement < 0.15:
         push_error("BLENDER PORTAL TEST FAILED: keyframed orbit did not visibly move")
         quit(1)
         return
