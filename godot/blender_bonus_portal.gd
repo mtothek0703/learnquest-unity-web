@@ -16,6 +16,38 @@ func _ready() -> void:
     portal_model = PORTAL_SCENE.instantiate() as Node3D
     portal_model.name = "Actual Blender 3D Portal"
     add_child(portal_model)
+    # The player fills the center of the phone chase camera. Mark the lane
+    # ABOVE the imported Blender artwork so its destination remains visible.
+    # Purely visual: no extra collision shape, reward or save-state change.
+    var cue_material := StandardMaterial3D.new()
+    cue_material.albedo_color = Color("#8af9ff")
+    cue_material.emission_enabled = true
+    cue_material.emission = Color("#45edff")
+    cue_material.emission_energy_multiplier = 2.1
+    cue_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    var cue_ring := TorusMesh.new()
+    cue_ring.inner_radius = 0.55
+    cue_ring.outer_radius = 0.78
+    cue_ring.rings = 24
+    cue_ring.ring_segments = 8
+    var marker := MeshInstance3D.new()
+    marker.name = "Center lane portal beacon above rider"
+    marker.mesh = cue_ring
+    marker.material_override = cue_material
+    marker.rotation.x = PI / 2.0
+    marker.position = Vector3(0.0, 7.4, 0.0)
+    marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    add_child(marker)
+    var cue_core := SphereMesh.new()
+    cue_core.radius = 0.29
+    cue_core.height = 0.58
+    var core_marker := MeshInstance3D.new()
+    core_marker.name = "Portal beacon core"
+    core_marker.mesh = cue_core
+    core_marker.material_override = cue_material
+    core_marker.position = Vector3(0.0, 7.4, 0.0)
+    core_marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    add_child(core_marker)
     reset_for_world(0)
 
 func reset_for_world(world_index: int) -> void:
