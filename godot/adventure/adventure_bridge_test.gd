@@ -76,7 +76,9 @@ func _check() -> void:
     # The Adventure visual now must be a real Blender-authored Skin, with
     # independent animated arms/legs. The hovering runner remains untouched.
     var hero_visual := player.get_node_or_null("WalkingVisual") as Node3D
-    var hero_rig := hero_visual.find_child("*", "Skeleton3D", true, false) as Skeleton3D if hero_visual != null else null
+    var hero_rig: Skeleton3D = null
+    if hero_visual != null:
+        hero_rig = hero_visual.find_child("*", "Skeleton3D", true, false) as Skeleton3D
     if hero_rig == null or hero_rig.get_bone_count() < 14:
         _fail("Adventure failed to load the actual Blender skinned hero")
         return
