@@ -544,8 +544,8 @@ func _check() -> void:
         return
     area.set("robot_warning", 0.0)
     area.call("_update_robot_visual")
-    if warning_zone.visible:
-        _fail("robot danger zone must disappear after telegraph")
+    if warning_zone.visible or warning_zone.scale != Vector3.ONE:
+        _fail("robot danger zone must disappear and reset scale after telegraph")
         return
     # A3: robot only accepts nearby attacks; two hits stun it; reset restores it.
     if bool(area.call("attack_robot")):
