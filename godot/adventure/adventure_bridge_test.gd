@@ -103,7 +103,9 @@ func _check() -> void:
         return
     # Mission targets must be visually distinguishable on small phone screens.
     var switch_target := area.get_node_or_null("Switch0") as Node3D
-    var switch_visual := switch_target.get_node_or_null("PickupVisual") as MeshInstance3D if switch_target != null else null
+    var switch_visual: MeshInstance3D = null
+    if switch_target != null:
+        switch_visual = switch_target.get_node_or_null("PickupVisual") as MeshInstance3D
     if not (pickup_visual.mesh is SphereMesh) or switch_visual == null or not (switch_visual.mesh is BoxMesh):
         _fail("crystals must remain spheres and switches must be distinct flat consoles")
         return
