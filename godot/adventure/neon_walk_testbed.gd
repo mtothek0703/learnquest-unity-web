@@ -11,6 +11,7 @@ var switches_activated := 0
 var mission_complete := false
 var mission_targets: Array[Node3D] = []
 var mission_label: Label
+var return_button: Button
 const INTERACT_RADIUS := 2.0
 const EXIT_PORTAL_POSITION := Vector3(0.0, 1.0, 6.0)
 const EXIT_PORTAL_RADIUS := 2.0
@@ -96,6 +97,7 @@ func _physics_process(delta: float) -> void:
     if is_instance_valid(follow_camera) and follow_camera.current:
         _update_follow_camera()
     _update_objective_guidance()
+    _update_return_button()
 
 func _update_follow_camera() -> void:
     # Keep the walking camera out of rooftop geometry. The runner camera is untouched.
@@ -183,7 +185,7 @@ func _make_touch_controls() -> void:
 
     # Only the parent runner handles the actual return transition. The same
     # scene remains independently launchable for Godot movement testing.
-    var return_button := Button.new()
+    return_button = Button.new()
     return_button.name = "Return to Hoverboard"
     return_button.text = "AUFSTEIGEN"
     return_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
@@ -193,6 +195,7 @@ func _make_touch_controls() -> void:
     return_button.offset_bottom = 64.0
     root.add_child(return_button)
     return_button.pressed.connect(_request_return)
+    _update_return_button()
     # Explicit on-foot retry; never restarts the runner or reopens the quiz.
     var retry_button := Button.new()
     retry_button.name = "Retry Adventure Mission"
@@ -344,6 +347,14 @@ func _update_robot_label() -> void:
     if robot_feedback != "" and not robot_stunned:
         robot_label.text += " | " + robot_feedback
 
+func _update_return_button() -> void:
+    if return_button == null:
+        return
+    var unlocked := mission_complete and robot_stunned
+    var in_range := is_instance_valid(player) and player.global_position.distance_to(to_global(EXIT_PORTAL_POSITION)) <= EXIT_PORTAL_RADIUS
+    return_button.disabled = adventure_focus_paused or not unlocked or not in_range
+    return_button.tooltip_text = "Zum grünen Ausgangsportal gehen" if unlocked and not in_range else "Erst Mission und Roboter abschließen" if not unlocked else "Zurück zum Hoverboard"
+
 func _request_return() -> void:
     if adventure_focus_paused:
         return
@@ -492,6 +503,7 @@ func reset_mission() -> void:
     _update_robot_visual()
     _update_hero_guard_visual()
     _update_mission_label()
+    _update_return_button()
 
 func _contextual_interact() -> void:
     # Mobile and keyboard share one contextual action at the exit portal.
