@@ -95,7 +95,9 @@ func _check() -> void:
     # A4: uncollected crystals animate in the real arena, without animating
     # hidden/collected pickups or changing the runner simulation.
     var pickup := area.get_node_or_null("Crystal0") as Node3D
-    var pickup_visual := pickup.get_node_or_null("PickupVisual") as MeshInstance3D if pickup != null else null
+    var pickup_visual: MeshInstance3D = null
+    if pickup != null:
+        pickup_visual = pickup.get_node_or_null("PickupVisual") as MeshInstance3D
     if pickup_visual == null:
         _fail("crystal needs an independently animated 3D pickup visual")
         return
