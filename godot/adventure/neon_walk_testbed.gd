@@ -154,9 +154,9 @@ func _physics_process(delta: float) -> void:
     if is_instance_valid(follow_camera) and follow_camera.current:
         _update_follow_camera()
     # Pulse the ground danger marker throughout the telegraph, not just on entry.
-    # Only its visual scale changes; the actual robot strike radius stays fixed.
+    # Pulse inward only: the visible ring never promises a larger hit radius than the real strike.
     if is_instance_valid(robot_warning_zone) and robot_warning_zone.visible:
-        var warning_pulse := 1.0 + 0.08 * sin(robot_warning * 12.0)
+        var warning_pulse := 0.96 + 0.04 * sin(robot_warning * 12.0)
         robot_warning_zone.scale = Vector3(warning_pulse, 1.0, warning_pulse)
     crystal_float_phase += delta * 3.0
     # Animate only remaining mission pickups in the active walking scene.
