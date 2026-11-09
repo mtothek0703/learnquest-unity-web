@@ -19,6 +19,7 @@ const ROBOT_RANGE := 3.0
 var robot: Node3D
 var robot_visual: MeshInstance3D
 var robot_warning_zone: MeshInstance3D
+var robot_warning_material: StandardMaterial3D
 var robot_material: StandardMaterial3D
 var robot_hits := 0
 var player_attack_cooldown := 0.0
@@ -158,6 +159,10 @@ func _physics_process(delta: float) -> void:
     if is_instance_valid(robot_warning_zone) and robot_warning_zone.visible:
         var warning_pulse := 0.96 + 0.04 * sin(robot_warning * 12.0)
         robot_warning_zone.scale = Vector3(warning_pulse, 1.0, warning_pulse)
+        # The approaching strike becomes more opaque, without changing hit range.
+        if is_instance_valid(robot_warning_material):
+            var urgency := clampf(1.0 - robot_warning / 1.2, 0.0, 1.0)
+            robot_warning_material.albedo_color.a = lerpf(0.24, 0.62, urgency)
     crystal_float_phase += delta * 3.0
     # Animate only remaining mission pickups in the active walking scene.
     # This makes collectible crystals easier to distinguish from static scenery.
@@ -365,6 +370,7 @@ func _create_robot() -> void:
     zone_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
     zone_material.no_depth_test = false
     robot_warning_zone.material_override = zone_material
+    robot_warning_material = zone_material
     robot_warning_zone.visible = false
     robot.add_child(robot_warning_zone)
     add_child(robot)
@@ -440,6 +446,8 @@ func _update_robot_visual() -> void:
         robot_warning_zone.visible = robot_warning > 0.0 and not robot_stunned
         if not robot_warning_zone.visible:
             robot_warning_zone.scale = Vector3.ONE
+            if is_instance_valid(robot_warning_material):
+                robot_warning_material.albedo_color.a = 0.24
 
 func _update_robot_label() -> void:
     if robot_label == null:
