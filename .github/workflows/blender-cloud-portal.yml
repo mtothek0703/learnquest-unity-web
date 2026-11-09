@@ -4,13 +4,14 @@ on:
   push:
     branches:
       - feature/blender-cloud-portal
+      - feature/blender-learnquest-integration
     paths:
       - .github/workflows/blender-cloud-portal.yml
       - tools/blender/**
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: blender-cloud-${{ github.ref }}
@@ -57,3 +58,17 @@ jobs:
           if-no-files-found: error
           retention-days: 1
           compression-level: 6
+
+      - name: Commit generated asset to feature branch only
+        if: github.ref == 'refs/heads/feature/blender-learnquest-integration' && github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p godot/assets/3d
+          cp out/blender/learnquest_portal.glb godot/assets/3d/learnquest_portal.glb
+          cp out/blender/portal_preview.png godot/assets/3d/learnquest_portal_preview.png
+          git add godot/assets/3d/learnquest_portal.glb godot/assets/3d/learnquest_portal_preview.png
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'assets: Blender portal prototype [skip ci]'
+            git push origin HEAD:feature/blender-learnquest-integration
+          fi
