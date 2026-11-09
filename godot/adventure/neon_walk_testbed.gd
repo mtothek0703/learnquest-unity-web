@@ -91,10 +91,17 @@ func _ready() -> void:
     _create_robot()
 
 func _install_walking_character(fallback: MeshInstance3D) -> void:
+    # The original, animated Blender GLB takes precedence in the Adventure
+    # vertical slice. A missing/invalid import safely keeps the existing glTF.
+    # No change to the hoverboard hero or other stable worlds.
+    const RIGGED_CHARACTER_PATH := "res://assets/3d/learnquest_walk_hero.glb"
     const CHARACTER_PATH := "res://models/rider.gltf"
-    if not ResourceLoader.exists(CHARACTER_PATH):
+    var character_path: String = RIGGED_CHARACTER_PATH if ResourceLoader.exists(RIGGED_CHARACTER_PATH) else CHARACTER_PATH
+    if not ResourceLoader.exists(character_path):
         return
-    var resource := load(CHARACTER_PATH) as PackedScene
+    var resource := load(character_path) as PackedScene
+    if resource == null and character_path != CHARACTER_PATH:
+        resource = load(CHARACTER_PATH) as PackedScene
     if resource == null:
         return
     var model := resource.instantiate() as Node3D
