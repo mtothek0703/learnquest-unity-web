@@ -73,6 +73,23 @@ func _check() -> void:
         if foot_visual.get_node_or_null("Floating hoverboard") != null or foot_visual.get_node_or_null("LegacyRider") != null:
             _fail("walking visual must not instantiate the runner board")
             return
+    # The Adventure visual now must be a real Blender-authored Skin, with
+    # independent animated arms/legs. The hovering runner remains untouched.
+    var hero_visual := player.get_node_or_null("WalkingVisual") as Node3D
+    var hero_rig := hero_visual.find_child("*", "Skeleton3D", true, false) as Skeleton3D if hero_visual != null else null
+    if hero_rig == null or hero_rig.get_bone_count() < 14:
+        _fail("Adventure failed to load the actual Blender skinned hero")
+        return
+    var hero_arm := hero_rig.find_bone("UpperArm.L")
+    if hero_arm < 0:
+        _fail("Adventure Blender hero has no independently animated arm")
+        return
+    # The original project includes a legacy static GLTF; reject silent
+    # fallback when the new verified animated GLB is present.
+    var animator_nodes := hero_visual.find_children("*", "AnimationPlayer", true, false)
+    if animator_nodes.is_empty():
+        _fail("Adventure uses a static model despite a rigged Blender import")
+        return
     # The imported body hides the fallback capsule; guard must still be visible.
     if player != null:
         var shield := player.get_node_or_null("WalkingShield") as MeshInstance3D
@@ -263,6 +280,15 @@ func _check() -> void:
     area.set("mobile_axis", Vector2.ZERO)
     if player.global_position.x <= start_x + 0.3:
         _fail("mobile walking control did not move CharacterBody3D")
+        return
+    # Motion state must reach the actual imported AnimationPlayer, not just
+    # bob the whole mesh. Verify the intended WALK segment is being sampled.
+    var drive_animator := player.get("rigged_animation_player") as AnimationPlayer
+    if drive_animator == null or str(player.get("rigged_animation_name")).is_empty():
+        _fail("walking gameplay did not enable Blender skeletal animation")
+        return
+    if float(player.get("rigged_pose_clock")) <= 0.0:
+        _fail("skinned walking motion timeline did not advance")
         return
     # Direction changes must turn only the walking appearance, not collision.
     var walking_visual := player.get_node_or_null("WalkingVisual") as Node3D
