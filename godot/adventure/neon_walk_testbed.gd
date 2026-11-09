@@ -513,10 +513,16 @@ func _mission_object(id: String, at: Vector3, tint: Color) -> void:
     node.name = id
     node.position = at
     var visual := MeshInstance3D.new()
-    var mesh := SphereMesh.new()
-    mesh.radius = 0.42
-    mesh.height = 0.84
-    visual.mesh = mesh
+    # Switches are flat, fixed consoles; crystals remain floating spheres.
+    if id.begins_with("Switch"):
+        var switch_mesh := BoxMesh.new()
+        switch_mesh.size = Vector3(0.85, 0.35, 0.85)
+        visual.mesh = switch_mesh
+    else:
+        var crystal_mesh := SphereMesh.new()
+        crystal_mesh.radius = 0.42
+        crystal_mesh.height = 0.84
+        visual.mesh = crystal_mesh
     visual.name = "PickupVisual"
     var mat := StandardMaterial3D.new()
     mat.albedo_color = tint
