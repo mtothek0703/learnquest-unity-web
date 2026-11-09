@@ -35,6 +35,7 @@ var hero_material: StandardMaterial3D
 var portal_material: StandardMaterial3D
 var adventure_focus_paused := false
 var crystal_float_phase := 0.0
+var portal_pulse_phase := 0.0
 
 func _ready() -> void:
     _platform(Vector3(0, -0.5, 0), Vector3(18, 1, 18), Color("#263456"))
@@ -162,6 +163,15 @@ func _physics_process(delta: float) -> void:
                 pickup_visual.rotate_y(delta * 1.8)
                 # Time-based floating makes crystals stand out without accumulating drift.
                 pickup_visual.position.y = sin(crystal_float_phase + float(target.get_index())) * 0.12
+    # A4: An unlocked exit visibly pulses; locked exits remain still.
+    var exit_visual := get_node_or_null("ExitPortal") as MeshInstance3D
+    if exit_visual != null:
+        if mission_complete and robot_stunned:
+            portal_pulse_phase += delta * 2.5
+            var pulse := 1.0 + 0.08 * (0.5 + 0.5 * sin(portal_pulse_phase))
+            exit_visual.scale = Vector3(pulse, 1.0, pulse)
+        else:
+            exit_visual.scale = Vector3.ONE
     _update_objective_guidance()
     _update_return_button()
 
@@ -576,6 +586,10 @@ func reset_mission() -> void:
     switches_activated = 0
     mission_complete = false
     crystal_float_phase = 0.0
+    portal_pulse_phase = 0.0
+    var exit_visual := get_node_or_null("ExitPortal") as MeshInstance3D
+    if exit_visual != null:
+        exit_visual.scale = Vector3.ONE
     for target in mission_targets:
         target.visible = true
         # A retry must restore collectible presentation as well as mission state.
