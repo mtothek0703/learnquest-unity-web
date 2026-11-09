@@ -46,8 +46,10 @@ func _capture() -> void:
     var gallery := world.get("hero_gallery") as Node3D
     if gallery != null:
         gallery.visible = false
-    rider.position = Vector3(0.0, 0.0, 0.2)
-    portal.position = Vector3(0.0, 0.0, -13.0)
+    # Use a real approach lane that leaves the center portal unobstructed.
+    # Capturing the middle lane hides the distant portal behind the hero.
+    rider.position = Vector3(-3.1, 0.0, 0.2)
+    portal.position = Vector3(0.0, 0.0, -7.5)
     chase_camera.position = Vector3(0.0, 3.9, 9.0)
     chase_camera.fov = 59.0
     chase_camera.look_at(Vector3(0.0, 1.7, -13.0), Vector3.UP)
