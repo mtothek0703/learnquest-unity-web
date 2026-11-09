@@ -640,6 +640,29 @@ func _check() -> void:
     if portal_material.albedo_color != Color("#35f0ba", 0.35):
         _fail("completed mission and robot defeat must turn exit portal green")
         return
+    # The unlocked exit pulses in 3D; it must stay still while locked and
+    # return to its baseline scale on mission retry.
+    var exit_visual := area.get_node_or_null("ExitPortal") as MeshInstance3D
+    if exit_visual == null:
+        _fail("exit portal 3D mesh missing")
+        return
+    area.call("_physics_process", 0.2)
+    if exit_visual.scale.x <= 1.0 or not is_equal_approx(exit_visual.scale.x, exit_visual.scale.z):
+        _fail("unlocked portal must pulse symmetrically in the actual 3D scene")
+        return
+    area.call("reset_mission")
+    if exit_visual.scale != Vector3.ONE or not is_zero_approx(float(area.get("portal_pulse_phase"))):
+        _fail("mission retry must restore portal scale and pulse clock")
+        return
+    # Restore the already completed objective/robot fixture for remount QA.
+    for target in area.get("mission_targets"):
+        (target as Node3D).visible = false
+    area.set("crystals_collected", 3)
+    area.set("switches_activated", 2)
+    area.set("mission_complete", true)
+    area.set("robot_stunned", true)
+    robot.visible = false
+    area.call("_update_mission_label")
     area.call("_update_objective_guidance")
     if not (area.get("mission_label") as Label).text.contains("Ausgangsportal in ") or not (area.get("mission_label") as Label).text.contains("AUFSTEIGEN"):
         _fail("completed Neon mission must guide mobile players to the exit with distance")
