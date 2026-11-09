@@ -18,6 +18,7 @@ const EXIT_PORTAL_RADIUS := 2.0
 const ROBOT_RANGE := 3.0
 var robot: Node3D
 var robot_visual: MeshInstance3D
+var robot_warning_zone: MeshInstance3D
 var robot_material: StandardMaterial3D
 var robot_hits := 0
 var player_attack_cooldown := 0.0
@@ -269,6 +270,23 @@ func _create_robot() -> void:
     visual.material_override = robot_material
     robot_visual = visual
     robot.add_child(visual)
+    # Ground-level danger area telegraphs the same range used by the hit check.
+    robot_warning_zone = MeshInstance3D.new()
+    robot_warning_zone.name = "RobotWarningZone"
+    var zone_mesh := CylinderMesh.new()
+    zone_mesh.top_radius = ROBOT_RANGE
+    zone_mesh.bottom_radius = ROBOT_RANGE
+    zone_mesh.height = 0.035
+    robot_warning_zone.mesh = zone_mesh
+    robot_warning_zone.position.y = -0.96
+    var zone_material := StandardMaterial3D.new()
+    zone_material.albedo_color = Color(1.0, 0.18, 0.12, 0.24)
+    zone_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    zone_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    zone_material.no_depth_test = false
+    robot_warning_zone.material_override = zone_material
+    robot_warning_zone.visible = false
+    robot.add_child(robot_warning_zone)
     add_child(robot)
     _update_robot_label()
 
@@ -334,6 +352,8 @@ func _update_robot_visual() -> void:
     # Scale only the robot mesh, never its node/range or the runner character.
     if is_instance_valid(robot_visual):
         robot_visual.scale = Vector3.ONE * (1.14 if robot_warning > 0.0 and not robot_stunned else 1.0)
+    if is_instance_valid(robot_warning_zone):
+        robot_warning_zone.visible = robot_warning > 0.0 and not robot_stunned
 
 func _update_robot_label() -> void:
     if robot_label == null:
