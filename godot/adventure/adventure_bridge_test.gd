@@ -249,6 +249,13 @@ func _check() -> void:
     if float(player.get("coyote_remaining")) != 0.0:
         _fail("checkpoint must clear ledge grace")
         return
+    # Respawn places the collision capsule above the ground. Wait for a
+    # real landing before verifying WALK (otherwise the correct state is FALL).
+    for tick in range(20):
+        await physics_frame
+    if not player.is_on_floor():
+        _fail("walking animation fixture did not land before locomotion")
+        return
     var start_x := player.global_position.x
     area.set("mobile_axis", Vector2(1.0, 0.0))
     for step in range(12):
