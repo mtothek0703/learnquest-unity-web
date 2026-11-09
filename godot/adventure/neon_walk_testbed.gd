@@ -158,6 +158,8 @@ func _physics_process(delta: float) -> void:
             var pickup_visual := target.get_node_or_null("PickupVisual") as MeshInstance3D
             if pickup_visual != null:
                 pickup_visual.rotate_y(delta * 1.8)
+                # Time-based floating makes crystals stand out without accumulating drift.
+                pickup_visual.position.y = sin(Time.get_ticks_msec() * 0.003 + float(target.get_index())) * 0.12
     _update_objective_guidance()
     _update_return_button()
 
@@ -577,6 +579,7 @@ func reset_mission() -> void:
         var pickup_visual := target.get_node_or_null("PickupVisual") as MeshInstance3D
         if pickup_visual != null:
             pickup_visual.rotation = Vector3.ZERO
+            pickup_visual.position = Vector3.ZERO
     robot_hits = 0
     player_attack_cooldown = 0.0
     robot_warning = 0.0
