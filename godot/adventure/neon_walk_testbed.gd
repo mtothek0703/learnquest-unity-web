@@ -148,7 +148,7 @@ func _physics_process(delta: float) -> void:
                 robot_cooldown = 2.0
                 _update_robot_label()
                 _update_robot_visual()
-        elif robot_cooldown <= 0.0 and player.global_position.distance_to(robot.global_position) <= ROBOT_RANGE:
+        elif robot_cooldown <= 0.0 and _robot_ground_distance() <= ROBOT_RANGE:
             robot_warning = 1.2
             _update_robot_label()
             _update_robot_visual()
@@ -376,12 +376,20 @@ func _create_robot() -> void:
     add_child(robot)
     _update_robot_label()
 
+# The telegraph is a ground-plane circle; vertical platform height must not
+# silently shrink its reach or disagree with the warning decal.
+func _robot_ground_distance() -> float:
+    if not is_instance_valid(player) or not is_instance_valid(robot):
+        return INF
+    var delta := player.global_position - robot.global_position
+    return Vector2(delta.x, delta.z).length()
+
 func attack_robot() -> bool:
     if adventure_focus_paused:
         return false
     if not is_instance_valid(player) or not is_instance_valid(robot) or robot_stunned or player_attack_cooldown > 0.0:
         return false
-    if player.global_position.distance_to(robot.global_position) > ROBOT_RANGE:
+    if _robot_ground_distance() > ROBOT_RANGE:
         return false
     player_attack_cooldown = 0.65
     robot_hits += 1
@@ -410,8 +418,8 @@ func guard_robot() -> void:
 
 func _resolve_robot_strike() -> void:
     # Distance is checked when the telegraph ends: stepping away is a dodge.
-    robot_last_hit = player.global_position.distance_to(robot.global_position) <= ROBOT_RANGE and robot_guard <= 0.0
-    robot_feedback = "TREFFER ERHALTEN" if robot_last_hit else "ABGEWEHRT" if robot_guard > 0.0 and player.global_position.distance_to(robot.global_position) <= ROBOT_RANGE else "AUSGEWICHEN"
+    robot_last_hit = _robot_ground_distance() <= ROBOT_RANGE and robot_guard <= 0.0
+    robot_feedback = "TREFFER ERHALTEN" if robot_last_hit else "ABGEWEHRT" if robot_guard > 0.0 and _robot_ground_distance() <= ROBOT_RANGE else "AUSGEWICHEN"
     if robot_last_hit:
         robot_energy = maxi(0, robot_energy - 1)
         if robot_energy == 0:
@@ -570,7 +578,7 @@ func _update_objective_guidance() -> void:
         mission_label.tooltip_text = "Ausgangsportal in %d m – AUFSTEIGEN" % ceili(player.global_position.distance_to(to_global(EXIT_PORTAL_POSITION)))
         mission_label.text = mission_label.text.get_slice("\n", 0) + "\n" + mission_label.tooltip_text
     elif mission_complete:
-        mission_label.tooltip_text = "Roboter in %d m – ANGRIFF / ABWEHR" % ceili(player.global_position.distance_to(robot.global_position)) if is_instance_valid(robot) else "Roboter suchen"
+        mission_label.tooltip_text = "Roboter in %d m – ANGRIFF / ABWEHR" % ceili(_robot_ground_distance()) if is_instance_valid(robot) else "Roboter suchen"
         mission_label.text = mission_label.text.get_slice("\n", 0) + "\n" + mission_label.tooltip_text
     else:
         mission_label.tooltip_text = "Kristalle sammeln und Schalter aktivieren"
