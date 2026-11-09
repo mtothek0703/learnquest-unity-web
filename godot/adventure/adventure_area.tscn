@@ -1,0 +1,232 @@
+[gd_scene load_steps=22 format=3]
+
+[ext_resource type="Script" path="res://adventure/on_foot_controller.gd" id="1"]
+[ext_resource type="Script" path="res://adventure/adventure_touch.gd" id="2"]
+[ext_resource type="Script" path="res://adventure/adventure_checkpoint.gd" id="3"]
+[ext_resource type="Script" path="res://adventure/adventure_mission.gd" id="4"]
+[ext_resource type="Script" path="res://adventure/adventure_crystal.gd" id="5"]
+[ext_resource type="Script" path="res://adventure/adventure_switch.gd" id="6"]
+[ext_resource type="Script" path="res://adventure/adventure_exit_portal.gd" id="7"]
+[ext_resource type="Script" path="res://adventure/adventure_mission_hud.gd" id="8"]
+[ext_resource type="Script" path="res://adventure/adventure_area_controller.gd" id="9"]
+
+[sub_resource type="BoxShape3D" id="ground_shape"]
+size = Vector3(24, 1, 24)
+
+[sub_resource type="CapsuleShape3D" id="player_shape"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="BoxMesh" id="ground_mesh"]
+size = Vector3(24, 1, 24)
+
+[sub_resource type="CapsuleMesh" id="player_mesh"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="BoxShape3D" id="platform_shape"]
+size = Vector3(5, 0.6, 4)
+
+[sub_resource type="BoxMesh" id="platform_mesh"]
+size = Vector3(5, 0.6, 4)
+
+[sub_resource type="SphereShape3D" id="checkpoint_shape"]
+radius = 1.25
+
+[sub_resource type="SphereMesh" id="crystal_mesh"]
+radius = 0.35
+height = 0.7
+
+[sub_resource type="SphereShape3D" id="crystal_shape"]
+radius = 0.65
+
+[sub_resource type="BoxShape3D" id="switch_shape"]
+size = Vector3(1.2, 1.5, 1.2)
+
+[sub_resource type="BoxMesh" id="switch_mesh"]
+size = Vector3(1.2, 1.5, 1.2)
+
+[node name="NeonCityWalkPrototype" type="Node3D"]
+script = ExtResource("9")
+
+[node name="Mission" type="Node" parent="."]
+script = ExtResource("4")
+
+[node name="Ground" type="StaticBody3D" parent="."]
+position = Vector3(0, -0.5, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+shape = SubResource("ground_shape")
+
+[node name="GroundMesh" type="MeshInstance3D" parent="Ground"]
+mesh = SubResource("ground_mesh")
+
+[node name="JumpPlatform" type="StaticBody3D" parent="."]
+position = Vector3(4, 1.15, -4)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="JumpPlatform"]
+shape = SubResource("platform_shape")
+
+[node name="PlatformMesh" type="MeshInstance3D" parent="JumpPlatform"]
+mesh = SubResource("platform_mesh")
+
+[node name="Checkpoint" type="Area3D" parent="."]
+position = Vector3(-4, 0.15, -4)
+script = ExtResource("3")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Checkpoint"]
+shape = SubResource("checkpoint_shape")
+
+[node name="Walker" type="CharacterBody3D" parent="."]
+position = Vector3(0, 1.2, 0)
+script = ExtResource("1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walker"]
+shape = SubResource("player_shape")
+
+[node name="PlayerMesh" type="MeshInstance3D" parent="Walker"]
+mesh = SubResource("player_mesh")
+
+[node name="CameraPivot" type="Node3D" parent="Walker"]
+position = Vector3(0, 1.6, 0)
+rotation = Vector3(-0.25, 0, 0)
+
+[node name="CameraBoom" type="SpringArm3D" parent="Walker/CameraPivot"]
+spring_length = 6.5
+margin = 0.15
+
+[node name="Camera3D" type="Camera3D" parent="Walker/CameraPivot/CameraBoom"]
+current = true
+
+[node name="TouchUI" type="CanvasLayer" parent="."]
+
+[node name="MissionHUD" type="Control" parent="TouchUI"]
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 336.0
+offset_bottom = 92.0
+mouse_filter = 2
+script = ExtResource("8")
+
+[node name="MovePad" type="Control" parent="TouchUI"]
+anchors_preset = 3
+anchor_top = 1.0
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -200.0
+offset_right = 200.0
+offset_bottom = -24.0
+mouse_filter = 0
+script = ExtResource("2")
+walker_path = NodePath("../../Walker")
+
+[node name="JumpButton" type="Button" parent="TouchUI"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -160.0
+offset_top = -120.0
+offset_right = -28.0
+offset_bottom = -28.0
+text = "SPRUNG"
+
+[connection signal="pressed" from="TouchUI/JumpButton" to="TouchUI/MovePad" method="_on_jump_pressed"]
+
+[node name="Crystal1" type="Area3D" parent="."]
+position = Vector3(-5, 0.7, 3)
+script = ExtResource("5")
+crystal_id = "neon_1"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Crystal1"]
+shape = SubResource("crystal_shape")
+
+[node name="CrystalMesh" type="MeshInstance3D" parent="Crystal1"]
+mesh = SubResource("crystal_mesh")
+
+[node name="Crystal2" type="Area3D" parent="."]
+position = Vector3(3, 0.7, 4)
+script = ExtResource("5")
+crystal_id = "neon_2"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Crystal2"]
+shape = SubResource("crystal_shape")
+
+[node name="CrystalMesh" type="MeshInstance3D" parent="Crystal2"]
+mesh = SubResource("crystal_mesh")
+
+[node name="Crystal3" type="Area3D" parent="."]
+position = Vector3(4, 2.2, -4)
+script = ExtResource("5")
+crystal_id = "neon_3"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Crystal3"]
+shape = SubResource("crystal_shape")
+
+[node name="CrystalMesh" type="MeshInstance3D" parent="Crystal3"]
+mesh = SubResource("crystal_mesh")
+
+[node name="Switch1" type="Area3D" parent="."]
+position = Vector3(-3, 0.8, -2)
+script = ExtResource("6")
+switch_id = "neon_left"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Switch1"]
+shape = SubResource("switch_shape")
+
+[node name="SwitchMesh" type="MeshInstance3D" parent="Switch1"]
+mesh = SubResource("switch_mesh")
+
+[node name="Switch2" type="Area3D" parent="."]
+position = Vector3(4, 2.2, -4)
+script = ExtResource("6")
+switch_id = "neon_platform"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Switch2"]
+shape = SubResource("switch_shape")
+
+[node name="SwitchMesh" type="MeshInstance3D" parent="Switch2"]
+mesh = SubResource("switch_mesh")
+
+[node name="InteractButton" type="Button" parent="TouchUI"]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -120.0
+offset_right = -170.0
+offset_bottom = -28.0
+text = "AKTION"
+
+[connection signal="pressed" from="TouchUI/InteractButton" to="Switch1" method="try_activate"]
+[connection signal="pressed" from="TouchUI/InteractButton" to="Switch2" method="try_activate"]
+
+[sub_resource type="CylinderMesh" id="exit_portal_mesh"]
+top_radius = 1.1
+bottom_radius = 1.1
+height = 0.18
+
+[node name="ExitPortal" type="Area3D" parent="."]
+position = Vector3(0, 0.3, -9)
+script = ExtResource("7")
+
+[node name="PortalMesh" type="MeshInstance3D" parent="ExitPortal"]
+mesh = SubResource("exit_portal_mesh")
+
+[node name="ExitButton" type="Button" parent="TouchUI"]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -220.0
+offset_right = -170.0
+offset_bottom = -132.0
+text = "PORTAL"
+
+[connection signal="pressed" from="TouchUI/ExitButton" to="ExitPortal" method="try_exit"]
