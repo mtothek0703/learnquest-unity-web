@@ -546,8 +546,22 @@ func _check() -> void:
     if warning_zone.scale.x > 1.0001 or warning_zone.scale.x < 0.9199:
         _fail("robot telegraph must pulse inward within the actual strike radius")
         return
+    # The telegraph becomes more legible as the strike approaches, without
+    # increasing the danger radius or leaving a stale translucent overlay.
+    var warning_fill := area.get("robot_warning_material") as StandardMaterial3D
+    if warning_fill == null:
+        _fail("robot danger zone needs a dedicated opacity-controlled material")
+        return
+    area.set("robot_warning", 0.2)
+    area.call("_physics_process", 0.0)
+    if warning_fill.albedo_color.a <= 0.24 or warning_fill.albedo_color.a > 0.62:
+        _fail("approaching robot strike must intensify the danger-zone opacity")
+        return
     area.set("robot_warning", 0.0)
     area.call("_update_robot_visual")
+    if not is_equal_approx(warning_fill.albedo_color.a, 0.24):
+        _fail("robot danger-zone opacity must reset after warning")
+        return
     if warning_zone.visible or warning_zone.scale != Vector3.ONE:
         _fail("robot danger zone must disappear and reset scale after telegraph")
         return
