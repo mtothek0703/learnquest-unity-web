@@ -226,6 +226,7 @@ func _physics_process(delta: float) -> void:
             _update_robot_visual()
     if is_instance_valid(follow_camera) and follow_camera.current:
         _update_follow_camera()
+    _animate_robot_telegraph()
     # Pulse the ground danger marker throughout the telegraph, not just on entry.
     # Pulse inward only: the visible ring never promises a larger hit radius than the real strike.
     if is_instance_valid(robot_warning_zone) and robot_warning_zone.visible:
@@ -568,6 +569,22 @@ func _update_robot_visual() -> void:
             robot_warning_zone.scale = Vector3.ONE
             if is_instance_valid(robot_warning_material):
                 robot_warning_material.albedo_color.a = 0.24
+
+# Animate the actual training-bot silhouette during its 1.2-second warning.
+# Only visual child transforms change; attack range and timers stay untouched.
+func _animate_robot_telegraph() -> void:
+    if not is_instance_valid(robot_visual):
+        return
+    var raised := clampf(robot_warning / 1.2, 0.0, 1.0) if not robot_stunned else 0.0
+    var left_arm := robot_visual.get_node_or_null("LeftArm") as Node3D
+    var right_arm := robot_visual.get_node_or_null("RightArm") as Node3D
+    if left_arm != null:
+        left_arm.rotation.z = -0.9 * raised
+    if right_arm != null:
+        right_arm.rotation.z = 0.9 * raised
+    var visor := robot_visual.get_node_or_null("Visor") as MeshInstance3D
+    if visor != null:
+        visor.scale.x = 1.0 + 0.18 * raised
 
 func _update_robot_label() -> void:
     if robot_label == null:
