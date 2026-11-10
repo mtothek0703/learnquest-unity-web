@@ -435,10 +435,14 @@ func _create_robot() -> void:
     # Ground-level danger area telegraphs the same range used by the hit check.
     robot_warning_zone = MeshInstance3D.new()
     robot_warning_zone.name = "RobotWarningZone"
-    var zone_mesh := CylinderMesh.new()
-    zone_mesh.top_radius = ROBOT_RANGE
-    zone_mesh.bottom_radius = ROBOT_RANGE
-    zone_mesh.height = 0.035
+    # A thin boundary ring replaces the large opaque danger disk. This keeps
+    # the hero, floor and mission objects visible during the 1.2s telegraph,
+    # while marking the same exact ROBOT_RANGE used by the hit check.
+    var zone_mesh := TorusMesh.new()
+    zone_mesh.inner_radius = ROBOT_RANGE - 0.18
+    zone_mesh.outer_radius = ROBOT_RANGE
+    zone_mesh.rings = 12
+    zone_mesh.ring_segments = 48
     robot_warning_zone.mesh = zone_mesh
     robot_warning_zone.position.y = -0.96
     var zone_material := StandardMaterial3D.new()
