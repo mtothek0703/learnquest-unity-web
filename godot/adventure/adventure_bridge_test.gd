@@ -86,6 +86,20 @@ func _check() -> void:
     if ring.inner_radius >= ring.outer_radius or ring.inner_radius < ring.outer_radius - 0.30:
         _fail("robot warning ring must stay thin enough to reveal the playfield")
         return
+    # A3 visual acceptance: the opponent must read as a robot rather than a
+    # lone cube, without adding collision shapes or changing attack radius.
+    var training_robot := area.get("robot") as Node3D
+    var training_visual := area.get("robot_visual") as MeshInstance3D
+    if training_robot == null or training_visual == null:
+        _fail("training robot visual missing")
+        return
+    for part_name in ["Head", "Visor", "LeftShoulder", "RightShoulder", "LeftArm", "RightArm", "LeftLeg", "RightLeg", "CoreLight"]:
+        if training_visual.get_node_or_null(part_name) == null:
+            _fail("training robot is missing visible body part: " + part_name)
+            return
+    if training_visual.find_children("*", "CollisionShape3D", true, false).size() > 0:
+        _fail("robot decoration must not add collision or alter the 3m strike radius")
+        return
     var player := area.get("player") as CharacterBody3D
     var walk_camera := area.get("follow_camera") as Camera3D
     # The on-foot visual must be the existing glTF character, not the
