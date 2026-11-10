@@ -42,8 +42,11 @@ func _capture() -> void:
     # camera, imported skin, lighting, platforms, HUD and city geometry.
     area.process_mode = Node.PROCESS_MODE_DISABLED
     player.position = Vector3(0, 1.05, 0)
-    camera.position = Vector3(0, 3.4, 7.4)
-    camera.look_at(Vector3(0, 1.25, -2.0))
+    # Match the current playable third-person framing rather than an old
+    # fixed QA camera that made the hero look artificially distant.
+    # The hero remains at the same reproducible test position for all poses.
+    camera.global_position = player.global_position + Vector3(0, 2.9, 5.2)
+    camera.look_at(player.global_position + Vector3.UP * 0.75)
     camera.current = true
     var animators := visual.find_children("*", "AnimationPlayer", true, false)
     if animators.is_empty():
