@@ -575,7 +575,7 @@ func _update_robot_visual() -> void:
 func _animate_robot_telegraph() -> void:
     if not is_instance_valid(robot_visual):
         return
-    var raised := clampf(robot_warning / 1.2, 0.0, 1.0) if not robot_stunned else 0.0
+    var raised := clampf(1.0 - robot_warning / 1.2, 0.0, 1.0) if robot_warning > 0.0 and not robot_stunned else 0.0
     var left_arm := robot_visual.get_node_or_null("LeftArm") as Node3D
     var right_arm := robot_visual.get_node_or_null("RightArm") as Node3D
     if left_arm != null:
