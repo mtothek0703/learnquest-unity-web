@@ -73,6 +73,19 @@ func _check() -> void:
         if tower.find_children("*", "CollisionShape3D", true, false).size() > 0:
             _fail("decorative skyline must not obstruct the walking collision route")
             return
+    # The robot telegraph must show the true 3m hit boundary without a
+    # giant filled red disk obscuring the character and mission objectives.
+    var danger := area.get("robot_warning_zone") as MeshInstance3D
+    if danger == null or not (danger.mesh is TorusMesh):
+        _fail("robot warning must use a transparent boundary ring")
+        return
+    var ring := danger.mesh as TorusMesh
+    if not is_equal_approx(ring.outer_radius, 3.0):
+        _fail("robot warning ring must match actual robot attack radius")
+        return
+    if ring.inner_radius >= ring.outer_radius or ring.inner_radius < ring.outer_radius - 0.30:
+        _fail("robot warning ring must stay thin enough to reveal the playfield")
+        return
     var player := area.get("player") as CharacterBody3D
     var walk_camera := area.get("follow_camera") as Camera3D
     # The on-foot visual must be the existing glTF character, not the
