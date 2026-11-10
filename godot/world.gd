@@ -129,6 +129,7 @@ var progress_bar: ProgressBar
 var reward_label: Label
 var road_marks: Node3D
 var run_items: Node3D
+var blender_portal: Node3D
 var lives := 3
 var jump_left := 0.0
 var hit_cooldown := 0.0
@@ -357,6 +358,12 @@ func _create_world() -> void:
         moving.add_child(crystal)
         cube(crystal, Vector3.ZERO, Vector3(1.4, 2.2, 1.4), Color("#39e5ff") if i % 2 == 0 else Color("#fd47c1"), true).rotation_degrees = Vector3(27, 45, 15)
     _create_run_items()
+    # Integrated original Blender GLB portal pickup in the Neon City race.
+    blender_portal = preload("res://blender_bonus_portal.gd").new() as Node3D
+    blender_portal.name = "Blender Bonus Portal"
+    blender_portal.set("runner", rider)
+    blender_portal.connect("entered", Callable(self, "_collect_blender_portal"))
+    add_child(blender_portal)
     _apply_world_theme()
 
 func _create_neon_conductor() -> void:
@@ -703,6 +710,17 @@ func _update_frost_warden(delta: float) -> void:
         info_label.text = "EISWELLE! ZWEI BLAUE SPUREN MEIDEN!"
         feedback_time = 1.6
 
+func _collect_blender_portal() -> void:
+    # The portal itself guarantees the signal fires once; re-check active mode.
+    if phase != "race" or not started or quiz_active or world_choice != 0:
+        return
+    xp += 25
+    power = mini(100, power + 15)
+    turbo_left = maxf(turbo_left, 2.0)
+    info_label.text = "BLENDER-PORTAL! +25 XP +15 ENERGIE +2s TURBO"
+    feedback_time = 1.8
+    _refresh_hud()
+
 func _apply_world_theme() -> void:
     # World selection changes real 3D geometry, lighting and the race mission.
     mission_target = float(WORLD_GOALS[world_choice])
@@ -716,6 +734,8 @@ func _apply_world_theme() -> void:
         glacier_zone.visible = world_choice == 3
     if moving != null:
         moving.visible = world_choice == 0
+    if blender_portal != null:
+        blender_portal.visible = world_choice == 0 and not bool(blender_portal.get("passed"))
     if sky_material != null:
         match world_choice:
             0:
@@ -1218,6 +1238,8 @@ func _reset_run() -> void:
     previous_quiz_index = -1
     flawless_vocabulary_launch = false
     rider.position = Vector3(0, 0, 0.2)
+    if blender_portal != null:
+        blender_portal.call("reset_for_world", world_choice)
     for i in range(run_items.get_child_count()):
         var item: Node3D = run_items.get_child(i)
         item.position.z = -28.0 - float(i) * 11.0
@@ -2357,6 +2379,9 @@ func _process(delta: float) -> void:
     harbor_zone.set("travel_speed", speed)
     glacier_zone.set("running", phase == "race" and started and not quiz_active and world_choice == 3)
     glacier_zone.set("travel_speed", speed)
+    if blender_portal != null:
+        blender_portal.set("running", phase == "race" and started and not quiz_active and world_choice == 0)
+        blender_portal.set("travel_speed", speed)
     if phase != "race" or not started or quiz_active:
         _update_camera(delta)
         return
