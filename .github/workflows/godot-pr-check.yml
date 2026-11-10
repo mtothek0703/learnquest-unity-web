@@ -512,3 +512,22 @@ jobs:
             /tmp/canyon-geodes-visual.log
             /tmp/aero-silhouette.log
           if-no-files-found: ignore
+
+      - name: Capture real Neon City walking hero in both phone landscape ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-adventure-visual
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_ADVENTURE_VISUAL_OUTPUT=/tmp/learnquest-adventure-visual \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://adventure/adventure_visual_capture_test.gd 2>&1 | tee /tmp/adventure-visual.log
+          grep -Fq 'ADVENTURE VISUAL CAPTURE PASSED' /tmp/adventure-visual.log
+          test "$(find /tmp/learnquest-adventure-visual -name '*.png' | wc -l)" -eq 6
+      - name: Upload actual Neon City rigged hero game frames
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-adventure-walk-hero-in-game
+          path: /tmp/learnquest-adventure-visual/*.png
+          if-no-files-found: error
