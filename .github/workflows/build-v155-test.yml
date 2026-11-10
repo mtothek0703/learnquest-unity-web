@@ -22,9 +22,6 @@ jobs:
     if: github.repository == 'mtothek0703/learnquest-unity-web' && github.ref == 'refs/heads/preview/v155-playtest-20261110'
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}skyway-v155-test/
     steps:
       - name: Checkout exact isolated V155 test candidate
         uses: actions/checkout@v4
