@@ -419,6 +419,17 @@ func _make_touch_controls() -> void:
     mission_label.offset_bottom = 80.0
     root.add_child(mission_label)
 
+# Shared box meshes use only three materials and no physics bodies.
+func _robot_box(parent: Node3D, part_name: String, at: Vector3, size: Vector3, material: StandardMaterial3D) -> void:
+    var part := MeshInstance3D.new()
+    part.name = part_name
+    var part_mesh := BoxMesh.new()
+    part_mesh.size = size
+    part.mesh = part_mesh
+    part.position = at
+    part.material_override = material
+    parent.add_child(part)
+
 func _create_robot() -> void:
     robot = Node3D.new()
     robot.name = "TrainingRobot"
@@ -432,6 +443,26 @@ func _create_robot() -> void:
     visual.material_override = robot_material
     robot_visual = visual
     robot.add_child(visual)
+    # Distinct readable training-bot silhouette: head, articulated-looking
+    # limbs and emissive visor. Visual-only; strike range and collision stay
+    # owned by the existing robot node and ROBOT_RANGE.
+    var armor := StandardMaterial3D.new()
+    armor.albedo_color = Color("#223652")
+    armor.metallic = 0.25
+    var visor := StandardMaterial3D.new()
+    visor.albedo_color = Color("#8cf5ff")
+    visor.emission_enabled = true
+    visor.emission = Color("#49dff5")
+    visor.emission_energy_multiplier = 1.5
+    _robot_box(visual, "Head", Vector3(0, 1.10, 0), Vector3(0.70, 0.56, 0.63), armor)
+    _robot_box(visual, "Visor", Vector3(0, 1.12, -0.335), Vector3(0.49, 0.18, 0.055), visor)
+    _robot_box(visual, "LeftShoulder", Vector3(-0.70, 0.48, 0), Vector3(0.42, 0.30, 0.48), armor)
+    _robot_box(visual, "RightShoulder", Vector3(0.70, 0.48, 0), Vector3(0.42, 0.30, 0.48), armor)
+    _robot_box(visual, "LeftArm", Vector3(-0.72, -0.13, 0), Vector3(0.28, 0.90, 0.32), robot_material)
+    _robot_box(visual, "RightArm", Vector3(0.72, -0.13, 0), Vector3(0.28, 0.90, 0.32), robot_material)
+    _robot_box(visual, "LeftLeg", Vector3(-0.28, -1.03, 0), Vector3(0.32, 0.70, 0.42), armor)
+    _robot_box(visual, "RightLeg", Vector3(0.28, -1.03, 0), Vector3(0.32, 0.70, 0.42), armor)
+    _robot_box(visual, "CoreLight", Vector3(0, 0.20, -0.43), Vector3(0.27, 0.27, 0.05), visor)
     # Ground-level danger area telegraphs the same range used by the hit check.
     robot_warning_zone = MeshInstance3D.new()
     robot_warning_zone.name = "RobotWarningZone"
