@@ -97,6 +97,22 @@ func _check() -> void:
         if training_visual.get_node_or_null(part_name) == null:
             _fail("training robot is missing visible body part: " + part_name)
             return
+    # The wind-up must visibly lift both forearms and restore their neutral
+    # transforms after the warning, without touching robot collision/range.
+    var left_arm := training_visual.get_node("LeftArm") as Node3D
+    var right_arm := training_visual.get_node("RightArm") as Node3D
+    var neutral_left_y := left_arm.position.y
+    var neutral_right_y := right_arm.position.y
+    area.set("robot_warning", 0.6)
+    area.call("_animate_robot_telegraph")
+    if left_arm.position.y <= neutral_left_y + 0.10 or right_arm.position.y <= neutral_right_y + 0.10:
+        _fail("robot wind-up must lift both forearms visibly")
+        return
+    area.set("robot_warning", 0.0)
+    area.call("_animate_robot_telegraph")
+    if not is_equal_approx(left_arm.position.y, neutral_left_y) or not is_equal_approx(right_arm.position.y, neutral_right_y):
+        _fail("robot forearms must return to neutral after warning")
+        return
     if training_visual.find_children("*", "CollisionShape3D", true, false).size() > 0:
         _fail("robot decoration must not add collision or alter the 3m strike radius")
         return
