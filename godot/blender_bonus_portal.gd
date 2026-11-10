@@ -51,6 +51,23 @@ func _ready() -> void:
     core_marker.position = Vector3(0.0, 6.8, 0.0)
     core_marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
     add_child(core_marker)
+    # Actual 1280x720 / 1170x540 Godot race captures show that the chase
+    # rider hides the portal's center. Two small side beacons remain visible
+    # outside that silhouette without moving the pickup or changing its hitbox.
+    # These are intentionally unlit, low-poly meshes for mobile Compatibility.
+    for side in [-1.0, 1.0]:
+        var side_marker := MeshInstance3D.new()
+        side_marker.name = "Portal side visibility beacon"
+        var side_mesh := CylinderMesh.new()
+        side_mesh.top_radius = 0.10
+        side_mesh.bottom_radius = 0.18
+        side_mesh.height = 2.6
+        side_mesh.radial_segments = 8
+        side_marker.mesh = side_mesh
+        side_marker.position = Vector3(side * 2.2, 2.2, 0.0)
+        side_marker.material_override = cue_material
+        side_marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+        add_child(side_marker)
     reset_for_world(0)
 
 # Play animation tracks exported by Blender; never substitute a fake rotating
