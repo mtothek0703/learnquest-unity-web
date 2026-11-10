@@ -80,7 +80,7 @@ func _ready() -> void:
     add_child(player)
     follow_camera = Camera3D.new()
     follow_camera.name = "Walk follow camera"
-    follow_camera.position = Vector3(0, 4.5, 8)
+    follow_camera.position = Vector3(0, 2.9, 5.2)
     follow_camera.current = true
     add_child(follow_camera)
     var light := DirectionalLight3D.new()
@@ -259,8 +259,8 @@ func _physics_process(delta: float) -> void:
 
 func _update_follow_camera() -> void:
     # Keep the walking camera out of rooftop geometry. The runner camera is untouched.
-    var focus := player.global_position + Vector3.UP * 0.6
-    var desired := player.global_position + Vector3(0, 4.5, 8)
+    var focus := player.global_position + Vector3.UP * 0.75
+    var desired := player.global_position + Vector3(0, 2.9, 5.2)
     var query := PhysicsRayQueryParameters3D.create(focus, desired)
     query.exclude = [player.get_rid()]
     var hit := get_world_3d().direct_space_state.intersect_ray(query)
