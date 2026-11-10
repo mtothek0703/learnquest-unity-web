@@ -1,0 +1,156 @@
+name: LearnQuest V155 isolated playable preview (preserve archives)
+on:
+  push:
+    branches:
+      - preview/v155-playtest-20261110
+    paths:
+      - .github/workflows/build-v155-test.yml
+      - godot/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  v155-playtest:
+    if: github.repository == 'mtothek0703/learnquest-unity-web' && github.ref == 'refs/heads/preview/v155-playtest-20261110'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}skyway-v155-test/
+    steps:
+      - name: Checkout exact isolated V155 test candidate
+        uses: actions/checkout@v4
+      - name: Verify explicit preview isolation and archive release contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/preview/v155-playtest-20261110'
+          test -s godot/assets/3d/learnquest_walk_hero.glb
+          test -s godot/assets/3d/learnquest_portal.glb
+          test -s LearnQuest3D_WebGL_Testfix.zip
+          grep -Fq 'cp -a _site/godot/. _site/skyway-v154/' .github/workflows/publish-unity-webgl.yml
+          echo 'V154 main remains untouched; no existing archive is overwritten'
+      - name: Install free Godot 4.4.1 and Web export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=https://github.com/godotengine/godot/releases/download/4.4.1-stable
+          curl -fLsS --retry 3 "$BASE/Godot_v4.4.1-stable_linux.x86_64.zip" -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+          curl -fLsS --retry 3 "$BASE/Godot_v4.4.1-stable_export_templates.tpz" -o /tmp/templates.tpz
+          mkdir -p /tmp/godot-templates "$HOME/.local/share/godot/export_templates/4.4.1.stable"
+          unzip -q /tmp/templates.tpz -d /tmp/godot-templates
+          cp /tmp/godot-templates/templates/* "$HOME/.local/share/godot/export_templates/4.4.1.stable/"
+      - name: Integrate and regression-test Adventure plus Blender portal
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/Godot_v4.4.1-stable_linux.x86_64
+          "$GODOT" --headless --editor --path godot --quit 2>&1 | tee /tmp/v155-import.log
+          for name in smoke_test adventure/adventure_bridge_test adventure/rigged_hero_asset_test blender_portal_test blender_race_integration_test; do
+            echo "Testing $name"
+            timeout 90s "$GODOT" --headless --path godot --script "res://${name}.gd" > "/tmp/v155-${name//\//_}.log" 2>&1 || { cat "/tmp/v155-${name//\//_}.log"; exit 1; }
+            cat "/tmp/v155-${name//\//_}.log" | grep -Ei '(PASSED|ERROR|FAILED)' || true
+          done
+          grep -Fq 'LEARNQUEST SMOKE TEST PASSED' /tmp/v155-smoke_test.log
+          grep -Fq 'ADVENTURE BRIDGE TEST PASSED' /tmp/v155-adventure_adventure_bridge_test.log
+          grep -Fq 'LEARNQUEST RIGGED HERO IMPORT TEST PASSED' /tmp/v155-adventure_rigged_hero_asset_test.log
+          grep -Fq 'LEARNQUEST BLENDER PORTAL TEST PASSED' /tmp/v155-blender_portal_test.log
+          grep -Fq 'BLENDER RACE INTEGRATION TEST PASSED' /tmp/v155-blender_race_integration_test.log
+          echo 'Combined V155 gameplay smoke, walkthrough, real skin, portal tests PASSED'
+      - name: Export V155 browser build at a dedicated test-only URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _site/skyway-v155-test
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --export-release Web "$GITHUB_WORKSPACE/_site/skyway-v155-test/index.html" 2>&1 | tee /tmp/v155-export.log
+          for name in index.html index.js index.wasm index.pck; do
+            test -s "_site/skyway-v155-test/$name"
+          done
+          printf '%s\n' "$GITHUB_SHA" > _site/skyway-v155-test/build.txt
+          printf 'User-agent: *\nDisallow: /\n' > _site/skyway-v155-test/robots.txt
+          printf 'LearnQuest V155 – TESTVERSION; optional Adventure in Neon City / no release approval\n' > _site/skyway-v155-test/testversion.txt
+      - name: Preserve original Unity home page and historical Skyway versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check brotli
+          python .github/scripts/prepare_webgl.py LearnQuest3D_WebGL_Testfix.zip _site
+          # The existing archiver automatically derives its range from the
+          # next stable release's cp statement. In this isolated job ONLY,
+          # make that range include existing V154; no stable workflow is committed
+          # or changed in main.
+          sed -i 's@cp -a _site/godot/. _site/skyway-v154/@cp -a _site/godot/. _site/skyway-v155/@' .github/workflows/publish-unity-webgl.yml
+          python .github/scripts/preserve_legacy_pages.py
+          for name in index.html index.js index.wasm index.pck; do
+            test -s "_site/skyway-v154/$name"
+            test -s "_site/skyway-v155-test/$name"
+          done
+          test -s _site/index.html
+          test -n "$(find _site/Build -name '*.wasm' -print -quit)"
+          # Match the existing /godot/ entrypoint to the unchanged V154 bytes.
+          mkdir -p _site/godot
+          cp -a _site/skyway-v154/. _site/godot/
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          a=Path('_site/skyway-v154')
+          b=Path('_site/godot')
+          for file in ('index.html','index.js','index.wasm','index.pck','build.txt'):
+              if (a/file).exists():
+                  assert (b/file).exists()
+                  assert hashlib.sha256((a/file).read_bytes()).digest()==hashlib.sha256((b/file).read_bytes()).digest()
+          assert len(list(Path('_site').glob('skyway-v*'))) >= 149
+          print('V155 PREVIEW ARCHIVE PRESERVATION PASSED – V154 and all other published builds preserved')
+          PY
+      - name: Upload test bundle separately for troubleshooting
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-v155-playable-web-only
+          path: _site/skyway-v155-test/
+          if-no-files-found: error
+          retention-days: 2
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload complete protected website with isolated V155 test
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy complete website with V155 test path
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify publicly playable test and unchanged V154
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os,time
+          from urllib.request import Request,urlopen
+          base="https://mtothek0703.github.io/learnquest-unity-web/"
+          expected=os.environ['EXPECTED_SHA']
+          for folder,sha in (("skyway-v155-test",expected),("skyway-v154",None)):
+              for name in ("build.txt","index.html","index.js","index.wasm","index.pck"):
+                  for attempt in range(15):
+                      try:
+                          req=Request(f"{base}{folder}/{name}?check={expected}",headers={"Cache-Control":"no-cache"})
+                          with urlopen(req,timeout=25) as res:
+                              content=res.read() if name=="build.txt" else res.read(128)
+                              if not content or (sha and name=="build.txt" and content.decode().strip()!=sha):
+                                  raise ValueError("Empty or unexpected revision")
+                          break
+                      except Exception as e:
+                          if attempt==14: raise RuntimeError(f"{folder}/{name}: {e}")
+                          time.sleep(8)
+          print("LEARNQUEST V155 TEST PUBLISHED AND V154 PRESERVED")
+          PY
