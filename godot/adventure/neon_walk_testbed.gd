@@ -578,9 +578,14 @@ func _animate_robot_telegraph() -> void:
     var raised := clampf(1.0 - robot_warning / 1.2, 0.0, 1.0) if robot_warning > 0.0 and not robot_stunned else 0.0
     var left_arm := robot_visual.get_node_or_null("LeftArm") as Node3D
     var right_arm := robot_visual.get_node_or_null("RightArm") as Node3D
+    # Raise each forearm toward its shoulder while rotating outward. Rotating
+    # only around the old arm center made the hands swing sideways/downward,
+    # which read poorly as an attack wind-up from the chase camera.
     if left_arm != null:
+        left_arm.position = Vector3(-0.72 - 0.12 * raised, -0.13 + 0.35 * raised, 0.0)
         left_arm.rotation.z = -0.9 * raised
     if right_arm != null:
+        right_arm.position = Vector3(0.72 + 0.12 * raised, -0.13 + 0.35 * raised, 0.0)
         right_arm.rotation.z = 0.9 * raised
     var visor := robot_visual.get_node_or_null("Visor") as MeshInstance3D
     if visor != null:
