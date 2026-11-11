@@ -38,7 +38,7 @@ jobs:
                       payload = gzip.decompress(payload)
                   return response.status, headers, payload
           last_error = None
-          for attempt in range(20):
+          for attempt in range(1):
               try:
                   status, head, html = fetch("index.html")
                   assert status == 200 and b"html" in html.lower()[:30000], "HTML invalid"
@@ -51,6 +51,8 @@ jobs:
                   status, head, wasm = fetch("index.wasm")
                   assert status == 200
                   encoding = head.get("Content-Encoding", "").lower()
+                  print("WASM PROBE encoding:", encoding, "decoded length:", len(wasm),
+                        "first 40 bytes:", wasm[:40].hex(), "preview:", repr(wasm[:80]), flush=True)
                   assert wasm.startswith(bytes([0, 97, 115, 109])), ("Browser cannot decode the WASM magic; response encoding="+encoding)
                   assert len(wasm) > 30_000_000, "WASM appears truncated"
                   print("LIVE LEARNQUEST V155 WEBGL PASSED: index.html, JS, PCK, build.txt, wasm")
@@ -59,7 +61,7 @@ jobs:
                   break
               except (AssertionError, HTTPError, URLError, TimeoutError, OSError) as exc:
                   last_error = repr(exc)
-                  if attempt == 19:
+                  if attempt == 0:
                       raise SystemExit("LIVE LEARNQUEST V155 FAILED: " + last_error)
                   time.sleep(10)
           PY
