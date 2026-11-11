@@ -1,0 +1,124 @@
+# Scheduled cleanup of temporary GitHub Actions artifacts only.
+# Safety: verifies the exact account, repository full name and repository ID.
+name: Alte Actions-Artefakte bereinigen
+
+on:
+  schedule:
+    - cron: "23 3 * * *"
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/cleanup-artifacts.yml"
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: scheduled-artifact-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    if: github.repository_owner == 'mtothek0703'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_REPO: mtothek0703/learnquest-unity-web
+      EXPECTED_REPO_ID: "1427565370"
+    steps:
+      - name: Alte Artefakte prüfen und löschen
+        shell: bash
+        run: |
+          import json
+          import os
+          from collections import defaultdict
+          from datetime import datetime, timedelta, timezone
+          from urllib.error import HTTPError
+          from urllib.request import Request, urlopen
+          
+          repo = os.environ["GITHUB_REPOSITORY"]
+          expected = os.environ["EXPECTED_REPO"]
+          expected_id = int(os.environ["EXPECTED_REPO_ID"])
+          token = os.environ["GH_TOKEN"]
+          if repo != expected or not repo.startswith("mtothek0703/"):
+              raise SystemExit(f"Wrong repository: {repo}")
+          
+          base = f"https://api.github.com/repos/{repo}"
+          headers = {
+              "Authorization": f"Bearer {token}",
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "artifact-cleanup-workflow",
+          }
+          def api(path, method="GET"):
+              request = Request(base + path, method=method, headers=headers)
+              try:
+                  with urlopen(request, timeout=45) as response:
+                      data = response.read()
+                      return json.loads(data) if data else {}
+              except HTTPError as exc:
+                  detail = exc.read().decode("utf-8", errors="replace")[:400]
+                  raise RuntimeError(f"{method} {path}: HTTP {exc.code}: {detail}") from exc
+          
+          metadata = api("")
+          if int(metadata["id"]) != expected_id or metadata["full_name"] != expected:
+              raise SystemExit("Repository ID/account mismatch; refusing deletion")
+          
+          artifacts = []
+          page = 1
+          while True:
+              batch = api(f"/actions/artifacts?per_page=100&page={page}")["artifacts"]
+              artifacts.extend(batch)
+              if len(batch) < 100:
+                  break
+              page += 1
+              if page > 500:
+                  raise RuntimeError("Pagination limit reached; refusing incomplete cleanup")
+          
+          by_name = defaultdict(list)
+          for artifact in artifacts:
+              if not artifact.get("expired", False):
+                  by_name[artifact["name"]].append(artifact)
+          
+          protected = set()
+          for group in by_name.values():
+              latest = sorted(group, key=lambda a: a["created_at"], reverse=True)
+              protected.update(int(a["id"]) for a in latest[:2])
+          
+          now = datetime.now(timezone.utc)
+          normal_cutoff = now - timedelta(days=7)
+          absolute_cutoff = now - timedelta(days=30)
+          candidates = []
+          for artifact in artifacts:
+              if artifact.get("expired", False):
+                  continue
+              created = datetime.fromisoformat(artifact["created_at"].replace("Z", "+00:00"))
+              is_old = created < normal_cutoff
+              is_very_old = created < absolute_cutoff
+              if is_very_old or (is_old and int(artifact["id"]) not in protected):
+                  candidates.append(artifact)
+          
+          deleted = 0
+          bytes_deleted = 0
+          for artifact in candidates:
+              api(f"/actions/artifacts/{artifact['id']}", method="DELETE")
+              deleted += 1
+              bytes_deleted += int(artifact.get("size_in_bytes", 0))
+          
+          mb = bytes_deleted / (1024 * 1024)
+          report = (
+              f"## GitHub Actions artifact cleanup\n"
+              f"- Repository: {repo}\n"
+              f"- Found: {len(artifacts)} artifacts\n"
+              f"- Deleted: {deleted} artifacts\n"
+              f"- Estimated bytes removed: {mb:.2f} MiB\n"
+              f"- Policy: remove after 7 days, retain two newest per artifact name; "
+              f"absolute maximum age 30 days\n"
+              f"- Source files, release assets and caches: untouched\n"
+          )
+          print(report)
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              summary.write(report)
+          
