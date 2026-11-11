@@ -51,7 +51,7 @@ jobs:
                   status, head, wasm = fetch("index.wasm")
                   assert status == 200
                   encoding = head.get("Content-Encoding", "").lower()
-                  assert wasm.startswith(b"\\0asm"), ("Browser cannot decode the WASM magic; response encoding="+encoding)
+                  assert wasm.startswith(bytes([0, 97, 115, 109])), ("Browser cannot decode the WASM magic; response encoding="+encoding)
                   assert len(wasm) > 30_000_000, "WASM appears truncated"
                   print("LIVE LEARNQUEST V155 WEBGL PASSED: index.html, JS, PCK, build.txt, wasm")
                   print("WASM wire encoding:", encoding or "none", "decoded size:", len(wasm))
