@@ -50,16 +50,45 @@ with gzip.open(tmp, "rb") as src:
     assert hashlib.sha256(src.read()).hexdigest() == raw_hash, "Wasm gzip roundtrip failed"
 size = tmp.stat().st_size
 assert size < 25 * 1024 * 1024, f"Wasm still exceeds Pages 25MiB limit: {size}"
-tmp.replace(wasm)
+# Keep this file explicitly named .gz. Cloudflare Pages automatically
+# compresses other assets, so _headers alone causes double-compression.
+tmp.replace(root / "index.wasm.gz")
+wasm.unlink()
 (root / "_headers").write_text(
-    "/index.wasm\n"
-    "  Content-Type: application/wasm\n"
-    "  Content-Encoding: gzip\n"
-    "  Cache-Control: no-transform\n"
     "/*\n"
     "  X-Robots-Tag: noindex\n",
     encoding="utf-8",
 )
+(root / "_worker.js").write_text("""export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    if (url.pathname === "/index.wasm") {
+      if (request.method !== "GET" && request.method !== "HEAD") {
+        return new Response("Method not allowed", {status: 405});
+      }
+      const packed = new URL("/index.wasm.gz", url);
+      const asset = await env.ASSETS.fetch(new Request(packed, {
+        headers: {"Accept-Encoding": "identity"}
+      }));
+      if (!asset.ok) return asset;
+      // Cloudflare Workers' default automatic encoding double-gzips
+      // pre-compressed assets. This must be sent with manual encoding.
+      return new Response(request.method === "HEAD" ? null : asset.body, {
+        status: 200,
+        encodeBody: "manual",
+        headers: {
+          "Content-Type": "application/wasm",
+          "Content-Encoding": "gzip",
+          "Cache-Control": "public, max-age=0, must-revalidate, no-transform",
+          "Vary": "Accept-Encoding",
+          "Access-Control-Allow-Origin": "*"
+        }
+      });
+    }
+    return env.ASSETS.fetch(request);
+  }
+};
+""", encoding="utf-8")
 print(f"LEARNQUEST WASM GZIP VERIFIED: {size:,} bytes, SHA256 {raw_hash}")
 PY
 printf '%s\n' "${CF_PAGES_COMMIT_SHA:-$(git rev-parse HEAD)}" > dist-v155/build.txt
