@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Cloudflare Pages isolated V155 playtest: builds only this branch, not GitHub Pages.
 set -euo pipefail
-test "${CF_PAGES_BRANCH:-$branch}" = "$branch" || { echo "Wrong preview branch; stop."; exit 1; }
+test "${CF_PAGES_BRANCH:-preview/v155-playtest-20261110}" = "preview/v155-playtest-20261110" || { echo "Wrong preview branch; stop."; exit 1; }
 test -s godot/assets/3d/learnquest_walk_hero.glb
 test -s godot/assets/3d/learnquest_portal.glb
 
