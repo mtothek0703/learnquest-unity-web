@@ -5,6 +5,7 @@ on:
       - preview/v155-playtest-20261110
     paths:
       - .github/workflows/verify-v155-cloudflare.yml
+      - tools/ci/cloudflare-v155-preview.sh
   workflow_dispatch:
 permissions:
   contents: read
