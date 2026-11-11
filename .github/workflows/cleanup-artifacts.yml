@@ -31,6 +31,7 @@ jobs:
       - name: Alte Artefakte prüfen und löschen
         shell: bash
         run: |
+          python3 - <<'PY'
           import json
           import os
           from collections import defaultdict
@@ -121,4 +122,4 @@ jobs:
           print(report)
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
               summary.write(report)
-          
+          PY
