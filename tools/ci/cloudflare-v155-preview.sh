@@ -33,6 +33,35 @@ done
 mkdir -p dist-v155
 "$GODOT" --headless --path godot --export-release Web "$PWD/dist-v155/index.html"
 for name in index.html index.js index.wasm index.pck; do test -s "dist-v155/$name"; done
+# Pages caps individual file size at 25 MiB. Godot's raw wasm is ~42 MiB.
+# Store the identical bytes as gzip on disk under the expected .wasm URL.
+# Browsers transparently decode with Content-Encoding: gzip before WebAssembly
+# instantiation, so game logic and loader URLs stay unchanged.
+python3 - <<'PY'
+from pathlib import Path
+import gzip, hashlib, shutil
+root = Path("dist-v155")
+wasm = root / "index.wasm"
+raw_hash = hashlib.sha256(wasm.read_bytes()).hexdigest()
+tmp = root / "index.wasm.gz.tmp"
+with wasm.open("rb") as src, gzip.open(tmp, "wb", compresslevel=9) as dst:
+    shutil.copyfileobj(src, dst, 1024 * 1024)
+with gzip.open(tmp, "rb") as src:
+    assert hashlib.sha256(src.read()).hexdigest() == raw_hash, "Wasm gzip roundtrip failed"
+size = tmp.stat().st_size
+assert size < 25 * 1024 * 1024, f"Wasm still exceeds Pages 25MiB limit: {size}"
+tmp.replace(wasm)
+(root / "_headers").write_text(
+    "/index.wasm\n"
+    "  Content-Type: application/wasm\n"
+    "  Content-Encoding: gzip\n"
+    "  Cache-Control: no-transform\n"
+    "/*\n"
+    "  X-Robots-Tag: noindex\n",
+    encoding="utf-8",
+)
+print(f"LEARNQUEST WASM GZIP VERIFIED: {size:,} bytes, SHA256 {raw_hash}")
+PY
 printf '%s\n' "${CF_PAGES_COMMIT_SHA:-$(git rev-parse HEAD)}" > dist-v155/build.txt
 printf '%s\n' 'LearnQuest V155 – unveroeffentlichte TESTVERSION' > dist-v155/testversion.txt
 printf 'User-agent: *\nDisallow: /\n' > dist-v155/robots.txt
