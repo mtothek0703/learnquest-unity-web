@@ -22,30 +22,35 @@ jobs:
           import urllib.request
           from urllib.error import HTTPError, URLError
           root = "https://learnquest-v155-playtest.pages.dev/"
-          def fetch(path, limit=None):
+          def fetch(path):
+              # urllib does not transparently decompress its HTTP response.
+              # HTML/JS may be gzipped by Pages even though the source is
+              # plain. Always download the complete response, then decode.
               req = urllib.request.Request(root + path,
                   headers={"User-Agent": "LearnQuestV155-PublicWebGL-Probe",
                            "Accept-Encoding": "gzip",
                            "Cache-Control": "no-cache"})
               with urllib.request.urlopen(req, timeout=22) as response:
-                  payload = response.read() if limit is None else response.read(limit)
-                  return response.status, dict(response.headers), payload
+                  headers = dict(response.headers)
+                  payload = response.read()
+                  encoding = headers.get("Content-Encoding", "").lower()
+                  if "gzip" in encoding:
+                      payload = gzip.decompress(payload)
+                  return response.status, headers, payload
           last_error = None
           for attempt in range(20):
               try:
                   status, head, html = fetch("index.html")
                   assert status == 200 and b"html" in html.lower()[:30000], "HTML invalid"
-                  status, head, js = fetch("index.js", 3500)
+                  status, head, js = fetch("index.js")
                   assert status == 200 and js, "JavaScript missing"
-                  status, head, pck = fetch("index.pck", 120)
+                  status, head, pck = fetch("index.pck")
                   assert status == 200 and pck, "Pack missing"
                   status, head, build = fetch("build.txt")
                   assert status == 200 and len(build.strip()) >= 40, "Build hash missing"
                   status, head, wasm = fetch("index.wasm")
                   assert status == 200
                   encoding = head.get("Content-Encoding", "").lower()
-                  if "gzip" in encoding:
-                      wasm = gzip.decompress(wasm)
                   assert wasm.startswith(b"\\0asm"), ("Browser cannot decode the WASM magic; response encoding="+encoding)
                   assert len(wasm) > 30_000_000, "WASM appears truncated"
                   print("LIVE LEARNQUEST V155 WEBGL PASSED: index.html, JS, PCK, build.txt, wasm")
