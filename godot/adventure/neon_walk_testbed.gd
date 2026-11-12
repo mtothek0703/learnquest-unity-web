@@ -594,9 +594,33 @@ func _create_robot() -> void:
     robot.name = "TrainingRobot"
     robot.position = Vector3(-2.0, 1.0, -5.0)
     var visual := MeshInstance3D.new()
-    var shape := BoxMesh.new()
-    shape.size = Vector3(1.0, 1.6, 0.8)
-    visual.mesh = shape
+    # Beveled, tapered armor torso with real side faces instead of a box.
+    # All vertices are local to the existing robot visual, preserving gameplay.
+    var torso := ArrayMesh.new()
+    var st := SurfaceTool.new()
+    st.begin(Mesh.PRIMITIVE_TRIANGLES)
+    var rings := [
+        [0.83, 0.37, 0.28],
+        [0.57, 0.55, 0.39],
+        [-0.38, 0.47, 0.34],
+        [-0.80, 0.31, 0.27]
+    ]
+    var sides := 8
+    for ring_index in range(rings.size() - 1):
+        for side in range(sides):
+            var angle_a := TAU * float(side) / float(sides)
+            var angle_b := TAU * float(side + 1) / float(sides)
+            var top = rings[ring_index]
+            var bottom = rings[ring_index + 1]
+            var a := Vector3(cos(angle_a) * top[1], top[0], sin(angle_a) * top[2])
+            var b := Vector3(cos(angle_b) * top[1], top[0], sin(angle_b) * top[2])
+            var c := Vector3(cos(angle_a) * bottom[1], bottom[0], sin(angle_a) * bottom[2])
+            var d := Vector3(cos(angle_b) * bottom[1], bottom[0], sin(angle_b) * bottom[2])
+            for vertex in [a, c, b, b, c, d]:
+                st.add_vertex(vertex)
+    st.generate_normals()
+    st.commit(torso)
+    visual.mesh = torso
     robot_material = StandardMaterial3D.new()
     robot_material.albedo_color = Color("#54c7ed")
     visual.material_override = robot_material
