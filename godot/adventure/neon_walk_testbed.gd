@@ -142,9 +142,10 @@ func _build_neon_skyline() -> void:
         var width := 3.2 if i % 2 == 0 else 4.2
         var body := MeshInstance3D.new()
         body.name = "Facade"
-        var body_mesh := BoxMesh.new()
-        body_mesh.size = Vector3(width, height, width * 0.82)
-        body.mesh = body_mesh
+        # A single custom lofted mesh replaces the flat box silhouette.
+        # The stepped, tapered profile is visible against the night sky
+        # while keeping one draw call per facade and the existing window shader.
+        body.mesh = _sculpted_tower_mesh(width, height, width * 0.82, i)
         var window_material := ShaderMaterial.new()
         window_material.shader = FacadeShader
         window_material.set_shader_parameter("panel_tint", Color("#152544") if i % 2 == 0 else Color("#22243e"))
@@ -205,6 +206,45 @@ func _build_neon_skyline() -> void:
         antenna.material_override = neon
         antenna.position.y = height + 0.25
         tower.add_child(antenna)
+
+# Deterministic low-poly architecture, authored as a single UV-mapped mesh.
+# Two setbacks and a narrow rooftop shoulder give the towers a genuine
+# architectural silhouette instead of a stack of box primitives.
+# No new collision or runtime animation; all six towers together remain
+# comfortably below 300 triangles for the facade geometry.
+func _sculpted_tower_mesh(width: float, height: float, depth: float, tower_index: int) -> ArrayMesh:
+    var surface := SurfaceTool.new()
+    surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+    var profiles := [
+        Vector3(width, -height * 0.5, depth),
+        Vector3(width, -height * 0.12, depth),
+        Vector3(width * 0.84, height * 0.02, depth * 0.84),
+        Vector3(width * 0.84, height * 0.34, depth * 0.84),
+        Vector3(width * 0.70, height * 0.43, depth * 0.70),
+        Vector3(width * 0.70, height * 0.5, depth * 0.70)
+    ]
+    # Alternate narrow/deep crown orientation between the six towers.
+    if tower_index % 3 == 1:
+        profiles[4].x *= 0.88
+        profiles[5].x *= 0.88
+    for level in range(profiles.size() - 1):
+        var lower: Vector3 = profiles[level]
+        var upper: Vector3 = profiles[level + 1]
+        for side in range(4):
+            var a0 := float(side) * PI * 0.5 + PI * 0.25
+            var a1 := float(side + 1) * PI * 0.5 + PI * 0.25
+            var p0 := Vector3(cos(a0) * lower.x * 0.70710678, lower.y, sin(a0) * lower.z * 0.70710678)
+            var p1 := Vector3(cos(a1) * lower.x * 0.70710678, lower.y, sin(a1) * lower.z * 0.70710678)
+            var q0 := Vector3(cos(a0) * upper.x * 0.70710678, upper.y, sin(a0) * upper.z * 0.70710678)
+            var q1 := Vector3(cos(a1) * upper.x * 0.70710678, upper.y, sin(a1) * upper.z * 0.70710678)
+            var v0 := float(level) / float(profiles.size() - 1)
+            var v1 := float(level + 1) / float(profiles.size() - 1)
+            for vertex in [[p0, Vector2(0, v0)], [q0, Vector2(0, v1)], [p1, Vector2(1, v0)],
+                    [p1, Vector2(1, v0)], [q0, Vector2(0, v1)], [q1, Vector2(1, v1)]]:
+                surface.set_uv(vertex[1])
+                surface.add_vertex(vertex[0])
+    surface.generate_normals()
+    return surface.commit()
 
 # Decorative but genuinely three-dimensional playable-rooftop dressing:
 # light rails make the walkable boundary legible, two service vents add
