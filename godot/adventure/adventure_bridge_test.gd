@@ -354,6 +354,27 @@ func _check() -> void:
     if float(player.get("rigged_pose_clock")) <= 0.0:
         _fail("skinned walking motion timeline did not advance")
         return
+    # Regression: the actual imported Blender skeleton must retain footfall
+    # phase when switching between WALK and SPRINT, instead of restarting.
+    player.set("motion_landing", 0.0)
+    player.set("motion_state", "walk")
+    player.set("rigged_pose_state", "walk")
+    player.set("rigged_pose_clock", 0.75)
+    player.call("_animate_rigged_hero", player.get_node("WalkingVisual"), 0.0)
+    var stride_before := float(player.get("rigged_stride_phase"))
+    if stride_before <= 0.1 or stride_before >= 0.9:
+        _fail("walk fixture did not sample a meaningful mid-stride phase")
+        return
+    player.set("motion_state", "sprint")
+    player.call("_animate_rigged_hero", player.get_node("WalkingVisual"), 0.0)
+    if absf(float(player.get("rigged_stride_phase")) - stride_before) > 0.001:
+        _fail("walk-to-sprint must preserve Blender footfall phase")
+        return
+    player.set("motion_state", "walk")
+    player.call("_animate_rigged_hero", player.get_node("WalkingVisual"), 0.0)
+    if absf(float(player.get("rigged_stride_phase")) - stride_before) > 0.001:
+        _fail("sprint-to-walk must preserve Blender footfall phase")
+        return
     # Direction changes must turn only the walking appearance, not collision.
     var walking_visual := player.get_node_or_null("WalkingVisual") as Node3D
     if walking_visual == null or walking_visual.rotation.y > -0.6:
