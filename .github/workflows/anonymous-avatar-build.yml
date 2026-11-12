@@ -1,0 +1,72 @@
+name: Blender open source avatar build (free public runner)
+
+on:
+  push:
+    branches: [feature/anonymous-blender-avatar-build-20261112]
+    paths:
+      - tools/blender/anonymous_characters.py
+      - .github/workflows/anonymous-avatar-build.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  avatar-models:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout public 3D worker repository
+        uses: actions/checkout@v4
+
+      - name: Install Blender without private Actions billing
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender
+          blender --version | head -n 2
+
+      - name: Model and export anonymous rigged characters
+        run: |
+          set -euo pipefail
+          blender --background --factory-startup --python-exit-code 1 --threads 2 --python tools/blender/anonymous_characters.py
+
+      - name: Verify exported 3D geometry and skeleton
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, struct
+          for person in ('avatara','avatarb'):
+              path=pathlib.Path('generated/avatar-assets/character-'+person+'-premium.glb')
+              data=path.read_bytes()
+              assert len(data)>150000 and data[:4]==b'glTF' and struct.unpack_from('<I',data,8)[0]==len(data)
+              length=struct.unpack_from('<I',data,12)[0]
+              scene=json.loads(data[20:20+length])
+              assert scene.get('skins') and scene.get('meshes') and len(scene['nodes'])>5, person
+              names={x.get('name') for x in scene['nodes']}
+              assert 'Head' in names, person
+              print('VALID GLB',person,len(data),len(scene['meshes']),'meshes',flush=True)
+          PY
+
+      - name: Save editable files for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: anonymous-blender-avatars
+          path: |
+            generated/avatar-assets/character-avatara-premium.glb
+            generated/avatar-assets/character-avatarb-premium.glb
+            generated/avatar-assets/character-avatara-premium.blend
+            generated/avatar-assets/character-avatarb-premium.blend
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Save generic GLB outputs in isolated build branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add generated/avatar-assets/character-avatara-premium.glb generated/avatar-assets/character-avatarb-premium.glb
+          if ! git diff --cached --quiet; then
+            git commit -m "build: publish two anonymous rigged GLB avatars"
+            git push origin HEAD:feature/anonymous-blender-avatar-build-20261112
+          fi
