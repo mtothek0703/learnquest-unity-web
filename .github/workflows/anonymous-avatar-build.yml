@@ -5,6 +5,7 @@ on:
     branches: [feature/anonymous-blender-avatar-build-20261112]
     paths:
       - tools/blender/anonymous_characters.py
+      - tools/blender/preview_characters.py
       - .github/workflows/anonymous-avatar-build.yml
   workflow_dispatch:
 
@@ -48,6 +49,11 @@ jobs:
               print('VALID GLB',person,len(data),len(scene['meshes']),'meshes',flush=True)
           PY
 
+      - name: Render front-view Blender character previews
+        run: |
+          set -euo pipefail
+          blender --background --factory-startup --python-exit-code 1 --threads 2 --python tools/blender/preview_characters.py
+
       - name: Save editable files for review
         uses: actions/upload-artifact@v4
         with:
@@ -57,6 +63,8 @@ jobs:
             generated/avatar-assets/character-avatarb-premium.glb
             generated/avatar-assets/character-avatara-premium.blend
             generated/avatar-assets/character-avatarb-premium.blend
+            generated/avatar-assets/character-avatara-preview.png
+            generated/avatar-assets/character-avatarb-preview.png
           retention-days: 1
           if-no-files-found: error
 
@@ -65,7 +73,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add generated/avatar-assets/character-avatara-premium.glb generated/avatar-assets/character-avatarb-premium.glb
+          git add generated/avatar-assets/character-avatara-premium.glb generated/avatar-assets/character-avatarb-premium.glb generated/avatar-assets/character-avatara-preview.png generated/avatar-assets/character-avatarb-preview.png
           if ! git diff --cached --quiet; then
             git commit -m "build: publish two anonymous rigged GLB avatars"
             git push origin HEAD:feature/anonymous-blender-avatar-build-20261112
