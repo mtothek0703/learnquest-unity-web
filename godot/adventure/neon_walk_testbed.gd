@@ -213,34 +213,45 @@ func _build_neon_skyline() -> void:
 # No new collision or runtime animation; all six towers together remain
 # comfortably below 300 triangles for the facade geometry.
 func _sculpted_tower_mesh(width: float, height: float, depth: float, tower_index: int) -> ArrayMesh:
+    # Chamfered octagonal footprint, recessed mid-level and tiered roofline.
+    # One mesh/surface per tower keeps draw calls low for mobile WebGL.
     var surface := SurfaceTool.new()
     surface.begin(Mesh.PRIMITIVE_TRIANGLES)
     var profiles := [
         Vector3(width, -height * 0.5, depth),
-        Vector3(width, -height * 0.12, depth),
-        Vector3(width * 0.84, height * 0.02, depth * 0.84),
-        Vector3(width * 0.84, height * 0.34, depth * 0.84),
-        Vector3(width * 0.70, height * 0.43, depth * 0.70),
-        Vector3(width * 0.70, height * 0.5, depth * 0.70)
+        Vector3(width, -height * 0.15, depth),
+        Vector3(width * 0.91, -height * 0.13, depth * 0.91),
+        Vector3(width * 0.91, height * 0.18, depth * 0.91),
+        Vector3(width * 0.78, height * 0.21, depth * 0.78),
+        Vector3(width * 0.78, height * 0.39, depth * 0.78),
+        Vector3(width * 0.63, height * 0.43, depth * 0.63),
+        Vector3(width * 0.63, height * 0.5, depth * 0.63)
     ]
-    # Alternate narrow/deep crown orientation between the six towers.
     if tower_index % 3 == 1:
-        profiles[4].x *= 0.88
-        profiles[5].x *= 0.88
+        for i in range(4, profiles.size()):
+            profiles[i].x *= 0.83
+    var corners := [
+        Vector2(-0.34, -0.5), Vector2(0.34, -0.5),
+        Vector2(0.5, -0.34), Vector2(0.5, 0.34),
+        Vector2(0.34, 0.5), Vector2(-0.34, 0.5),
+        Vector2(-0.5, 0.34), Vector2(-0.5, -0.34)
+    ]
     for level in range(profiles.size() - 1):
         var lower: Vector3 = profiles[level]
         var upper: Vector3 = profiles[level + 1]
-        for side in range(4):
-            var a0 := float(side) * PI * 0.5 + PI * 0.25
-            var a1 := float(side + 1) * PI * 0.5 + PI * 0.25
-            var p0 := Vector3(cos(a0) * lower.x * 0.70710678, lower.y, sin(a0) * lower.z * 0.70710678)
-            var p1 := Vector3(cos(a1) * lower.x * 0.70710678, lower.y, sin(a1) * lower.z * 0.70710678)
-            var q0 := Vector3(cos(a0) * upper.x * 0.70710678, upper.y, sin(a0) * upper.z * 0.70710678)
-            var q1 := Vector3(cos(a1) * upper.x * 0.70710678, upper.y, sin(a1) * upper.z * 0.70710678)
-            var v0 := float(level) / float(profiles.size() - 1)
-            var v1 := float(level + 1) / float(profiles.size() - 1)
-            for vertex in [[p0, Vector2(0, v0)], [q0, Vector2(0, v1)], [p1, Vector2(1, v0)],
-                    [p1, Vector2(1, v0)], [q0, Vector2(0, v1)], [q1, Vector2(1, v1)]]:
+        var v0 := float(level) / float(profiles.size() - 1)
+        var v1 := float(level + 1) / float(profiles.size() - 1)
+        for side in range(corners.size()):
+            var c0: Vector2 = corners[side]
+            var c1: Vector2 = corners[(side + 1) % corners.size()]
+            var p0 := Vector3(c0.x * lower.x, lower.y, c0.y * lower.z)
+            var p1 := Vector3(c1.x * lower.x, lower.y, c1.y * lower.z)
+            var q0 := Vector3(c0.x * upper.x, upper.y, c0.y * upper.z)
+            var q1 := Vector3(c1.x * upper.x, upper.y, c1.y * upper.z)
+            var u0 := float(side) / float(corners.size())
+            var u1 := float(side + 1) / float(corners.size())
+            for vertex in [[p0, Vector2(u0, v0)], [q0, Vector2(u0, v1)], [p1, Vector2(u1, v0)],
+                    [p1, Vector2(u1, v0)], [q0, Vector2(u0, v1)], [q1, Vector2(u1, v1)]]:
                 surface.set_uv(vertex[1])
                 surface.add_vertex(vertex[0])
     surface.generate_normals()
