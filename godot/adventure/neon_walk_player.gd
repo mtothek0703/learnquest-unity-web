@@ -30,6 +30,8 @@ var rigged_animation_player: AnimationPlayer
 var rigged_animation_name := ""
 var rigged_pose_clock := 0.0
 var rigged_pose_state := ""
+# Preserve the stride phase between walk and sprint to avoid abrupt foot resets.
+var rigged_stride_phase := 0.0
 
 
 func _physics_process(delta: float) -> void:
@@ -135,8 +137,10 @@ func _animate_rigged_hero(visual: Node3D, delta: float) -> void:
         return
     var target_state := "land" if motion_landing > 0.25 else motion_state
     if target_state != rigged_pose_state:
+        var was_stride := rigged_pose_state == "walk" or rigged_pose_state == "sprint"
+        var is_stride := target_state == "walk" or target_state == "sprint"
+        rigged_pose_clock = rigged_stride_phase * 2.0 / (1.45 if target_state == "sprint" else 1.12) if was_stride and is_stride else 0.0
         rigged_pose_state = target_state
-        rigged_pose_clock = 0.0
     rigged_pose_clock += delta
     # Exactly the frame segments exported in make_walk_hero.py (24 FPS):
     # idle 1-49, walk 49-97, sprint 97-145, jump 145-169,
@@ -167,6 +171,8 @@ func _animate_rigged_hero(visual: Node3D, delta: float) -> void:
             loop_segment = false
     var elapsed := rigged_pose_clock * playback_rate
     var pose_time := fposmod(elapsed, segment_span) if loop_segment else minf(elapsed, segment_span - 0.04)
+    if target_state == "walk" or target_state == "sprint":
+        rigged_stride_phase = pose_time / segment_span
     var clip := rigged_animation_player.get_animation(rigged_animation_name)
     rigged_animation_player.seek(minf(segment_start + pose_time, clip.length - 0.01), true)
 
@@ -214,6 +220,7 @@ func respawn() -> void:
     motion_was_airborne = false
     rigged_pose_clock = 0.0
     rigged_pose_state = "idle"
+    rigged_stride_phase = 0.0
     if rigged_animation_player != null:
         rigged_animation_player.seek(0.0, true)
 
