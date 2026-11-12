@@ -70,9 +70,27 @@ func _check() -> void:
         if tower.get_node_or_null("Facade") == null or tower.get_node_or_null("LightBand0") == null or tower.get_node_or_null("Beacon") == null:
             _fail("Neon City skyline landmark is missing facade, light or beacon")
             return
+        var facade := tower.get_node("Facade") as MeshInstance3D
+        if not (facade.material_override is ShaderMaterial):
+            _fail("Neon City facades must use the illuminated window shader, not flat boxes")
+            return
+        var facade_shader := facade.material_override as ShaderMaterial
+        if facade_shader.shader == null or not facade_shader.shader.code.contains("random_light"):
+            _fail("Neon City window pattern not imported")
+            return
+        if tower.get_node_or_null("RoofCrown") == null or tower.get_node_or_null("CityLandmarkSign") == null:
+            _fail("Neon City missing roof silhouette and identifiable sign")
+            return
         if tower.find_children("*", "CollisionShape3D", true, false).size() > 0:
             _fail("decorative skyline must not obstruct the walking collision route")
             return
+    var rooftop_art := area.get_node_or_null("NeonRooftopDetails") as Node3D
+    if rooftop_art == null or rooftop_art.find_children("*", "OmniLight3D", true, false).size() != 2:
+        _fail("hero-area lighting and roof details are missing")
+        return
+    if area.get_node_or_null("NeonCityNightAtmosphere") == null:
+        _fail("Neon City lighting has no atmospheric environment")
+        return
     # The robot telegraph must show the true 3m hit boundary without a
     # giant filled red disk obscuring the character and mission objectives.
     var danger := area.get("robot_warning_zone") as MeshInstance3D

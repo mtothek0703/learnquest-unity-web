@@ -1,11 +1,5 @@
 name: LearnQuest V155 isolated playable preview (preserve archives)
 on:
-  push:
-    branches:
-      - preview/v155-playtest-20261110
-    paths:
-      - .github/workflows/build-v155-test.yml
-      - godot/**
   workflow_dispatch:
 
 permissions:

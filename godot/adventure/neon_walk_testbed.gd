@@ -2,6 +2,7 @@ extends Node3D
 ## Standalone walkable A1 testbed. Run neon_walk_testbed.tscn directly.
 signal return_requested
 const PlayerScript = preload("res://adventure/neon_walk_player.gd")
+const FacadeShader = preload("res://adventure/neon_city_facade.gdshader")
 var player: CharacterBody3D
 var follow_camera: Camera3D
 var mobile_axis := Vector2.ZERO
@@ -43,6 +44,7 @@ func _ready() -> void:
     _platform(Vector3(4, 0.5, -4), Vector3(4, 1, 4), Color("#395c87"))
     _platform(Vector3(4, 1.7, -8), Vector3(4, 1, 4), Color("#317b99"))
     _build_neon_skyline()
+    _build_rooftop_art_pass()
     player = CharacterBody3D.new()
     player.name = "WalkingHero"
     player.set_script(PlayerScript)
@@ -85,7 +87,21 @@ func _ready() -> void:
     add_child(follow_camera)
     var light := DirectionalLight3D.new()
     light.rotation_degrees = Vector3(-45, -25, 0)
+    light.light_color = Color("#b7c7fa")
+    light.light_energy = 0.9
     add_child(light)
+    # Balanced midnight atmosphere: soft ambient fill lets the character
+    # and dark building materials read on a small landscape phone screen.
+    var atmosphere := WorldEnvironment.new()
+    atmosphere.name = "NeonCityNightAtmosphere"
+    var environment := Environment.new()
+    environment.background_mode = Environment.BG_COLOR
+    environment.background_color = Color("#07162d")
+    environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+    environment.ambient_light_color = Color("#46629c")
+    environment.ambient_light_energy = 0.9
+    atmosphere.environment = environment
+    add_child(atmosphere)
     _make_touch_controls()
     _create_mission()
     _create_exit_portal()
@@ -98,9 +114,9 @@ func _build_neon_skyline() -> void:
     var skyline := Node3D.new()
     skyline.name = "NeonCitySkyline"
     add_child(skyline)
-    var facade := StandardMaterial3D.new()
-    facade.albedo_color = Color("#15233d")
-    facade.roughness = 0.75
+    # A full floor of tiny lit/empty window modules comes from one shader,
+    # not hundreds of mobile-expensive MeshInstances. Each tower has a
+    # deterministic window pattern and warm/cool illuminated rooms.
     var trim_cyan := StandardMaterial3D.new()
     trim_cyan.albedo_color = Color("#48cde9")
     trim_cyan.emission_enabled = true
@@ -129,7 +145,13 @@ func _build_neon_skyline() -> void:
         var body_mesh := BoxMesh.new()
         body_mesh.size = Vector3(width, height, width * 0.82)
         body.mesh = body_mesh
-        body.material_override = facade
+        var window_material := ShaderMaterial.new()
+        window_material.shader = FacadeShader
+        window_material.set_shader_parameter("panel_tint", Color("#152544") if i % 2 == 0 else Color("#22243e"))
+        window_material.set_shader_parameter("facade_seed", float(i + 1) * 13.7)
+        window_material.set_shader_parameter("columns", 6.0 if i % 2 == 0 else 8.0)
+        window_material.set_shader_parameter("rows", float(roundi(height * 1.30)))
+        body.material_override = window_material
         body.position.y = height * 0.5 - 0.5
         tower.add_child(body)
         # Horizontal light bands communicate scale without dozens of windows.
@@ -143,6 +165,35 @@ func _build_neon_skyline() -> void:
             strip.material_override = neon
             strip.position.y = height * (0.30 + float(band) * 0.25) - 0.5
             tower.add_child(strip)
+        # Real secondary geometry breaks the primitive box silhouette:
+        # rooftop crowns, side fins and a readable holographic destination sign.
+        var crown := MeshInstance3D.new()
+        crown.name = "RoofCrown"
+        var crown_mesh := BoxMesh.new()
+        crown_mesh.size = Vector3(width + 0.36, 0.28, width * 0.82 + 0.36)
+        crown.mesh = crown_mesh
+        crown.material_override = trim_cyan if i % 2 == 0 else trim_pink
+        crown.position.y = height - 0.43
+        tower.add_child(crown)
+        for fin in [-1.0, 1.0]:
+            var facade_fin := MeshInstance3D.new()
+            facade_fin.name = "FacadeFinLeft" if fin < 0.0 else "FacadeFinRight"
+            var fin_mesh := BoxMesh.new()
+            fin_mesh.size = Vector3(0.12, height * 0.85, 0.18)
+            facade_fin.mesh = fin_mesh
+            facade_fin.material_override = neon
+            facade_fin.position = Vector3(fin * width * 0.48, height * 0.48 - 0.5, width * 0.41)
+            tower.add_child(facade_fin)
+        var sign_label := Label3D.new()
+        sign_label.name = "CityLandmarkSign"
+        sign_label.text = ["NOVA", "ASTRA", "VOLT", "ORBIT", "NEXUS", "SKYLINE"][i]
+        sign_label.font_size = 52
+        sign_label.pixel_size = 0.008
+        sign_label.outline_size = 10
+        sign_label.modulate = Color("#b7ffff") if i % 2 == 0 else Color("#ffc2ec")
+        sign_label.outline_modulate = Color("#101b34")
+        sign_label.position = Vector3(0, height * 0.72 - 0.5, width * 0.415 + 0.18)
+        tower.add_child(sign_label)
         # A small antenna gives each silhouette a readable rooftop landmark.
         var antenna := MeshInstance3D.new()
         antenna.name = "Beacon"
@@ -154,6 +205,62 @@ func _build_neon_skyline() -> void:
         antenna.material_override = neon
         antenna.position.y = height + 0.25
         tower.add_child(antenna)
+
+# Decorative but genuinely three-dimensional playable-rooftop dressing:
+# light rails make the walkable boundary legible, two service vents add
+# silhouette rhythm and a few non-shadow-casting lamps illuminate the hero.
+# No collision nodes or changes to the actual movement path.
+func _build_rooftop_art_pass() -> void:
+    var art := Node3D.new()
+    art.name = "NeonRooftopDetails"
+    add_child(art)
+    var neon := StandardMaterial3D.new()
+    neon.albedo_color = Color("#64e9ec")
+    neon.emission_enabled = true
+    neon.emission = Color("#64e9ec")
+    neon.emission_energy_multiplier = 1.4
+    var dark_metal := StandardMaterial3D.new()
+    dark_metal.albedo_color = Color("#14233e")
+    dark_metal.metallic = 0.5
+    dark_metal.roughness = 0.42
+    for side in [-1.0, 1.0]:
+        var longitudinal := MeshInstance3D.new()
+        longitudinal.name = "NeonBoundaryLong"
+        var long_mesh := BoxMesh.new()
+        long_mesh.size = Vector3(0.075, 0.035, 17.35)
+        longitudinal.mesh = long_mesh
+        longitudinal.material_override = neon
+        longitudinal.position = Vector3(side * 8.75, 0.042, 0)
+        art.add_child(longitudinal)
+        var transverse := MeshInstance3D.new()
+        transverse.name = "NeonBoundaryShort"
+        var short_mesh := BoxMesh.new()
+        short_mesh.size = Vector3(17.35, 0.035, 0.075)
+        transverse.mesh = short_mesh
+        transverse.material_override = neon
+        transverse.position = Vector3(0, 0.042, side * 8.75)
+        art.add_child(transverse)
+    for position in [Vector3(-6.9, 0, -6.9), Vector3(6.9, 0, 6.9)]:
+        var mechanical := MeshInstance3D.new()
+        mechanical.name = "RooftopVent"
+        var vent_mesh := CylinderMesh.new()
+        vent_mesh.top_radius = 0.58
+        vent_mesh.bottom_radius = 0.70
+        vent_mesh.height = 0.55
+        vent_mesh.radial_segments = 8
+        mechanical.mesh = vent_mesh
+        mechanical.material_override = dark_metal
+        mechanical.position = position + Vector3.UP * 0.27
+        art.add_child(mechanical)
+    for i in range(2):
+        var light_source := OmniLight3D.new()
+        light_source.name = "NeonHeroFillLight%d" % i
+        light_source.position = Vector3(-6.7 if i == 0 else 6.7, 3.1, -1.7 if i == 0 else 3.0)
+        light_source.light_color = Color("#4ddcfa") if i == 0 else Color("#df81dc")
+        light_source.light_energy = 0.85
+        light_source.omni_range = 12.0
+        light_source.shadow_enabled = false
+        art.add_child(light_source)
 
 func _install_walking_character(fallback: MeshInstance3D) -> void:
     # The original, animated Blender GLB takes precedence in the Adventure
