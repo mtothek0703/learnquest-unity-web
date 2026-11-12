@@ -129,14 +129,18 @@ def head_measurements(rig):
     base = rig.matrix_world @ head.head
     tip = rig.matrix_world @ head.tail
     bone_len = (tip-base).length
+    # Imported Quaternius skin joints have zero-length bones, but their
+    # actual world-space Head joint is correctly positioned near the skull.
     if bone_len < .02:
-        raise RuntimeError("Zero-length Head bone")
-    height = max(.24, min(.42, bone_len * 1.45))
-    width = max(.22, min(.33, bone_len * 1.1))
-    # Quaternius characters face Blender's -Y axis.
+        height, width = .36, .30
+    else:
+        height = max(.24, min(.42, bone_len * 1.45))
+        width = max(.22, min(.33, bone_len * 1.1))
     forward = Vector((0, -1, 0))
     across = Vector((1, 0, 0))
     eye_mid = base.lerp(tip, .59) + forward * (width * .30)
+    if bone_len < .02:
+        eye_mid.z += height * .27
     print("HEAD POSITION", tuple(round(v,3) for v in base),
           tuple(round(v,3) for v in tip), "eye",tuple(round(v,3) for v in eye_mid),
           "width",round(width,3), "height",round(height,3),flush=True)
