@@ -130,18 +130,28 @@ def head_measurements():
             if material_names[poly.material_index] in wanted:
                 ids.update(poly.vertices)
         return [ob.matrix_world @ verts[i].co for i in ids]
-    skin = points_by_material({"skin"})
-    eyes = points_by_material({"eye"})
-    if not skin or not eyes:
-        raise RuntimeError("Cannot locate face mesh material regions")
+    skin = points_by_material({"skin", "face", "skintone"})
+    eyes = points_by_material({"eye", "eyes"})
+    if not skin:
+        skin = [ob.matrix_world @ v.co for v in verts]
+    if not skin:
+        raise RuntimeError("Head geometry has no vertices")
     all_min = Vector(tuple(min(v[k] for v in skin) for k in range(3)))
     all_max = Vector(tuple(max(v[k] for v in skin) for k in range(3)))
-    eye_mid = sum(eyes, Vector()) / len(eyes)
     face_mid = sum(skin, Vector()) / len(skin)
-    forward = Vector((eye_mid.x - face_mid.x, eye_mid.y - face_mid.y, 0))
+    if eyes:
+        eye_mid = sum(eyes, Vector()) / len(eyes)
+        forward = Vector((eye_mid.x - face_mid.x, eye_mid.y - face_mid.y, 0))
+    else:
+        # Some skinned source heads have no distinct eye material on import.
+        # Use Blender's forward axis and the actual mesh bounds.
+        forward = Vector((0, -1, 0))
+        eye_mid = face_mid + forward * (max(all_max.x-all_min.x, all_max.y-all_min.y) * .20)
+        eye_mid.z = all_min.z + (all_max.z-all_min.z) * .65
     if forward.length < .00001:
         forward = Vector((0, -1, 0))
     forward.normalize()
+    print("Head details:", ob.name, "skin",len(skin),"eyes",len(eyes),"direction",tuple(round(v,3) for v in forward), flush=True)
     across = Vector((-forward.y, forward.x, 0))
     width = max(all_max.x-all_min.x, all_max.y-all_min.y)
     height = all_max.z-all_min.z
@@ -179,7 +189,7 @@ def add_face_details(name, rig):
                 (w*.28,w*.34,h*.38),beard,rig)
             add_soft_sphere("Moustache_"+str(sign),
                 eye+across*(sign*w*.17)+forward*w*.16-Vector((0,0,h*.16)),
-                (w*.24,w*.19,h*.085),beard,rig,20,12)
+                (w*.24,w*.19,h*.085),beard,rig,segments=20,rings=12)
     else:
         warm = make_material("Avatar_AvatarA_soft_brown_curls", "#62443B")
         # Soft modeled wavy locks around cheeks, replacing no rigged base hair:
@@ -191,7 +201,7 @@ def add_face_details(name, rig):
                           forward*w*.12 + Vector((0,0,h*(.12-i*.11))))
                 diameter = w*(.22-.010*i)
                 add_soft_sphere("AvatarA_soft_curl_%s_%s"%(side,i),center,
-                                (diameter,diameter*.87,h*.24),warm,rig,18,12)
+                                (diameter,diameter*.87,h*.24),warm,rig,segments=18,rings=12)
 
 def export(name):
     source = load_source(name)
