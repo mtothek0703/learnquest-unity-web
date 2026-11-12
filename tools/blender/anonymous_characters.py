@@ -18,7 +18,7 @@ REV = "c06a6fa9a1b13576edf3bd62d7b52aba334f8fc0"
 BASE = "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/" + REV + "/public/glb/"
 SOURCES = {
     "AvatarA": ("modular_women/Casual.glb", 804896, "f64c3d48148aef1e431abec40ae0cf33c1db93d5"),
-    "AvatarB": ("modular_men/Casual.glb", 785308, "a74f94183952267a874c24ac73c4d2382fd0187d")
+    "AvatarB": ("modular_men/Casual2.glb", 759456, "8de02ab8cc15be5d4375373675f886d347bef11e")
 }
 PALETTES = {
     "AvatarA": {"top": "#AF8DBD", "pants": "#635071", "hair": "#62443B", "shoe": "#E3D5F2"},
@@ -35,7 +35,7 @@ def load_source(name):
     if target.exists():
         blob = target.read_bytes()
     else:
-        req = Request(BASE + url, headers={"User-Agent": "FamilyKohler/Blender3D"})
+        req = Request(BASE + url, headers={"User-Agent": "NeutralAvatarBuild/1.0"})
         with urlopen(req, timeout=90) as response:
             blob = response.read()
         target.write_bytes(blob)
@@ -68,7 +68,7 @@ def make_material(name, color, roughness=.87):
 def remove_avatar_b_hair():
     face_count = 0
     for obj in list(bpy.data.objects):
-        if obj.type != "MESH" or "casual_head" not in obj.name.lower():
+        if obj.type != "MESH" or "_head" not in obj.name.lower():
             continue
         indices = {i for i, mat in enumerate(obj.data.materials)
                    if mat is not None and mat.name.split(".")[0].lower() == "hair"}
@@ -99,13 +99,15 @@ def skin_and_style(name):
                 continue
             mn = material.name.split(".")[0].lower()
             color = None
-            if "casual_body" in n and mn in ("purple", "lightblue"):
+            # The female top is 'White' and trousers 'Orange'; the
+            # male Casual2 set uses 'LightBrown' and full-length 'LightBlue' pants.
+            if "_body" in n and mn in ("white", "lightbrown", "purple", "lightblue"):
                 color = palette["top"]
-            elif "casual_legs" in n and mn in ("purple", "lightblue"):
+            elif ("_legs" in n or "_pants" in n) and mn in ("orange", "lightblue", "purple", "suit"):
                 color = palette["pants"]
-            elif "casual_feet" in n and mn == "lightblue":
+            elif "_feet" in n and mn in ("grey", "red_dark", "black"):
                 color = palette["shoe"]
-            elif name == "AvatarA" and mn == "hair":
+            elif name == "AvatarA" and mn.startswith("hair"):
                 color = palette["hair"]
             if color:
                 new = material.copy()
@@ -117,44 +119,27 @@ def skin_and_style(name):
         raise RuntimeError(name + ": rigged Head bone absent")
     return rigs[0]
 
-def head_measurements():
-    heads = [o for o in bpy.data.objects if o.type == "MESH" and "casual_head" in o.name.lower()]
-    if not heads:
-        raise RuntimeError("Head mesh absent")
-    ob = heads[0]
-    verts = list(ob.data.vertices)
-    material_names = [m.name.split(".")[0].lower() if m else "" for m in ob.data.materials]
-    def points_by_material(wanted):
-        ids = set()
-        for poly in ob.data.polygons:
-            if material_names[poly.material_index] in wanted:
-                ids.update(poly.vertices)
-        return [ob.matrix_world @ verts[i].co for i in ids]
-    skin = points_by_material({"skin", "face", "skintone"})
-    eyes = points_by_material({"eye", "eyes"})
-    if not skin:
-        skin = [ob.matrix_world @ v.co for v in verts]
-    if not skin:
-        raise RuntimeError("Head geometry has no vertices")
-    all_min = Vector(tuple(min(v[k] for v in skin) for k in range(3)))
-    all_max = Vector(tuple(max(v[k] for v in skin) for k in range(3)))
-    face_mid = sum(skin, Vector()) / len(skin)
-    if eyes:
-        eye_mid = sum(eyes, Vector()) / len(eyes)
-        forward = Vector((eye_mid.x - face_mid.x, eye_mid.y - face_mid.y, 0))
-    else:
-        # Some skinned source heads have no distinct eye material on import.
-        # Use Blender's forward axis and the actual mesh bounds.
-        forward = Vector((0, -1, 0))
-        eye_mid = face_mid + forward * (max(all_max.x-all_min.x, all_max.y-all_min.y) * .20)
-        eye_mid.z = all_min.z + (all_max.z-all_min.z) * .65
-    if forward.length < .00001:
-        forward = Vector((0, -1, 0))
-    forward.normalize()
-    print("Head details:", ob.name, "skin",len(skin),"eyes",len(eyes),"direction",tuple(round(v,3) for v in forward), flush=True)
-    across = Vector((-forward.y, forward.x, 0))
-    width = max(all_max.x-all_min.x, all_max.y-all_min.y)
-    height = all_max.z-all_min.z
+def head_measurements(rig):
+    # Skinned vertex coordinates are in bind-pose geometry space: they can
+    # appear near the hips despite the rendered head being high above.
+    # Use the real Head bone in world space, not the raw skinned mesh vertices.
+    head = rig.pose.bones.get("Head")
+    if head is None:
+        raise RuntimeError("Humanoid Head bone missing")
+    base = rig.matrix_world @ head.head
+    tip = rig.matrix_world @ head.tail
+    bone_len = (tip-base).length
+    if bone_len < .02:
+        raise RuntimeError("Zero-length Head bone")
+    height = max(.24, min(.42, bone_len * 1.45))
+    width = max(.22, min(.33, bone_len * 1.1))
+    # Quaternius characters face Blender's -Y axis.
+    forward = Vector((0, -1, 0))
+    across = Vector((1, 0, 0))
+    eye_mid = base.lerp(tip, .59) + forward * (width * .30)
+    print("HEAD POSITION", tuple(round(v,3) for v in base),
+          tuple(round(v,3) for v in tip), "eye",tuple(round(v,3) for v in eye_mid),
+          "width",round(width,3), "height",round(height,3),flush=True)
     return eye_mid, forward, across, width, height
 
 def add_soft_sphere(name, center, size, mat, rig, joint="Head", segments=24, rings=16):
@@ -175,7 +160,7 @@ def add_soft_sphere(name, center, size, mat, rig, joint="Head", segments=24, rin
     return ob
 
 def add_face_details(name, rig):
-    eye, forward, across, w, h = head_measurements()
+    eye, forward, across, w, h = head_measurements(rig)
     if not (.04 < w < 1.0 and .07 < h < 1.2):
         raise RuntimeError("Unexpected face scale: " + str((w,h)))
     if name == "AvatarB":
