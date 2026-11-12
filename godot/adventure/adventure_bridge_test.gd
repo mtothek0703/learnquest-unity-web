@@ -298,7 +298,7 @@ func _check() -> void:
     camera_wall.global_position = player.global_position + Vector3(0.0, 2.0, 4.0)
     await physics_frame
     area.call("_update_follow_camera")
-    if walk_camera.global_position.z >= player.global_position.z + 4.8:
+    if walk_camera.global_position.z >= player.global_position.z + 3.8:
         _fail("walking camera clipped through an obstacle behind the hero")
         return
     camera_wall.queue_free()
@@ -308,7 +308,7 @@ func _check() -> void:
     for recovery_frame in range(30):
         await physics_frame
     area.call("_update_follow_camera")
-    if walk_camera.global_position.z <= player.global_position.z + 4.7:
+    if walk_camera.global_position.z <= player.global_position.z + 3.7:
         _fail("walking camera failed to recover its normal distance after smoothing")
         return
     # A4: a slightly early mobile jump should survive an airborne frame,
