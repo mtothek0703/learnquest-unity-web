@@ -155,12 +155,12 @@ def add_soft_sphere(name, center, size, mat, rig, joint="Head", segments=24, rin
     ob.data.materials.append(mat)
     for f in ob.data.polygons:
         f.use_smooth = True
-    # Bone parenting exports into glTF/GLB and follows the animated head.
-    world_matrix = ob.matrix_world.copy()
-    ob.parent = rig
-    ob.parent_type = "BONE"
-    ob.parent_bone = joint
-    ob.matrix_world = world_matrix
+    # The source character's Blender armature has zero-length imported
+    # joints and scale 100. Bone parenting here causes glTF extras to be
+    # displaced near the hips. Keep authored meshes at their actual WORLD
+    # positions; the WebGL loader attaches them to its Head joint via
+    # Object3D.attach(), preserving pose and world placement.
+    ob["follow_bone"] = joint
     return ob
 
 def add_face_details(name, rig):
