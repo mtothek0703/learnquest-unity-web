@@ -11,7 +11,7 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 from mathutils import Vector
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "generated" / "avatar-assets"
 ASSETS.mkdir(parents=True, exist_ok=True)
 REV = "c06a6fa9a1b13576edf3bd62d7b52aba334f8fc0"
