@@ -163,34 +163,70 @@ def add_soft_sphere(name, center, size, mat, rig, joint="Head", segments=24, rin
     ob["follow_bone"] = joint
     return ob
 
+def add_curve_curl(name, points, mat, thickness=.012):
+    # A real shaded curved tube mesh, not a sphere or a 2D card.
+    curve = bpy.data.curves.new(name + "_curve", "CURVE")
+    curve.dimensions = "3D"
+    curve.resolution_u = 12
+    curve.bevel_depth = thickness
+    curve.bevel_resolution = 3
+    spline = curve.splines.new("BEZIER")
+    spline.bezier_points.add(len(points)-1)
+    for bezier, xyz in zip(spline.bezier_points, points):
+        bezier.co = xyz
+        bezier.handle_left_type = "AUTO"
+        bezier.handle_right_type = "AUTO"
+    obj = bpy.data.objects.new(name, curve)
+    bpy.context.collection.objects.link(obj)
+    obj.data.materials.append(mat)
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.convert(target="MESH")
+    obj = bpy.context.object
+    obj.name = name
+    for poly in obj.data.polygons:
+        poly.use_smooth = True
+    return obj
+
 def add_face_details(name, rig):
     eye, forward, across, w, h = head_measurements(rig)
     if not (.04 < w < 1.0 and .07 < h < 1.2):
-        raise RuntimeError("Unexpected face scale: " + str((w,h)))
+        raise RuntimeError("Unexpected face scale")
     if name == "AvatarB":
-        beard = make_material("Avatar_AvatarB_warm_brown_beard", "#594037")
-        # Clean bald scalp from original skin mesh, sculpted beard on chin/cheeks.
-        add_soft_sphere("Beard_chin", eye-forward*w*.05-Vector((0,0,h*.33)),
-                        (w*.63,w*.48,h*.40),beard,rig)
+        beard = make_material("AvatarB_short_brown_beard", "#392725")
+        # Close-fitting short beard, not a large spherical chin puff.
+        add_soft_sphere("Beard_chin",eye-forward*w*.03-Vector((0,0,h*.32)),
+            (w*.40,w*.19,h*.19),beard,rig)
         for sign in (-1,1):
             add_soft_sphere("Beard_cheek_"+str(sign),
-                eye+across*(sign*w*.30)+forward*w*.015-Vector((0,0,h*.20)),
-                (w*.28,w*.34,h*.38),beard,rig)
+                eye+across*(sign*w*.235)+forward*w*.04-Vector((0,0,h*.20)),
+                (w*.15,w*.12,h*.15),beard,rig)
             add_soft_sphere("Moustache_"+str(sign),
-                eye+across*(sign*w*.17)+forward*w*.16-Vector((0,0,h*.16)),
-                (w*.24,w*.19,h*.085),beard,rig,segments=20,rings=12)
+                eye+across*(sign*w*.13)+forward*w*.14-Vector((0,0,h*.145)),
+                (w*.15,w*.09,h*.028),beard,rig,segments=20,rings=12)
     else:
-        warm = make_material("Avatar_AvatarA_soft_brown_curls", "#62443B")
-        # Soft modeled wavy locks around cheeks, replacing no rigged base hair:
-        # each curl is bone-parented so greetings and head turns remain 3D.
+        brown = make_material("AvatarA_wavy_brown_hair", "#54392F")
+        warm = make_material("AvatarA_soft_highlight_hair", "#704F40")
+        # Styled Bezier hair strands with volume, taper and softly varying wave.
+        # These export as genuine mesh tubes placed at the skull.
         for side in (-1,1):
-            for i in range(5):
-                wave = math.sin(i*1.28+side)*w*.045
-                center = (eye + across*(side*w*(.37+wave/w)) -
-                          forward*w*.12 + Vector((0,0,h*(.12-i*.11))))
-                diameter = w*(.22-.010*i)
-                add_soft_sphere("AvatarA_soft_curl_%s_%s"%(side,i),center,
-                                (diameter,diameter*.87,h*.24),warm,rig,segments=18,rings=12)
+            for i in range(7):
+                material = brown if i%4 else warm
+                x0 = side * w * (.335 + (i%3)*.020)
+                y0 = eye.y + w*(.12 + (i%4)*.043)
+                z0 = eye.z + h*(.20 - .025*(i%4))
+                z1 = eye.z - h*(.35 + .06*(i%3))
+                phase = i*.65+side*.35
+                points = []
+                for k in range(5):
+                    t=k/4
+                    x=x0+side*(.007*t + .023*math.sin(t*math.pi*3.0+phase)*t)
+                    y=y0+.017*math.cos(t*math.pi*2.0+phase)
+                    z=z0*(1-t)+z1*t
+                    points.append((x,y,z))
+                add_curve_curl("AvatarA_soft_curl_%s_%s"%(side,i),
+                    points,material,thickness=.0105+(i%3)*.0018)
 
 def export(name):
     source = load_source(name)
