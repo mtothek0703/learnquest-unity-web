@@ -28,18 +28,30 @@ for person in ("avatara", "avatarb"):
     camera.data.ortho_scale = tall*1.24
     scene=bpy.context.scene
     scene.camera=camera
-    scene.render.engine = "BLENDER_WORKBENCH"
-    scene.render.resolution_x=640
-    scene.render.resolution_y=800
+    # CPU Cycles works headlessly; Workbench needs libEGL on this runner.
+    scene.render.engine = "CYCLES"
+    scene.cycles.device = "CPU"
+    scene.cycles.samples = 12
+    scene.render.resolution_x=480
+    scene.render.resolution_y=600
     scene.render.resolution_percentage=100
     scene.render.image_settings.file_format="PNG"
     scene.render.film_transparent=False
-    scene.display.shading.light="STUDIO"
-    scene.display.shading.color_type="MATERIAL"
-    scene.display.shading.show_cavity=True
-    scene.display.shading.show_shadows=True
-    scene.display.shading.background_type="WORLD"
-    scene.display.shading.background_color=(.89,.87,.91)
+    scene.world = bpy.data.worlds.new("Soft studio backdrop")
+    scene.world.use_nodes = True
+    bg = scene.world.node_tree.nodes.get("Background")
+    bg.inputs["Color"].default_value=(.73,.69,.76,1)
+    bg.inputs["Strength"].default_value=.8
+    for pos,energy,size in [
+        ((target.x-tall*.55,target.y-tall*.95,target.z+tall*.7),570,tall*1.3),
+        ((target.x+tall*.7,target.y-tall*.4,target.z+tall*.45),330,tall*1.0)
+    ]:
+        bpy.ops.object.light_add(type="AREA",location=pos)
+        lamp=bpy.context.object
+        lamp.rotation_euler=(target-lamp.location).to_track_quat("-Z","Y").to_euler()
+        lamp.data.energy=energy
+        lamp.data.shape="DISK"
+        lamp.data.size=size
     scene.render.filepath = str(OUT / ("character-" + person + "-preview.png"))
     bpy.ops.render.render(write_still=True)
     print("PREVIEW_SAVED",scene.render.filepath,flush=True)
