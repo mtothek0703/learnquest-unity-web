@@ -1,0 +1,86 @@
+name: Blender Cloud – LearnQuest animated walk hero (DRAFT)
+on:
+  push:
+    branches:
+      - feature/adventure-a1-walkable-neon-testbed-20261106-19
+    paths:
+      - tools/blender/make_walk_hero.py
+      - tools/blender/validate_walk_hero.py
+      - .github/workflows/blender-walk-hero.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: blender-walk-hero-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  rigged-hero:
+    name: Generate true skinned + animated GLB
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout current feature branch
+        uses: actions/checkout@v4
+
+      - name: Install Blender (no local PC, no subscription)
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends blender python3-numpy
+          blender --version | head -n 2
+
+      - name: Create fully editable Blender hero + animation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/hero
+          blender --background --factory-startup --python-exit-code 1 --threads 2 \
+            --python tools/blender/make_walk_hero.py -- \
+            --output-dir "$GITHUB_WORKSPACE/out/hero"
+
+      - name: Validate real 3D skin, bones, animation and mobile budget
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/blender/validate_walk_hero.py out/hero
+
+      - name: Godot import and animated bone regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p godot/assets/3d
+          cp out/hero/learnquest_walk_hero.glb godot/assets/3d/learnquest_walk_hero.glb
+          curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path godot --quit
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://adventure/rigged_hero_asset_test.gd 2>&1 | tee /tmp/rigged-hero.log
+          grep -Fq 'LEARNQUEST RIGGED HERO IMPORT TEST PASSED' /tmp/rigged-hero.log
+
+      - name: Upload editable Blender source and studio preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-hero-draft-blender
+          path: |
+            out/hero/learnquest_walk_hero.blend
+            out/hero/learnquest_walk_hero.glb
+            out/hero/walk_hero_studio.png
+            out/hero/manifest.json
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Commit tested mobile hero into this DRAFT only
+        if: github.ref == 'refs/heads/feature/adventure-a1-walkable-neon-testbed-20261106-19' && github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp out/hero/walk_hero_studio.png godot/assets/3d/learnquest_walk_hero_studio.png
+          cp out/hero/manifest.json godot/assets/3d/learnquest_walk_hero_manifest.json
+          git add godot/assets/3d/learnquest_walk_hero.glb godot/assets/3d/learnquest_walk_hero_studio.png godot/assets/3d/learnquest_walk_hero_manifest.json
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m 'assets: original Blender rigged hero and walk animation (draft)'
+            git push origin HEAD:feature/adventure-a1-walkable-neon-testbed-20261106-19
+          fi
