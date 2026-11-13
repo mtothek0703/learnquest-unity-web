@@ -442,11 +442,41 @@ func _platform(at: Vector3, size: Vector3, tint: Color) -> void:
     collider.shape = box
     body.add_child(collider)
     var visual := MeshInstance3D.new()
-    var mesh := BoxMesh.new()
-    mesh.size = size
-    visual.mesh = mesh
+    # Visual-only sculpted rooftop slab: beveled perimeter and recessed deck.
+    # The original BoxShape3D remains exact, so jumping and foot contact
+    # cannot change. One mesh/surface per slab keeps mobile draw calls low.
+    var surface := SurfaceTool.new()
+    surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+    var half_x: float = size.x * 0.5
+    var half_z: float = size.z * 0.5
+    var bevel: float = minf(0.24, minf(half_x, half_z) * 0.13)
+    var upper_y: float = size.y * 0.5
+    var lower_y: float = -size.y * 0.5
+    var corners := [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]
+    var bottom_ring: Array[Vector3] = []
+    var edge_ring: Array[Vector3] = []
+    var deck_ring: Array[Vector3] = []
+    for corner in corners:
+        bottom_ring.append(Vector3(corner.x * half_x, lower_y, corner.y * half_z))
+        edge_ring.append(Vector3(corner.x * half_x, upper_y - bevel, corner.y * half_z))
+        deck_ring.append(Vector3(corner.x * (half_x - bevel), upper_y, corner.y * (half_z - bevel)))
+    for ring_pair in [[bottom_ring, edge_ring], [edge_ring, deck_ring]]:
+        for side in range(4):
+            var next_side: int = (side + 1) % 4
+            var a: Vector3 = ring_pair[0][side]
+            var b: Vector3 = ring_pair[0][next_side]
+            var c: Vector3 = ring_pair[1][side]
+            var d: Vector3 = ring_pair[1][next_side]
+            for vertex in [a, b, c, b, d, c]:
+                surface.add_vertex(vertex)
+    for vertex in [deck_ring[0], deck_ring[2], deck_ring[1], deck_ring[0], deck_ring[3], deck_ring[2]]:
+        surface.add_vertex(vertex)
+    surface.generate_normals()
+    visual.mesh = surface.commit()
     var material := StandardMaterial3D.new()
     material.albedo_color = tint
+    material.metallic = 0.22
+    material.roughness = 0.52
     visual.material_override = material
     body.add_child(visual)
     add_child(body)
