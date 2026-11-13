@@ -119,6 +119,55 @@ def part(name, position, dimensions, material, bone, kind="box"):
     return obj
 
 
+def sculpted_shell(name, position, dimensions, material, bone, profile):
+    """Closed elliptical multi-ring garment silhouette, not a beveled cube.
+
+    The rings introduce actual tapered anatomy and material-readable contour
+    while retaining the same 16-bone animation and mobile-friendly skinning.
+    """
+    radial = 12
+    verts = []
+    faces = []
+    for height, rx, ry in profile:
+        for i in range(radial):
+            theta = 2.0 * math.pi * i / radial
+            verts.append((dimensions[0] * 0.5 * rx * math.cos(theta),
+                          dimensions[1] * 0.5 * ry * math.sin(theta),
+                          dimensions[2] * height))
+    for ring in range(len(profile) - 1):
+        for i in range(radial):
+            j = (i + 1) % radial
+            a = ring * radial + i
+            b = (ring + 1) * radial + i
+            faces.append((a, a - i + j, b - i + j, b))
+    faces.append(tuple(reversed(tuple(range(radial)))))
+    faces.append(tuple((len(profile) - 1) * radial + i for i in range(radial)))
+    mesh = bpy.data.meshes.new(name + " sculpted geometry")
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    obj.location = position
+    obj.data.materials.append(material)
+    for poly in mesh.polygons:
+        poly.use_smooth = len(poly.vertices) == 4
+    group = obj.vertex_groups.new(name=bone)
+    group.add(list(range(len(mesh.vertices))), 1.0, "REPLACE")
+    obj.parent = rig
+    deform = obj.modifiers.new("CharacterBody Skin", "ARMATURE")
+    deform.object = rig
+    meshes.append(obj)
+    return obj
+
+
+# Ring coordinates are fractions of the original height, with individual
+# elliptical widths/depths. 12 radial segments x 5 rings = 60 vertices.
+arm_profile = [(-0.50, 0.64, 0.68), (-0.30, 0.91, 0.90),
+               (0.02, 1.0, 1.0), (0.32, 0.85, 0.88), (0.50, 0.62, 0.67)]
+leg_profile = [(-0.50, 0.65, 0.72), (-0.28, 0.82, 0.91),
+               (0.03, 1.0, 1.0), (0.30, 0.92, 0.96), (0.50, 0.73, 0.80)]
+
+
 part("Flexible torso", (0, 0, 1.30), (0.66, 0.35, 0.65), suit, "Spine")
 part("Sculpted chest armor", (0, -0.205, 1.47), (0.59, 0.105, 0.30), armor, "Chest")
 part("Chest energy badge", (0, -0.278, 1.51), (0.15, 0.045, 0.10), accent, "Chest")
@@ -128,13 +177,13 @@ part("Helmet visible visor", (0, -0.20, 1.885), (0.35, 0.14, 0.20), visor, "Head
 part("Helmet glowing brow", (0, -0.225, 1.995), (0.34, 0.09, 0.035), cyan, "Head")
 part("Backpack spine shell", (0, 0.235, 1.40), (0.43, 0.18, 0.38), boots, "Chest")
 for suffix, x in [("L", -1), ("R", 1)]:
-    part("Upper arm " + suffix, (x * 0.48, 0, 1.45), (0.23, 0.24, 0.37), armor, "UpperArm." + suffix)
+    sculpted_shell("Upper arm " + suffix, (x * 0.48, 0, 1.45), (0.23, 0.24, 0.37), armor, "UpperArm." + suffix, arm_profile)
     part("Elbow flex " + suffix, (x * 0.65, 0, 1.28), (0.19, 0.20, 0.21), suit, "LowerArm." + suffix, "sphere")
-    part("Forearm " + suffix, (x * 0.71, -0.015, 1.16), (0.21, 0.23, 0.33), suit, "LowerArm." + suffix)
+    sculpted_shell("Forearm " + suffix, (x * 0.71, -0.015, 1.16), (0.21, 0.23, 0.33), suit, "LowerArm." + suffix, arm_profile)
     part("Glove " + suffix, (x * 0.79, 0, 1.015), (0.19, 0.24, 0.17), boots, "LowerArm." + suffix)
-    part("Thigh armor " + suffix, (x * 0.21, 0, 0.75), (0.30, 0.32, 0.48), armor, "Thigh." + suffix)
+    sculpted_shell("Thigh armor " + suffix, (x * 0.21, 0, 0.75), (0.30, 0.32, 0.48), armor, "Thigh." + suffix, leg_profile)
     part("Knee bright guard " + suffix, (x * 0.25, -0.17, 0.52), (0.26, 0.07, 0.16), cyan, "Shin." + suffix)
-    part("Lower leg " + suffix, (x * 0.245, 0, 0.32), (0.26, 0.28, 0.46), suit, "Shin." + suffix)
+    sculpted_shell("Lower leg " + suffix, (x * 0.245, 0, 0.32), (0.26, 0.28, 0.46), suit, "Shin." + suffix, leg_profile)
     part("Boot " + suffix, (x * 0.25, -0.085, 0.115), (0.30, 0.48, 0.20), boots, "Foot." + suffix)
 
 # One complete Blender Action. Godot selects an animation frame range per
