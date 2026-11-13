@@ -467,7 +467,7 @@ func _platform(at: Vector3, size: Vector3, tint: Color) -> void:
             var b: Vector3 = ring_pair[0][next_side]
             var c: Vector3 = ring_pair[1][side]
             var d: Vector3 = ring_pair[1][next_side]
-            for vertex in [a, b, c, b, d, c]:
+            for vertex in [a, c, b, b, c, d]:
                 surface.add_vertex(vertex)
     for vertex in [deck_ring[0], deck_ring[2], deck_ring[1], deck_ring[0], deck_ring[3], deck_ring[2]]:
         surface.add_vertex(vertex)
