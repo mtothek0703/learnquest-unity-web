@@ -486,6 +486,22 @@ func _platform(at: Vector3, size: Vector3, tint: Color) -> void:
     material.emission_energy_multiplier = 0.12
     visual.material_override = material
     body.add_child(visual)
+    # The generated top surface was near-black in the actual landscape
+    # screenshots even after brightening its PBR material. A dedicated,
+    # upward-facing, unshaded deck guarantees visible midtones in Godot Web
+    # Compatibility without adding lights or changing collision geometry.
+    # One extra draw call per rooftop (three total), no texture dependency.
+    var deck := MeshInstance3D.new()
+    deck.name = "ReadableRooftopDeck"
+    var deck_mesh := PlaneMesh.new()
+    deck_mesh.size = Vector2(size.x - bevel * 2.0, size.z - bevel * 2.0)
+    deck.mesh = deck_mesh
+    deck.position.y = upper_y + 0.006
+    var deck_material := StandardMaterial3D.new()
+    deck_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    deck_material.albedo_color = tint.lightened(0.43)
+    deck.material_override = deck_material
+    body.add_child(deck)
     add_child(body)
 
 func _make_touch_controls() -> void:
