@@ -579,12 +579,41 @@ func _make_touch_controls() -> void:
     root.add_child(mission_label)
 
 # Shared box meshes use only three materials and no physics bodies.
-func _robot_box(parent: Node3D, part_name: String, at: Vector3, size: Vector3, material: StandardMaterial3D) -> void:
+# Sculpted, ring-lofted armor surfaces replace the training robot's
+# rectangular head/limbs. The same named nodes retain attack animation paths.
+# Each shell is one material/surface; no textures or third-party assets.
+func _robot_armor_shell(parent: Node3D, part_name: String, at: Vector3, rings: Array, material: StandardMaterial3D) -> void:
     var part := MeshInstance3D.new()
     part.name = part_name
-    var part_mesh := BoxMesh.new()
-    part_mesh.size = size
-    part.mesh = part_mesh
+    var st := SurfaceTool.new()
+    st.begin(Mesh.PRIMITIVE_TRIANGLES)
+    const SIDES := 12
+    for ring_index in range(rings.size() - 1):
+        var lower: Vector3 = rings[ring_index]
+        var upper: Vector3 = rings[ring_index + 1]
+        for side in range(SIDES):
+            var a0 := TAU * float(side) / float(SIDES)
+            var a1 := TAU * float(side + 1) / float(SIDES)
+            var p0 := Vector3(cos(a0) * lower.y, lower.x, sin(a0) * lower.z)
+            var p1 := Vector3(cos(a1) * lower.y, lower.x, sin(a1) * lower.z)
+            var q0 := Vector3(cos(a0) * upper.y, upper.x, sin(a0) * upper.z)
+            var q1 := Vector3(cos(a1) * upper.y, upper.x, sin(a1) * upper.z)
+            for vertex in [p0, q0, p1, p1, q0, q1]:
+                st.add_vertex(vertex)
+    # End caps keep the sculpted pieces solid when the camera looks up/down.
+    var first: Vector3 = rings[0]
+    var last: Vector3 = rings[rings.size() - 1]
+    for side in range(SIDES):
+        var a0 := TAU * float(side) / float(SIDES)
+        var a1 := TAU * float(side + 1) / float(SIDES)
+        st.add_vertex(Vector3(0, first.x, 0))
+        st.add_vertex(Vector3(cos(a1) * first.y, first.x, sin(a1) * first.z))
+        st.add_vertex(Vector3(cos(a0) * first.y, first.x, sin(a0) * first.z))
+        st.add_vertex(Vector3(0, last.x, 0))
+        st.add_vertex(Vector3(cos(a0) * last.y, last.x, sin(a0) * last.z))
+        st.add_vertex(Vector3(cos(a1) * last.y, last.x, sin(a1) * last.z))
+    st.generate_normals()
+    part.mesh = st.commit()
     part.position = at
     part.material_override = material
     parent.add_child(part)
@@ -637,15 +666,31 @@ func _create_robot() -> void:
     visor.emission_enabled = true
     visor.emission = Color("#49dff5")
     visor.emission_energy_multiplier = 1.5
-    _robot_box(visual, "Head", Vector3(0, 1.10, 0), Vector3(0.70, 0.56, 0.63), armor)
-    _robot_box(visual, "Visor", Vector3(0, 1.12, -0.335), Vector3(0.49, 0.18, 0.055), visor)
-    _robot_box(visual, "LeftShoulder", Vector3(-0.70, 0.48, 0), Vector3(0.42, 0.30, 0.48), armor)
-    _robot_box(visual, "RightShoulder", Vector3(0.70, 0.48, 0), Vector3(0.42, 0.30, 0.48), armor)
-    _robot_box(visual, "LeftArm", Vector3(-0.72, -0.13, 0), Vector3(0.28, 0.90, 0.32), robot_material)
-    _robot_box(visual, "RightArm", Vector3(0.72, -0.13, 0), Vector3(0.28, 0.90, 0.32), robot_material)
-    _robot_box(visual, "LeftLeg", Vector3(-0.28, -1.03, 0), Vector3(0.32, 0.70, 0.42), armor)
-    _robot_box(visual, "RightLeg", Vector3(0.28, -1.03, 0), Vector3(0.32, 0.70, 0.42), armor)
-    _robot_box(visual, "CoreLight", Vector3(0, 0.20, -0.43), Vector3(0.27, 0.27, 0.05), visor)
+    # Tapered helmet, sloped pauldrons, anatomical forearm/greave profiles.
+    # Radius vectors are (vertical offset, width radius, depth radius).
+    _robot_armor_shell(visual, "Head", Vector3(0, 1.10, 0), [
+        Vector3(-0.30, 0.22, 0.23), Vector3(-0.22, 0.34, 0.30),
+        Vector3(0.08, 0.38, 0.34), Vector3(0.27, 0.29, 0.27),
+        Vector3(0.34, 0.12, 0.12)], armor)
+    _robot_armor_shell(visual, "Visor", Vector3(0, 1.12, -0.335), [
+        Vector3(-0.10, 0.16, 0.035), Vector3(-0.07, 0.27, 0.055),
+        Vector3(0.06, 0.27, 0.055), Vector3(0.10, 0.16, 0.035)], visor)
+    for side in [-1.0, 1.0]:
+        var prefix := "Left" if side < 0.0 else "Right"
+        _robot_armor_shell(visual, prefix + "Shoulder", Vector3(side * 0.70, 0.48, 0), [
+            Vector3(-0.18, 0.17, 0.19), Vector3(-0.07, 0.25, 0.29),
+            Vector3(0.10, 0.28, 0.27), Vector3(0.21, 0.12, 0.13)], armor)
+        _robot_armor_shell(visual, prefix + "Arm", Vector3(side * 0.72, -0.13, 0), [
+            Vector3(-0.48, 0.10, 0.12), Vector3(-0.37, 0.17, 0.19),
+            Vector3(-0.09, 0.12, 0.14), Vector3(0.30, 0.20, 0.20),
+            Vector3(0.47, 0.12, 0.12)], robot_material)
+        _robot_armor_shell(visual, prefix + "Leg", Vector3(side * 0.28, -1.03, 0), [
+            Vector3(-0.39, 0.19, 0.23), Vector3(-0.27, 0.22, 0.25),
+            Vector3(0.08, 0.14, 0.18), Vector3(0.27, 0.20, 0.23),
+            Vector3(0.38, 0.15, 0.17)], armor)
+    _robot_armor_shell(visual, "CoreLight", Vector3(0, 0.20, -0.43), [
+        Vector3(-0.13, 0.08, 0.025), Vector3(-0.07, 0.16, 0.045),
+        Vector3(0.07, 0.16, 0.045), Vector3(0.13, 0.08, 0.025)], visor)
     # Ground-level danger area telegraphs the same range used by the hit check.
     robot_warning_zone = MeshInstance3D.new()
     robot_warning_zone.name = "RobotWarningZone"
