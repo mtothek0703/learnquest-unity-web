@@ -474,9 +474,16 @@ func _platform(at: Vector3, size: Vector3, tint: Color) -> void:
     surface.generate_normals()
     visual.mesh = surface.commit()
     var material := StandardMaterial3D.new()
-    material.albedo_color = tint
-    material.metallic = 0.22
-    material.roughness = 0.52
+    # Keep the actual walkable deck legible under the midnight atmosphere.
+    # The previous dark metallic slab lost almost all midtone separation in
+    # both real landscape Godot captures. This mobile-safe matte fill restores
+    # its readable top silhouette without lights, shaders or collision changes.
+    material.albedo_color = tint.lightened(0.32)
+    material.metallic = 0.0
+    material.roughness = 0.86
+    material.emission_enabled = true
+    material.emission = tint.lightened(0.16)
+    material.emission_energy_multiplier = 0.12
     visual.material_override = material
     body.add_child(visual)
     add_child(body)
