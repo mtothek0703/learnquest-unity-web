@@ -108,6 +108,36 @@ torus("Portal | glowing inner ring", (0, -0.19, 2.20), 1.08, 0.055, core)
 disc = cylinder("Portal | energy field", (0, 0.16, 2.20), 1.06, 0.035, core, vertices=64)
 disc.rotation_euler = (math.pi / 2, 0.0, 0.0)
 
+# A genuine Blender-authored 4-second animation. One orbit pivot controls
+# all six asymmetric shards: far fewer GLB animation tracks than six separate
+# actions, and the same editable Animation remains in the .blend file.
+bpy.context.scene.render.fps = 24
+bpy.context.scene.frame_start = 1
+bpy.context.scene.frame_end = 97
+orbit = bpy.data.objects.new("Portal energy orbit rig", None)
+bpy.context.collection.objects.link(orbit)
+orbit.location = (0.0, -0.28, 2.20)
+asset.append(orbit)
+for shard_index in range(6):
+    angle = 2.0 * math.pi * shard_index / 6.0
+    gem = cube(
+        "Animated orbit shard %02d" % (shard_index + 1),
+        (0.0, 0.0, 0.0),
+        (0.16, 0.12, 0.34),
+        gold if shard_index % 2 == 0 else core,
+        0.025,
+    )
+    gem.parent = orbit
+    gem.location = (0.90 * math.cos(angle), 0.0, 0.90 * math.sin(angle))
+    gem.rotation_euler = (0.0, angle, 0.20)
+orbit.rotation_euler = (0.0, 0.0, 0.0)
+orbit.keyframe_insert(data_path="rotation_euler", frame=1)
+orbit.rotation_euler = (0.0, 2.0 * math.pi, 0.0)
+orbit.keyframe_insert(data_path="rotation_euler", frame=97)
+orbit.animation_data.action.name = "PortalEnergyLoop"
+# Blender 5 stores F-curves in layered channel bags; avoid depending on the
+# removed Action.fcurves API. The exporter reads the orbit Action directly.
+
 # Stylized keystones along the circular ring.
 for index in range(12):
     angle = (2 * math.pi * index / 12) + (math.pi / 12)
@@ -134,7 +164,7 @@ bpy.context.view_layer.objects.active = asset[0]
 glb_path = out / "learnquest_portal.glb"
 bpy.ops.export_scene.gltf(filepath=str(glb_path), export_format="GLB",
                           use_selection=True, export_yup=True, export_cameras=False,
-                          export_lights=False, export_animations=False)
+                          export_lights=False, export_animations=True)
 
 # Keep a fully editable native Blender document for future iterations.
 blend_path = out / "learnquest_portal.blend"
@@ -178,7 +208,7 @@ manifest = {
     "asset_objects": len(asset),
     "vertices": sum(len(obj.data.vertices) for obj in asset if obj.type == "MESH"),
     "exports": ["learnquest_portal.glb", "learnquest_portal.blend", "portal_preview.png"],
-    "notes": "Static prototype; visual/rigging/gameplay QA required before use in release"
+    "notes": "Keyframed orbit-shard animation exported from Blender; Godot and iPhone visual QA required before release"
 }
 (out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 print("BLENDER ASSET GENERATION PASSED:", manifest)

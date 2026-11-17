@@ -37,6 +37,11 @@ jobs:
           /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path godot --quit 2>&1 | tee /tmp/import.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://smoke_test.gd 2>&1 | tee /tmp/gameplay.log
           grep -Fq 'LEARNQUEST SMOKE TEST PASSED' /tmp/gameplay.log
+          # Blender GLB is now used by the actual Neon City race, not only in a preview.
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://blender_portal_test.gd 2>&1 | tee /tmp/blender-import.log
+          grep -Fq 'LEARNQUEST BLENDER PORTAL TEST PASSED' /tmp/blender-import.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://blender_race_integration_test.gd 2>&1 | tee /tmp/blender-race.log
+          grep -Fq 'BLENDER RACE INTEGRATION TEST PASSED' /tmp/blender-race.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://landscape_chase_camera_test.gd 2>&1 | tee /tmp/landscape-chase-camera.log
           grep -Fq 'LANDSCAPE CHASE CAMERA TEST PASSED' /tmp/landscape-chase-camera.log
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path godot --script res://flawless_vocabulary_launch_test.gd 2>&1 | tee /tmp/flawless-vocabulary.log
@@ -147,6 +152,25 @@ jobs:
             --script res://rider_visual_capture_test.gd 2>&1 | tee /tmp/visual-capture.log
           grep -Fq 'VISUAL CAPTURE TEST PASSED' /tmp/visual-capture.log
           test "$(find /tmp/learnquest-visual-qa -name '*.png' | wc -l)" -eq 20
+      - name: Render actual Blender gateway inside Neon City at two phone aspect ratios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/learnquest-blender-race-qa
+          LIBGL_ALWAYS_SOFTWARE=1 LEARNQUEST_BLENDER_RACE_OUTPUT=/tmp/learnquest-blender-race-qa \
+            timeout 120s xvfb-run -a -s '-screen 0 1600x900x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path godot --rendering-driver opengl3 \
+            --script res://blender_race_visual_capture_test.gd 2>&1 | tee /tmp/blender-race-visual.log
+          grep -Fq 'BLENDER RACE VISUAL QA PASSED' /tmp/blender-race-visual.log
+          test "$(find /tmp/learnquest-blender-race-qa -name '*.png' | wc -l)" -eq 8
+      - name: Upload before-after Blender race portal screenshots (short retention)
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: learnquest-blender-race-before-after
+          path: /tmp/learnquest-blender-race-qa/*.png
+          if-no-files-found: ignore
+          retention-days: 1
       - name: Render all four power-up silhouettes for 16:9 QA
         shell: bash
         run: |
