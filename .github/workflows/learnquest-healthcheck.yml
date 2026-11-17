@@ -2,14 +2,9 @@ name: LearnQuest automated health check
 
 on:
   schedule:
-    # Four independent checks per day; GitHub scheduled jobs may be delayed.
-    - cron: '17 1,7,13,19 * * *'
+    # One daily health check. Godot PR validation remains active for code changes.
+    - cron: '43 6 * * *'
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'godot/**'
-      - '.github/workflows/learnquest-healthcheck.yml'
 
 permissions:
   contents: read
