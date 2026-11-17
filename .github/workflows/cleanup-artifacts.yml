@@ -4,11 +4,9 @@ name: Alte Actions-Artefakte bereinigen
 
 on:
   schedule:
-    - cron: "23 3 * * *"
+    # Weekly cleanup on Sundays; on-demand runs still possible.
+    - cron: "23 3 * * 0"
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/cleanup-artifacts.yml"
 
 permissions:
   contents: read
