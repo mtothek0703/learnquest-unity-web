@@ -91,6 +91,29 @@ func _check() -> void:
     if area.get_node_or_null("NeonCityNightAtmosphere") == null:
         _fail("Neon City lighting has no atmospheric environment")
         return
+    # Visible cinematic sky traffic must be in the actual adventure scene.
+    # It never changes collisions or the underlying quest / robot behavior.
+    var traffic := area.get_node_or_null("NeonSkyrail") as Node3D
+    if traffic == null:
+        _fail("mobile Neon City skyline is missing animated transit")
+        return
+    var supports := traffic.get_node_or_null("ElevatedTransitGuideway/RailSupports") as MultiMeshInstance3D
+    var arches := traffic.get_node_or_null("ElevatedTransitGuideway/TransitArchGates") as MultiMeshInstance3D
+    if supports == null or supports.multimesh.instance_count != 6 or arches == null or arches.multimesh.instance_count != 4:
+        _fail("skyrail pylons / luminous arches do not match the mobile instancing budget")
+        return
+    var car := traffic.get_node_or_null("AerialTram") as Node3D
+    if car == null or not ((car.get_node_or_null("SkimmerHull") as MeshInstance3D).mesh is ArrayMesh):
+        _fail("a real tapered 3D shuttle hull is required, not a flat placeholder")
+        return
+    var before_skimmer: float = car.position.x
+    traffic.call("_process", 0.8)
+    if car.position.x - before_skimmer < 0.1:
+        _fail("animated city transit must move in the actual Godot 3D level")
+        return
+    if traffic.find_children("*", "CollisionShape3D", true, false).size() > 0:
+        _fail("city transit visual must never alter adventure navigation collisions")
+        return
     # The robot telegraph must show the true 3m hit boundary without a
     # giant filled red disk obscuring the character and mission objectives.
     var danger := area.get("robot_warning_zone") as MeshInstance3D

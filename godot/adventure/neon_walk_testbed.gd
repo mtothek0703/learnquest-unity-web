@@ -3,6 +3,7 @@ extends Node3D
 signal return_requested
 const PlayerScript = preload("res://adventure/neon_walk_player.gd")
 const FacadeShader = preload("res://adventure/neon_city_facade.gdshader")
+const NeonSkyrail = preload("res://adventure/neon_sky_rail.gd")
 var player: CharacterBody3D
 var follow_camera: Camera3D
 var mobile_axis := Vector2.ZERO
@@ -45,6 +46,10 @@ func _ready() -> void:
     _platform(Vector3(4, 1.7, -8), Vector3(4, 1, 4), Color("#317b99"))
     _build_neon_skyline()
     _build_rooftop_art_pass()
+    var moving_skyrail := Node3D.new()
+    moving_skyrail.name = "NeonSkyrail"
+    moving_skyrail.set_script(NeonSkyrail)
+    add_child(moving_skyrail)
     player = CharacterBody3D.new()
     player.name = "WalkingHero"
     player.set_script(PlayerScript)
