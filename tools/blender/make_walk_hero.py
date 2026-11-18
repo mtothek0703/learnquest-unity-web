@@ -168,10 +168,21 @@ leg_profile = [(-0.50, 0.65, 0.72), (-0.28, 0.82, 0.91),
                (0.03, 1.0, 1.0), (0.30, 0.92, 0.96), (0.50, 0.73, 0.80)]
 
 
-part("Flexible torso", (0, 0, 1.30), (0.66, 0.35, 0.65), suit, "Spine")
-part("Sculpted chest armor", (0, -0.205, 1.47), (0.59, 0.105, 0.30), armor, "Chest")
+# A tailored, curved upper body replaces the four stacked rectangular
+# blocks. The shoulder-to-waist taper and offset chest plate remain legible
+# from the chase camera while using the existing rig and six materials.
+torso_profile = [(-0.50, 0.66, 0.76), (-0.35, 0.78, 0.84),
+                 (-0.08, 0.96, 0.96), (0.25, 1.0, 1.0),
+                 (0.50, 0.73, 0.78)]
+chest_profile = [(-0.50, 0.66, 0.72), (-0.25, 0.94, 0.92),
+                 (0.10, 1.0, 1.0), (0.36, 0.90, 0.85),
+                 (0.50, 0.68, 0.70)]
+belt_profile = [(-0.50, 0.83, 0.82), (-0.25, 0.98, 0.98),
+                (0.25, 1.0, 1.0), (0.50, 0.87, 0.84)]
+sculpted_shell("Flexible torso", (0, 0, 1.30), (0.66, 0.35, 0.65), suit, "Spine", torso_profile)
+sculpted_shell("Sculpted chest armor", (0, -0.205, 1.47), (0.59, 0.105, 0.30), armor, "Chest", chest_profile)
 part("Chest energy badge", (0, -0.278, 1.51), (0.15, 0.045, 0.10), accent, "Chest")
-part("Utility belt", (0, 0, 1.02), (0.69, 0.41, 0.12), boots, "Hips")
+sculpted_shell("Utility belt", (0, 0, 1.02), (0.69, 0.41, 0.12), boots, "Hips", belt_profile)
 part("Helmet outer", (0, 0, 1.87), (0.46, 0.43, 0.45), armor, "Head", "sphere")
 part("Helmet visible visor", (0, -0.20, 1.885), (0.35, 0.14, 0.20), visor, "Head", "sphere")
 part("Helmet glowing brow", (0, -0.225, 1.995), (0.34, 0.09, 0.035), cyan, "Head")
