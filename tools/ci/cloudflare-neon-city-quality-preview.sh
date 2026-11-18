@@ -16,7 +16,14 @@ mkdir -p /tmp/learnquest-templates "$HOME/.local/share/godot/export_templates/4.
 unzip -q /tmp/learnquest-templates.tpz -d /tmp/learnquest-templates
 cp /tmp/learnquest-templates/templates/* "$HOME/.local/share/godot/export_templates/4.4.1.stable/"
 
-"$GODOT" --headless --editor --path godot --quit
+# Explicitly finish the complete glTF/GLB import before starting gameplay tests.
+# --editor --quit exits during filesystem scanning on fresh Cloudflare workers,
+# leaving the rider GLTF unimported. --import waits for initial imports to finish.
+timeout 180s "$GODOT" --headless --path godot --import 2>&1 | tee /tmp/lq-neon-import.log
+if grep -E 'ERROR:|SCRIPT ERROR:|Scan thread aborted' /tmp/lq-neon-import.log; then
+  echo "Godot asset import encountered a real error"
+  exit 1
+fi
 for name in smoke_test adventure/adventure_bridge_test adventure/rigged_hero_asset_test; do
   echo "Testing $name"
   log="/tmp/lq-neon-${name//\//_}.log"
