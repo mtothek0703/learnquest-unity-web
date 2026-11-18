@@ -47,7 +47,7 @@ jobs:
                   status, head, pck = fetch("index.pck")
                   assert status == 200 and pck, "Pack missing"
                   status, head, build = fetch("build.txt")
-                  assert status == 200 and build.strip().decode() == "fb7d9a278f5cda19e6123faf3bcf2b3eab676718", "Cloudflare version mismatch"
+                  assert status == 200 and build.strip().decode() == "3752681a890f9bdfed8424a17f59b853637514c2", "Cloudflare version mismatch"
                   status, head, wasm = fetch("index.wasm")
                   assert status == 200
                   encoding = head.get("Content-Encoding", "").lower()
