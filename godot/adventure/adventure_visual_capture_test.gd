@@ -40,14 +40,20 @@ func _capture() -> void:
         return
     # Keep gameplay paused for reproducible frames, but preserve the real
     # camera, imported skin, lighting, platforms, HUD and city geometry.
-    area.process_mode = Node.PROCESS_MODE_DISABLED
+    # Let the REAL gameplay camera solve its framing before freezing the
+    # scene. The previous capture hard-coded a 5.2m camera, so gameplay
+    # camera changes produced pixel-identical screenshots (false QA).
     player.position = Vector3(0, 1.05, 0)
-    # Match the current playable third-person framing rather than an old
-    # fixed QA camera that made the hero look artificially distant.
-    # The hero remains at the same reproducible test position for all poses.
-    camera.global_position = player.global_position + Vector3(0, 2.9, 5.2)
-    camera.look_at(player.global_position + Vector3.UP * 0.75)
+    player.set_physics_process(false)
     camera.current = true
+    for camera_frame in range(36):
+        await physics_frame
+    # A fixed 5.2m screenshot camera must never silently return.
+    var camera_offset := camera.global_position - player.global_position
+    if camera_offset.z < 2.0 or camera_offset.z > 4.2:
+        _fail("capture is not using playable follow-camera distance: " + str(camera_offset))
+        return
+    area.process_mode = Node.PROCESS_MODE_DISABLED
     var animators := visual.find_children("*", "AnimationPlayer", true, false)
     if animators.is_empty():
         _fail("imported character has no animation player")
