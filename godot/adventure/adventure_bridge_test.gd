@@ -318,20 +318,22 @@ func _check() -> void:
     camera_collision.shape = camera_box
     camera_wall.add_child(camera_collision)
     area.add_child(camera_wall)
-    camera_wall.global_position = player.global_position + Vector3(0.0, 2.0, 4.0)
+    camera_wall.global_position = player.global_position + Vector3(0.0, 2.0, 2.2)
     await physics_frame
     area.call("_update_follow_camera")
-    if walk_camera.global_position.z >= player.global_position.z + 3.8:
+    if walk_camera.global_position.z >= player.global_position.z + 2.3:
         _fail("walking camera clipped through an obstacle behind the hero")
         return
     camera_wall.queue_free()
+    # The obstacle must lie inside the new 3.15m follow distance; recovery
+    # must approach that distance, not the obsolete 4.0m camera setting.
     # Framing is closer to make the 1.65m rigged hero readable on phones.
     # The camera intentionally eases back instead of teleporting to its full
     # follow distance. Allow several real physics frames for convergence.
     for recovery_frame in range(30):
         await physics_frame
     area.call("_update_follow_camera")
-    if walk_camera.global_position.z <= player.global_position.z + 3.7:
+    if walk_camera.global_position.z <= player.global_position.z + 2.9:
         _fail("walking camera failed to recover its normal distance after smoothing")
         return
     # A4: a slightly early mobile jump should survive an airborne frame,
