@@ -1,0 +1,65 @@
+name: Verify LearnQuest Neon City Art QA Cloudflare public WebGL delivery
+on:
+  push:
+    branches:
+      - feature/adventure-a1-walkable-neon-testbed-20261106-19
+    paths:
+      - .github/workflows/verify-neon-art-qa-once.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe-webgl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - name: Check live HTML assets and transparent WASM decompression
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import gzip
+          import time
+          import urllib.request
+          from urllib.error import HTTPError, URLError
+          root = "https://learnquest-neon-art-qa.pages.dev/"
+          def fetch(path):
+              # urllib does not transparently decompress its HTTP response.
+              # HTML/JS may be gzipped by Pages even though the source is
+              # plain. Always download the complete response, then decode.
+              req = urllib.request.Request(root + path,
+                  headers={"User-Agent": "LearnQuestNeonArtQA-PublicProbe",
+                           "Accept-Encoding": "gzip",
+                           "Cache-Control": "no-cache"})
+              with urllib.request.urlopen(req, timeout=22) as response:
+                  headers = dict(response.headers)
+                  payload = response.read()
+                  encoding = headers.get("Content-Encoding", "").lower()
+                  if "gzip" in encoding:
+                      payload = gzip.decompress(payload)
+                  return response.status, headers, payload
+          last_error = None
+          for attempt in range(8):
+              try:
+                  status, head, html = fetch("index.html")
+                  assert status == 200 and b"html" in html.lower()[:30000], "HTML invalid"
+                  status, head, js = fetch("index.js")
+                  assert status == 200 and js, "JavaScript missing"
+                  status, head, pck = fetch("index.pck")
+                  assert status == 200 and pck, "Pack missing"
+                  status, head, build = fetch("build.txt")
+                  assert status == 200 and build.strip().decode() == "fb7d9a278f5cda19e6123faf3bcf2b3eab676718", "Cloudflare version mismatch"
+                  status, head, wasm = fetch("index.wasm")
+                  assert status == 200
+                  encoding = head.get("Content-Encoding", "").lower()
+                  assert wasm.startswith(bytes([0, 97, 115, 109])), ("Browser cannot decode the WASM magic; response encoding="+encoding)
+                  assert len(wasm) > 30_000_000, "WASM appears truncated"
+                  print("LIVE LEARNQUEST NEON CITY ART QA WEBGL PASSED: index.html, JS, PCK, build.txt, wasm")
+                  print("WASM wire encoding:", encoding or "none", "decoded size:", len(wasm))
+                  print("Version:", build.decode().strip())
+                  break
+              except (AssertionError, HTTPError, URLError, TimeoutError, OSError) as exc:
+                  last_error = repr(exc)
+                  if attempt == 7:
+                      raise SystemExit("LIVE LEARNQUEST NEON CITY ART QA FAILED: " + last_error)
+                  time.sleep(5)
+          PY
