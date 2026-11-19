@@ -8,6 +8,8 @@ const WORDS := [
 ]
 # Complete vocabulary missions first; racing is a continuous, finite level.
 const TASKS_PER_ROUND := 3
+# Fail-closed until the Neon City walk scene and race-pause bridge pass Godot QA.
+const ADVENTURE_ENTRY_ENABLED := false
 const CLEAN_FLIGHT_STEP := 250.0
 const CLEAN_FLIGHT_LIMIT := 3
 const AERIAL_ENERGY_TARGET := 3
@@ -177,6 +179,12 @@ var grade_label: Label
 var info_label: Label
 var feedback_time := 0.0
 var style_dark: StyleBoxFlat
+
+# The existing quiz -> race flow owns the session. Do not start a second
+# training round when returning from the walking arena.
+# This is a guard only; no transition is triggered while the feature is off.
+func can_enter_neon_adventure() -> bool:
+    return ADVENTURE_ENTRY_ENABLED and phase == "race" and started and not quiz_active and world_choice == 0
 
 func _ready() -> void:
     _create_world()
