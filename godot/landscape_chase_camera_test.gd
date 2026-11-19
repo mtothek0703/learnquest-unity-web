@@ -41,6 +41,21 @@ func _check() -> void:
         if float(normal["fov"]) >= float(desktop["fov"]):
             _fail("phone rider must be visibly larger than old desktop framing")
             return
+    # The new visual steer-bank is mobile-only and mirrors all three lanes.
+    for display_size in [Vector2(1280, 720), Vector2(1170, 540), Vector2(852, 393)]:
+        rider.position.x = -3.1
+        var left_bank := float(game.call("_landscape_steering_bank", display_size))
+        rider.position.x = 0.0
+        var center_bank := float(game.call("_landscape_steering_bank", display_size))
+        rider.position.x = 3.1
+        var right_bank := float(game.call("_landscape_steering_bank", display_size))
+        if left_bank > -0.02 or right_bank < 0.02 or absf(left_bank + right_bank) > 0.0001 or absf(center_bank) > 0.0001:
+            _fail("phone steering bank must be small, mirrored and neutral in the center")
+            return
+    if absf(float(game.call("_landscape_steering_bank", Vector2(1920, 1080)))) > 0.0001 or \
+            absf(float(game.call("_landscape_steering_bank", Vector2(540, 1170)))) > 0.0001:
+        _fail("desktop and portrait camera horizons must stay level")
+        return
     game.set("phase", "race")
     game.set("started", true)
     game.set("quiz_active", false)
@@ -53,6 +68,15 @@ func _check() -> void:
             if camera.position.distance_to(expected["position"]) > 0.01 or absf(camera.fov - float(expected["fov"])) > 0.01:
                 _fail("actual camera does not use landscape targets")
                 return
+            # Real camera basis must contain the visual roll after look_at;
+            # simply calculating a bank number would not test the 3D result.
+            var horizon_bank := camera.global_transform.basis.x.y
+            if lane_x == 0.0 and absf(horizon_bank) > 0.008:
+                _fail("center-lane camera horizon is tilted")
+                return
+            if lane_x != 0.0 and absf(horizon_bank) < 0.008:
+                _fail("outer-lane steering is not visible in camera orientation")
+                return
             var subject := camera.unproject_position(rider.global_position + Vector3(0.0, 2.1, 0.0))
             var bounds: Vector2 = root.get_visible_rect().size
             if camera.is_position_behind(rider.global_position + Vector3(0.0, 2.1, 0.0)) or subject.x < bounds.x * 0.08 or subject.x > bounds.x * 0.92 or subject.y < bounds.y * 0.06 or subject.y > bounds.y * 0.85:
@@ -61,5 +85,5 @@ func _check() -> void:
     if int(game.get_script().get_script_constant_map().get("TASKS_PER_ROUND", 0)) != 3:
         _fail("three mandatory vocabulary tasks changed")
         return
-    print("LANDSCAPE CHASE CAMERA TEST PASSED: three phone ratios, desktop unchanged, lane/turbo framing and vocabulary rules")
+    print("LANDSCAPE CHASE CAMERA TEST PASSED: three phone ratios, banked steering, level desktop, lane/turbo framing and vocabulary rules")
     quit(0)
