@@ -151,8 +151,30 @@ def sculpted_shell(name, position, dimensions, material, bone, profile):
     obj.data.materials.append(material)
     for poly in mesh.polygons:
         poly.use_smooth = len(poly.vertices) == 4
-    group = obj.vertex_groups.new(name=bone)
-    group.add(list(range(len(mesh.vertices))), 1.0, "REPLACE")
+    # Smooth the ends of each sculpted garment across adjacent joints.
+    # Center rings remain on their original bone to preserve the silhouette.
+    joint_map = {
+        "Spine": ("Hips", "Chest"),
+        "UpperArm.L": ("LowerArm.L", "Chest"),
+        "UpperArm.R": ("LowerArm.R", "Chest"),
+        "Thigh.L": ("Shin.L", "Hips"),
+        "Thigh.R": ("Shin.R", "Hips"),
+        "LowerArm.L": (None, "UpperArm.L"),
+        "LowerArm.R": (None, "UpperArm.R"),
+        "Shin.L": (None, "Thigh.L"),
+        "Shin.R": (None, "Thigh.R"),
+    }
+    bottom_bone, top_bone = joint_map.get(bone, (None, None))
+    groups = {name: obj.vertex_groups.new(name=name)
+              for name in (bone, bottom_bone, top_bone) if name is not None}
+    for ring in range(len(profile)):
+        blend = 0.30 if ((ring == 0 and bottom_bone) or
+                         (ring == len(profile) - 1 and top_bone)) else 0.0
+        adjacent = bottom_bone if ring == 0 else top_bone
+        indices = list(range(ring * radial, (ring + 1) * radial))
+        groups[bone].add(indices, 1.0 - blend, "REPLACE")
+        if blend and adjacent:
+            groups[adjacent].add(indices, blend, "REPLACE")
     obj.parent = rig
     deform = obj.modifiers.new("CharacterBody Skin", "ARMATURE")
     deform.object = rig
