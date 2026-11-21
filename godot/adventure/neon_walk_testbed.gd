@@ -176,9 +176,10 @@ func _build_neon_skyline() -> void:
         # rooftop crowns, side fins and a readable holographic destination sign.
         var crown := MeshInstance3D.new()
         crown.name = "RoofCrown"
-        var crown_mesh := BoxMesh.new()
-        crown_mesh.size = Vector3(width + 0.36, 0.28, width * 0.82 + 0.36)
-        crown.mesh = crown_mesh
+        # Sculpted eight-sided tiered crown follows the tower's chamfered
+        # footprint instead of exposing a rectangular roof slab.
+        # One mesh and one material per tower, with no new physics or lights.
+        crown.mesh = _sculpted_roof_crown(width, width * 0.82)
         crown.material_override = trim_cyan if i % 2 == 0 else trim_pink
         crown.position.y = height - 0.43
         tower.add_child(crown)
@@ -212,6 +213,43 @@ func _build_neon_skyline() -> void:
         antenna.material_override = neon
         antenna.position.y = height + 0.25
         tower.add_child(antenna)
+
+# A stepped architectural roof cap with an inset center and chamfered edges.
+# The open underside is hidden by the existing tower; vertex normals make
+# the broad bevel readable in the nighttime phone camera.
+func _sculpted_roof_crown(width: float, depth: float) -> ArrayMesh:
+    var mesh_builder := SurfaceTool.new()
+    mesh_builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+    var footprint := [
+        Vector2(-0.38, -0.5), Vector2(0.38, -0.5),
+        Vector2(0.5, -0.38), Vector2(0.5, 0.38),
+        Vector2(0.38, 0.5), Vector2(-0.38, 0.5),
+        Vector2(-0.5, 0.38), Vector2(-0.5, -0.38)
+    ]
+    var levels := [Vector2(1.10, -0.14), Vector2(1.10, -0.02),
+        Vector2(0.94, 0.11), Vector2(0.78, 0.18)]
+    for level in range(levels.size() - 1):
+        for side in range(footprint.size()):
+            var a: Vector2 = footprint[side]
+            var b: Vector2 = footprint[(side + 1) % footprint.size()]
+            var lower: Vector2 = levels[level]
+            var upper: Vector2 = levels[level + 1]
+            var p := Vector3(a.x * width * lower.x, lower.y, a.y * depth * lower.x)
+            var q := Vector3(b.x * width * lower.x, lower.y, b.y * depth * lower.x)
+            var r := Vector3(a.x * width * upper.x, upper.y, a.y * depth * upper.x)
+            var s := Vector3(b.x * width * upper.x, upper.y, b.y * depth * upper.x)
+            for vertex in [p, r, q, q, r, s]:
+                mesh_builder.add_vertex(vertex)
+    for side in range(footprint.size()):
+        var a: Vector2 = footprint[side]
+        var b: Vector2 = footprint[(side + 1) % footprint.size()]
+        var upper: Vector2 = levels[levels.size() - 1]
+        for vertex in [Vector3(0, upper.y, 0),
+                Vector3(a.x * width * upper.x, upper.y, a.y * depth * upper.x),
+                Vector3(b.x * width * upper.x, upper.y, b.y * depth * upper.x)]:
+            mesh_builder.add_vertex(vertex)
+    mesh_builder.generate_normals()
+    return mesh_builder.commit()
 
 # Deterministic low-poly architecture, authored as a single UV-mapped mesh.
 # Two setbacks and a narrow rooftop shoulder give the towers a genuine
