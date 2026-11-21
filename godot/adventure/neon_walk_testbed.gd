@@ -46,6 +46,7 @@ func _ready() -> void:
     _platform(Vector3(4, 1.7, -8), Vector3(4, 1, 4), Color("#317b99"))
     _build_neon_skyline()
     _build_rooftop_art_pass()
+    _build_rooftop_hex_deck()
     var moving_skyrail := Node3D.new()
     moving_skyrail.name = "NeonSkyrail"
     moving_skyrail.set_script(NeonSkyrail)
@@ -87,7 +88,7 @@ func _ready() -> void:
     add_child(player)
     follow_camera = Camera3D.new()
     follow_camera.name = "Walk follow camera"
-    follow_camera.position = Vector3(0, 2.20, 3.15)
+    follow_camera.position = Vector3(0, 2.12, 2.75)
     follow_camera.current = true
     add_child(follow_camera)
     var light := DirectionalLight3D.new()
@@ -317,6 +318,47 @@ func _build_rooftop_art_pass() -> void:
         light_source.omni_range = 12.0
         light_source.shadow_enabled = false
         art.add_child(light_source)
+
+# Visual-only bespoke hexagonal deck panels, rather than a featureless grey
+# rectangle. One mesh and one material for the whole rooftop (no collision,
+# extra lights, external assets, or changes to the runner).
+func _build_rooftop_hex_deck() -> void:
+    var panels := MeshInstance3D.new()
+    panels.name = "SculptedHexDeckPanels"
+    var st := SurfaceTool.new()
+    st.begin(Mesh.PRIMITIVE_TRIANGLES)
+    var dark := Color("#354766")
+    var light := Color("#4a5f7b")
+    var rim := Color("#6689a3")
+    for row in range(7):
+        for col in range(9):
+            var cx := (float(col) - 4.0) * 1.85 + (0.92 if row % 2 == 1 else 0.0)
+            var cz := (float(row) - 3.0) * 2.05
+            if absf(cx) > 7.85:
+                continue
+            var center := Vector3(cx, 0.018, cz)
+            var shade: Color = dark if (col + row) % 3 == 0 else light
+            for side in range(6):
+                var a0 := TAU * float(side) / 6.0 + PI / 6.0
+                var a1 := TAU * float(side + 1) / 6.0 + PI / 6.0
+                var inner0 := center + Vector3(cos(a0) * 0.82, 0.0, sin(a0) * 0.82)
+                var inner1 := center + Vector3(cos(a1) * 0.82, 0.0, sin(a1) * 0.82)
+                var outer0 := center + Vector3(cos(a0) * 0.91, -0.012, sin(a0) * 0.91)
+                var outer1 := center + Vector3(cos(a1) * 0.91, -0.012, sin(a1) * 0.91)
+                for vertex in [center, inner0, inner1]:
+                    st.set_color(shade)
+                    st.add_vertex(vertex)
+                for vertex in [inner0, outer0, outer1, inner0, outer1, inner1]:
+                    st.set_color(rim)
+                    st.add_vertex(vertex)
+    st.generate_normals()
+    panels.mesh = st.commit()
+    var deck_material := StandardMaterial3D.new()
+    deck_material.vertex_color_use_as_albedo = true
+    deck_material.roughness = 0.82
+    deck_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+    panels.material_override = deck_material
+    add_child(panels)
 
 func _install_walking_character(fallback: MeshInstance3D) -> void:
     # The original, animated Blender GLB takes precedence in the Adventure
