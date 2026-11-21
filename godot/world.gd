@@ -177,6 +177,16 @@ var grade_label: Label
 var info_label: Label
 var feedback_time := 0.0
 var style_dark: StyleBoxFlat
+# Opt-in Neon City bridge: old runner behavior remains the default.
+var adventure_opt_in := false
+var adventure_used := false
+var adventure_reward_claimed := false
+const ADVENTURE_MISSION_XP := 75
+var adventure_area: Node3D
+var runner_ui_layer: CanvasLayer
+var adventure_toggle_button: Button
+var adventure_enter_button: Button
+
 
 func _ready() -> void:
     _create_world()
@@ -1106,6 +1116,16 @@ func _create_run_items() -> void:
             cube(item, Vector3(0, 1.4, 0), Vector3(2.1, 0.13, 0.84), Color("#b927f7"), true)
 
 func _reset_run() -> void:
+    # A new run may visit the roof once. No walk-state carries into retries.
+    if is_instance_valid(adventure_area):
+        adventure_area.queue_free()
+        adventure_area = null
+    adventure_used = false
+    adventure_reward_claimed = false
+    rider.visible = true
+    if runner_ui_layer != null:
+        runner_ui_layer.visible = true
+    chase_camera.current = true
     touch_steering.reset()
     _apply_world_theme()
     phase = "race"
@@ -1740,11 +1760,60 @@ func _input(event: InputEvent) -> void:
         "attack":
             _use_super_attack()
 
+# The three-question gate remains fully owned by the existing runner.
+# Enabling adventure is explicit; it never changes older saved/default games.
+func _toggle_adventure_opt_in() -> void:
+    if phase != "menu":
+        return
+    adventure_opt_in = not adventure_opt_in
+    adventure_toggle_button.text = "ABENTEUER: AN" if adventure_opt_in else "ABENTEUER: AUS"
+    _update_touch_ui()
+
+func _enter_adventure() -> bool:
+    if not adventure_opt_in or adventure_used or world_choice != 0 or phase != "race" or \
+            not started or quiz_active or distance < 100.0:
+        return false
+    # Keep the exact same XP, health, timer, distance, world and mission data
+    # in the runner. Its _process exits early during adventure.
+    touch_steering.reset()
+    phase = "adventure"
+    adventure_used = true
+    rider.visible = false
+    runner_ui_layer.visible = false
+    var walking_scene: PackedScene = preload("res://adventure/neon_walk_testbed.tscn")
+    adventure_area = walking_scene.instantiate() as Node3D
+    # Keep the walkable physical rooftop clear of the existing race road.
+    adventure_area.position = Vector3(0.0, 0.0, 700.0)
+    add_child(adventure_area)
+    adventure_area.connect("return_requested", Callable(self, "_exit_adventure"))
+    return true
+
+func _exit_adventure() -> bool:
+    if phase != "adventure" or not is_instance_valid(adventure_area):
+        return false
+    # One reward per completed mission, credited to the original runner session.
+    # The exit gate cannot be used for incomplete missions.
+    if not bool(adventure_area.get("mission_complete")):
+        return false
+    if not adventure_reward_claimed:
+        xp += ADVENTURE_MISSION_XP
+        adventure_reward_claimed = true
+    adventure_area.queue_free()
+    adventure_area = null
+    phase = "race"
+    rider.visible = true
+    runner_ui_layer.visible = true
+    chase_camera.current = true
+    touch_steering.reset()
+    _update_camera(100.0)
+    _refresh_hud()
+    return true
+
 func _touch_ui_blocked(position: Vector2) -> bool:
     # The instructions are a non-interactive MOUSE_FILTER_IGNORE label. They
     # must not reserve a full-width dead zone over the lower playfield when
     # the optional touch buttons are hidden. Keep real UI and HUD protected.
-    for control in [splash, quiz_box, end_panel, controls_grid, powerups_grid, hud_panel, progress_bar, gesture_toggle]:
+    for control in [splash, quiz_box, end_panel, controls_grid, powerups_grid, hud_panel, progress_bar, gesture_toggle, adventure_toggle_button, adventure_enter_button]:
         if control != null and control.is_visible_in_tree() and control.get_global_rect().has_point(position):
             return true
     return false
@@ -1762,12 +1831,17 @@ func _update_touch_ui() -> void:
     powerups_grid.visible = show_buttons
     gesture_toggle.visible = racing and touch_screen_mode
     gesture_hint.visible = racing and touch_screen_mode
+    if adventure_toggle_button != null:
+        adventure_toggle_button.visible = phase == "menu"
+    if adventure_enter_button != null:
+        adventure_enter_button.visible = racing and adventure_opt_in and not adventure_used and world_choice == 0 and distance >= 100.0
     gesture_toggle.text = "TASTEN AUS" if touch_buttons_visible else "TASTEN EIN"
     gesture_hint.offset_top = -245.0 if touch_buttons_visible else -75.0
     gesture_hint.offset_bottom = -205.0 if touch_buttons_visible else -35.0
 
 func _create_ui() -> void:
     var layer := CanvasLayer.new()
+    runner_ui_layer = layer
     add_child(layer)
     var canvas := Control.new()
     canvas.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1854,6 +1928,23 @@ func _create_ui() -> void:
     gesture_hint.offset_left = 8.0
     gesture_hint.offset_right = -8.0
     canvas.add_child(gesture_hint)
+
+    # Optional game-mode toggle remains outside the center menu panel, so its
+    # layout and the three mandatory vocabulary tasks are unchanged.
+    adventure_toggle_button = _make_button("ABENTEUER: AUS", _toggle_adventure_opt_in, canvas)
+    adventure_toggle_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+    adventure_toggle_button.offset_left = -194.0
+    adventure_toggle_button.offset_right = -15.0
+    adventure_toggle_button.offset_top = 16.0
+    adventure_toggle_button.offset_bottom = 65.0
+    adventure_toggle_button.add_theme_font_size_override("font_size", 14)
+    adventure_enter_button = _make_button("ABSTEIGEN", _enter_adventure, canvas)
+    adventure_enter_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+    adventure_enter_button.offset_left = -194.0
+    adventure_enter_button.offset_right = -15.0
+    adventure_enter_button.offset_top = 16.0
+    adventure_enter_button.offset_bottom = 65.0
+    adventure_enter_button.add_theme_font_size_override("font_size", 14)
 
     splash = PanelContainer.new()
     _style_panel(splash)
